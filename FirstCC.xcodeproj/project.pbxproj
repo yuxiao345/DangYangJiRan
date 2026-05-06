@@ -1,0 +1,1173 @@
+{
+  "archiveVersion": "1",
+  "classes": {},
+  "objectVersion": "77",
+  "objects": {
+    "00FE454829EC1192C6DD25FD": {
+      "isa": "PBXBuildFile",
+      "fileRef": "C86792480592B324CE5C56AF"
+    },
+    "2857D59369AE8F20570D49EA": {
+      "isa": "PBXBuildFile",
+      "fileRef": "4C0EF7C2B13D25979F6369DB"
+    },
+    "5CA1F92936BC9FD75D955481": {
+      "isa": "PBXBuildFile",
+      "fileRef": "81BF490865B8B124033F5C78"
+    },
+    "1E0A3F94C85B8CE4A811B51E": {
+      "isa": "PBXBuildFile",
+      "fileRef": "B1B7BD8BFB5996FAC8E63F8D"
+    },
+    "1A5821E544132F6B9C54AB9D": {
+      "isa": "PBXBuildFile",
+      "fileRef": "4CF4623DF03C3DE363E0B56F"
+    },
+    "040F454363C3899C930E5EA9": {
+      "isa": "PBXBuildFile",
+      "fileRef": "5950C646E32D34E93EABA9EF"
+    },
+    "2E0ABDDF4E695B9BF174B94A": {
+      "isa": "PBXBuildFile",
+      "fileRef": "843A91D87C07C74B830ECB18"
+    },
+    "2AB3BB1E70F17CE3D1588AF0": {
+      "isa": "PBXBuildFile",
+      "fileRef": "541E09502E77748865355DFE"
+    },
+    "453F93629311047F68EB7964": {
+      "isa": "PBXBuildFile",
+      "fileRef": "3C22B93B0634A15AD018E806"
+    },
+    "5261577CEC0473A69A6FFBE9": {
+      "isa": "PBXBuildFile",
+      "fileRef": "6C10A30FABAA67F44B9A3676"
+    },
+    "A52C4F6D7217241B9C8C3EFC": {
+      "isa": "PBXBuildFile",
+      "fileRef": "EF6E5C10D03555AA56C75399"
+    },
+    "73155BDE31ACEFB4B8D29811": {
+      "isa": "PBXBuildFile",
+      "fileRef": "B5ADE49EE78C2B59A32BC95A"
+    },
+    "F7065897D1EDC44C60A07BD4": {
+      "isa": "PBXBuildFile",
+      "fileRef": "FC0DA520028935CB779F3147"
+    },
+    "C2A6B9A2D4703D50CFC6C197": {
+      "isa": "PBXBuildFile",
+      "fileRef": "A2DE8647C366E3068EC48BEF"
+    },
+    "77E2C944A27CD320313C9858": {
+      "isa": "PBXBuildFile",
+      "fileRef": "F695310E79DF42977ADCC677"
+    },
+    "3A0F506C24EEE41674E5E900": {
+      "isa": "PBXBuildFile",
+      "fileRef": "78B742E8F53C850C5EE595EE"
+    },
+    "6BCAD05F34DE19C77351E161": {
+      "isa": "PBXBuildFile",
+      "fileRef": "AC9D861E80D1DCA0F1C0F9CB"
+    },
+    "D3457CA23D2D3DD4E32DEB26": {
+      "isa": "PBXBuildFile",
+      "fileRef": "4B83C5649C3586BDE0BC4BB0"
+    },
+    "90CC01F2DAC7455D7D6EC0DD": {
+      "isa": "PBXBuildFile",
+      "fileRef": "4BE7B99FB94F739CEE01D408"
+    },
+    "FD2C9721768BC0DECAFBD9EA": {
+      "isa": "PBXBuildFile",
+      "fileRef": "123B9066865398E03B8DD922"
+    },
+    "E729F46244D4AF2C14CD1E18": {
+      "isa": "PBXBuildFile",
+      "fileRef": "A57B5AE1DBDD1A82ACF6EDB4"
+    },
+    "5D3EC7B01452B6567D133F47": {
+      "isa": "PBXBuildFile",
+      "fileRef": "4E626A3E9AA323C5C1461333"
+    },
+    "DC644F9E1CBF50DB3AD24EC8": {
+      "isa": "PBXBuildFile",
+      "fileRef": "8BC3AEDB1C0CE37709FC5752"
+    },
+    "320312CB6C13D0D577E196A5": {
+      "isa": "PBXBuildFile",
+      "fileRef": "0862DA55D8BC384B2944EBCB"
+    },
+    "259F84F82295D2E24D14AF0F": {
+      "isa": "PBXBuildFile",
+      "fileRef": "38C7BA9D41065C1559BC6594"
+    },
+    "041050EEC8178B6B1DF37B13": {
+      "isa": "PBXBuildFile",
+      "fileRef": "1B29AB99138D90241E214966"
+    },
+    "EB18D2087CAA47F8BA0AC140": {
+      "isa": "PBXBuildFile",
+      "fileRef": "E9DCE24DCB1CA0A1C496F038"
+    },
+    "E33096BE42DA5E77619F8962": {
+      "isa": "PBXBuildFile",
+      "fileRef": "869E6C318410086C8418DB7A"
+    },
+    "CC67BD94E5AC1812FCFAF338": {
+      "isa": "PBXBuildFile",
+      "fileRef": "2C3B6534094377FFBECE3D98"
+    },
+    "19AD8141D819C5B832F2C425": {
+      "isa": "PBXBuildFile",
+      "fileRef": "680CEE6177D7A35D67E08FC3"
+    },
+    "6F8FFA761DA08B251307762E": {
+      "isa": "PBXBuildFile",
+      "fileRef": "1824EA354A3DDDD91C882983"
+    },
+    "1AD18E044CFCFE47043ACECD": {
+      "isa": "PBXBuildFile",
+      "fileRef": "AED97BB9935C8B1476C9B44C"
+    },
+    "FD91B103255DEB923850049C": {
+      "isa": "PBXBuildFile",
+      "fileRef": "0FD37181CF946710701C84CD"
+    },
+    "E620555961FEB232550C5A0F": {
+      "isa": "PBXBuildFile",
+      "fileRef": "30A7BF23BB03561C42D70AE8"
+    },
+    "F882A518E36393398F41A4D3": {
+      "isa": "PBXBuildFile",
+      "fileRef": "616DDCA24AD507E700D4E02A"
+    },
+    "EF4E9D8DCEDD1B10B2C7722D": {
+      "isa": "PBXBuildFile",
+      "fileRef": "01D75752123DF42AB96E4272"
+    },
+    "B7A42A252BC1A2076CE28411": {
+      "isa": "PBXBuildFile",
+      "fileRef": "1BD4A1F1B5AEBDDC7F400369"
+    },
+    "512D26F8E750CDF09C49D945": {
+      "isa": "PBXBuildFile",
+      "fileRef": "49364D66AD60B7797AE0209D"
+    },
+    "0C632EDC5C511E7EFA7938C3": {
+      "isa": "PBXBuildFile",
+      "fileRef": "979E204D2E243EDB0A12BEA4"
+    },
+    "50A74DAF679E7C864CE131E6": {
+      "isa": "PBXBuildFile",
+      "fileRef": "633DAA0D7A1EA35858B5D954"
+    },
+    "578CDB00E5EC00FB28C23751": {
+      "isa": "PBXBuildFile",
+      "fileRef": "81E45422E819C2F19D318139"
+    },
+    "1DF4BA4970A2C6CB74A57A49": {
+      "isa": "PBXBuildFile",
+      "fileRef": "E0191AE80F2BBB549630994E"
+    },
+    "47925836F662AA48D8B66332": {
+      "isa": "PBXBuildFile",
+      "fileRef": "002EF7F08431743F01C363C7"
+    },
+    "2817786A0462D8D0BE861396": {
+      "isa": "PBXBuildFile",
+      "fileRef": "60AB34C39292D3BB074364F5"
+    },
+    "9FD605249C139E0F3774CC2B": {
+      "isa": "PBXBuildFile",
+      "fileRef": "0DEA46D0089C646200D27B77"
+    },
+    "6431B07CDB18F4B06132B0F6": {
+      "isa": "PBXBuildFile",
+      "fileRef": "6A09DFAB608B7D5ABCFBAB48"
+    },
+    "5CC0F61CE4E0391D714C4719": {
+      "isa": "PBXBuildFile",
+      "fileRef": "1FD60ED36414C665A9E3DF7F"
+    },
+    "82E34F6926D5EA39AACE8C57": {
+      "isa": "PBXBuildFile",
+      "fileRef": "E63522FC24F70BAA3ED09CB9"
+    },
+    "31CECFE9E5215CF1F8C36120": {
+      "isa": "PBXBuildFile",
+      "fileRef": "E32CDB8867F6A3505B4A7910"
+    },
+    "E68531E992371AE2949D8343": {
+      "isa": "PBXBuildFile",
+      "fileRef": "408D9FF9F272EC495C946046"
+    },
+    "641B5B34CADFD251244FBCEC": {
+      "isa": "PBXBuildFile",
+      "fileRef": "5C9AD40C4F443580539DBE2B"
+    },
+    "3D78916C16CB0897606B4FD7": {
+      "isa": "PBXBuildFile",
+      "fileRef": "FB18074394D7CADFC89B2D67"
+    },
+    "517D6324F03D3B3A354D6D42": {
+      "isa": "PBXBuildFile",
+      "fileRef": "865CD094F9E94DE4C2138BB8"
+    },
+    "C1D67EB2243A69FD46E300EC": {
+      "isa": "PBXBuildFile",
+      "fileRef": "0A3BECB91DEF16E35F62A662"
+    },
+    "4FC09702E2BCB7B6525B60FE": {
+      "isa": "PBXBuildFile",
+      "fileRef": "BE0581AEBDBEF36C8C373483"
+    },
+    "87B96E58240A2C4D75801B2D": {
+      "isa": "PBXBuildFile",
+      "fileRef": "19738FF36D10106B947C6A7A"
+    },
+    "B879A2FE808C15CB0A77E940": {
+      "isa": "PBXBuildFile",
+      "fileRef": "8A1725756A008DB9B1D37EBE"
+    },
+    "EB2A49685F30A85843800382": {
+      "isa": "PBXBuildFile",
+      "fileRef": "C2CD963B2C2BD0D35D5D49EE"
+    },
+    "41CFA25D85BF13D28B660A3C": {
+      "isa": "PBXBuildFile",
+      "fileRef": "13A27CA96743727FDD560642"
+    },
+    "D654F83E82DE3B07BDC54B2D": {
+      "isa": "PBXBuildFile",
+      "fileRef": "A57DC433798434D184024462"
+    },
+    "B8AD9E2FF24CC74463C1C14D": {
+      "isa": "PBXBuildFile",
+      "fileRef": "F6C3C5850CB1904E1775012A"
+    },
+    "3AFF31E756FE989CD7E558C3": {
+      "isa": "PBXBuildFile",
+      "fileRef": "7A17CF9388F2D9B8235012F5"
+    },
+    "4C123E5116650484726DA9F7": {
+      "isa": "PBXBuildFile",
+      "fileRef": "7DB63CE4205FA78E2BE83CF3"
+    },
+    "B32C03A63952C3F6371B88FA": {
+      "isa": "PBXFileReference",
+      "explicitFileType": "wrapper.application",
+      "includeInIndex": "0",
+      "path": "\u8361\u6f3e\u8ba1\u7136.app",
+      "sourceTree": "BUILT_PRODUCTS_DIR"
+    },
+    "C86792480592B324CE5C56AF": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "AppContainer.swift",
+      "sourceTree": "<group>"
+    },
+    "4C0EF7C2B13D25979F6369DB": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "FirstCCApp.swift",
+      "sourceTree": "<group>"
+    },
+    "81BF490865B8B124033F5C78": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "text.json",
+      "path": "Contents.json",
+      "sourceTree": "<group>"
+    },
+    "B1B7BD8BFB5996FAC8E63F8D": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "Account.swift",
+      "sourceTree": "<group>"
+    },
+    "4CF4623DF03C3DE363E0B56F": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "Budget.swift",
+      "sourceTree": "<group>"
+    },
+    "5950C646E32D34E93EABA9EF": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "Category.swift",
+      "sourceTree": "<group>"
+    },
+    "843A91D87C07C74B830ECB18": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "ExchangeRate.swift",
+      "sourceTree": "<group>"
+    },
+    "541E09502E77748865355DFE": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "InstallmentPlan.swift",
+      "sourceTree": "<group>"
+    },
+    "3C22B93B0634A15AD018E806": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "Ledger.swift",
+      "sourceTree": "<group>"
+    },
+    "6C10A30FABAA67F44B9A3676": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "Lending.swift",
+      "sourceTree": "<group>"
+    },
+    "EF6E5C10D03555AA56C75399": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "LendingRepayment.swift",
+      "sourceTree": "<group>"
+    },
+    "B5ADE49EE78C2B59A32BC95A": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "RecurringRule.swift",
+      "sourceTree": "<group>"
+    },
+    "FC0DA520028935CB779F3147": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "SplitEntry.swift",
+      "sourceTree": "<group>"
+    },
+    "A2DE8647C366E3068EC48BEF": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "SplitGroup.swift",
+      "sourceTree": "<group>"
+    },
+    "F695310E79DF42977ADCC677": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "Transaction.swift",
+      "sourceTree": "<group>"
+    },
+    "78B742E8F53C850C5EE595EE": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "TransactionTemplate.swift",
+      "sourceTree": "<group>"
+    },
+    "AC9D861E80D1DCA0F1C0F9CB": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "User.swift",
+      "sourceTree": "<group>"
+    },
+    "4B83C5649C3586BDE0BC4BB0": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "AccountType.swift",
+      "sourceTree": "<group>"
+    },
+    "4BE7B99FB94F739CEE01D408": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "BudgetPeriod.swift",
+      "sourceTree": "<group>"
+    },
+    "123B9066865398E03B8DD922": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "LedgerRole.swift",
+      "sourceTree": "<group>"
+    },
+    "A57B5AE1DBDD1A82ACF6EDB4": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "LedgerType.swift",
+      "sourceTree": "<group>"
+    },
+    "4E626A3E9AA323C5C1461333": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "LendingStatus.swift",
+      "sourceTree": "<group>"
+    },
+    "8BC3AEDB1C0CE37709FC5752": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "LendingType.swift",
+      "sourceTree": "<group>"
+    },
+    "0862DA55D8BC384B2944EBCB": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "RecurringFrequency.swift",
+      "sourceTree": "<group>"
+    },
+    "38C7BA9D41065C1559BC6594": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "ReimbursementStatus.swift",
+      "sourceTree": "<group>"
+    },
+    "1B29AB99138D90241E214966": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "SplitType.swift",
+      "sourceTree": "<group>"
+    },
+    "E9DCE24DCB1CA0A1C496F038": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "TransactionType.swift",
+      "sourceTree": "<group>"
+    },
+    "869E6C318410086C8418DB7A": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "Color+Hex.swift",
+      "sourceTree": "<group>"
+    },
+    "2C3B6534094377FFBECE3D98": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "Date+Display.swift",
+      "sourceTree": "<group>"
+    },
+    "680CEE6177D7A35D67E08FC3": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "Decimal+Currency.swift",
+      "sourceTree": "<group>"
+    },
+    "1824EA354A3DDDD91C882983": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "View+ConditionalModifier.swift",
+      "sourceTree": "<group>"
+    },
+    "AED97BB9935C8B1476C9B44C": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "BiometricAuth.swift",
+      "sourceTree": "<group>"
+    },
+    "0FD37181CF946710701C84CD": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "CloudKitConfig.swift",
+      "sourceTree": "<group>"
+    },
+    "30A7BF23BB03561C42D70AE8": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "Constants.swift",
+      "sourceTree": "<group>"
+    },
+    "616DDCA24AD507E700D4E02A": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "CurrencyFormatter.swift",
+      "sourceTree": "<group>"
+    },
+    "01D75752123DF42AB96E4272": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "DateFormatters.swift",
+      "sourceTree": "<group>"
+    },
+    "1BD4A1F1B5AEBDDC7F400369": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "Logger.swift",
+      "sourceTree": "<group>"
+    },
+    "49364D66AD60B7797AE0209D": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "RootView.swift",
+      "sourceTree": "<group>"
+    },
+    "979E204D2E243EDB0A12BEA4": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "TransactionListView.swift",
+      "sourceTree": "<group>"
+    },
+    "633DAA0D7A1EA35858B5D954": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "AccountListView.swift",
+      "sourceTree": "<group>"
+    },
+    "81E45422E819C2F19D318139": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "DashboardView.swift",
+      "sourceTree": "<group>"
+    },
+    "E0191AE80F2BBB549630994E": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "MainTabView.swift",
+      "sourceTree": "<group>"
+    },
+    "002EF7F08431743F01C363C7": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "SettingsView.swift",
+      "sourceTree": "<group>"
+    },
+    "60AB34C39292D3BB074364F5": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "CreateLedgerView.swift",
+      "sourceTree": "<group>"
+    },
+    "0DEA46D0089C646200D27B77": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "JoinLedgerView.swift",
+      "sourceTree": "<group>"
+    },
+    "6A09DFAB608B7D5ABCFBAB48": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "OnboardingView.swift",
+      "sourceTree": "<group>"
+    },
+    "1FD60ED36414C665A9E3DF7F": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "ReportsView.swift",
+      "sourceTree": "<group>"
+    },
+    "E63522FC24F70BAA3ED09CB9": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "CategorySeeder.swift",
+      "sourceTree": "<group>"
+    },
+    "E32CDB8867F6A3505B4A7910": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "AccountServiceProtocol.swift",
+      "sourceTree": "<group>"
+    },
+    "408D9FF9F272EC495C946046": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "BudgetServiceProtocol.swift",
+      "sourceTree": "<group>"
+    },
+    "5C9AD40C4F443580539DBE2B": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "CategoryServiceProtocol.swift",
+      "sourceTree": "<group>"
+    },
+    "FB18074394D7CADFC89B2D67": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "CurrencyServiceProtocol.swift",
+      "sourceTree": "<group>"
+    },
+    "865CD094F9E94DE4C2138BB8": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "ExchangeRateServiceProtocol.swift",
+      "sourceTree": "<group>"
+    },
+    "0A3BECB91DEF16E35F62A662": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "ExportServiceProtocol.swift",
+      "sourceTree": "<group>"
+    },
+    "BE0581AEBDBEF36C8C373483": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "InstallmentServiceProtocol.swift",
+      "sourceTree": "<group>"
+    },
+    "19738FF36D10106B947C6A7A": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "LedgerServiceProtocol.swift",
+      "sourceTree": "<group>"
+    },
+    "8A1725756A008DB9B1D37EBE": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "LendingServiceProtocol.swift",
+      "sourceTree": "<group>"
+    },
+    "C2CD963B2C2BD0D35D5D49EE": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "RecurringServiceProtocol.swift",
+      "sourceTree": "<group>"
+    },
+    "13A27CA96743727FDD560642": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "SplitServiceProtocol.swift",
+      "sourceTree": "<group>"
+    },
+    "A57DC433798434D184024462": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "SyncServiceProtocol.swift",
+      "sourceTree": "<group>"
+    },
+    "F6C3C5850CB1904E1775012A": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "TemplateServiceProtocol.swift",
+      "sourceTree": "<group>"
+    },
+    "7A17CF9388F2D9B8235012F5": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "TransactionServiceProtocol.swift",
+      "sourceTree": "<group>"
+    },
+    "7DB63CE4205FA78E2BE83CF3": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "folder.assetcatalog",
+      "path": "Assets.xcassets",
+      "sourceTree": "<group>"
+    },
+    "2D373F9288324FC051BED1CA": {
+      "isa": "PBXFrameworksBuildPhase",
+      "buildActionMask": "2147483647",
+      "files": [],
+      "runOnlyForDeploymentPostprocessing": "0"
+    },
+    "88932FD6DD0EDC80FBF1C921": {
+      "isa": "PBXGroup",
+      "children": [
+        "1034C7815287DAE7BF2D7474",
+        "0E67BE8D2A5AA9DFE4D9A3C1"
+      ],
+      "sourceTree": "<group>"
+    },
+    "0E67BE8D2A5AA9DFE4D9A3C1": {
+      "isa": "PBXGroup",
+      "children": [
+        "B32C03A63952C3F6371B88FA"
+      ],
+      "name": "Products",
+      "sourceTree": "<group>"
+    },
+    "1034C7815287DAE7BF2D7474": {
+      "isa": "PBXGroup",
+      "children": [
+        "52F9091D742FCE20260EAC52",
+        "3017D10289DEA882FD8F3D17",
+        "368AB4F546722A1C79687401",
+        "EFCD0BFD684EAF47070F47DA",
+        "7F747DE33FD0DC98D0DCA16C",
+        "2469BC100ABAA3D44E5AFAC5",
+        "C86792480592B324CE5C56AF",
+        "4C0EF7C2B13D25979F6369DB"
+      ],
+      "name": "FirstCC",
+      "path": "FirstCC",
+      "sourceTree": "<group>"
+    },
+    "52F9091D742FCE20260EAC52": {
+      "isa": "PBXGroup",
+      "children": [
+        "869E6C318410086C8418DB7A",
+        "2C3B6534094377FFBECE3D98",
+        "680CEE6177D7A35D67E08FC3",
+        "1824EA354A3DDDD91C882983"
+      ],
+      "name": "Extensions",
+      "path": "Extensions",
+      "sourceTree": "<group>"
+    },
+    "3017D10289DEA882FD8F3D17": {
+      "isa": "PBXGroup",
+      "children": [
+        "B9926311209E498DFA243A06",
+        "B1B7BD8BFB5996FAC8E63F8D",
+        "4CF4623DF03C3DE363E0B56F",
+        "5950C646E32D34E93EABA9EF",
+        "843A91D87C07C74B830ECB18",
+        "541E09502E77748865355DFE",
+        "3C22B93B0634A15AD018E806",
+        "6C10A30FABAA67F44B9A3676",
+        "EF6E5C10D03555AA56C75399",
+        "B5ADE49EE78C2B59A32BC95A",
+        "FC0DA520028935CB779F3147",
+        "A2DE8647C366E3068EC48BEF",
+        "F695310E79DF42977ADCC677",
+        "78B742E8F53C850C5EE595EE",
+        "AC9D861E80D1DCA0F1C0F9CB"
+      ],
+      "name": "Models",
+      "path": "Models",
+      "sourceTree": "<group>"
+    },
+    "368AB4F546722A1C79687401": {
+      "isa": "PBXGroup",
+      "children": [
+        "B7179DD40F926BA5C3E05A8B",
+        "7DB63CE4205FA78E2BE83CF3"
+      ],
+      "name": "Resources",
+      "path": "Resources",
+      "sourceTree": "<group>"
+    },
+    "EFCD0BFD684EAF47070F47DA": {
+      "isa": "PBXGroup",
+      "children": [
+        "EA260DA06D1FD01FE9DDD035",
+        "E63522FC24F70BAA3ED09CB9"
+      ],
+      "name": "Services",
+      "path": "Services",
+      "sourceTree": "<group>"
+    },
+    "7F747DE33FD0DC98D0DCA16C": {
+      "isa": "PBXGroup",
+      "children": [
+        "AED97BB9935C8B1476C9B44C",
+        "0FD37181CF946710701C84CD",
+        "30A7BF23BB03561C42D70AE8",
+        "616DDCA24AD507E700D4E02A",
+        "01D75752123DF42AB96E4272",
+        "1BD4A1F1B5AEBDDC7F400369"
+      ],
+      "name": "Utilities",
+      "path": "Utilities",
+      "sourceTree": "<group>"
+    },
+    "2469BC100ABAA3D44E5AFAC5": {
+      "isa": "PBXGroup",
+      "children": [
+        "1701047D11916A0D1A305F21",
+        "70D7BE057289A0AB182528D0",
+        "F8C3A4171F38FE203852329C",
+        "E92846422C3B70B59FD919BA",
+        "4799740253C08B485C6D33BD",
+        "49364D66AD60B7797AE0209D"
+      ],
+      "name": "Views",
+      "path": "Views",
+      "sourceTree": "<group>"
+    },
+    "B9926311209E498DFA243A06": {
+      "isa": "PBXGroup",
+      "children": [
+        "4B83C5649C3586BDE0BC4BB0",
+        "4BE7B99FB94F739CEE01D408",
+        "123B9066865398E03B8DD922",
+        "A57B5AE1DBDD1A82ACF6EDB4",
+        "4E626A3E9AA323C5C1461333",
+        "8BC3AEDB1C0CE37709FC5752",
+        "0862DA55D8BC384B2944EBCB",
+        "38C7BA9D41065C1559BC6594",
+        "1B29AB99138D90241E214966",
+        "E9DCE24DCB1CA0A1C496F038"
+      ],
+      "name": "Enums",
+      "path": "Enums",
+      "sourceTree": "<group>"
+    },
+    "B7179DD40F926BA5C3E05A8B": {
+      "isa": "PBXGroup",
+      "children": [
+        "81BF490865B8B124033F5C78"
+      ],
+      "name": "Assets.xcassets",
+      "path": "Assets.xcassets",
+      "sourceTree": "<group>"
+    },
+    "EA260DA06D1FD01FE9DDD035": {
+      "isa": "PBXGroup",
+      "children": [
+        "E32CDB8867F6A3505B4A7910",
+        "408D9FF9F272EC495C946046",
+        "5C9AD40C4F443580539DBE2B",
+        "FB18074394D7CADFC89B2D67",
+        "865CD094F9E94DE4C2138BB8",
+        "0A3BECB91DEF16E35F62A662",
+        "BE0581AEBDBEF36C8C373483",
+        "19738FF36D10106B947C6A7A",
+        "8A1725756A008DB9B1D37EBE",
+        "C2CD963B2C2BD0D35D5D49EE",
+        "13A27CA96743727FDD560642",
+        "A57DC433798434D184024462",
+        "F6C3C5850CB1904E1775012A",
+        "7A17CF9388F2D9B8235012F5"
+      ],
+      "name": "Protocols",
+      "path": "Protocols",
+      "sourceTree": "<group>"
+    },
+    "1701047D11916A0D1A305F21": {
+      "isa": "PBXGroup",
+      "children": [
+        "633DAA0D7A1EA35858B5D954"
+      ],
+      "name": "Accounts",
+      "path": "Accounts",
+      "sourceTree": "<group>"
+    },
+    "70D7BE057289A0AB182528D0": {
+      "isa": "PBXGroup",
+      "children": [
+        "81E45422E819C2F19D318139",
+        "E0191AE80F2BBB549630994E",
+        "002EF7F08431743F01C363C7"
+      ],
+      "name": "Main",
+      "path": "Main",
+      "sourceTree": "<group>"
+    },
+    "F8C3A4171F38FE203852329C": {
+      "isa": "PBXGroup",
+      "children": [
+        "60AB34C39292D3BB074364F5",
+        "0DEA46D0089C646200D27B77",
+        "6A09DFAB608B7D5ABCFBAB48"
+      ],
+      "name": "Onboarding",
+      "path": "Onboarding",
+      "sourceTree": "<group>"
+    },
+    "E92846422C3B70B59FD919BA": {
+      "isa": "PBXGroup",
+      "children": [
+        "1FD60ED36414C665A9E3DF7F"
+      ],
+      "name": "Reports",
+      "path": "Reports",
+      "sourceTree": "<group>"
+    },
+    "4799740253C08B485C6D33BD": {
+      "isa": "PBXGroup",
+      "children": [
+        "979E204D2E243EDB0A12BEA4"
+      ],
+      "name": "Transactions",
+      "path": "Transactions",
+      "sourceTree": "<group>"
+    },
+    "730950AD798A77AD508AA9E2": {
+      "isa": "PBXNativeTarget",
+      "buildConfigurationList": "0940312D5B1CC5AC53510955",
+      "buildPhases": [
+        "6E4205D323F02DDAC17D2D9D",
+        "2D373F9288324FC051BED1CA",
+        "B6F5F62AA7C0481FBB52059E"
+      ],
+      "buildRules": [],
+      "dependencies": [],
+      "name": "\u8361\u6f3e\u8ba1\u7136",
+      "productName": "\u8361\u6f3e\u8ba1\u7136",
+      "productReference": "B32C03A63952C3F6371B88FA",
+      "productType": "com.apple.product-type.application"
+    },
+    "1781F676DEDF5767F3243DB0": {
+      "isa": "PBXProject",
+      "attributes": {
+        "BuildIndependentTargetsInParallel": "1",
+        "LastSwiftUpdateCheck": "2600",
+        "LastUpgradeCheck": "2600",
+        "TargetAttributes": {
+          "730950AD798A77AD508AA9E2": {
+            "CreatedOnToolsVersion": "26.4.1"
+          }
+        }
+      },
+      "buildConfigurationList": "ED1E725F939981FEAA4F7D8B",
+      "compatibilityVersion": "Xcode 16.0",
+      "developmentRegion": "zh-Hans",
+      "hasScannedForEncodings": "0",
+      "knownRegions": [
+        "en",
+        "zh-Hans",
+        "zh-Hant"
+      ],
+      "mainGroup": "88932FD6DD0EDC80FBF1C921",
+      "productRefGroup": "0E67BE8D2A5AA9DFE4D9A3C1",
+      "projectDirPath": "",
+      "projectRoot": "",
+      "targets": [
+        "730950AD798A77AD508AA9E2"
+      ]
+    },
+    "B6F5F62AA7C0481FBB52059E": {
+      "isa": "PBXResourcesBuildPhase",
+      "buildActionMask": "2147483647",
+      "files": [
+        "4C123E5116650484726DA9F7"
+      ],
+      "runOnlyForDeploymentPostprocessing": "0"
+    },
+    "6E4205D323F02DDAC17D2D9D": {
+      "isa": "PBXSourcesBuildPhase",
+      "buildActionMask": "2147483647",
+      "files": [
+        "00FE454829EC1192C6DD25FD",
+        "2857D59369AE8F20570D49EA",
+        "1E0A3F94C85B8CE4A811B51E",
+        "1A5821E544132F6B9C54AB9D",
+        "040F454363C3899C930E5EA9",
+        "2E0ABDDF4E695B9BF174B94A",
+        "2AB3BB1E70F17CE3D1588AF0",
+        "453F93629311047F68EB7964",
+        "5261577CEC0473A69A6FFBE9",
+        "A52C4F6D7217241B9C8C3EFC",
+        "73155BDE31ACEFB4B8D29811",
+        "F7065897D1EDC44C60A07BD4",
+        "C2A6B9A2D4703D50CFC6C197",
+        "77E2C944A27CD320313C9858",
+        "3A0F506C24EEE41674E5E900",
+        "6BCAD05F34DE19C77351E161",
+        "D3457CA23D2D3DD4E32DEB26",
+        "90CC01F2DAC7455D7D6EC0DD",
+        "FD2C9721768BC0DECAFBD9EA",
+        "E729F46244D4AF2C14CD1E18",
+        "5D3EC7B01452B6567D133F47",
+        "DC644F9E1CBF50DB3AD24EC8",
+        "320312CB6C13D0D577E196A5",
+        "259F84F82295D2E24D14AF0F",
+        "041050EEC8178B6B1DF37B13",
+        "EB18D2087CAA47F8BA0AC140",
+        "E33096BE42DA5E77619F8962",
+        "CC67BD94E5AC1812FCFAF338",
+        "19AD8141D819C5B832F2C425",
+        "6F8FFA761DA08B251307762E",
+        "1AD18E044CFCFE47043ACECD",
+        "FD91B103255DEB923850049C",
+        "E620555961FEB232550C5A0F",
+        "F882A518E36393398F41A4D3",
+        "EF4E9D8DCEDD1B10B2C7722D",
+        "B7A42A252BC1A2076CE28411",
+        "512D26F8E750CDF09C49D945",
+        "0C632EDC5C511E7EFA7938C3",
+        "50A74DAF679E7C864CE131E6",
+        "578CDB00E5EC00FB28C23751",
+        "1DF4BA4970A2C6CB74A57A49",
+        "47925836F662AA48D8B66332",
+        "2817786A0462D8D0BE861396",
+        "9FD605249C139E0F3774CC2B",
+        "6431B07CDB18F4B06132B0F6",
+        "5CC0F61CE4E0391D714C4719",
+        "82E34F6926D5EA39AACE8C57",
+        "31CECFE9E5215CF1F8C36120",
+        "E68531E992371AE2949D8343",
+        "641B5B34CADFD251244FBCEC",
+        "3D78916C16CB0897606B4FD7",
+        "517D6324F03D3B3A354D6D42",
+        "C1D67EB2243A69FD46E300EC",
+        "4FC09702E2BCB7B6525B60FE",
+        "87B96E58240A2C4D75801B2D",
+        "B879A2FE808C15CB0A77E940",
+        "EB2A49685F30A85843800382",
+        "41CFA25D85BF13D28B660A3C",
+        "D654F83E82DE3B07BDC54B2D",
+        "B8AD9E2FF24CC74463C1C14D",
+        "3AFF31E756FE989CD7E558C3"
+      ],
+      "runOnlyForDeploymentPostprocessing": "0"
+    },
+    "F475504BEE6673842BA5B48F": {
+      "isa": "XCBuildConfiguration",
+      "buildSettings": {
+        "ALWAYS_SEARCH_USER_PATHS": "NO",
+        "ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS": "YES",
+        "CLANG_ANALYZER_NONNULL": "YES",
+        "CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION": "YES_AGGRESSIVE",
+        "CLANG_CXX_LANGUAGE_STANDARD": "gnu++20",
+        "CLANG_ENABLE_MODULES": "YES",
+        "CLANG_ENABLE_OBJC_ARC": "YES",
+        "CLANG_ENABLE_OBJC_WEAK": "YES",
+        "CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING": "YES",
+        "CLANG_WARN_BOOL_CONVERSION": "YES",
+        "CLANG_WARN_COMMA": "YES",
+        "CLANG_WARN_CONSTANT_CONVERSION": "YES",
+        "CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS": "YES",
+        "CLANG_WARN_DIRECT_OBJC_ISA_USAGE": "YES_ERROR",
+        "CLANG_WARN_DOCUMENTATION_COMMENTS": "YES",
+        "CLANG_WARN_EMPTY_BODY": "YES",
+        "CLANG_WARN_ENUM_CONVERSION": "YES",
+        "CLANG_WARN_INFINITE_RECURSION": "YES",
+        "CLANG_WARN_INT_CONVERSION": "YES",
+        "CLANG_WARN_NON_LITERAL_NULL_CONVERSION": "YES",
+        "CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF": "YES",
+        "CLANG_WARN_OBJC_LITERAL_CONVERSION": "YES",
+        "CLANG_WARN_OBJC_ROOT_CLASS": "YES_ERROR",
+        "CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWRITE_HEADER": "YES",
+        "CLANG_WARN_RANGE_LOOP_ANALYSIS": "YES",
+        "CLANG_WARN_STRICT_PROTOTYPES": "YES",
+        "CLANG_WARN_SUSPICIOUS_MOVE": "YES",
+        "CLANG_WARN_UNGUARDED_AVAILABILITY": "YES_AGGRESSIVE",
+        "CLANG_WARN_UNREACHABLE_CODE": "YES",
+        "CLANG_WARN__DUPLICATE_METHOD_MATCH": "YES",
+        "COPY_PHASE_STRIP": "NO",
+        "ENABLE_STRICT_OBJC_MSGSEND": "YES",
+        "ENABLE_USER_SCRIPT_SANDBOXING": "YES",
+        "GCC_C_LANGUAGE_STANDARD": "gnu17",
+        "GCC_NO_COMMON_BLOCKS": "YES",
+        "GCC_WARN_64_TO_32_BIT_CONVERSION": "YES",
+        "GCC_WARN_ABOUT_RETURN_TYPE": "YES_ERROR",
+        "GCC_WARN_UNDECLARED_SELECTOR": "YES",
+        "GCC_WARN_UNINITIALIZED_AUTOS": "YES_AGGRESSIVE",
+        "GCC_WARN_UNUSED_FUNCTION": "YES",
+        "GCC_WARN_UNUSED_VARIABLE": "YES",
+        "IPHONEOS_DEPLOYMENT_TARGET": "18.0",
+        "LOCALIZATION_PREFERS_STRING_CATALOGS": "YES",
+        "SDKROOT": "iphoneos",
+        "DEBUG_INFORMATION_FORMAT": "dwarf",
+        "ENABLE_TESTABILITY": "YES",
+        "GCC_DYNAMIC_NO_PIC": "NO",
+        "GCC_OPTIMIZATION_LEVEL": "0",
+        "GCC_PREPROCESSOR_DEFINITIONS": [
+          "DEBUG=1",
+          "$(inherited)"
+        ],
+        "MTL_ENABLE_DEBUG_INFO": "INCLUDE_SOURCE",
+        "MTL_FAST_MATH": "YES",
+        "ONLY_ACTIVE_ARCH": "YES",
+        "SWIFT_ACTIVE_COMPILATION_CONDITIONS": "DEBUG $(inherited)",
+        "SWIFT_OPTIMIZATION_LEVEL": "-Onone"
+      },
+      "name": "Debug"
+    },
+    "FD5B11AFF7BFD13AFE6EDD90": {
+      "isa": "XCBuildConfiguration",
+      "buildSettings": {
+        "ALWAYS_SEARCH_USER_PATHS": "NO",
+        "ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS": "YES",
+        "CLANG_ANALYZER_NONNULL": "YES",
+        "CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION": "YES_AGGRESSIVE",
+        "CLANG_CXX_LANGUAGE_STANDARD": "gnu++20",
+        "CLANG_ENABLE_MODULES": "YES",
+        "CLANG_ENABLE_OBJC_ARC": "YES",
+        "CLANG_ENABLE_OBJC_WEAK": "YES",
+        "CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING": "YES",
+        "CLANG_WARN_BOOL_CONVERSION": "YES",
+        "CLANG_WARN_COMMA": "YES",
+        "CLANG_WARN_CONSTANT_CONVERSION": "YES",
+        "CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS": "YES",
+        "CLANG_WARN_DIRECT_OBJC_ISA_USAGE": "YES_ERROR",
+        "CLANG_WARN_DOCUMENTATION_COMMENTS": "YES",
+        "CLANG_WARN_EMPTY_BODY": "YES",
+        "CLANG_WARN_ENUM_CONVERSION": "YES",
+        "CLANG_WARN_INFINITE_RECURSION": "YES",
+        "CLANG_WARN_INT_CONVERSION": "YES",
+        "CLANG_WARN_NON_LITERAL_NULL_CONVERSION": "YES",
+        "CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF": "YES",
+        "CLANG_WARN_OBJC_LITERAL_CONVERSION": "YES",
+        "CLANG_WARN_OBJC_ROOT_CLASS": "YES_ERROR",
+        "CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWRITE_HEADER": "YES",
+        "CLANG_WARN_RANGE_LOOP_ANALYSIS": "YES",
+        "CLANG_WARN_STRICT_PROTOTYPES": "YES",
+        "CLANG_WARN_SUSPICIOUS_MOVE": "YES",
+        "CLANG_WARN_UNGUARDED_AVAILABILITY": "YES_AGGRESSIVE",
+        "CLANG_WARN_UNREACHABLE_CODE": "YES",
+        "CLANG_WARN__DUPLICATE_METHOD_MATCH": "YES",
+        "COPY_PHASE_STRIP": "NO",
+        "ENABLE_STRICT_OBJC_MSGSEND": "YES",
+        "ENABLE_USER_SCRIPT_SANDBOXING": "YES",
+        "GCC_C_LANGUAGE_STANDARD": "gnu17",
+        "GCC_NO_COMMON_BLOCKS": "YES",
+        "GCC_WARN_64_TO_32_BIT_CONVERSION": "YES",
+        "GCC_WARN_ABOUT_RETURN_TYPE": "YES_ERROR",
+        "GCC_WARN_UNDECLARED_SELECTOR": "YES",
+        "GCC_WARN_UNINITIALIZED_AUTOS": "YES_AGGRESSIVE",
+        "GCC_WARN_UNUSED_FUNCTION": "YES",
+        "GCC_WARN_UNUSED_VARIABLE": "YES",
+        "IPHONEOS_DEPLOYMENT_TARGET": "18.0",
+        "LOCALIZATION_PREFERS_STRING_CATALOGS": "YES",
+        "SDKROOT": "iphoneos",
+        "DEBUG_INFORMATION_FORMAT": "dwarf-with-dsym",
+        "ENABLE_NS_ASSERTIONS": "NO",
+        "MTL_ENABLE_DEBUG_INFO": "NO",
+        "MTL_FAST_MATH": "YES",
+        "SWIFT_COMPILATION_MODE": "wholemodule",
+        "VALIDATE_PRODUCT": "YES"
+      },
+      "name": "Release"
+    },
+    "78FA0311366E281EDE734449": {
+      "isa": "XCBuildConfiguration",
+      "buildSettings": {
+        "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
+        "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
+        "CODE_SIGN_STYLE": "Automatic",
+        "CURRENT_PROJECT_VERSION": "1",
+        "ENABLE_PREVIEWS": "YES",
+        "GENERATE_INFOPLIST_FILE": "YES",
+        "INFOPLIST_KEY_UIApplicationSceneManifest_Generation": "YES",
+        "INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents": "YES",
+        "INFOPLIST_KEY_UILaunchScreen_Generation": "YES",
+        "INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad": "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight",
+        "INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone": "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight",
+        "LD_RUNPATH_SEARCH_PATHS": "$(inherited) @executable_path/Frameworks",
+        "MARKETING_VERSION": "1.0",
+        "PRODUCT_BUNDLE_IDENTIFIER": "com.firstcc.app",
+        "PRODUCT_NAME": "$(TARGET_NAME)",
+        "SWIFT_EMIT_LOC_STRINGS": "YES",
+        "SWIFT_VERSION": "5.0",
+        "TARGETED_DEVICE_FAMILY": "1,2",
+        "IPHONEOS_DEPLOYMENT_TARGET": "18.0",
+        "ENABLE_USER_SCRIPT_SANDBOXING": "NO"
+      },
+      "name": "Debug"
+    },
+    "8DFA87B2193B0C8BE17B7A69": {
+      "isa": "XCBuildConfiguration",
+      "buildSettings": {
+        "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
+        "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
+        "CODE_SIGN_STYLE": "Automatic",
+        "CURRENT_PROJECT_VERSION": "1",
+        "ENABLE_PREVIEWS": "YES",
+        "GENERATE_INFOPLIST_FILE": "YES",
+        "INFOPLIST_KEY_UIApplicationSceneManifest_Generation": "YES",
+        "INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents": "YES",
+        "INFOPLIST_KEY_UILaunchScreen_Generation": "YES",
+        "INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad": "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight",
+        "INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone": "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight",
+        "LD_RUNPATH_SEARCH_PATHS": "$(inherited) @executable_path/Frameworks",
+        "MARKETING_VERSION": "1.0",
+        "PRODUCT_BUNDLE_IDENTIFIER": "com.firstcc.app",
+        "PRODUCT_NAME": "$(TARGET_NAME)",
+        "SWIFT_EMIT_LOC_STRINGS": "YES",
+        "SWIFT_VERSION": "5.0",
+        "TARGETED_DEVICE_FAMILY": "1,2",
+        "IPHONEOS_DEPLOYMENT_TARGET": "18.0",
+        "ENABLE_USER_SCRIPT_SANDBOXING": "NO"
+      },
+      "name": "Release"
+    },
+    "ED1E725F939981FEAA4F7D8B": {
+      "isa": "XCConfigurationList",
+      "buildConfigurations": [
+        "F475504BEE6673842BA5B48F",
+        "FD5B11AFF7BFD13AFE6EDD90"
+      ],
+      "defaultConfigurationIsVisible": "0",
+      "defaultConfigurationName": "Release"
+    },
+    "0940312D5B1CC5AC53510955": {
+      "isa": "XCConfigurationList",
+      "buildConfigurations": [
+        "78FA0311366E281EDE734449",
+        "8DFA87B2193B0C8BE17B7A69"
+      ],
+      "defaultConfigurationIsVisible": "0",
+      "defaultConfigurationName": "Release"
+    }
+  },
+  "rootObject": "1781F676DEDF5767F3243DB0"
+}
