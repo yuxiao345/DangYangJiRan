@@ -33,11 +33,8 @@ final class RecurringRule {
         self.startDate = startDate
         self.endDate = endDate
         self.isActive = isActive
-        self.nextGenerateDate = Self.calculateNextDate(
-            from: startDate,
-            frequency: frequency,
-            interval: interval
-        )
+        // First generation happens on startDate (if it's today or past)
+        self.nextGenerateDate = startDate
     }
 
     static func calculateNextDate(

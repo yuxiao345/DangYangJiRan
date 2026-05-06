@@ -1,0 +1,102 @@
+import SwiftUI
+import SwiftData
+
+struct TemplateListView: View {
+    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(\.modelContext) private var modelContext
+    @State private var templates: [TransactionTemplate] = []
+    @State private var showAddSheet = false
+    @State private var editingTemplate: TransactionTemplate?
+
+    var body: some View {
+        List {
+            if templates.isEmpty {
+                Text("暂无模板，点击右上角 + 添加")
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(templates) { template in
+                templateRow(template)
+                    .contentShape(Rectangle())
+                    .onTapGesture { editingTemplate = template }
+                    .swipeActions {
+                        Button(role: .destructive) {
+                            try? appContainer.templateService.deleteTemplate(template, context: modelContext)
+                            loadTemplates()
+                        } label: { Label("删除", systemImage: "trash") }
+                    }
+            }
+        }
+        .navigationTitle("模板管理")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { showAddSheet = true } label: {
+                    Image(systemName: "plus")
+                }
+            }
+        }
+        .sheet(isPresented: $showAddSheet) {
+            AddEditTemplateView()
+        }
+        .sheet(item: $editingTemplate) { template in
+            AddEditTemplateView(editing: template)
+        }
+        .onAppear(perform: loadTemplates)
+    }
+
+    private func templateRow(_ t: TransactionTemplate) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: t.category?.iconName ?? t.type.systemIcon)
+                .font(.title3)
+                .foregroundStyle(t.category != nil
+                    ? Color(hex: t.category!.colorHex)
+                    : .blue)
+                .frame(width: 32)
+
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 4) {
+                    Text(LocalizedStringKey(t.name))
+                        .font(.body)
+                    if t.isRecurring {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .font(.caption2)
+                            .foregroundStyle(.blue)
+                    }
+                }
+                if let note = t.note, !note.isEmpty {
+                    Text(note)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 2) {
+                amountView(t)
+                if let account = t.account {
+                    Text(LocalizedStringKey(account.name))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    @ViewBuilder
+    private func amountView(_ t: TransactionTemplate) -> some View {
+        CurrencyText(
+            amount: t.amount,
+            currencyCode: t.currencyCode,
+            showSign: t.type == .income,
+            font: .body,
+            foregroundColor: t.type == .expense ? Color.red : Color.green
+        )
+    }
+
+    private func loadTemplates() {
+        guard let ledger = appContainer.currentLedger else { return }
+        templates = (try? appContainer.templateService.fetchTemplates(for: ledger, context: modelContext)) ?? []
+    }
+}

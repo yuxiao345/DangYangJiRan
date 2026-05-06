@@ -1,8 +1,11 @@
 import SwiftUI
+import SwiftData
 
 struct CreateLedgerView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var appContainer: AppContainer
+
     @State private var name = ""
     @State private var ledgerType: LedgerType = .family
     @State private var currencyCode = "CNY"
@@ -13,7 +16,7 @@ struct CreateLedgerView: View {
                 TextField("账本名称", text: $name)
                 Picker("类型", selection: $ledgerType) {
                     ForEach(LedgerType.allCases, id: \.self) { type in
-                        Label(type.rawValue, systemImage: type.systemIcon)
+                        Label(type.displayName, systemImage: type.systemIcon)
                             .tag(type)
                     }
                 }
@@ -29,11 +32,26 @@ struct CreateLedgerView: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("创建") {
-                    appContainer.isAuthenticated = true
-                    dismiss()
+                    createLedger()
                 }
                 .disabled(name.isEmpty)
             }
+        }
+    }
+
+    private func createLedger() {
+        do {
+            let ledger = try appContainer.ledgerService.createLedger(
+                name: name,
+                type: ledgerType,
+                currencyCode: currencyCode,
+                context: modelContext
+            )
+            appContainer.categoryService.seedDefaults(ledger: ledger, context: modelContext)
+            appContainer.currentLedger = ledger
+            dismiss()
+        } catch {
+            print("Failed to create ledger: \(error)")
         }
     }
 }

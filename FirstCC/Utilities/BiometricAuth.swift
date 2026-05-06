@@ -12,7 +12,7 @@ enum BiometricAuth {
         switch biometryType {
         case .faceID: "Face ID"
         case .touchID: "Touch ID"
-        default: "生物识别"
+        default: String(localized: "生物识别")
         }
     }
 
@@ -22,7 +22,7 @@ enum BiometricAuth {
         return context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error)
     }
 
-    static func authenticate(reason: String = "解锁以访问账本") async -> Bool {
+    static func authenticate(reason: String = String(localized: "解锁以访问账本")) async -> Bool {
         guard isAvailable else { return true }
 
         let context = LAContext()

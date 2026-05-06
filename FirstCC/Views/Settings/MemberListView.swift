@@ -1,0 +1,121 @@
+import SwiftUI
+import SwiftData
+
+struct MemberListView: View {
+    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(\.modelContext) private var modelContext
+    @State private var members: [Member] = []
+    @State private var showAddAlert = false
+    @State private var newName = ""
+    @State private var editingMember: Member?
+
+    var body: some View {
+        List {
+            ForEach(members) { member in
+                HStack {
+                    Image(systemName: member.avatar)
+                        .foregroundStyle(.blue)
+                    Text(LocalizedStringKey(member.name))
+                    Spacer()
+                    if !member.isActive {
+                        Text("已停用")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .contentShape(Rectangle())
+                .onTapGesture { editingMember = member }
+                .swipeActions {
+                    Button(role: .destructive) {
+                        try? appContainer.memberService.deleteMember(member, context: modelContext)
+                        loadMembers()
+                    } label: {
+                        Label("删除", systemImage: "trash")
+                    }
+                }
+            }
+        }
+        .navigationTitle("成员管理")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { showAddAlert = true } label: {
+                    Image(systemName: "plus")
+                }
+            }
+        }
+        .alert("添加成员", isPresented: $showAddAlert) {
+            TextField("姓名", text: $newName)
+            Button("取消", role: .cancel) { newName = "" }
+            Button("添加") {
+                addMember()
+                newName = ""
+            }
+            .disabled(newName.isEmpty)
+        }
+        .sheet(item: $editingMember) { member in
+            EditMemberView(member: member)
+        }
+        .onAppear(perform: loadMembers)
+    }
+
+    private func addMember() {
+        guard let ledger = appContainer.currentLedger else { return }
+        let member = Member(name: newName, sortOrder: members.count)
+        try? appContainer.memberService.createMember(member, ledger: ledger, context: modelContext)
+        loadMembers()
+    }
+
+    private func loadMembers() {
+        guard let ledger = appContainer.currentLedger else { return }
+        members = (try? appContainer.memberService.fetchMembers(for: ledger, context: modelContext)) ?? []
+    }
+}
+
+struct EditMemberView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var appContainer: AppContainer
+    let member: Member
+    @State private var name: String
+    @State private var avatar: String
+    @State private var isActive: Bool
+
+    init(member: Member) {
+        self.member = member
+        _name = State(initialValue: member.name)
+        _avatar = State(initialValue: member.avatar)
+        _isActive = State(initialValue: member.isActive)
+    }
+
+    private let avatarOptions = [
+        "person.circle", "person.circle.fill", "face.smiling", "heart.circle",
+        "star.circle", "figure.child", "figure.walk", "teddybear"
+    ]
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                TextField("姓名", text: $name)
+                Picker("头像", selection: $avatar) {
+                    ForEach(avatarOptions, id: \.self) { icon in
+                        Label(icon, systemImage: icon)
+                    }
+                }
+                Toggle("启用", isOn: $isActive)
+            }
+            .navigationTitle("编辑成员")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { Button("保存") { save() } }
+            }
+        }
+    }
+
+    private func save() {
+        member.name = name
+        member.avatar = avatar
+        member.isActive = isActive
+        try? appContainer.memberService.updateMember(member, context: modelContext)
+        dismiss()
+    }
+}

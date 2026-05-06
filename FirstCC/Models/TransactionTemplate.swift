@@ -22,6 +22,12 @@ final class TransactionTemplate {
 
     var category: Category?
 
+    var member: Member?
+
+    var merchant: Merchant?
+
+    var project: Project?
+
     @Relationship(deleteRule: .nullify)
     var generatedTransactions: [Transaction]? = []
 
@@ -45,7 +51,10 @@ final class TransactionTemplate {
         sortOrder: Int = 0,
         account: Account? = nil,
         toAccount: Account? = nil,
-        category: Category? = nil
+        category: Category? = nil,
+        member: Member? = nil,
+        merchant: Merchant? = nil,
+        project: Project? = nil
     ) {
         self.id = id
         self.name = name
@@ -60,5 +69,8 @@ final class TransactionTemplate {
         self.account = account
         self.toAccount = toAccount
         self.category = category
+        self.member = member
+        self.merchant = merchant
+        self.project = project
     }
 }

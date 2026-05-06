@@ -9,6 +9,7 @@ final class Account {
     var typeRaw: String
     var iconName: String?
     var colorHex: String?
+    var customIconData: Data?
     var initialBalance: Decimal
     var creditLimit: Decimal?
     var billDate: Date?
@@ -37,6 +38,7 @@ final class Account {
         type: AccountType = .cash,
         iconName: String? = nil,
         colorHex: String? = nil,
+        customIconData: Data? = nil,
         initialBalance: Decimal = 0,
         creditLimit: Decimal? = nil,
         billDate: Date? = nil,
@@ -50,6 +52,7 @@ final class Account {
         self.typeRaw = type.rawValue
         self.iconName = iconName ?? type.systemIcon
         self.colorHex = colorHex
+        self.customIconData = customIconData
         self.initialBalance = initialBalance
         self.creditLimit = creditLimit
         self.billDate = billDate

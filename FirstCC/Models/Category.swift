@@ -9,6 +9,7 @@ final class Category {
     var colorHex: String
     var typeRaw: String
     var isSystem: Bool
+    var isHidden: Bool
     var sortOrder: Int
 
     var ledger: Ledger?
@@ -36,6 +37,7 @@ final class Category {
         colorHex: String = "#666666",
         type: TransactionType = .expense,
         isSystem: Bool = false,
+        isHidden: Bool = false,
         sortOrder: Int = 0,
         parent: Category? = nil
     ) {
@@ -45,6 +47,7 @@ final class Category {
         self.colorHex = colorHex
         self.typeRaw = type.rawValue
         self.isSystem = isSystem
+        self.isHidden = isHidden
         self.sortOrder = sortOrder
         self.parent = parent
     }

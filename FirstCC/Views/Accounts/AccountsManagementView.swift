@@ -1,0 +1,209 @@
+import SwiftUI
+import SwiftData
+import PhotosUI
+
+struct AccountsManagementView: View {
+    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(\.modelContext) private var modelContext
+    @State private var accounts: [Account] = []
+    @State private var balances: [UUID: Decimal] = [:]
+    @State private var showAddSheet = false
+    @State private var editingAccount: Account?
+
+    var body: some View {
+        List {
+            if accounts.isEmpty {
+                Text("暂无账户，点击右上角 + 添加")
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(accountGroups, id: \.type) { group in
+                    Section(group.type.displayName) {
+                        ForEach(group.accounts) { account in
+                            accountRow(account)
+                        }
+                    }
+                }
+            }
+
+            Section("归档账户") {
+                ForEach(archivedAccounts) { account in
+                    HStack {
+                        accountIcon(account)
+                        Text(LocalizedStringKey(account.name))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        .navigationTitle("账户管理")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { showAddSheet = true } label: {
+                    Image(systemName: "plus")
+                }
+            }
+        }
+        .sheet(isPresented: $showAddSheet) {
+            AddEditAccountView()
+        }
+        .sheet(item: $editingAccount) { account in
+            EditAccountView(account: account)
+        }
+        .onAppear(perform: loadAccounts)
+    }
+
+    private var accountGroups: [(type: AccountType, accounts: [Account])] {
+        var groups: [(AccountType, [Account])] = []
+        for type in AccountType.allCases {
+            let matched = accounts.filter { $0.type == type && !$0.isArchived }
+            if !matched.isEmpty {
+                groups.append((type, matched))
+            }
+        }
+        return groups
+    }
+
+    private var archivedAccounts: [Account] {
+        accounts.filter { $0.isArchived }
+    }
+
+    private func accountRow(_ account: Account) -> some View {
+        HStack {
+            accountIcon(account)
+            VStack(alignment: .leading) {
+                Text(LocalizedStringKey(account.name))
+                Text(account.currencyCode)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            let bal = balances[account.id] ?? 0
+            CurrencyText(amount: bal, currencyCode: account.currencyCode, font: .subheadline, foregroundColor: bal >= 0 ? .primary : Color.red)
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { editingAccount = account }
+        .swipeActions(edge: .trailing) {
+            Button {
+                account.isArchived = !account.isArchived
+                try? modelContext.save()
+                loadAccounts()
+            } label: {
+                Label(account.isArchived ? "恢复" : "归档", systemImage: "archivebox")
+            }
+            .tint(account.isArchived ? .green : .orange)
+
+            if account.isArchived {
+                Button(role: .destructive) {
+                    try? appContainer.accountService.deleteAccount(account, context: modelContext)
+                    loadAccounts()
+                } label: {
+                    Label("删除", systemImage: "trash")
+                }
+            }
+        }
+    }
+
+    private func accountIcon(_ account: Account) -> some View {
+        Group {
+            if let data = account.customIconData, let uiImage = UIImage(data: data) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 32, height: 32)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+            } else {
+                Image(systemName: account.iconName ?? "creditcard")
+                    .frame(width: 32)
+                    .foregroundStyle(account.colorHex.map { Color(hex: $0) } ?? .blue)
+            }
+        }
+    }
+
+    private func loadAccounts() {
+        guard let ledger = appContainer.currentLedger else { return }
+        accounts = (try? appContainer.accountService.fetchAccounts(for: ledger, context: modelContext)) ?? []
+        for a in accounts {
+            balances[a.id] = appContainer.accountService.calculateBalance(for: a, context: modelContext)
+        }
+    }
+}
+
+struct EditAccountView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var appContainer: AppContainer
+
+    let account: Account
+
+    @State private var name: String
+    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var customIconData: Data?
+
+    init(account: Account) {
+        self.account = account
+        _name = State(initialValue: account.name)
+        _customIconData = State(initialValue: account.customIconData)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("名称") {
+                    TextField("账户名称", text: $name)
+                }
+
+                Section("图标") {
+                    HStack {
+                        Spacer()
+                        PhotosPicker(selection: $selectedPhoto, matching: .images) {
+                            if let data = customIconData, let uiImage = UIImage(data: data) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 80, height: 80)
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                            } else {
+                                Image(systemName: account.iconName ?? "creditcard")
+                                    .font(.system(size: 50))
+                                    .frame(width: 80, height: 80)
+                                    .foregroundStyle(.blue)
+                            }
+                        }
+                        Spacer()
+                    }
+                    Text("点击更换图标")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle("编辑账户")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("保存") { save() }
+                        .disabled(name.isEmpty)
+                }
+            }
+            .onChange(of: selectedPhoto) { _, newValue in
+                Task {
+                    if let data = try? await newValue?.loadTransferable(type: Data.self) {
+                        customIconData = data
+                    }
+                }
+            }
+        }
+    }
+
+    private func save() {
+        account.name = name
+        account.customIconData = customIconData
+        try? appContainer.accountService.updateAccount(account, context: modelContext)
+        dismiss()
+    }
+}

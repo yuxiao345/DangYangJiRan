@@ -5,11 +5,23 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 Section("账本") {
-                    NavigationLink("账本管理") {
-                        Text("账本列表（Phase 1）")
+                    NavigationLink("账户管理") {
+                        AccountsManagementView()
                     }
                     NavigationLink("成员管理") {
-                        Text("成员列表（Phase 3）")
+                        MemberListView()
+                    }
+                    NavigationLink("商家管理") {
+                        MerchantListView()
+                    }
+                    NavigationLink("项目管理") {
+                        ProjectListView()
+                    }
+                    NavigationLink("模板管理") {
+                        TemplateListView()
+                    }
+                    NavigationLink("分类管理") {
+                        CategoryListView()
                     }
                 }
                 Section("安全") {

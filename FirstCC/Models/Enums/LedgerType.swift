@@ -7,6 +7,8 @@ enum LedgerType: String, Codable, CaseIterable {
     case business = "生意"
     case custom = "自定义"
 
+    var displayName: String { NSLocalizedString(rawValue, comment: "") }
+
     var systemIcon: String {
         switch self {
         case .personal: "person"

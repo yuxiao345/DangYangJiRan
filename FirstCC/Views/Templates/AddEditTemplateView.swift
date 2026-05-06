@@ -1,0 +1,309 @@
+import SwiftUI
+import SwiftData
+
+enum TemplatePickerSheet: Identifiable {
+    case account, toAccount, category, member, merchant, project
+    var id: Self { self }
+}
+
+struct AddEditTemplateView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var appContainer: AppContainer
+
+    let editing: TransactionTemplate?
+
+    @State private var name: String = ""
+    @State private var type: TransactionType = .expense
+    @State private var amount: Decimal = 0
+    @State private var note: String = ""
+    @State private var selectedAccount: Account?
+    @State private var selectedToAccount: Account?
+    @State private var selectedCategory: Category?
+    @State private var selectedMember: Member?
+    @State private var selectedMerchant: Merchant?
+    @State private var selectedProject: Project?
+    @State private var isRecurring: Bool = false
+    @State private var recurringFrequency: RecurringFrequency = .monthly
+    @State private var recurringInterval: Int = 1
+    @State private var recurringStartDate: Date = Date()
+    @State private var hasEndDate: Bool = false
+    @State private var recurringEndDate: Date = Date().addingTimeInterval(86400 * 365)
+
+    @State private var accounts: [Account] = []
+    @State private var categories: [Category] = []
+    @State private var members: [Member] = []
+    @State private var merchants: [Merchant] = []
+    @State private var projects: [Project] = []
+    @State private var pickerSheet: TemplatePickerSheet?
+
+    init(editing: TransactionTemplate? = nil) {
+        self.editing = editing
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("基本信息") {
+                    TextField("模板名称", text: $name)
+                    Picker("类型", selection: $type) {
+                        ForEach([TransactionType.expense, .income, .transfer], id: \.self) { t in
+                            Label(t.displayName, systemImage: t.systemIcon).tag(t)
+                        }
+                    }
+                }
+
+                Section("金额") {
+                    HStack {
+                        Text("¥").foregroundStyle(.secondary)
+                        TextField("0.00", value: $amount, format: .number)
+                            .keyboardType(.decimalPad)
+                    }
+                }
+
+                Section("账户") {
+                    Button { pickerSheet = .account } label: {
+                        pickerRow(label: type == .transfer ? "转出账户" : "账户", value: selectedAccount?.name)
+                    }
+                    if type == .transfer {
+                        Button { pickerSheet = .toAccount } label: {
+                            pickerRow(label: "转入账户", value: selectedToAccount?.name)
+                        }
+                    }
+                }
+
+                if type != .transfer {
+                    Section("分类") {
+                        Button { pickerSheet = .category } label: {
+                            pickerRow(label: "分类", value: selectedCategory?.name)
+                        }
+                    }
+                }
+
+                if type != .transfer {
+                    Section("更多信息") {
+                        Button { pickerSheet = .member } label: {
+                            pickerRow(label: "成员", value: selectedMember?.name)
+                        }
+                        Button { pickerSheet = .merchant } label: {
+                            pickerRow(label: "商家", value: selectedMerchant?.name)
+                        }
+                        Button { pickerSheet = .project } label: {
+                            pickerRow(label: "项目", value: selectedProject?.name)
+                        }
+                    }
+                }
+
+                Section("备注") {
+                    TextField("备注", text: $note)
+                }
+
+                Section {
+                    Toggle("周期记账", isOn: $isRecurring)
+                    if isRecurring {
+                        Picker("频率", selection: $recurringFrequency) {
+                            ForEach(RecurringFrequency.allCases, id: \.self) { f in
+                                Text(f.displayName).tag(f)
+                            }
+                        }
+                        Stepper("间隔: \(recurringInterval)", value: $recurringInterval, in: 1...99)
+                            .foregroundStyle(recurringInterval > 1 ? .primary : .secondary)
+                        DatePicker("开始日期", selection: $recurringStartDate, displayedComponents: .date)
+                        Toggle("结束日期", isOn: $hasEndDate)
+                        if hasEndDate {
+                            DatePicker("截止日期", selection: $recurringEndDate, displayedComponents: .date)
+                        }
+                    }
+                } header: {
+                    Text("周期记账")
+                } footer: {
+                    if isRecurring {
+                        Text(frequencyDescription)
+                    }
+                }
+            }
+            .navigationTitle(editing != nil ? "编辑模板" : "新建模板")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("保存") { save() }.disabled(name.isEmpty)
+                }
+            }
+            .onAppear { loadData(); prefillEditing() }
+            .onChange(of: type) { _, _ in loadCategories() }
+            .sheet(item: $pickerSheet) { sheet in
+                switch sheet {
+                case .account:
+                    SearchablePickerView(
+                        title: type == .transfer ? "转出账户" : "选择账户",
+                        items: accounts,
+                        itemLabel: { $0.name },
+                        itemIcon: { $0.iconName ?? "creditcard" },
+                        itemColor: { Color(hex: $0.colorHex ?? "#007AFF") },
+                        recentKey: "recent_account",
+                        selection: $selectedAccount
+                    )
+                case .toAccount:
+                    SearchablePickerView(
+                        title: "转入账户",
+                        items: accounts.filter { $0.id != selectedAccount?.id },
+                        itemLabel: { $0.name },
+                        itemIcon: { $0.iconName ?? "creditcard" },
+                        itemColor: { Color(hex: $0.colorHex ?? "#007AFF") },
+                        recentKey: "recent_toaccount",
+                        selection: $selectedToAccount
+                    )
+                case .category:
+                    SearchablePickerView(
+                        title: "选择分类",
+                        items: categories,
+                        itemLabel: { $0.name },
+                        itemIcon: { $0.iconName },
+                        itemColor: { Color(hex: $0.colorHex) },
+                        recentKey: "recent_category",
+                        selection: $selectedCategory
+                    )
+                case .member:
+                    SearchablePickerView(
+                        title: "选择成员",
+                        items: members,
+                        itemLabel: { $0.name },
+                        itemIcon: { $0.avatar },
+                        recentKey: "recent_member",
+                        selection: $selectedMember
+                    )
+                case .merchant:
+                    SearchablePickerView(
+                        title: "选择商家",
+                        items: merchants,
+                        itemLabel: { $0.name },
+                        itemIcon: { _ in "bag" },
+                        recentKey: "recent_merchant",
+                        selection: $selectedMerchant
+                    )
+                case .project:
+                    SearchablePickerView(
+                        title: "选择项目",
+                        items: projects,
+                        itemLabel: { $0.name },
+                        itemIcon: { _ in "folder" },
+                        recentKey: "recent_project",
+                        selection: $selectedProject
+                    )
+                }
+            }
+        }
+    }
+
+    private var frequencyDescription: String {
+        var desc = "每\(recurringInterval > 1 ? "\(recurringInterval)" : "")\(recurringFrequency.displayName)"
+        if hasEndDate {
+            desc += "，至\(recurringEndDate.formatted(date: .abbreviated, time: .omitted))止"
+        }
+        return desc
+    }
+
+    private func pickerRow(label: String, value: String?) -> some View {
+        HStack {
+            Text(label).foregroundStyle(.primary)
+            Spacer()
+            if let value {
+                Text(LocalizedStringKey(value)).foregroundStyle(.secondary)
+            } else {
+                Text(LocalizedStringKey("选择\(label)")).foregroundStyle(.secondary)
+            }
+        }
+        .contentShape(Rectangle())
+    }
+
+    private func loadData() {
+        guard let ledger = appContainer.currentLedger else { return }
+        accounts = (try? appContainer.accountService.fetchAccounts(for: ledger, context: modelContext)) ?? []
+        loadCategories()
+        members = (try? appContainer.memberService.fetchMembers(for: ledger, context: modelContext)) ?? []
+        merchants = (try? appContainer.merchantService.fetchMerchants(for: ledger, context: modelContext)) ?? []
+        projects = (try? appContainer.projectService.fetchProjects(for: ledger, context: modelContext)) ?? []
+    }
+
+    private func loadCategories() {
+        guard let ledger = appContainer.currentLedger else { return }
+        categories = (try? appContainer.categoryService.fetchCategories(for: ledger, type: type, context: modelContext)) ?? []
+    }
+
+    private func prefillEditing() {
+        guard let t = editing else { return }
+        name = t.name
+        type = t.type
+        amount = t.amount
+        note = t.note ?? ""
+        selectedAccount = t.account
+        selectedToAccount = t.toAccount
+        selectedCategory = t.category
+        selectedMember = t.member
+        selectedMerchant = t.merchant
+        selectedProject = t.project
+        if let rule = t.recurringRule {
+            isRecurring = true
+            recurringFrequency = rule.frequency
+            recurringInterval = rule.interval
+            recurringStartDate = rule.startDate
+            if let end = rule.endDate {
+                hasEndDate = true
+                recurringEndDate = end
+            }
+        }
+    }
+
+    private func save() {
+        guard let ledger = appContainer.currentLedger else { return }
+        if let t = editing {
+            t.name = name
+            t.type = type
+            t.amount = amount
+            t.note = note.isEmpty ? nil : note
+            t.account = selectedAccount
+            t.toAccount = selectedToAccount
+            t.category = selectedCategory
+            t.member = selectedMember
+            t.merchant = selectedMerchant
+            t.project = selectedProject
+            try? appContainer.templateService.updateTemplate(t, context: modelContext)
+            updateRecurringRule(for: t)
+        } else {
+            let template = TransactionTemplate(
+                name: name,
+                type: type,
+                amount: amount,
+                note: note.isEmpty ? nil : note,
+                account: selectedAccount,
+                toAccount: selectedToAccount,
+                category: selectedCategory,
+                member: selectedMember,
+                merchant: selectedMerchant,
+                project: selectedProject
+            )
+            try? appContainer.templateService.createTemplate(template, ledger: ledger, context: modelContext)
+            updateRecurringRule(for: template)
+        }
+        dismiss()
+    }
+
+    private func updateRecurringRule(for template: TransactionTemplate) {
+        if isRecurring {
+            let endDate = hasEndDate ? recurringEndDate : nil
+            try? appContainer.recurringService.setRecurring(
+                template: template,
+                frequency: recurringFrequency,
+                interval: recurringInterval,
+                startDate: recurringStartDate,
+                endDate: endDate,
+                context: modelContext
+            )
+        } else {
+            if template.isRecurring {
+                try? appContainer.recurringService.disableRecurring(template: template, context: modelContext)
+            }
+        }
+    }
+}

@@ -11,6 +11,8 @@ enum AccountType: String, Codable, CaseIterable {
     case insurance = "保险"
     case other = "自定义"
 
+    var displayName: String { NSLocalizedString(rawValue, comment: "") }
+
     var systemIcon: String {
         switch self {
         case .cash: "banknote"

@@ -5,4 +5,6 @@ enum ReimbursementStatus: String, Codable, CaseIterable {
     case pending = "待报销"
     case approved = "已批准"
     case reimbursed = "已报销"
+
+    var displayName: String { NSLocalizedString(rawValue, comment: "") }
 }

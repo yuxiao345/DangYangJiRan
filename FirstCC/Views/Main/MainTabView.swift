@@ -11,13 +11,17 @@ struct MainTabView: View {
                 }
                 .tag(0)
 
-            AccountListView()
+            NavigationStack {
+                AccountListView()
+            }
                 .tabItem {
                     Label("账户", systemImage: "creditcard")
                 }
                 .tag(1)
 
-            TransactionListView()
+            NavigationStack {
+                TransactionListView()
+            }
                 .tabItem {
                     Label("流水", systemImage: "list.bullet")
                 }
