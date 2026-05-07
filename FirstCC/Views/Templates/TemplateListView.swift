@@ -8,6 +8,13 @@ struct TemplateListView: View {
     @State private var showAddSheet = false
     @State private var editingTemplate: TransactionTemplate?
 
+    let ledger: Ledger?
+    private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }
+
+    init(ledger: Ledger? = nil) {
+        self.ledger = ledger
+    }
+
     var body: some View {
         List {
             if templates.isEmpty {
@@ -34,11 +41,11 @@ struct TemplateListView: View {
                 }
             }
         }
-        .sheet(isPresented: $showAddSheet) {
-            AddEditTemplateView()
+        .sheet(isPresented: $showAddSheet, onDismiss: { loadTemplates() }) {
+            AddEditTemplateView(ledger: effectiveLedger)
         }
-        .sheet(item: $editingTemplate) { template in
-            AddEditTemplateView(editing: template)
+        .sheet(item: $editingTemplate, onDismiss: { loadTemplates() }) { template in
+            AddEditTemplateView(editing: template, ledger: effectiveLedger)
         }
         .onAppear(perform: loadTemplates)
     }
@@ -87,16 +94,15 @@ struct TemplateListView: View {
     @ViewBuilder
     private func amountView(_ t: TransactionTemplate) -> some View {
         CurrencyText(
-            amount: t.amount,
+            amount: abs(t.amount),
             currencyCode: t.currencyCode,
-            showSign: t.type == .income,
             font: .body,
             foregroundColor: t.type == .expense ? Color.red : Color.green
         )
     }
 
     private func loadTemplates() {
-        guard let ledger = appContainer.currentLedger else { return }
+        guard let ledger = effectiveLedger else { return }
         templates = (try? appContainer.templateService.fetchTemplates(for: ledger, context: modelContext)) ?? []
     }
 }

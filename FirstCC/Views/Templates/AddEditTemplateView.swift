@@ -12,6 +12,8 @@ struct AddEditTemplateView: View {
     @EnvironmentObject private var appContainer: AppContainer
 
     let editing: TransactionTemplate?
+    let ledger: Ledger?
+    private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }
 
     @State private var name: String = ""
     @State private var type: TransactionType = .expense
@@ -37,8 +39,9 @@ struct AddEditTemplateView: View {
     @State private var projects: [Project] = []
     @State private var pickerSheet: TemplatePickerSheet?
 
-    init(editing: TransactionTemplate? = nil) {
+    init(editing: TransactionTemplate? = nil, ledger: Ledger? = nil) {
         self.editing = editing
+        self.ledger = ledger
     }
 
     var body: some View {
@@ -62,11 +65,11 @@ struct AddEditTemplateView: View {
                 }
 
                 Section("账户") {
-                    Button { pickerSheet = .account } label: {
+                    Button { openPicker(.account) } label: {
                         pickerRow(label: type == .transfer ? "转出账户" : "账户", value: selectedAccount?.name)
                     }
                     if type == .transfer {
-                        Button { pickerSheet = .toAccount } label: {
+                        Button { openPicker(.toAccount) } label: {
                             pickerRow(label: "转入账户", value: selectedToAccount?.name)
                         }
                     }
@@ -74,7 +77,7 @@ struct AddEditTemplateView: View {
 
                 if type != .transfer {
                     Section("分类") {
-                        Button { pickerSheet = .category } label: {
+                        Button { openPicker(.category) } label: {
                             pickerRow(label: "分类", value: selectedCategory?.name)
                         }
                     }
@@ -82,13 +85,13 @@ struct AddEditTemplateView: View {
 
                 if type != .transfer {
                     Section("更多信息") {
-                        Button { pickerSheet = .member } label: {
+                        Button { openPicker(.member) } label: {
                             pickerRow(label: "成员", value: selectedMember?.name)
                         }
-                        Button { pickerSheet = .merchant } label: {
+                        Button { openPicker(.merchant) } label: {
                             pickerRow(label: "商家", value: selectedMerchant?.name)
                         }
-                        Button { pickerSheet = .project } label: {
+                        Button { openPicker(.project) } label: {
                             pickerRow(label: "项目", value: selectedProject?.name)
                         }
                     }
@@ -130,8 +133,11 @@ struct AddEditTemplateView: View {
                     Button("保存") { save() }.disabled(name.isEmpty)
                 }
             }
-            .onAppear { loadData(); prefillEditing() }
+            .task { loadData(); prefillEditing() }
             .onChange(of: type) { _, _ in loadCategories() }
+            .onChange(of: pickerSheet) { _, newValue in
+                if newValue != nil { loadData() }
+            }
             .sheet(item: $pickerSheet) { sheet in
                 switch sheet {
                 case .account:
@@ -217,8 +223,13 @@ struct AddEditTemplateView: View {
         .contentShape(Rectangle())
     }
 
+    private func openPicker(_ sheet: TemplatePickerSheet) {
+        loadData()
+        pickerSheet = sheet
+    }
+
     private func loadData() {
-        guard let ledger = appContainer.currentLedger else { return }
+        guard let ledger = effectiveLedger else { return }
         accounts = (try? appContainer.accountService.fetchAccounts(for: ledger, context: modelContext)) ?? []
         loadCategories()
         members = (try? appContainer.memberService.fetchMembers(for: ledger, context: modelContext)) ?? []
@@ -227,7 +238,7 @@ struct AddEditTemplateView: View {
     }
 
     private func loadCategories() {
-        guard let ledger = appContainer.currentLedger else { return }
+        guard let ledger = effectiveLedger else { return }
         categories = (try? appContainer.categoryService.fetchCategories(for: ledger, type: type, context: modelContext)) ?? []
     }
 
@@ -256,7 +267,7 @@ struct AddEditTemplateView: View {
     }
 
     private func save() {
-        guard let ledger = appContainer.currentLedger else { return }
+        guard let ledger = effectiveLedger else { return }
         if let t = editing {
             t.name = name
             t.type = type

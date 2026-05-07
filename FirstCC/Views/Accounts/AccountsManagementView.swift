@@ -10,6 +10,13 @@ struct AccountsManagementView: View {
     @State private var showAddSheet = false
     @State private var editingAccount: Account?
 
+    let ledger: Ledger?
+    private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }
+
+    init(ledger: Ledger? = nil) {
+        self.ledger = ledger
+    }
+
     var body: some View {
         List {
             if accounts.isEmpty {
@@ -43,10 +50,10 @@ struct AccountsManagementView: View {
                 }
             }
         }
-        .sheet(isPresented: $showAddSheet) {
-            AddEditAccountView()
+        .sheet(isPresented: $showAddSheet, onDismiss: { loadAccounts() }) {
+            AddEditAccountView(ledger: effectiveLedger)
         }
-        .sheet(item: $editingAccount) { account in
+        .sheet(item: $editingAccount, onDismiss: { loadAccounts() }) { account in
             EditAccountView(account: account)
         }
         .onAppear(perform: loadAccounts)
@@ -78,7 +85,7 @@ struct AccountsManagementView: View {
             }
             Spacer()
             let bal = balances[account.id] ?? 0
-            CurrencyText(amount: bal, currencyCode: account.currencyCode, font: .subheadline, foregroundColor: bal >= 0 ? .primary : Color.red)
+            CurrencyText(amount: abs(bal), currencyCode: account.currencyCode, font: .subheadline, foregroundColor: bal >= 0 ? .primary : Color.red)
             Image(systemName: "chevron.right")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
@@ -123,7 +130,7 @@ struct AccountsManagementView: View {
     }
 
     private func loadAccounts() {
-        guard let ledger = appContainer.currentLedger else { return }
+        guard let ledger = effectiveLedger else { return }
         accounts = (try? appContainer.accountService.fetchAccounts(for: ledger, context: modelContext)) ?? []
         for a in accounts {
             balances[a.id] = appContainer.accountService.calculateBalance(for: a, context: modelContext)

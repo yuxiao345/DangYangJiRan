@@ -7,6 +7,8 @@ struct AddEditCategoryView: View {
     @EnvironmentObject private var appContainer: AppContainer
 
     let editing: Category?
+    let ledger: Ledger?
+    private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }
 
     @State private var name: String = ""
     @State private var iconName: String = "questionmark"
@@ -15,8 +17,9 @@ struct AddEditCategoryView: View {
     @State private var selectedParent: Category?
     @State private var availableParents: [Category] = []
 
-    init(editing: Category? = nil) {
+    init(editing: Category? = nil, ledger: Ledger? = nil) {
         self.editing = editing
+        self.ledger = ledger
     }
 
     private let iconOptions = [
@@ -113,13 +116,13 @@ struct AddEditCategoryView: View {
     }
 
     private func loadParents() {
-        guard let ledger = appContainer.currentLedger else { return }
+        guard let ledger = effectiveLedger else { return }
         let all = (try? appContainer.categoryService.fetchCategories(for: ledger, type: type, context: modelContext)) ?? []
         availableParents = all.filter { $0.parent == nil && $0.id != editing?.id }
     }
 
     private func save() {
-        guard let ledger = appContainer.currentLedger else { return }
+        guard let ledger = effectiveLedger else { return }
         do {
             if let cat = editing {
                 cat.name = name

@@ -17,6 +17,8 @@ final class Transaction {
     var transferGroupId: UUID?
     var refundGroupId: UUID?
     var refundAmount: Decimal?
+    var reimbursementStatusRaw: String
+    var reimbursedById: UUID?
     var counterparty: String?
     var tags: [String]
     var photoURLs: [String]?
@@ -50,6 +52,16 @@ final class Transaction {
         set { typeRaw = newValue.rawValue }
     }
 
+    var reimbursementStatus: ReimbursementStatus {
+        get { ReimbursementStatus(rawValue: reimbursementStatusRaw) ?? .none }
+        set { reimbursementStatusRaw = newValue.rawValue }
+    }
+
+    var isReimbursable: Bool { reimbursementStatus != .none }
+
+    @Relationship(deleteRule: .nullify)
+    var reimbursedBy: Transaction? = nil
+
     init(
         id: UUID = UUID(),
         type: TransactionType = .expense,
@@ -63,6 +75,8 @@ final class Transaction {
         transferGroupId: UUID? = nil,
         refundGroupId: UUID? = nil,
         refundAmount: Decimal? = nil,
+        reimbursementStatus: ReimbursementStatus = .none,
+        reimbursedById: UUID? = nil,
         counterparty: String? = nil,
         tags: [String] = [],
         photoURLs: [String]? = nil,
@@ -88,6 +102,8 @@ final class Transaction {
         self.transferGroupId = transferGroupId
         self.refundGroupId = refundGroupId
         self.refundAmount = refundAmount
+        self.reimbursementStatusRaw = reimbursementStatus.rawValue
+        self.reimbursedById = reimbursedById
         self.counterparty = counterparty
         self.tags = tags
         self.photoURLs = photoURLs

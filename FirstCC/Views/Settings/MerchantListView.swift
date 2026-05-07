@@ -9,6 +9,13 @@ struct MerchantListView: View {
     @State private var newName = ""
     @State private var editingMerchant: Merchant?
 
+    let ledger: Ledger?
+    private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }
+
+    init(ledger: Ledger? = nil) {
+        self.ledger = ledger
+    }
+
     var body: some View {
         List {
             if merchants.isEmpty {
@@ -58,21 +65,21 @@ struct MerchantListView: View {
                 newName = ""
             }.disabled(newName.isEmpty)
         }
-        .sheet(item: $editingMerchant) { merchant in
+        .sheet(item: $editingMerchant, onDismiss: { loadMerchants() }) { merchant in
             EditMerchantView(merchant: merchant)
         }
         .onAppear(perform: loadMerchants)
     }
 
     private func addMerchant() {
-        guard let ledger = appContainer.currentLedger else { return }
+        guard let ledger = effectiveLedger else { return }
         let merchant = Merchant(name: newName, sortOrder: merchants.count)
         try? appContainer.merchantService.createMerchant(merchant, ledger: ledger, context: modelContext)
         loadMerchants()
     }
 
     private func loadMerchants() {
-        guard let ledger = appContainer.currentLedger else { return }
+        guard let ledger = effectiveLedger else { return }
         merchants = (try? appContainer.merchantService.fetchMerchants(for: ledger, context: modelContext)) ?? []
     }
 }

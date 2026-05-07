@@ -6,6 +6,9 @@ struct AddEditAccountView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var appContainer: AppContainer
 
+    let ledger: Ledger?
+    private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }
+
     @State private var name = ""
     @State private var accountType: AccountType = .cash
     @State private var currencyCode = "CNY"
@@ -14,6 +17,10 @@ struct AddEditAccountView: View {
     @State private var hasCreditLimit = false
     @State private var billDate: Date = Date()
     @State private var dueDate: Date = Date()
+
+    init(ledger: Ledger? = nil) {
+        self.ledger = ledger
+    }
 
     var body: some View {
         NavigationStack {
@@ -62,7 +69,7 @@ struct AddEditAccountView: View {
     }
 
     private func save() {
-        guard let ledger = appContainer.currentLedger else { return }
+        guard let ledger = effectiveLedger else { return }
         let account = Account(
             name: name,
             currencyCode: currencyCode,

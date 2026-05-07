@@ -85,6 +85,14 @@ final class AppContainer: ObservableObject {
     }
 
     func configureDefaultLedger(modelContext: ModelContext) {
+        // Restore last used ledger from UserDefaults
+        if let idString = UserDefaults.standard.string(forKey: "currentLedgerID"),
+           let uuid = UUID(uuidString: idString),
+           let restored = try? modelContext.fetch(FetchDescriptor<Ledger>()).first(where: { $0.id == uuid }) {
+            currentLedger = restored
+            return
+        }
+
         // If a ledger already exists, just load it
         if let existingLedger = try? modelContext.fetch(FetchDescriptor<Ledger>()).first {
             currentLedger = existingLedger

@@ -14,6 +14,15 @@ struct TransactionRowView: View {
                 HStack(spacing: 4) {
                     Text(LocalizedStringKey(titleText))
                         .font(.body)
+                    if transaction.isReimbursable {
+                        let reimbursed = transaction.reimbursementStatus == .reimbursed
+                        Text(LocalizedStringKey(reimbursed ? "已报销" : "待报销"))
+                            .font(.caption2)
+                            .padding(.horizontal, 4)
+                            .background((reimbursed ? Color.green : Color.orange).opacity(0.15))
+                            .foregroundStyle(reimbursed ? .green : .orange)
+                            .clipShape(Capsule())
+                    }
                     if transaction.refundGroupId != nil {
                         Image(systemName: "arrow.uturn.backward")
                             .font(.caption2)
@@ -77,7 +86,7 @@ struct TransactionRowView: View {
     private var amountView: some View {
         switch transaction.type {
         case .income:
-            CurrencyText(amount: abs(transaction.amount), currencyCode: transaction.currencyCode, showSign: true, font: .body, foregroundColor: .green)
+            CurrencyText(amount: abs(transaction.amount), currencyCode: transaction.currencyCode, font: .body, foregroundColor: .green)
         case .expense:
             CurrencyText(amount: abs(transaction.amount), currencyCode: transaction.currencyCode, font: .body, foregroundColor: .red)
         case .transfer:

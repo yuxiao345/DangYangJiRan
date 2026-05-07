@@ -39,8 +39,21 @@ struct AddEditTransactionView: View {
     @State private var photoDataList: [Data] = []
     @State private var selectedPhotoItem: PhotoItem?
 
-    init(editing: Transaction? = nil) {
+    // Reimbursement
+    @State private var isReimbursable: Bool = false
+    @State private var pendingExpenses: [Transaction] = []
+    @State private var selectedExpenseIDs: Set<UUID> = []
+    @State private var showReimbursementSection: Bool = false
+
+    init(editing: Transaction? = nil, prefillType: TransactionType? = nil, prefillExpenseIDs: [UUID] = []) {
         self.editing = editing
+        if let t = prefillType {
+            _type = State(initialValue: t)
+        }
+        if !prefillExpenseIDs.isEmpty {
+            _selectedExpenseIDs = State(initialValue: Set(prefillExpenseIDs))
+            _showReimbursementSection = State(initialValue: true)
+        }
     }
 
     var body: some View {
@@ -56,7 +69,7 @@ struct AddEditTransactionView: View {
                                     .foregroundStyle(.secondary)
                                     .textCase(.uppercase)
                                 Spacer()
-                                Button { pickerSheet = .template } label: {
+                                Button { openPicker(.template) } label: {
                                     HStack(spacing: 2) {
                                         Text("全部")
                                         Image(systemName: "chevron.right")
@@ -93,6 +106,12 @@ struct AddEditTransactionView: View {
                     }
                 }
 
+                if type == .expense {
+                    Section {
+                        Toggle("可报销", isOn: $isReimbursable)
+                    }
+                }
+
                 if type == .lending {
                     Section {
                         Picker("借贷方向", selection: $isLendOut) {
@@ -112,14 +131,14 @@ struct AddEditTransactionView: View {
                             }
                         }
                     } else {
-                        Button { pickerSheet = .account } label: {
+                        Button { openPicker(.account) } label: {
                             pickerRow(
                                 label: type == .transfer ? "转出账户" : "账户",
                                 value: selectedAccount?.name
                             )
                         }
                         if type == .transfer {
-                            Button { pickerSheet = .toAccount } label: {
+                            Button { openPicker(.toAccount) } label: {
                                 pickerRow(label: "转入账户", value: selectedToAccount?.name)
                             }
                         }
@@ -128,7 +147,7 @@ struct AddEditTransactionView: View {
 
                 if type != .transfer && type != .lending {
                     Section("分类") {
-                        Button { pickerSheet = .category } label: {
+                        Button { openPicker(.category) } label: {
                             pickerRow(label: "分类", value: selectedCategory?.name)
                         }
                     }
@@ -136,14 +155,58 @@ struct AddEditTransactionView: View {
 
                 if type != .transfer && type != .lending {
                     Section("更多信息") {
-                        Button { pickerSheet = .member } label: {
+                        Button { openPicker(.member) } label: {
                             pickerRow(label: "成员", value: selectedMember?.name)
                         }
-                        Button { pickerSheet = .merchant } label: {
+                        Button { openPicker(.merchant) } label: {
                             pickerRow(label: "商家", value: selectedMerchant?.name)
                         }
-                        Button { pickerSheet = .project } label: {
+                        Button { openPicker(.project) } label: {
                             pickerRow(label: "项目", value: selectedProject?.name)
+                        }
+                    }
+                }
+
+                if type == .income && !pendingExpenses.isEmpty {
+                    Section {
+                        DisclosureGroup(isExpanded: $showReimbursementSection) {
+                            ForEach(pendingExpenses) { expense in
+                                HStack {
+                                    Image(systemName: selectedExpenseIDs.contains(expense.id)
+                                          ? "checkmark.circle.fill" : "circle")
+                                        .foregroundStyle(selectedExpenseIDs.contains(expense.id) ? .blue : .secondary)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(LocalizedStringKey(expense.category?.name ?? ""))
+                                            .font(.body)
+                                        Text(expense.date.formatted(date: .abbreviated, time: .omitted))
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    CurrencyText(amount: abs(expense.amount), currencyCode: expense.currencyCode, font: .body)
+                                }
+                                .contentShape(Rectangle())
+                                .onTapGesture { toggleExpense(expense.id) }
+                            }
+                        } label: {
+                            HStack {
+                                Text("关联待报销")
+                                Spacer()
+                                if !selectedExpenseIDs.isEmpty {
+                                    Text("\(selectedExpenseIDs.count)笔")
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    }
+
+                    if !selectedExpenseIDs.isEmpty {
+                        Section {
+                            HStack {
+                                Text("已选合计")
+                                Spacer()
+                                CurrencyText(amount: selectedReimbursementTotal, currencyCode: appContainer.currentLedger?.defaultCurrencyCode ?? "CNY", font: .body, foregroundColor: .secondary)
+                            }
                         }
                     }
                 }
@@ -188,8 +251,15 @@ struct AddEditTransactionView: View {
                         .disabled(!canSave)
                 }
             }
-            .onAppear { loadData(); prefillEditing() }
-            .onChange(of: type) { _, _ in loadCategories() }
+            .task { loadData(); prefillEditing() }
+            .onChange(of: pickerSheet) { _, newValue in
+                if newValue != nil { loadData() }
+            }
+            .onChange(of: type) { _, _ in loadCategories(); loadPendingExpenses() }
+            .onChange(of: selectedExpenseIDs) { _, _ in
+                guard !selectedExpenseIDs.isEmpty, editing == nil else { return }
+                amount = selectedReimbursementTotal
+            }
             .alert("确认删除", isPresented: $showDeleteAlert) {
                 Button("取消", role: .cancel) {}
                 Button("删除", role: .destructive) { delete() }
@@ -363,6 +433,11 @@ struct AddEditTransactionView: View {
         amount != 0 && selectedAccount != nil && (type != .transfer || selectedToAccount != nil)
     }
 
+    private func openPicker(_ sheet: PickerSheetType) {
+        loadData()
+        pickerSheet = sheet
+    }
+
     private func loadData() {
         guard let ledger = appContainer.currentLedger else { return }
         accounts = (try? appContainer.accountService.fetchAccounts(for: ledger, context: modelContext)) ?? []
@@ -371,6 +446,7 @@ struct AddEditTransactionView: View {
         merchants = (try? appContainer.merchantService.fetchMerchants(for: ledger, context: modelContext)) ?? []
         projects = (try? appContainer.projectService.fetchProjects(for: ledger, context: modelContext)) ?? []
         templates = (try? appContainer.templateService.fetchTemplates(for: ledger, context: modelContext)) ?? []
+        loadPendingExpenses()
     }
 
     private func loadCategories() {
@@ -392,6 +468,7 @@ struct AddEditTransactionView: View {
         selectedProject = t.project
         counterparty = t.counterparty ?? ""
         isLendOut = t.amount < 0
+        isReimbursable = t.isReimbursable
         if let paths = t.photoURLs, !paths.isEmpty {
             photoDataList = PhotoStorage.load(paths: paths)
         }
@@ -433,8 +510,14 @@ struct AddEditTransactionView: View {
                 if type == .lending {
                     transaction.counterparty = counterparty.isEmpty ? nil : counterparty
                 }
+                if type == .expense, isReimbursable {
+                    transaction.reimbursementStatus = .pending
+                }
                 if !photoDataList.isEmpty {
                     transaction.photoURLs = PhotoStorage.save(photoDataList, transactionId: transaction.id)
+                }
+                if type == .income, !selectedExpenseIDs.isEmpty {
+                    try linkReimbursedExpenses(to: transaction.id)
                 }
                 try appContainer.transactionService.createTransaction(transaction, ledger: ledger, context: modelContext)
             }
@@ -470,11 +553,51 @@ struct AddEditTransactionView: View {
         t.merchant = selectedMerchant
         t.project = selectedProject
         t.counterparty = counterparty.isEmpty ? nil : counterparty
+        if t.type == .expense {
+            t.reimbursementStatus = isReimbursable ? .pending : .none
+        }
+        if t.type == .income, !selectedExpenseIDs.isEmpty {
+            try linkReimbursedExpenses(to: t.id)
+        }
         if let oldPaths = t.photoURLs, !oldPaths.isEmpty {
             PhotoStorage.delete(paths: oldPaths)
         }
         t.photoURLs = photoDataList.isEmpty ? nil : PhotoStorage.save(photoDataList, transactionId: t.id)
         t.modifiedAt = Date()
+        try modelContext.save()
+    }
+
+    private func toggleExpense(_ id: UUID) {
+        if selectedExpenseIDs.contains(id) {
+            selectedExpenseIDs.remove(id)
+        } else {
+            selectedExpenseIDs.insert(id)
+        }
+    }
+
+    private var selectedReimbursementTotal: Decimal {
+        pendingExpenses
+            .filter { selectedExpenseIDs.contains($0.id) }
+            .reduce(0) { $0 + abs($1.amount) }
+    }
+
+    private func loadPendingExpenses() {
+        guard let ledger = appContainer.currentLedger, type == .income else {
+            pendingExpenses = []
+            return
+        }
+        let all = (try? appContainer.transactionService.fetchTransactions(for: ledger, context: modelContext, filters: nil)) ?? []
+        pendingExpenses = all.filter { $0.type == .expense && $0.reimbursementStatus == .pending }
+    }
+
+    private func linkReimbursedExpenses(to incomeId: UUID) throws {
+        for expenseID in selectedExpenseIDs {
+            var descriptor = FetchDescriptor<Transaction>(predicate: #Predicate { $0.id == expenseID })
+            descriptor.fetchLimit = 1
+            guard let expense = try? modelContext.fetch(descriptor).first else { continue }
+            expense.reimbursementStatus = .reimbursed
+            expense.reimbursedById = incomeId
+        }
         try modelContext.save()
     }
 

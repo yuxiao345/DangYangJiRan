@@ -13,6 +13,7 @@ struct TransactionDetailView: View {
     @State private var photoDataList: [Data] = []
     @State private var selectedPhotoItem: PhotoItem?
     @State private var linkedRefunds: [Transaction] = []
+    @State private var settledExpenses: [Transaction] = []
 
     var body: some View {
         List {
@@ -103,6 +104,34 @@ struct TransactionDetailView: View {
                 }
             }
 
+            if transaction.isReimbursable {
+                Section {
+                    LabeledContent("报销状态") {
+                        switch transaction.reimbursementStatus {
+                        case .pending:
+                            Text("待报销").foregroundStyle(.orange)
+                        case .reimbursed:
+                            Text("已报销").foregroundStyle(.green)
+                        default:
+                            Text("—").foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+
+            if !settledExpenses.isEmpty {
+                Section("报销结算") {
+                    ForEach(settledExpenses) { expense in
+                        HStack {
+                            Text(LocalizedStringKey(expense.category?.name ?? ""))
+                                .font(.body)
+                            Spacer()
+                            CurrencyText(amount: abs(expense.amount), currencyCode: expense.currencyCode, font: .body)
+                        }
+                    }
+                }
+            }
+
             Section("详情") {
                 if let note = transaction.note, !note.isEmpty {
                     LabeledContent("备注") { Text(note) }
@@ -171,6 +200,7 @@ struct TransactionDetailView: View {
                 photoDataList = PhotoStorage.load(paths: paths)
             }
             loadLinkedRefunds()
+            loadSettledExpenses()
         }
         .sheet(item: $selectedPhotoItem) { item in
             FullScreenPhotoView(data: item.data)
@@ -216,7 +246,7 @@ struct TransactionDetailView: View {
     private var amountView: some View {
         switch transaction.type {
         case .income:
-            CurrencyText(amount: abs(transaction.amount), currencyCode: transaction.currencyCode, showSign: true, font: .title2, foregroundColor: .green)
+            CurrencyText(amount: abs(transaction.amount), currencyCode: transaction.currencyCode, font: .title2, foregroundColor: .green)
         case .expense:
             CurrencyText(amount: abs(transaction.amount), currencyCode: transaction.currencyCode, font: .title2, foregroundColor: .red)
         case .transfer:
@@ -242,6 +272,14 @@ struct TransactionDetailView: View {
             predicate: #Predicate { $0.refundGroupId == tid }
         )
         linkedRefunds = (try? modelContext.fetch(descriptor)) ?? []
+    }
+
+    private func loadSettledExpenses() {
+        let tid = transaction.id
+        let descriptor = FetchDescriptor<Transaction>(
+            predicate: #Predicate { $0.reimbursedById == tid }
+        )
+        settledExpenses = (try? modelContext.fetch(descriptor)) ?? []
     }
 
     private func delete() {

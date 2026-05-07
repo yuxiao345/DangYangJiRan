@@ -9,6 +9,13 @@ struct MemberListView: View {
     @State private var newName = ""
     @State private var editingMember: Member?
 
+    let ledger: Ledger?
+    private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }
+
+    init(ledger: Ledger? = nil) {
+        self.ledger = ledger
+    }
+
     var body: some View {
         List {
             ForEach(members) { member in
@@ -35,7 +42,7 @@ struct MemberListView: View {
                 }
             }
         }
-        .navigationTitle("成员管理")
+        .navigationTitle("联系人管理")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { showAddAlert = true } label: {
@@ -43,7 +50,7 @@ struct MemberListView: View {
                 }
             }
         }
-        .alert("添加成员", isPresented: $showAddAlert) {
+        .alert("添加联系人", isPresented: $showAddAlert) {
             TextField("姓名", text: $newName)
             Button("取消", role: .cancel) { newName = "" }
             Button("添加") {
@@ -52,21 +59,21 @@ struct MemberListView: View {
             }
             .disabled(newName.isEmpty)
         }
-        .sheet(item: $editingMember) { member in
+        .sheet(item: $editingMember, onDismiss: { loadMembers() }) { member in
             EditMemberView(member: member)
         }
         .onAppear(perform: loadMembers)
     }
 
     private func addMember() {
-        guard let ledger = appContainer.currentLedger else { return }
+        guard let ledger = effectiveLedger else { return }
         let member = Member(name: newName, sortOrder: members.count)
         try? appContainer.memberService.createMember(member, ledger: ledger, context: modelContext)
         loadMembers()
     }
 
     private func loadMembers() {
-        guard let ledger = appContainer.currentLedger else { return }
+        guard let ledger = effectiveLedger else { return }
         members = (try? appContainer.memberService.fetchMembers(for: ledger, context: modelContext)) ?? []
     }
 }
@@ -103,7 +110,7 @@ struct EditMemberView: View {
                 }
                 Toggle("启用", isOn: $isActive)
             }
-            .navigationTitle("编辑成员")
+            .navigationTitle("编辑联系人")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) { Button("保存") { save() } }

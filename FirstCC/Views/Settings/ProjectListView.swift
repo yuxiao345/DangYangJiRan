@@ -8,6 +8,13 @@ struct ProjectListView: View {
     @State private var showAddSheet = false
     @State private var editingProject: Project?
 
+    let ledger: Ledger?
+    private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }
+
+    init(ledger: Ledger? = nil) {
+        self.ledger = ledger
+    }
+
     var body: some View {
         List {
             if projects.isEmpty {
@@ -58,19 +65,19 @@ struct ProjectListView: View {
                 }
             }
         }
-        .sheet(isPresented: $showAddSheet) { AddEditProjectView() }
-        .sheet(item: $editingProject) { project in
-            AddEditProjectView(editing: project)
+        .sheet(isPresented: $showAddSheet, onDismiss: { loadProjects() }) { AddEditProjectView(ledger: effectiveLedger) }
+        .sheet(item: $editingProject, onDismiss: { loadProjects() }) { project in
+            AddEditProjectView(editing: project, ledger: effectiveLedger)
         }
         .onAppear(perform: loadProjects)
     }
 
     private var ledgerCurrency: String {
-        appContainer.currentLedger?.defaultCurrencyCode ?? "CNY"
+        effectiveLedger?.defaultCurrencyCode ?? "CNY"
     }
 
     private func loadProjects() {
-        guard let ledger = appContainer.currentLedger else { return }
+        guard let ledger = effectiveLedger else { return }
         projects = (try? appContainer.projectService.fetchProjects(for: ledger, context: modelContext)) ?? []
     }
 }
@@ -80,6 +87,8 @@ struct AddEditProjectView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var appContainer: AppContainer
     let editing: Project?
+    let ledger: Ledger?
+    private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }
 
     @State private var name: String = ""
     @State private var desc: String = ""
@@ -88,8 +97,9 @@ struct AddEditProjectView: View {
     @State private var budgetText: String = ""
     @State private var isActive: Bool = true
 
-    init(editing: Project? = nil) {
+    init(editing: Project? = nil, ledger: Ledger? = nil) {
         self.editing = editing
+        self.ledger = ledger
     }
 
     var body: some View {
@@ -130,7 +140,7 @@ struct AddEditProjectView: View {
     }
 
     private func save() {
-        guard let ledger = appContainer.currentLedger else { return }
+        guard let ledger = effectiveLedger else { return }
         let budget = Decimal(string: budgetText)
         if let p = editing {
             p.name = name; p.desc = desc.isEmpty ? nil : desc

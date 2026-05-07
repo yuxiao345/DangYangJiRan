@@ -6,35 +6,39 @@ struct CreateLedgerView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var appContainer: AppContainer
 
+    var onDone: ((Ledger) -> Void)?
+
     @State private var name = ""
     @State private var ledgerType: LedgerType = .family
     @State private var currencyCode = "CNY"
 
     var body: some View {
-        Form {
-            Section("账本信息") {
-                TextField("账本名称", text: $name)
-                Picker("类型", selection: $ledgerType) {
-                    ForEach(LedgerType.allCases, id: \.self) { type in
-                        Label(type.displayName, systemImage: type.systemIcon)
-                            .tag(type)
+        NavigationStack {
+            Form {
+                Section("账本信息") {
+                    TextField("账本名称", text: $name)
+                    Picker("类型", selection: $ledgerType) {
+                        ForEach(LedgerType.allCases, id: \.self) { type in
+                            Label(type.displayName, systemImage: type.systemIcon)
+                                .tag(type)
+                        }
+                    }
+                    Picker("默认货币", selection: $currencyCode) {
+                        Text("人民币 (CNY)").tag("CNY")
+                        Text("美元 (USD)").tag("USD")
+                        Text("欧元 (EUR)").tag("EUR")
+                        Text("日元 (JPY)").tag("JPY")
                     }
                 }
-                Picker("默认货币", selection: $currencyCode) {
-                    Text("人民币 (CNY)").tag("CNY")
-                    Text("美元 (USD)").tag("USD")
-                    Text("欧元 (EUR)").tag("EUR")
-                    Text("日元 (JPY)").tag("JPY")
-                }
             }
-        }
-        .navigationTitle("创建账本")
-        .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-                Button("创建") {
-                    createLedger()
+            .navigationTitle("创建账本")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("创建") {
+                        createLedger()
+                    }
+                    .disabled(name.isEmpty)
                 }
-                .disabled(name.isEmpty)
             }
         }
     }
@@ -49,6 +53,8 @@ struct CreateLedgerView: View {
             )
             appContainer.categoryService.seedDefaults(ledger: ledger, context: modelContext)
             appContainer.currentLedger = ledger
+            UserDefaults.standard.set(ledger.id.uuidString, forKey: "currentLedgerID")
+            onDone?(ledger)
             dismiss()
         } catch {
             print("Failed to create ledger: \(error)")

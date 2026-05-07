@@ -1096,7 +1096,8 @@
         "3CADCC2FF717CC9CDD60F912",
         "AEFB5EBD2D59C9844FEB0CCC",
         "4799740253C08B485C6D33BD",
-        "49364D66AD60B7797AE0209D"
+        "49364D66AD60B7797AE0209D",
+        "763D98CFD4394FE9AF9BE496"
       ],
       "name": "Views",
       "path": "Views",
@@ -1264,7 +1265,8 @@
         "6A7527DEC9B7F7F4A25ADBC7",
         "5640103E5835D55C3875566E",
         "979E204D2E243EDB0A12BEA4",
-        "EE1D0DD8DACD46A5B2B1D131"
+        "EE1D0DD8DACD46A5B2B1D131",
+        "73D34C8339F54CB492EE2D47"
       ],
       "name": "Transactions",
       "path": "Transactions",
@@ -1423,7 +1425,10 @@
         "61AC18C84DE94A62867A6213",
         "A86BC5D777FC40E08314BF4B",
         "DA4AD4D2C7534706A2B263FA",
-        "6090008E243045DBA1FF1363"
+        "6090008E243045DBA1FF1363",
+        "F3EFD0A336694A249A90278C",
+        "B78DAD374A5B41A0A0027493",
+        "1E8FB9E30FCB47E5A5A6E1CE"
       ],
       "runOnlyForDeploymentPostprocessing": "0"
     },
@@ -1665,6 +1670,46 @@
     "E22A08A4A1214CB899442FAD": {
       "isa": "PBXBuildFile",
       "fileRef": "2286DC79AA2C4D27B9EF515F"
+    },
+    "73D34C8339F54CB492EE2D47": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "PendingReimbursementView.swift",
+      "sourceTree": "<group>"
+    },
+    "F3EFD0A336694A249A90278C": {
+      "isa": "PBXBuildFile",
+      "fileRef": "73D34C8339F54CB492EE2D47"
+    },
+    "763D98CFD4394FE9AF9BE496": {
+      "isa": "PBXGroup",
+      "children": [
+        "6DE6BA35E3484902936AE91C",
+        "7A52C866183346CBA5D4E02D"
+      ],
+      "name": "Ledger",
+      "sourceTree": "<group>",
+      "path": "Ledger"
+    },
+    "6DE6BA35E3484902936AE91C": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "LedgerListView.swift",
+      "sourceTree": "<group>"
+    },
+    "B78DAD374A5B41A0A0027493": {
+      "isa": "PBXBuildFile",
+      "fileRef": "6DE6BA35E3484902936AE91C"
+    },
+    "7A52C866183346CBA5D4E02D": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "LedgerSettingsView.swift",
+      "sourceTree": "<group>"
+    },
+    "1E8FB9E30FCB47E5A5A6E1CE": {
+      "isa": "PBXBuildFile",
+      "fileRef": "7A52C866183346CBA5D4E02D"
     }
   },
   "rootObject": "1781F676DEDF5767F3243DB0"

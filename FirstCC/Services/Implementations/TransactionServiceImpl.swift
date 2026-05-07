@@ -6,6 +6,7 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
         transaction.ledger = ledger
         context.insert(transaction)
         try context.save()
+        NotificationCenter.default.post(name: .transactionDidChange, object: nil)
     }
 
     func createTransfer(
@@ -46,6 +47,7 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
 
         outflow.sourceOfTransfer = inflow
         try context.save()
+        NotificationCenter.default.post(name: .transactionDidChange, object: nil)
         return (outflow, inflow)
     }
 
@@ -71,6 +73,7 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
         refund.ledger = original.ledger
         context.insert(refund)
         try context.save()
+        NotificationCenter.default.post(name: .transactionDidChange, object: nil)
         return refund
     }
 
@@ -122,10 +125,12 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
     func updateTransaction(_ transaction: Transaction, context: ModelContext) throws {
         transaction.modifiedAt = Date()
         try context.save()
+        NotificationCenter.default.post(name: .transactionDidChange, object: nil)
     }
 
     func deleteTransaction(_ transaction: Transaction, context: ModelContext) throws {
         context.delete(transaction)
         try context.save()
+        NotificationCenter.default.post(name: .transactionDidChange, object: nil)
     }
 }

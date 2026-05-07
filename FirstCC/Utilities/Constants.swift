@@ -14,3 +14,7 @@ enum Constants {
 
     static let budgetAlertThresholdDefault = 0.8
 }
+
+extension Notification.Name {
+    static let transactionDidChange = Notification.Name("FirstCC.transactionDidChange")
+}

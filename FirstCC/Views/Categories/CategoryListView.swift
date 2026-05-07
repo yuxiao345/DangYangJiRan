@@ -9,6 +9,13 @@ struct CategoryListView: View {
     @State private var showAddSheet = false
     @State private var editingCategory: Category?
 
+    let ledger: Ledger?
+    private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }
+
+    init(ledger: Ledger? = nil) {
+        self.ledger = ledger
+    }
+
     var body: some View {
         List {
             Section("支出分类") {
@@ -30,11 +37,11 @@ struct CategoryListView: View {
                 }
             }
         }
-        .sheet(isPresented: $showAddSheet) {
-            AddEditCategoryView()
+        .sheet(isPresented: $showAddSheet, onDismiss: { loadCategories() }) {
+            AddEditCategoryView(ledger: effectiveLedger)
         }
-        .sheet(item: $editingCategory) { category in
-            AddEditCategoryView(editing: category)
+        .sheet(item: $editingCategory, onDismiss: { loadCategories() }) { category in
+            AddEditCategoryView(editing: category, ledger: effectiveLedger)
         }
         .onAppear(perform: loadCategories)
     }
@@ -92,7 +99,7 @@ struct CategoryListView: View {
     }
 
     private func loadCategories() {
-        guard let ledger = appContainer.currentLedger else { return }
+        guard let ledger = effectiveLedger else { return }
         incomeCategories = (try? appContainer.categoryService.fetchAllCategories(for: ledger, type: .income, context: modelContext)) ?? []
         expenseCategories = (try? appContainer.categoryService.fetchAllCategories(for: ledger, type: .expense, context: modelContext)) ?? []
     }

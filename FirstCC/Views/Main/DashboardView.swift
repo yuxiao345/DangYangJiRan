@@ -37,6 +37,12 @@ struct DashboardView: View {
                 }
             }
             .onAppear { refresh() }
+            .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in
+                refresh()
+            }
+            .onChange(of: appContainer.currentLedger?.id) { _, _ in
+                refresh()
+            }
             .sheet(isPresented: $showAddSheet) {
                 AddEditTransactionView()
             }
@@ -58,7 +64,7 @@ struct DashboardView: View {
                     Text("收入")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    CurrencyText(amount: viewModel.monthlyIncome, currencyCode: ledgerCurrency, showSign: true, font: .title3, foregroundColor: .green)
+                    CurrencyText(amount: viewModel.monthlyIncome, currencyCode: ledgerCurrency, font: .title3, foregroundColor: .green)
                         .fontWeight(.semibold)
                 }
                 VStack {
@@ -116,7 +122,7 @@ struct DashboardView: View {
         return VStack(alignment: .leading, spacing: 4) {
             Label(account.name, systemImage: account.iconName ?? "creditcard")
                 .font(.subheadline)
-            CurrencyText(amount: bal, currencyCode: account.currencyCode, font: .caption, foregroundColor: bal >= 0 ? .secondary : Color.red)
+            CurrencyText(amount: abs(bal), currencyCode: account.currencyCode, font: .caption, foregroundColor: bal >= 0 ? .secondary : Color.red)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
