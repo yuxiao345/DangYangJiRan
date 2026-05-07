@@ -22,8 +22,7 @@ final class Category {
     @Relationship(deleteRule: .nullify)
     var transactions: [Transaction]? = []
 
-    @Relationship(deleteRule: .cascade)
-    var budgets: [Budget]? = []
+    var budgetItems: [BudgetItem]? = []
 
     var type: TransactionType {
         get { TransactionType(rawValue: typeRaw) ?? .expense }
@@ -51,4 +50,9 @@ final class Category {
         self.sortOrder = sortOrder
         self.parent = parent
     }
+}
+
+extension Category: Hashable {
+    public func hash(into hasher: inout Hasher) { hasher.combine(id) }
+    public static func == (lhs: Category, rhs: Category) -> Bool { lhs.id == rhs.id }
 }

@@ -11,7 +11,6 @@ struct LedgerSettingsView: View {
     @State private var type: LedgerType = .personal
     @State private var currencyCode: String = "CNY"
     @State private var showDeleteAlert = false
-    @State private var members: [Member] = []
 
     private let currencies = ["CNY", "USD", "EUR", "JPY", "GBP", "HKD", "AUD", "CAD"]
 
@@ -48,32 +47,14 @@ struct LedgerSettingsView: View {
                 NavigationLink("项目管理") {
                     ProjectListView(ledger: ledger)
                 }
+                NavigationLink("预算管理") {
+                    BudgetBookListView(ledger: ledger)
+                }
                 NavigationLink("模板管理") {
                     TemplateListView(ledger: ledger)
                 }
                 NavigationLink("待报销") {
                     PendingReimbursementView(ledger: ledger)
-                }
-            }
-
-            Section("联系人 (\(members.count))") {
-                if members.isEmpty {
-                    Text("暂无联系人")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(members) { member in
-                        HStack {
-                            Image(systemName: member.avatar)
-                                .foregroundStyle(.blue)
-                            Text(LocalizedStringKey(member.name))
-                            Spacer()
-                            if !member.isActive {
-                                Text("已停用")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
                 }
             }
 
@@ -97,7 +78,6 @@ struct LedgerSettingsView: View {
             name = ledger.name
             type = ledger.type
             currencyCode = ledger.defaultCurrencyCode
-            loadMembers()
         }
         .alert("确认删除", isPresented: $showDeleteAlert) {
             Button("取消", role: .cancel) {}
@@ -114,10 +94,6 @@ struct LedgerSettingsView: View {
         ledger.defaultCurrencyCode = currencyCode
         try? appContainer.ledgerService.updateLedger(ledger, context: modelContext)
         dismiss()
-    }
-
-    private func loadMembers() {
-        members = (try? appContainer.memberService.fetchMembers(for: ledger, context: modelContext)) ?? []
     }
 
     private func confirmDelete() {

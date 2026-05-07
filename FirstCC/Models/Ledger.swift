@@ -27,11 +27,7 @@ final class Ledger {
     @Relationship(deleteRule: .cascade)
     var templates: [TransactionTemplate]? = []
 
-    @Relationship(deleteRule: .cascade)
-    var budgets: [Budget]? = []
-
-    @Relationship(deleteRule: .cascade)
-    var lendings: [Lending]? = []
+    var budgetBooks: [BudgetBook]? = []
 
     var type: LedgerType {
         get { LedgerType(rawValue: typeRaw) ?? .personal }

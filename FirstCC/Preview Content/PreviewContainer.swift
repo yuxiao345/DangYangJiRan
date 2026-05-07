@@ -7,8 +7,8 @@ enum PreviewContainer {
         let schema = Schema([
             Ledger.self, User.self, Account.self, Category.self,
             Transaction.self, TransactionTemplate.self, RecurringRule.self,
-            SplitGroup.self, SplitEntry.self, Budget.self,
-            Lending.self, LendingRepayment.self, InstallmentPlan.self,
+            SplitGroup.self, SplitEntry.self, BudgetBook.self, BudgetItem.self,
+            InstallmentPlan.self,
             ExchangeRate.self
         ])
 

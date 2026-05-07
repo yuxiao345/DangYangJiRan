@@ -19,7 +19,6 @@ final class Transaction {
     var refundAmount: Decimal?
     var reimbursementStatusRaw: String
     var reimbursedById: UUID?
-    var counterparty: String?
     var tags: [String]
     var photoURLs: [String]?
     var installmentPlanId: UUID?
@@ -77,7 +76,6 @@ final class Transaction {
         refundAmount: Decimal? = nil,
         reimbursementStatus: ReimbursementStatus = .none,
         reimbursedById: UUID? = nil,
-        counterparty: String? = nil,
         tags: [String] = [],
         photoURLs: [String]? = nil,
         installmentPlanId: UUID? = nil,
@@ -104,7 +102,6 @@ final class Transaction {
         self.refundAmount = refundAmount
         self.reimbursementStatusRaw = reimbursementStatus.rawValue
         self.reimbursedById = reimbursedById
-        self.counterparty = counterparty
         self.tags = tags
         self.photoURLs = photoURLs
         self.installmentPlanId = installmentPlanId

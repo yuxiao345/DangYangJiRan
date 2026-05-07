@@ -69,9 +69,6 @@ struct TransactionRowView: View {
     }
 
     private var titleText: String {
-        if transaction.type == .lending, let cp = transaction.counterparty {
-            return cp
-        }
         return transaction.category?.name ?? transaction.type.displayName
     }
 

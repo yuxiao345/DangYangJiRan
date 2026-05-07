@@ -17,8 +17,7 @@ final class AppContainer: ObservableObject {
     let merchantService: MerchantServiceProtocol
     let projectService: ProjectServiceProtocol
     private(set) var splitService: SplitServiceProtocol?
-    private(set) var budgetService: BudgetServiceProtocol?
-    private(set) var lendingService: LendingServiceProtocol?
+    private(set) var budgetService: BudgetServiceProtocol
     private(set) var installmentService: InstallmentServiceProtocol?
     private(set) var currencyService: CurrencyServiceProtocol?
     private(set) var exchangeRateService: ExchangeRateServiceProtocol?
@@ -37,7 +36,7 @@ final class AppContainer: ObservableObject {
         let schema = Schema([
             Ledger.self, User.self, Account.self, Category.self,
             Transaction.self, TransactionTemplate.self, RecurringRule.self,
-            SplitGroup.self, SplitEntry.self, Budget.self,
+            SplitGroup.self, SplitEntry.self, BudgetBook.self, BudgetItem.self,
             InstallmentPlan.self,
             ExchangeRate.self, Member.self, Merchant.self, Project.self
         ])
@@ -77,6 +76,7 @@ final class AppContainer: ObservableObject {
         memberService = MemberServiceImpl()
         merchantService = MerchantServiceImpl()
         projectService = ProjectServiceImpl()
+        budgetService = BudgetServiceImpl()
     }
 
     func handleShareURL(_ url: URL) async {

@@ -43,13 +43,13 @@ struct AccountServiceImpl: AccountServiceProtocol {
                 balance += t.amount
             } else if t.type == .expense {
                 balance += t.amount
-            } else if t.type == .transfer {
+            } else if t.type == .transfer || t.type == .lending {
                 if t.account?.id == accountID {
                     balance -= abs(t.amount)
                 } else if t.toAccount?.id == accountID {
                     balance += abs(t.amount)
                 }
-            } else if t.type == .adjustment || t.type == .lending {
+            } else if t.type == .adjustment {
                 balance += t.amount
             }
         }

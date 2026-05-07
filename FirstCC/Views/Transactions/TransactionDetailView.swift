@@ -35,21 +35,12 @@ struct TransactionDetailView: View {
                 }
             }
 
-            if transaction.type == .lending, let cp = transaction.counterparty {
-                Section("借贷") {
-                    LabeledContent("对方") { Text(LocalizedStringKey(cp)) }
-                    LabeledContent("方向") {
-                        Text(LocalizedStringKey(transaction.amount < 0 ? "我借出" : "我收回/借入"))
-                    }
-                }
-            }
-
             Section("账户") {
-                if transaction.type == .transfer {
-                    LabeledContent("转出") {
+                if transaction.type == .transfer || transaction.type == .lending {
+                    LabeledContent(transaction.type == .lending ? "借出账户" : "转出") {
                         Text(LocalizedStringKey(transaction.account?.name ?? "—"))
                     }
-                    LabeledContent("转入") {
+                    LabeledContent(transaction.type == .lending ? "借入账户" : "转入") {
                         Text(LocalizedStringKey(transaction.toAccount?.name ?? "—"))
                     }
                 } else {
@@ -233,7 +224,6 @@ struct TransactionDetailView: View {
     }
 
     private var titleText: String {
-        if transaction.type == .lending, let cp = transaction.counterparty { return cp }
         return transaction.category?.name ?? transaction.type.displayName
     }
 

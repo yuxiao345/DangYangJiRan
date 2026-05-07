@@ -21,8 +21,6 @@ struct AddEditTransactionView: View {
     @State private var selectedAccount: Account?
     @State private var selectedToAccount: Account?
     @State private var selectedCategory: Category?
-    @State private var isLendOut: Bool = true
-    @State private var counterparty: String = ""
     @State private var selectedMember: Member?
     @State private var selectedMerchant: Merchant?
     @State private var selectedProject: Project?
@@ -112,16 +110,6 @@ struct AddEditTransactionView: View {
                     }
                 }
 
-                if type == .lending {
-                    Section {
-                        Picker("借贷方向", selection: $isLendOut) {
-                            Label("我借出", systemImage: "arrow.up.right").tag(true)
-                            Label("我收回/借入", systemImage: "arrow.down.left").tag(false)
-                        }
-                        TextField("对方（姓名/公司）", text: $counterparty)
-                    }
-                }
-
                 Section("账户") {
                     if accounts.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
@@ -133,11 +121,11 @@ struct AddEditTransactionView: View {
                     } else {
                         Button { openPicker(.account) } label: {
                             pickerRow(
-                                label: type == .transfer ? "转出账户" : "账户",
+                                label: (type == .transfer || type == .lending) ? "转出账户" : "账户",
                                 value: selectedAccount?.name
                             )
                         }
-                        if type == .transfer {
+                        if type == .transfer || type == .lending {
                             Button { openPicker(.toAccount) } label: {
                                 pickerRow(label: "转入账户", value: selectedToAccount?.name)
                             }
@@ -466,8 +454,6 @@ struct AddEditTransactionView: View {
         selectedMember = t.member
         selectedMerchant = t.merchant
         selectedProject = t.project
-        counterparty = t.counterparty ?? ""
-        isLendOut = t.amount < 0
         isReimbursable = t.isReimbursable
         if let paths = t.photoURLs, !paths.isEmpty {
             photoDataList = PhotoStorage.load(paths: paths)
@@ -484,9 +470,6 @@ struct AddEditTransactionView: View {
         selectedMember = template.member
         selectedMerchant = template.merchant
         selectedProject = template.project
-        if type == .lending {
-            isLendOut = true
-        }
     }
 
     private func save() {
@@ -507,9 +490,6 @@ struct AddEditTransactionView: View {
                     category: selectedCategory, member: selectedMember,
                     merchant: selectedMerchant, project: selectedProject
                 )
-                if type == .lending {
-                    transaction.counterparty = counterparty.isEmpty ? nil : counterparty
-                }
                 if type == .expense, isReimbursable {
                     transaction.reimbursementStatus = .pending
                 }
@@ -530,7 +510,7 @@ struct AddEditTransactionView: View {
     private func signingAmount() -> Decimal {
         switch type {
         case .expense: return -abs(amount)
-        case .lending: return isLendOut ? -abs(amount) : abs(amount)
+        case .lending: return selectedToAccount?.type == .lending ? -abs(amount) : abs(amount)
         default: return abs(amount)
         }
     }
@@ -552,7 +532,7 @@ struct AddEditTransactionView: View {
         t.member = selectedMember
         t.merchant = selectedMerchant
         t.project = selectedProject
-        t.counterparty = counterparty.isEmpty ? nil : counterparty
+
         if t.type == .expense {
             t.reimbursementStatus = isReimbursable ? .pending : .none
         }

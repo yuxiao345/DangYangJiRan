@@ -9,6 +9,7 @@ enum AccountType: String, Codable, CaseIterable {
     case investment = "投资"
     case loan = "贷款"
     case insurance = "保险"
+    case lending = "借贷"
     case other = "自定义"
 
     var displayName: String { NSLocalizedString(rawValue, comment: "") }
@@ -23,6 +24,7 @@ enum AccountType: String, Codable, CaseIterable {
         case .investment: "chart.line.uptrend.xyaxis"
         case .loan: "building.columns"
         case .insurance: "shield.checkered"
+        case .lending: "arrow.triangle.swap"
         case .other: "square.grid.2x2"
         }
     }

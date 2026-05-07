@@ -17,9 +17,6 @@ final class User {
     @Relationship(deleteRule: .cascade)
     var splitEntries: [SplitEntry]? = []
 
-    @Relationship(deleteRule: .nullify)
-    var lendings: [Lending]? = []
-
     var role: LedgerRole {
         get { LedgerRole(rawValue: roleRaw) ?? .member }
         set { roleRaw = newValue.rawValue }
