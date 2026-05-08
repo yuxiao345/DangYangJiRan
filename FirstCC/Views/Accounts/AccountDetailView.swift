@@ -11,7 +11,7 @@ struct AccountDetailView: View {
     var body: some View {
         List {
             Section("余额") {
-                CurrencyText(amount: abs(balance), currencyCode: account.currencyCode, font: .largeTitle, foregroundColor: balance >= 0 ? Color.blue : Color.red)
+                CurrencyText(amount: balance, currencyCode: account.currencyCode, showSign: true, font: .largeTitle, foregroundColor: balance >= 0 ? .green : .red)
                     .fontWeight(.bold)
             }
 

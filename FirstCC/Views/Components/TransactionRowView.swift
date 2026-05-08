@@ -23,6 +23,9 @@ struct TransactionRowView: View {
                             .foregroundStyle(reimbursed ? .green : .orange)
                             .clipShape(Capsule())
                     }
+                    if transaction.isLending {
+                        lendingStatusBadge
+                    }
                     if transaction.refundGroupId != nil {
                         Image(systemName: "arrow.uturn.backward")
                             .font(.caption2)
@@ -55,26 +58,38 @@ struct TransactionRowView: View {
     }
 
     private var iconName: String {
-        transaction.category?.iconName ?? transaction.type.systemIcon
+        if let d = transaction.lendingDirection { return d.systemIcon }
+        return transaction.category?.iconName ?? transaction.type.systemIcon
     }
 
     private var iconColor: Color {
-        switch transaction.type {
-        case .income: .green
-        case .expense: .red
-        case .transfer: .blue
-        case .lending: .orange
-        case .adjustment: .purple
+        if transaction.isLending {
+            switch transaction.lendingDirection {
+            case .lendOut, .repay: return .orange
+            case .borrowIn, .collect: return .green
+            case .none: return .orange
+            }
         }
+        switch transaction.type {
+        case .income: return .green
+        case .expense: return .red
+        case .transfer: return .blue
+        case .lending: break
+        case .adjustment: return .purple
+        }
+        return .secondary
     }
 
     private var titleText: String {
+        if let d = transaction.lendingDirection { return d.displayName }
         return transaction.category?.name ?? transaction.type.displayName
     }
 
     private var subtitleText: String? {
-        if transaction.type == .lending {
-            return transaction.note
+        if transaction.isLending {
+            let from = transaction.account?.name ?? "—"
+            let to = transaction.toAccount?.name ?? "—"
+            return "\(NSLocalizedString(from, comment: "")) → \(NSLocalizedString(to, comment: ""))"
         }
         return transaction.note
     }
@@ -83,18 +98,41 @@ struct TransactionRowView: View {
     private var amountView: some View {
         switch transaction.type {
         case .income:
-            CurrencyText(amount: abs(transaction.amount), currencyCode: transaction.currencyCode, font: .body, foregroundColor: .green)
+            CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, font: .body, foregroundColor: .green)
         case .expense:
-            CurrencyText(amount: abs(transaction.amount), currencyCode: transaction.currencyCode, font: .body, foregroundColor: .red)
+            CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, font: .body, foregroundColor: .red)
         case .transfer:
             HStack(spacing: 0) {
                 Text("↔")
                 CurrencyText(amount: abs(transaction.amount), currencyCode: transaction.currencyCode, font: .body, foregroundColor: .blue)
             }
         case .lending:
-            CurrencyText(amount: abs(transaction.amount), currencyCode: transaction.currencyCode, showSign: transaction.amount > 0, font: .body, foregroundColor: transaction.amount >= 0 ? .green : .orange)
+            CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, font: .body, foregroundColor: transaction.amount >= 0 ? .green : .orange)
         case .adjustment:
             CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, font: .body, foregroundColor: transaction.amount >= 0 ? .green : .red)
+        }
+    }
+
+    @ViewBuilder
+    private var lendingStatusBadge: some View {
+        if let d = transaction.lendingDirection {
+            switch transaction.lendingStatus {
+            case .pending:
+                Text(LocalizedStringKey(d.pendingLabel))
+                    .font(.caption2)
+                    .padding(.horizontal, 4)
+                    .background(Color.orange.opacity(0.15))
+                    .foregroundStyle(.orange)
+                    .clipShape(Capsule())
+            case .settled:
+                Text(LocalizedStringKey("已结清"))
+                    .font(.caption2)
+                    .padding(.horizontal, 4)
+                    .background(Color.green.opacity(0.15))
+                    .foregroundStyle(.green)
+                    .clipShape(Capsule())
+            case .none: EmptyView()
+            }
         }
     }
 }

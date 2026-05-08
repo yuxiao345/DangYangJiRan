@@ -85,7 +85,7 @@ struct AccountsManagementView: View {
             }
             Spacer()
             let bal = balances[account.id] ?? 0
-            CurrencyText(amount: abs(bal), currencyCode: account.currencyCode, font: .subheadline, foregroundColor: bal >= 0 ? .primary : Color.red)
+            CurrencyText(amount: bal, currencyCode: account.currencyCode, showSign: true, font: .subheadline, foregroundColor: bal >= 0 ? .green : .red)
             Image(systemName: "chevron.right")
                 .font(.caption)
                 .foregroundStyle(.tertiary)

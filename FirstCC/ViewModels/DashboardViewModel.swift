@@ -42,7 +42,7 @@ final class DashboardViewModel: ObservableObject {
         }
 
         monthlyIncome = normalTransactions.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
-        monthlyExpense = normalTransactions.filter { $0.type == .expense }.reduce(0) { $0 + abs($1.amount) }
+        monthlyExpense = normalTransactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
 
         recentTransactions = Array(allTransactions.prefix(10))
     }

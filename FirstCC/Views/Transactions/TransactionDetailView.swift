@@ -14,12 +14,13 @@ struct TransactionDetailView: View {
     @State private var selectedPhotoItem: PhotoItem?
     @State private var linkedRefunds: [Transaction] = []
     @State private var settledExpenses: [Transaction] = []
+    @State private var settledLendingTransactions: [Transaction] = []
 
     var body: some View {
         List {
             Section {
                 HStack(spacing: 12) {
-                    Image(systemName: transaction.category?.iconName ?? transaction.type.systemIcon)
+                    Image(systemName: transaction.lendingDirection?.systemIcon ?? transaction.category?.iconName ?? transaction.type.systemIcon)
                         .font(.largeTitle)
                         .foregroundStyle(iconColor)
                         .frame(width: 44)
@@ -37,10 +38,10 @@ struct TransactionDetailView: View {
 
             Section("账户") {
                 if transaction.type == .transfer || transaction.type == .lending {
-                    LabeledContent(transaction.type == .lending ? "借出账户" : "转出") {
+                    LabeledContent("转出") {
                         Text(LocalizedStringKey(transaction.account?.name ?? "—"))
                     }
-                    LabeledContent(transaction.type == .lending ? "借入账户" : "转入") {
+                    LabeledContent("转入") {
                         Text(LocalizedStringKey(transaction.toAccount?.name ?? "—"))
                     }
                 } else {
@@ -123,6 +124,36 @@ struct TransactionDetailView: View {
                 }
             }
 
+            if transaction.isLending {
+                Section {
+                    LabeledContent("借贷状态") {
+                        switch transaction.lendingStatus {
+                        case .pending:
+                            if let d = transaction.lendingDirection {
+                                Text(LocalizedStringKey(d.pendingLabel)).foregroundStyle(.orange)
+                            }
+                        case .settled:
+                            Text("已结清").foregroundStyle(.green)
+                        case .none:
+                            Text("—").foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                if !settledLendingTransactions.isEmpty {
+                    Section("借贷结算") {
+                        ForEach(settledLendingTransactions) { item in
+                            HStack {
+                                Text(LocalizedStringKey(item.lendingDirection?.displayName ?? ""))
+                                    .font(.body)
+                                Spacer()
+                                CurrencyText(amount: abs(item.amount), currencyCode: item.currencyCode, font: .body)
+                            }
+                        }
+                    }
+                }
+            }
+
             Section("详情") {
                 if let note = transaction.note, !note.isEmpty {
                     LabeledContent("备注") { Text(note) }
@@ -192,6 +223,7 @@ struct TransactionDetailView: View {
             }
             loadLinkedRefunds()
             loadSettledExpenses()
+            loadSettledLendingTransactions()
         }
         .sheet(item: $selectedPhotoItem) { item in
             FullScreenPhotoView(data: item.data)
@@ -214,21 +246,34 @@ struct TransactionDetailView: View {
 
     private var iconColor: Color {
         if let cat = transaction.category { return Color(hex: cat.colorHex) }
+        if transaction.isLending {
+            switch transaction.lendingDirection {
+            case .lendOut, .repay: return .orange
+            case .borrowIn, .collect: return .green
+            case .none: return .orange
+            }
+        }
         switch transaction.type {
         case .income: return .green
         case .expense: return .red
         case .transfer: return .blue
-        case .lending: return .orange
+        case .lending: break
         case .adjustment: return .purple
         }
+        return .secondary
     }
 
     private var titleText: String {
+        if let d = transaction.lendingDirection { return d.displayName }
         return transaction.category?.name ?? transaction.type.displayName
     }
 
     private var subtitleText: String {
-        if transaction.type == .lending { return "借贷" }
+        if transaction.isLending {
+            let from = transaction.account?.name ?? "—"
+            let to = transaction.toAccount?.name ?? "—"
+            return "\(NSLocalizedString(from, comment: "")) → \(NSLocalizedString(to, comment: ""))"
+        }
         return transaction.type.displayName
     }
 
@@ -236,16 +281,16 @@ struct TransactionDetailView: View {
     private var amountView: some View {
         switch transaction.type {
         case .income:
-            CurrencyText(amount: abs(transaction.amount), currencyCode: transaction.currencyCode, font: .title2, foregroundColor: .green)
+            CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, font: .title2, foregroundColor: .green)
         case .expense:
-            CurrencyText(amount: abs(transaction.amount), currencyCode: transaction.currencyCode, font: .title2, foregroundColor: .red)
+            CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, font: .title2, foregroundColor: .red)
         case .transfer:
             HStack(spacing: 0) {
                 Text("↔").font(.title2)
                 CurrencyText(amount: abs(transaction.amount), currencyCode: transaction.currencyCode, font: .title2, foregroundColor: .blue)
             }
         case .lending:
-            CurrencyText(amount: abs(transaction.amount), currencyCode: transaction.currencyCode, showSign: transaction.amount > 0, font: .title2, foregroundColor: transaction.amount >= 0 ? .green : .orange)
+            CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, font: .title2, foregroundColor: transaction.amount >= 0 ? .green : .orange)
         case .adjustment:
             CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, font: .title2, foregroundColor: transaction.amount >= 0 ? .green : .red)
         }
@@ -270,6 +315,14 @@ struct TransactionDetailView: View {
             predicate: #Predicate { $0.reimbursedById == tid }
         )
         settledExpenses = (try? modelContext.fetch(descriptor)) ?? []
+    }
+
+    private func loadSettledLendingTransactions() {
+        let tid = transaction.id
+        let descriptor = FetchDescriptor<Transaction>(
+            predicate: #Predicate { $0.settledByLendingTransactionId == tid }
+        )
+        settledLendingTransactions = (try? modelContext.fetch(descriptor)) ?? []
     }
 
     private func delete() {

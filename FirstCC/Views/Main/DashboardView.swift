@@ -64,21 +64,21 @@ struct DashboardView: View {
                     Text("收入")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    CurrencyText(amount: viewModel.monthlyIncome, currencyCode: ledgerCurrency, font: .title3, foregroundColor: .green)
+                    CurrencyText(amount: viewModel.monthlyIncome, currencyCode: ledgerCurrency, showSign: true, font: .title3, foregroundColor: .green)
                         .fontWeight(.semibold)
                 }
                 VStack {
                     Text("支出")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    CurrencyText(amount: viewModel.monthlyExpense, currencyCode: ledgerCurrency, font: .title3, foregroundColor: Color.red)
+                    CurrencyText(amount: viewModel.monthlyExpense, currencyCode: ledgerCurrency, showSign: true, font: .title3, foregroundColor: .red)
                         .fontWeight(.semibold)
                 }
                 VStack {
                     Text("结余")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    CurrencyText(amount: viewModel.monthlyNet, currencyCode: ledgerCurrency, font: .title3, foregroundColor: viewModel.monthlyNet >= 0 ? Color.blue : Color.red)
+                    CurrencyText(amount: viewModel.monthlyNet, currencyCode: ledgerCurrency, showSign: true, font: .title3, foregroundColor: viewModel.monthlyNet >= 0 ? .green : .red)
                         .fontWeight(.semibold)
                 }
             }
@@ -122,7 +122,7 @@ struct DashboardView: View {
         return VStack(alignment: .leading, spacing: 4) {
             Label(account.name, systemImage: account.iconName ?? "creditcard")
                 .font(.subheadline)
-            CurrencyText(amount: abs(bal), currencyCode: account.currencyCode, font: .caption, foregroundColor: bal >= 0 ? .secondary : Color.red)
+            CurrencyText(amount: bal, currencyCode: account.currencyCode, showSign: true, font: .caption, foregroundColor: bal >= 0 ? .green : .red)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)

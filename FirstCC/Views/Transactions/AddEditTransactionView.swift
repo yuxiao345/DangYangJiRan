@@ -43,6 +43,12 @@ struct AddEditTransactionView: View {
     @State private var selectedExpenseIDs: Set<UUID> = []
     @State private var showReimbursementSection: Bool = false
 
+    // Lending
+    @State private var lendingDirection: LendingDirection = .lendOut
+    @State private var pendingLendingTransactions: [Transaction] = []
+    @State private var selectedLendingIDs: Set<UUID> = []
+    @State private var showLendingSettlementSection: Bool = false
+
     init(editing: Transaction? = nil, prefillType: TransactionType? = nil, prefillExpenseIDs: [UUID] = []) {
         self.editing = editing
         if let t = prefillType {
@@ -104,6 +110,20 @@ struct AddEditTransactionView: View {
                     }
                 }
 
+                if type == .lending {
+                    Section("借贷方向") {
+                        Picker("方向", selection: $lendingDirection) {
+                            ForEach(LendingDirection.allCases, id: \.self) { d in
+                                Label(d.displayName, systemImage: d.systemIcon).tag(d)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .onChange(of: lendingDirection) { _, _ in
+                            loadPendingLendingTransactions()
+                        }
+                    }
+                }
+
                 if type == .expense {
                     Section {
                         Toggle("可报销", isOn: $isReimbursable)
@@ -151,6 +171,53 @@ struct AddEditTransactionView: View {
                         }
                         Button { openPicker(.project) } label: {
                             pickerRow(label: "项目", value: selectedProject?.name)
+                        }
+                    }
+                }
+
+                if (lendingDirection == .collect || lendingDirection == .repay) && !pendingLendingTransactions.isEmpty {
+                    Section {
+                        DisclosureGroup(isExpanded: $showLendingSettlementSection) {
+                            ForEach(pendingLendingTransactions) { item in
+                                HStack {
+                                    Image(systemName: selectedLendingIDs.contains(item.id)
+                                          ? "checkmark.circle.fill" : "circle")
+                                        .foregroundStyle(selectedLendingIDs.contains(item.id) ? .blue : .secondary)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(LocalizedStringKey(item.account?.name ?? ""))
+                                            .font(.body)
+                                        Text(displayLabelForLending(item))
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                        Text(item.date.formatted(date: .abbreviated, time: .omitted))
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    CurrencyText(amount: abs(item.amount), currencyCode: item.currencyCode, font: .body)
+                                }
+                                .contentShape(Rectangle())
+                                .onTapGesture { toggleLending(item.id) }
+                            }
+                        } label: {
+                            HStack {
+                                Text(lendingDirection == .collect ? "关联待收款" : "关联待付款")
+                                Spacer()
+                                if !selectedLendingIDs.isEmpty {
+                                    Text("\(selectedLendingIDs.count)笔")
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    }
+
+                    if !selectedLendingIDs.isEmpty {
+                        Section {
+                            HStack {
+                                Text("已选合计")
+                                Spacer()
+                                CurrencyText(amount: selectedLendingTotal, currencyCode: appContainer.currentLedger?.defaultCurrencyCode ?? "CNY", font: .body, foregroundColor: .secondary)
+                            }
                         }
                     }
                 }
@@ -243,7 +310,9 @@ struct AddEditTransactionView: View {
             .onChange(of: pickerSheet) { _, newValue in
                 if newValue != nil { loadData() }
             }
-            .onChange(of: type) { _, _ in loadCategories(); loadPendingExpenses() }
+            .onChange(of: type) { _, _ in loadCategories(); loadPendingExpenses(); loadPendingLendingTransactions() }
+            .onChange(of: selectedAccount) { _, _ in selectedLendingIDs = []; loadPendingLendingTransactions() }
+            .onChange(of: selectedToAccount) { _, _ in selectedLendingIDs = []; loadPendingLendingTransactions() }
             .onChange(of: selectedExpenseIDs) { _, _ in
                 guard !selectedExpenseIDs.isEmpty, editing == nil else { return }
                 amount = selectedReimbursementTotal
@@ -418,7 +487,7 @@ struct AddEditTransactionView: View {
     }
 
     private var canSave: Bool {
-        amount != 0 && selectedAccount != nil && (type != .transfer || selectedToAccount != nil)
+        amount != 0 && selectedAccount != nil && (type == .transfer || type == .lending ? selectedToAccount != nil : true)
     }
 
     private func openPicker(_ sheet: PickerSheetType) {
@@ -435,6 +504,7 @@ struct AddEditTransactionView: View {
         projects = (try? appContainer.projectService.fetchProjects(for: ledger, context: modelContext)) ?? []
         templates = (try? appContainer.templateService.fetchTemplates(for: ledger, context: modelContext)) ?? []
         loadPendingExpenses()
+        loadPendingLendingTransactions()
     }
 
     private func loadCategories() {
@@ -455,6 +525,7 @@ struct AddEditTransactionView: View {
         selectedMerchant = t.merchant
         selectedProject = t.project
         isReimbursable = t.isReimbursable
+        if let d = t.lendingDirection { lendingDirection = d }
         if let paths = t.photoURLs, !paths.isEmpty {
             photoDataList = PhotoStorage.load(paths: paths)
         }
@@ -493,6 +564,15 @@ struct AddEditTransactionView: View {
                 if type == .expense, isReimbursable {
                     transaction.reimbursementStatus = .pending
                 }
+                if type == .lending {
+                    transaction.lendingDirection = lendingDirection
+                    if lendingDirection == .lendOut || lendingDirection == .borrowIn {
+                        transaction.lendingStatus = .pending
+                    }
+                    if (lendingDirection == .collect || lendingDirection == .repay) && !selectedLendingIDs.isEmpty {
+                        try linkSettledLendingTransactions(to: transaction.id)
+                    }
+                }
                 if !photoDataList.isEmpty {
                     transaction.photoURLs = PhotoStorage.save(photoDataList, transactionId: transaction.id)
                 }
@@ -510,9 +590,64 @@ struct AddEditTransactionView: View {
     private func signingAmount() -> Decimal {
         switch type {
         case .expense: return -abs(amount)
-        case .lending: return selectedToAccount?.type == .lending ? -abs(amount) : abs(amount)
+        case .lending: return lendingSign
         default: return abs(amount)
         }
+    }
+
+    private var lendingSign: Decimal {
+        switch lendingDirection {
+        case .lendOut, .repay: return -abs(amount)
+        case .borrowIn, .collect: return abs(amount)
+        }
+    }
+
+    private func loadPendingLendingTransactions() {
+        guard let ledger = appContainer.currentLedger, type == .lending else {
+            pendingLendingTransactions = []
+            return
+        }
+        let all = (try? appContainer.transactionService.fetchTransactions(for: ledger, context: modelContext, filters: nil)) ?? []
+        switch lendingDirection {
+        case .collect:
+            guard let accountID = selectedAccount?.id else {
+                pendingLendingTransactions = []
+                return
+            }
+            pendingLendingTransactions = all.filter {
+                $0.lendingDirection == .lendOut && $0.lendingStatus == .pending && $0.toAccount?.id == accountID
+            }
+        case .repay:
+            guard let toAccountID = selectedToAccount?.id else {
+                pendingLendingTransactions = []
+                return
+            }
+            pendingLendingTransactions = all.filter {
+                $0.lendingDirection == .borrowIn && $0.lendingStatus == .pending && $0.account?.id == toAccountID
+            }
+        default:
+            pendingLendingTransactions = []
+        }
+    }
+
+    private func toggleLending(_ id: UUID) {
+        if selectedLendingIDs.contains(id) {
+            selectedLendingIDs.remove(id)
+        } else {
+            selectedLendingIDs.insert(id)
+        }
+    }
+
+    private var selectedLendingTotal: Decimal {
+        pendingLendingTransactions
+            .filter { selectedLendingIDs.contains($0.id) }
+            .reduce(0) { $0 + abs($1.amount) }
+    }
+
+    private func displayLabelForLending(_ t: Transaction) -> String {
+        if let note = t.note, !note.isEmpty { return note }
+        if let cat = t.category { return NSLocalizedString(cat.name, comment: "") }
+        return t.date.formatted(date: .numeric, time: .omitted)
     }
 
     private func updateExisting(_ original: Transaction, ledger: Ledger) throws {
@@ -535,6 +670,15 @@ struct AddEditTransactionView: View {
 
         if t.type == .expense {
             t.reimbursementStatus = isReimbursable ? .pending : .none
+        }
+        if t.type == .lending {
+            t.lendingDirection = lendingDirection
+            if lendingDirection == .lendOut || lendingDirection == .borrowIn {
+                t.lendingStatus = .pending
+            }
+            if (lendingDirection == .collect || lendingDirection == .repay) && !selectedLendingIDs.isEmpty {
+                try linkSettledLendingTransactions(to: t.id)
+            }
         }
         if t.type == .income, !selectedExpenseIDs.isEmpty {
             try linkReimbursedExpenses(to: t.id)
@@ -577,6 +721,37 @@ struct AddEditTransactionView: View {
             guard let expense = try? modelContext.fetch(descriptor).first else { continue }
             expense.reimbursementStatus = .reimbursed
             expense.reimbursedById = incomeId
+        }
+        try modelContext.save()
+    }
+
+    private func linkSettledLendingTransactions(to settlementId: UUID) throws {
+        let settlementAmount = abs(signingAmount())
+        var remaining = settlementAmount
+        let sortedIDs = pendingLendingTransactions
+            .filter { selectedLendingIDs.contains($0.id) }
+            .sorted { $0.date < $1.date }
+            .map { $0.id }
+
+        for lendingID in sortedIDs {
+            guard remaining > 0 else { break }
+            var descriptor = FetchDescriptor<Transaction>(predicate: #Predicate { $0.id == lendingID })
+            descriptor.fetchLimit = 1
+            guard let item = try? modelContext.fetch(descriptor).first else { continue }
+            let debtAmount = abs(item.amount)
+            let alreadyPaid = item.settledAmount ?? 0
+            let stillOwed = debtAmount - alreadyPaid
+            if remaining >= stillOwed {
+                item.settledAmount = debtAmount
+                item.lendingStatus = .settled
+                remaining -= stillOwed
+            } else {
+                item.settledAmount = alreadyPaid + remaining
+                remaining = 0
+            }
+            if item.settledByLendingTransactionId == nil {
+                item.settledByLendingTransactionId = settlementId
+            }
         }
         try modelContext.save()
     }

@@ -19,6 +19,10 @@ final class Transaction {
     var refundAmount: Decimal?
     var reimbursementStatusRaw: String
     var reimbursedById: UUID?
+    var lendingDirectionRaw: String?
+    var lendingStatusRaw: String
+    var settledByLendingTransactionId: UUID?
+    var settledAmount: Decimal?
     var tags: [String]
     var photoURLs: [String]?
     var installmentPlanId: UUID?
@@ -58,6 +62,23 @@ final class Transaction {
 
     var isReimbursable: Bool { reimbursementStatus != .none }
 
+    var lendingDirection: LendingDirection? {
+        get { lendingDirectionRaw.flatMap { LendingDirection(rawValue: $0) } }
+        set { lendingDirectionRaw = newValue?.rawValue }
+    }
+
+    var lendingStatus: LendingStatus {
+        get { LendingStatus(rawValue: lendingStatusRaw) ?? .none }
+        set { lendingStatusRaw = newValue.rawValue }
+    }
+
+    var isLending: Bool { lendingDirection != nil }
+
+    var isLendingPending: Bool { lendingStatus == .pending }
+
+    @Relationship(deleteRule: .nullify)
+    var settledByLending: Transaction? = nil
+
     @Relationship(deleteRule: .nullify)
     var reimbursedBy: Transaction? = nil
 
@@ -76,6 +97,10 @@ final class Transaction {
         refundAmount: Decimal? = nil,
         reimbursementStatus: ReimbursementStatus = .none,
         reimbursedById: UUID? = nil,
+        lendingDirection: LendingDirection? = nil,
+        lendingStatus: LendingStatus = .none,
+        settledByLendingTransactionId: UUID? = nil,
+        settledAmount: Decimal? = nil,
         tags: [String] = [],
         photoURLs: [String]? = nil,
         installmentPlanId: UUID? = nil,
@@ -102,6 +127,10 @@ final class Transaction {
         self.refundAmount = refundAmount
         self.reimbursementStatusRaw = reimbursementStatus.rawValue
         self.reimbursedById = reimbursedById
+        self.lendingDirectionRaw = lendingDirection?.rawValue
+        self.lendingStatusRaw = lendingStatus.rawValue
+        self.settledByLendingTransactionId = settledByLendingTransactionId
+        self.settledAmount = settledAmount
         self.tags = tags
         self.photoURLs = photoURLs
         self.installmentPlanId = installmentPlanId

@@ -19,7 +19,7 @@ struct AccountRowView: View {
 
             Spacer()
 
-            CurrencyText(amount: abs(balance), currencyCode: account.currencyCode, font: .body, foregroundColor: balance >= 0 ? .primary : Color.red)
+            CurrencyText(amount: balance, currencyCode: account.currencyCode, showSign: true, font: .body, foregroundColor: balance >= 0 ? .green : .red)
         }
         .padding(.vertical, 4)
     }

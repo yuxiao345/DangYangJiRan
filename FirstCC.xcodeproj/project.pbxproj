@@ -1063,7 +1063,9 @@
         "0862DA55D8BC384B2944EBCB",
         "38C7BA9D41065C1559BC6594",
         "1B29AB99138D90241E214966",
-        "E9DCE24DCB1CA0A1C496F038"
+        "E9DCE24DCB1CA0A1C496F038",
+        "79050E2BD64C4A04BCBEB390",
+        "C946718662C04E89B2E9DDBF"
       ],
       "name": "Enums",
       "path": "Enums",
@@ -1379,7 +1381,9 @@
         "778F31677D9941268BD63836",
         "902992FFE8414678883D2B5E",
         "8AF04D5A54F94AB5912E898D",
-        "A756709FC464473D81FD6E53"
+        "A756709FC464473D81FD6E53",
+        "651C5508977649FD9BE4B222",
+        "DA9FCCCFF00249B6A17C063E"
       ],
       "runOnlyForDeploymentPostprocessing": "0"
     },
@@ -1743,6 +1747,26 @@
     "12E4D435E85A4CE09B340827": {
       "isa": "PBXBuildFile",
       "fileRef": "6E9F2F73566C4007AC5A5056"
+    },
+    "79050E2BD64C4A04BCBEB390": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "LendingDirection.swift",
+      "sourceTree": "<group>"
+    },
+    "C946718662C04E89B2E9DDBF": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "LendingStatus.swift",
+      "sourceTree": "<group>"
+    },
+    "651C5508977649FD9BE4B222": {
+      "isa": "PBXBuildFile",
+      "fileRef": "79050E2BD64C4A04BCBEB390"
+    },
+    "DA9FCCCFF00249B6A17C063E": {
+      "isa": "PBXBuildFile",
+      "fileRef": "C946718662C04E89B2E9DDBF"
     }
   },
   "rootObject": "1781F676DEDF5767F3243DB0"
