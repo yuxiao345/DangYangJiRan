@@ -67,16 +67,26 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
                 )
                 if following > now {
                     // This is the current period — generate the transaction
+                    let signedAmount: Decimal = {
+                        switch template.type {
+                        case .expense: return -abs(template.amount)
+                        case .income: return abs(template.amount)
+                        case .transfer, .adjustment, .lending: return template.amount
+                        }
+                    }()
                     let transaction = Transaction(
                         type: template.type,
-                        amount: template.amount,
+                        amount: signedAmount,
                         currencyCode: template.currencyCode,
                         note: template.note,
                         date: nextDate,
                         tags: template.tags,
                         account: template.account,
                         toAccount: template.toAccount,
-                        category: template.category
+                        category: template.category,
+                        member: template.member,
+                        merchant: template.merchant,
+                        project: template.project
                     )
                     transaction.ledger = template.ledger
                     transaction.template = template
@@ -100,5 +110,16 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
 
     func nextGenerateDate(for rule: RecurringRule) -> Date? {
         rule.nextGenerateDate
+    }
+
+    func fetchRules(for ledger: Ledger, context: ModelContext) throws -> [RecurringRule] {
+        let descriptor = FetchDescriptor<RecurringRule>()
+        let allRules = try context.fetch(descriptor)
+        return allRules.filter { $0.template?.ledger?.id == ledger.id }
+    }
+
+    func fetchActiveRules(for ledger: Ledger, context: ModelContext) throws -> [RecurringRule] {
+        let allRules = try fetchRules(for: ledger, context: context)
+        return allRules.filter { $0.isActive }
     }
 }

@@ -13,4 +13,6 @@ protocol RecurringServiceProtocol {
     func disableRecurring(template: TransactionTemplate, context: ModelContext) throws
     func processDueRecurring(context: ModelContext) throws
     func nextGenerateDate(for rule: RecurringRule) -> Date?
+    func fetchRules(for ledger: Ledger, context: ModelContext) throws -> [RecurringRule]
+    func fetchActiveRules(for ledger: Ledger, context: ModelContext) throws -> [RecurringRule]
 }

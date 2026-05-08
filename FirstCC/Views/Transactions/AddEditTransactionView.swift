@@ -628,6 +628,7 @@ struct AddEditTransactionView: View {
         default:
             pendingLendingTransactions = []
         }
+        selectedLendingIDs = Set(pendingLendingTransactions.map(\.id))
     }
 
     private func toggleLending(_ id: UUID) {

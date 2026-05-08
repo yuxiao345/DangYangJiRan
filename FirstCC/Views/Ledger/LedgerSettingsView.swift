@@ -53,6 +53,9 @@ struct LedgerSettingsView: View {
                 NavigationLink("模板管理") {
                     TemplateListView(ledger: ledger)
                 }
+                NavigationLink("周期账管理") {
+                    RecurringListView(ledger: ledger)
+                }
                 NavigationLink("待报销") {
                     PendingReimbursementView(ledger: ledger)
                 }

@@ -1204,7 +1204,9 @@
       "isa": "PBXGroup",
       "children": [
         "E2FC3138D0335E3DBF2CF209",
-        "8C8B386C22A054949810A8DE"
+        "8C8B386C22A054949810A8DE",
+        "85225EB98FA6C84F05A18907",
+        "900EC6B0A9793D05DDC86466"
       ],
       "name": "Templates",
       "path": "Templates",
@@ -1383,7 +1385,9 @@
         "8AF04D5A54F94AB5912E898D",
         "A756709FC464473D81FD6E53",
         "651C5508977649FD9BE4B222",
-        "DA9FCCCFF00249B6A17C063E"
+        "DA9FCCCFF00249B6A17C063E",
+        "DC36F459EE1A6B4AA8369911",
+        "2EDCCFAF5AE92F3DE7B6BD8F"
       ],
       "runOnlyForDeploymentPostprocessing": "0"
     },
@@ -1767,6 +1771,26 @@
     "DA9FCCCFF00249B6A17C063E": {
       "isa": "PBXBuildFile",
       "fileRef": "C946718662C04E89B2E9DDBF"
+    },
+    "85225EB98FA6C84F05A18907": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "RecurringListView.swift",
+      "sourceTree": "<group>"
+    },
+    "900EC6B0A9793D05DDC86466": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "AddEditRecurringView.swift",
+      "sourceTree": "<group>"
+    },
+    "DC36F459EE1A6B4AA8369911": {
+      "isa": "PBXBuildFile",
+      "fileRef": "85225EB98FA6C84F05A18907"
+    },
+    "2EDCCFAF5AE92F3DE7B6BD8F": {
+      "isa": "PBXBuildFile",
+      "fileRef": "900EC6B0A9793D05DDC86466"
     }
   },
   "rootObject": "1781F676DEDF5767F3243DB0"
