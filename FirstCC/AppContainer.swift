@@ -14,6 +14,7 @@ final class AppContainer: ObservableObject {
     let templateService: TemplateServiceProtocol
     let recurringService: RecurringServiceProtocol
     let creditCardStatementService: CreditCardStatementServiceProtocol
+    let bankOCRService: BankOCRServiceProtocol
     let memberService: MemberServiceProtocol
     let merchantService: MerchantServiceProtocol
     let projectService: ProjectServiceProtocol
@@ -84,6 +85,7 @@ final class AppContainer: ObservableObject {
         projectService = ProjectServiceImpl()
         budgetService = BudgetServiceImpl()
         creditCardStatementService = CreditCardStatementServiceImpl()
+        bankOCRService = BankOCRServiceImpl()
     }
 
     func handleShareURL(_ url: URL) async {

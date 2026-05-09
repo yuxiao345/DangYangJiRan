@@ -22,6 +22,37 @@ struct CreditCardStatementServiceImpl: CreditCardStatementServiceProtocol {
     }
 
     func deleteStatement(_ statement: CreditCardStatement, context: ModelContext) throws {
+        // Un-reconcile transactions within this statement's billing period
+        if let account = statement.account {
+            let calendar = Calendar.current
+            let billingDay = account.billingDay ?? 1
+            let year = statement.periodYear
+            let month = statement.periodMonth
+
+            var prevMonth = month - 1; var prevYear = year
+            if prevMonth < 1 { prevMonth = 12; prevYear -= 1 }
+
+            var startComps = DateComponents(year: prevYear, month: prevMonth, day: billingDay)
+            startComps.hour = 0; startComps.minute = 0; startComps.second = 0
+            let startDate = calendar.date(from: startComps)
+
+            var endComps = DateComponents(year: year, month: month, day: billingDay)
+            endComps.hour = 23; endComps.minute = 59; endComps.second = 59
+            let endDate = calendar.date(from: endComps)
+
+            let accountID = account.id
+            let descriptor = FetchDescriptor<Transaction>(
+                predicate: #Predicate { $0.account?.id == accountID && $0.isReconciled == true }
+            )
+            if let reconciled = try? context.fetch(descriptor) {
+                for txn in reconciled {
+                    if let sd = startDate, let ed = endDate,
+                       txn.date >= sd && txn.date <= ed {
+                        txn.isReconciled = false
+                    }
+                }
+            }
+        }
         context.delete(statement)
         try context.save()
     }

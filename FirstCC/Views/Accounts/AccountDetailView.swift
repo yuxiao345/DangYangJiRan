@@ -36,6 +36,12 @@ struct AccountDetailView: View {
                     } label: {
                         Label("对账管理", systemImage: "checklist")
                     }
+
+                    NavigationLink {
+                        OCRTestView(account: account)
+                    } label: {
+                        Label("OCR 识别测试", systemImage: "camera.viewfinder")
+                    }
                 }
             }
 
