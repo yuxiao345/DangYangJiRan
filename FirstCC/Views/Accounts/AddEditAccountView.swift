@@ -54,10 +54,11 @@ struct AddEditAccountView: View {
                                 Text("每月\(day)日").tag(day)
                             }
                         }
-                        Picker("账期", selection: $graceDays) {
-                            Text("18天").tag(18)
-                            Text("20天").tag(20)
-                            Text("25天").tag(25)
+                        HStack {
+                            Text("账期")
+                            TextField("天数", value: $graceDays, format: .number)
+                                .keyboardType(.numberPad)
+                                .multilineTextAlignment(.trailing)
                         }
                         HStack {
                             Text("还款日")
