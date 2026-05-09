@@ -15,8 +15,7 @@ struct AddEditAccountView: View {
     @State private var initialBalance: Decimal = 0
     @State private var creditLimit: Decimal = 0
     @State private var hasCreditLimit = false
-    @State private var billDate: Date = Date()
-    @State private var dueDate: Date = Date()
+    @State private var billingDay: Int = 1
 
     init(ledger: Ledger? = nil) {
         self.ledger = ledger
@@ -48,8 +47,11 @@ struct AddEditAccountView: View {
                         Toggle("设置额度", isOn: $hasCreditLimit)
                         if hasCreditLimit {
                             CurrencyTextField(label: "额度", value: $creditLimit)
-                            DatePicker("账单日", selection: $billDate, displayedComponents: .date)
-                            DatePicker("还款日", selection: $dueDate, displayedComponents: .date)
+                            Picker("账单日", selection: $billingDay) {
+                                ForEach(1...31, id: \.self) { day in
+                                    Text("每月\(day)日").tag(day)
+                                }
+                            }
                         }
                     }
                 }
@@ -76,8 +78,7 @@ struct AddEditAccountView: View {
             type: accountType,
             initialBalance: initialBalance,
             creditLimit: hasCreditLimit ? creditLimit : nil,
-            billDate: hasCreditLimit ? billDate : nil,
-            dueDate: hasCreditLimit ? dueDate : nil
+            billingDay: hasCreditLimit ? billingDay : nil
         )
         try? appContainer.accountService.createAccount(account, ledger: ledger, context: modelContext)
         dismiss()

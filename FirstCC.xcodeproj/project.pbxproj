@@ -980,7 +980,8 @@
         "F695310E79DF42977ADCC677",
         "78B742E8F53C850C5EE595EE",
         "AC9D861E80D1DCA0F1C0F9CB",
-        "7310CF2AAAE940F9823BA210"
+        "7310CF2AAAE940F9823BA210",
+        "C6C226E69DD4621020674C7E"
       ],
       "name": "Models",
       "path": "Models",
@@ -1092,7 +1093,8 @@
         "ACF33BE7C1C33F5B95307988",
         "9F2082BE56246CA6F98D918C",
         "1C9129B1EACD775E7DEFFE6F",
-        "406A3EA063094D7DB040079A"
+        "406A3EA063094D7DB040079A",
+        "E142B6AC103A3CFE6DCC830B"
       ],
       "name": "Implementations",
       "path": "Implementations",
@@ -1116,7 +1118,8 @@
         "13A27CA96743727FDD560642",
         "A57DC433798434D184024462",
         "F6C3C5850CB1904E1775012A",
-        "7A17CF9388F2D9B8235012F5"
+        "7A17CF9388F2D9B8235012F5",
+        "4396984B8C65A4A25956EB9F"
       ],
       "name": "Protocols",
       "path": "Protocols",
@@ -1129,7 +1132,8 @@
         "633DAA0D7A1EA35858B5D954",
         "68CE49DF8E68612B65F18AA5",
         "A34FD357885AD857D31AA01C",
-        "0717F2FADE0D27C070224E90"
+        "0717F2FADE0D27C070224E90",
+        "F1E2D3C4B5A69788796A5B4C"
       ],
       "name": "Accounts",
       "path": "Accounts",
@@ -1387,7 +1391,11 @@
         "651C5508977649FD9BE4B222",
         "DA9FCCCFF00249B6A17C063E",
         "DC36F459EE1A6B4AA8369911",
-        "2EDCCFAF5AE92F3DE7B6BD8F"
+        "2EDCCFAF5AE92F3DE7B6BD8F",
+        "7822D5A28FB063103354255C",
+        "613B4797E192DB2E572403E3",
+        "CA689B290781F7D54C2919B7",
+        "3D2E1F0A9B8C7D6E5F4A3B2C"
       ],
       "runOnlyForDeploymentPostprocessing": "0"
     },
@@ -1791,6 +1799,46 @@
     "2EDCCFAF5AE92F3DE7B6BD8F": {
       "isa": "PBXBuildFile",
       "fileRef": "900EC6B0A9793D05DDC86466"
+    },
+    "C6C226E69DD4621020674C7E": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "CreditCardStatement.swift",
+      "sourceTree": "<group>"
+    },
+    "7822D5A28FB063103354255C": {
+      "isa": "PBXBuildFile",
+      "fileRef": "C6C226E69DD4621020674C7E"
+    },
+    "4396984B8C65A4A25956EB9F": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "CreditCardStatementServiceProtocol.swift",
+      "sourceTree": "<group>"
+    },
+    "613B4797E192DB2E572403E3": {
+      "isa": "PBXBuildFile",
+      "fileRef": "4396984B8C65A4A25956EB9F"
+    },
+    "E142B6AC103A3CFE6DCC830B": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "CreditCardStatementServiceImpl.swift",
+      "sourceTree": "<group>"
+    },
+    "CA689B290781F7D54C2919B7": {
+      "isa": "PBXBuildFile",
+      "fileRef": "E142B6AC103A3CFE6DCC830B"
+    },
+    "F1E2D3C4B5A69788796A5B4C": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "CreditCardReconciliationView.swift",
+      "sourceTree": "<group>"
+    },
+    "3D2E1F0A9B8C7D6E5F4A3B2C": {
+      "isa": "PBXBuildFile",
+      "fileRef": "F1E2D3C4B5A69788796A5B4C"
     }
   },
   "rootObject": "1781F676DEDF5767F3243DB0"

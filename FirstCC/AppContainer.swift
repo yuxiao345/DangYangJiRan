@@ -13,6 +13,7 @@ final class AppContainer: ObservableObject {
     let categoryService: CategoryServiceProtocol
     let templateService: TemplateServiceProtocol
     let recurringService: RecurringServiceProtocol
+    let creditCardStatementService: CreditCardStatementServiceProtocol
     let memberService: MemberServiceProtocol
     let merchantService: MerchantServiceProtocol
     let projectService: ProjectServiceProtocol
@@ -38,7 +39,7 @@ final class AppContainer: ObservableObject {
             Transaction.self, TransactionTemplate.self, RecurringRule.self,
             SplitGroup.self, SplitEntry.self, BudgetBook.self, BudgetItem.self,
             InstallmentPlan.self,
-            ExchangeRate.self, Member.self, Merchant.self, Project.self
+            ExchangeRate.self, Member.self, Merchant.self, Project.self, CreditCardStatement.self
         ])
 
         let configuration = ModelConfiguration(
@@ -77,6 +78,7 @@ final class AppContainer: ObservableObject {
         merchantService = MerchantServiceImpl()
         projectService = ProjectServiceImpl()
         budgetService = BudgetServiceImpl()
+        creditCardStatementService = CreditCardStatementServiceImpl()
     }
 
     func handleShareURL(_ url: URL) async {

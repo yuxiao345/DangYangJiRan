@@ -14,6 +14,7 @@ final class Account {
     var creditLimit: Decimal?
     var billDate: Date?
     var dueDate: Date?
+    var billingDay: Int?
     var isArchived: Bool
     var sortOrder: Int
     var createdAt: Date
@@ -43,6 +44,7 @@ final class Account {
         creditLimit: Decimal? = nil,
         billDate: Date? = nil,
         dueDate: Date? = nil,
+        billingDay: Int? = nil,
         isArchived: Bool = false,
         sortOrder: Int = 0
     ) {
@@ -57,6 +59,7 @@ final class Account {
         self.creditLimit = creditLimit
         self.billDate = billDate
         self.dueDate = dueDate
+        self.billingDay = billingDay
         self.isArchived = isArchived
         self.sortOrder = sortOrder
         self.createdAt = Date()

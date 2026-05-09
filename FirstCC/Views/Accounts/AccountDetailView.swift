@@ -22,11 +22,16 @@ struct AccountDetailView: View {
                             CurrencyText(amount: limit, currencyCode: account.currencyCode, font: .body)
                         }
                     }
-                    if let billDate = account.billDate {
-                        LabeledContent("账单日", value: billDate.formatted(date: .abbreviated, time: .omitted))
+                    if let billingDay = account.billingDay {
+                        LabeledContent("账单日", value: "每月\(billingDay)日")
                     }
-                    if let dueDate = account.dueDate {
-                        LabeledContent("还款日", value: dueDate.formatted(date: .abbreviated, time: .omitted))
+                }
+
+                Section {
+                    NavigationLink {
+                        CreditCardReconciliationView(account: account)
+                    } label: {
+                        Label("对账管理", systemImage: "checklist")
                     }
                 }
             }
