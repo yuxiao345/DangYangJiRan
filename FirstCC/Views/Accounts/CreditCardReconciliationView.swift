@@ -11,8 +11,6 @@ struct CreditCardReconciliationView: View {
     @State private var editingStatement: CreditCardStatement?
     @State private var viewingMonth: (year: Int, month: Int)?
 
-    private let months = Calendar.current.monthSymbols
-
     var body: some View {
         List {
             if statements.isEmpty {
@@ -60,7 +58,7 @@ struct CreditCardReconciliationView: View {
 
         return VStack(spacing: 6) {
             HStack {
-                Text("\(months[stmt.periodMonth - 1])月")
+                Text("\(stmt.periodMonth)月")
                     .font(.headline)
                 Spacer()
                 if stmt.isReconciled {
