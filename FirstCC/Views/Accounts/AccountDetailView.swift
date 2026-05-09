@@ -25,14 +25,8 @@ struct AccountDetailView: View {
                     if let billingDay = account.billingDay {
                         LabeledContent("账单日", value: "每月\(billingDay)日")
                     }
-                    if let graceDays = account.graceDays {
-                        LabeledContent("账期", value: "\(graceDays)天")
-                    }
-                    if let dueDate = account.dueDate {
-                        LabeledContent("还款日") {
-                            Text(dueDate.formatted(Date.FormatStyle.dateTime.month(.abbreviated).day()))
-                                .foregroundStyle(.secondary)
-                        }
+                    if let dueDay = account.dueDay {
+                        LabeledContent("还款日", value: "每月\(dueDay)日")
                     }
                 }
 

@@ -153,7 +153,7 @@ struct EditAccountView: View {
     @State private var hasCreditLimit: Bool
     @State private var creditLimit: Decimal
     @State private var billingDay: Int
-    @State private var graceDays: Int
+    @State private var dueDay: Int
 
     init(account: Account) {
         self.account = account
@@ -164,20 +164,7 @@ struct EditAccountView: View {
         _hasCreditLimit = State(initialValue: account.creditLimit != nil)
         _creditLimit = State(initialValue: account.creditLimit ?? 0)
         _billingDay = State(initialValue: account.billingDay ?? 1)
-        _graceDays = State(initialValue: account.graceDays ?? 20)
-    }
-
-    private var computedDueDateText: String {
-        let calendar = Calendar.current
-        var comps = calendar.dateComponents([.year, .month], from: Date())
-        comps.day = min(billingDay, 28)
-        comps.hour = 0; comps.minute = 0; comps.second = 0
-        guard let billingDate = calendar.date(from: comps),
-              let due = calendar.date(byAdding: .day, value: graceDays, to: billingDate) else {
-            return "—"
-        }
-        let dc = calendar.dateComponents([.month, .day], from: due)
-        return "\(dc.month ?? 0)月\(dc.day ?? 0)日"
+        _dueDay = State(initialValue: account.dueDay ?? 5)
     }
 
     var body: some View {
@@ -240,17 +227,10 @@ struct EditAccountView: View {
                                 Text("每月\(day)日").tag(day)
                             }
                         }
-                        HStack {
-                            Text("账期")
-                            TextField("天数", value: $graceDays, format: .number)
-                                .keyboardType(.numberPad)
-                                .multilineTextAlignment(.trailing)
-                        }
-                        HStack {
-                            Text("还款日")
-                            Spacer()
-                            Text(computedDueDateText)
-                                .foregroundStyle(.secondary)
+                        Picker("还款日", selection: $dueDay) {
+                            ForEach(1...31, id: \.self) { day in
+                                Text("每月\(day)日").tag(day)
+                            }
                         }
                     }
                 }
@@ -284,7 +264,7 @@ struct EditAccountView: View {
         if account.type == .creditCard {
             account.creditLimit = hasCreditLimit ? creditLimit : nil
             account.billingDay = billingDay
-            account.graceDays = graceDays
+            account.dueDay = dueDay
         }
         try? appContainer.accountService.updateAccount(account, context: modelContext)
         dismiss()

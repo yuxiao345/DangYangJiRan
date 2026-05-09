@@ -13,7 +13,7 @@ final class Account {
     var initialBalance: Decimal
     var creditLimit: Decimal?
     var billingDay: Int?
-    var graceDays: Int?
+    var dueDay: Int?
     var isArchived: Bool
     var sortOrder: Int
     var createdAt: Date
@@ -31,17 +31,6 @@ final class Account {
         set { typeRaw = newValue.rawValue }
     }
 
-    var dueDate: Date? {
-        guard let billingDay, let graceDays else { return nil }
-        let calendar = Calendar.current
-        let today = Date()
-        var comps = calendar.dateComponents([.year, .month], from: today)
-        comps.day = min(billingDay, 28)
-        comps.hour = 0; comps.minute = 0; comps.second = 0
-        guard let billingDate = calendar.date(from: comps) else { return nil }
-        return calendar.date(byAdding: .day, value: graceDays, to: billingDate)
-    }
-
     init(
         id: UUID = UUID(),
         name: String,
@@ -53,7 +42,7 @@ final class Account {
         initialBalance: Decimal = 0,
         creditLimit: Decimal? = nil,
         billingDay: Int? = nil,
-        graceDays: Int? = nil,
+        dueDay: Int? = nil,
         isArchived: Bool = false,
         sortOrder: Int = 0
     ) {
@@ -67,7 +56,7 @@ final class Account {
         self.initialBalance = initialBalance
         self.creditLimit = creditLimit
         self.billingDay = billingDay
-        self.graceDays = graceDays
+        self.dueDay = dueDay
         self.isArchived = isArchived
         self.sortOrder = sortOrder
         self.createdAt = Date()

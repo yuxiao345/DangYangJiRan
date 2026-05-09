@@ -16,7 +16,7 @@ struct AddEditAccountView: View {
     @State private var creditLimit: Decimal = 0
     @State private var hasCreditLimit = false
     @State private var billingDay: Int = 1
-    @State private var graceDays: Int = 20
+    @State private var dueDay: Int = 5
 
     init(ledger: Ledger? = nil) {
         self.ledger = ledger
@@ -54,17 +54,10 @@ struct AddEditAccountView: View {
                                 Text("每月\(day)日").tag(day)
                             }
                         }
-                        HStack {
-                            Text("账期")
-                            TextField("天数", value: $graceDays, format: .number)
-                                .keyboardType(.numberPad)
-                                .multilineTextAlignment(.trailing)
-                        }
-                        HStack {
-                            Text("还款日")
-                            Spacer()
-                            Text(computedDueDateText)
-                                .foregroundStyle(.secondary)
+                        Picker("还款日", selection: $dueDay) {
+                            ForEach(1...31, id: \.self) { day in
+                                Text("每月\(day)日").tag(day)
+                            }
                         }
                     }
                 }
@@ -83,19 +76,6 @@ struct AddEditAccountView: View {
         }
     }
 
-    private var computedDueDateText: String {
-        let calendar = Calendar.current
-        var comps = calendar.dateComponents([.year, .month], from: Date())
-        comps.day = min(billingDay, 28)
-        comps.hour = 0; comps.minute = 0; comps.second = 0
-        guard let billingDate = calendar.date(from: comps),
-              let due = calendar.date(byAdding: .day, value: graceDays, to: billingDate) else {
-            return "—"
-        }
-        let dc = calendar.dateComponents([.month, .day], from: due)
-        return "\(dc.month ?? 0)月\(dc.day ?? 0)日"
-    }
-
     private func save() {
         guard let ledger = effectiveLedger else { return }
         let account = Account(
@@ -105,7 +85,7 @@ struct AddEditAccountView: View {
             initialBalance: initialBalance,
             creditLimit: hasCreditLimit ? creditLimit : nil,
             billingDay: accountType == .creditCard ? billingDay : nil,
-            graceDays: accountType == .creditCard ? graceDays : nil
+            dueDay: accountType == .creditCard ? dueDay : nil
         )
         try? appContainer.accountService.createAccount(account, ledger: ledger, context: modelContext)
         dismiss()
