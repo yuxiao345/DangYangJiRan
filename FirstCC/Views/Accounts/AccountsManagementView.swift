@@ -148,11 +148,17 @@ struct EditAccountView: View {
     @State private var name: String
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var customIconData: Data?
+    @State private var hasCreditLimit: Bool
+    @State private var creditLimit: Decimal
+    @State private var billingDay: Int
 
     init(account: Account) {
         self.account = account
         _name = State(initialValue: account.name)
         _customIconData = State(initialValue: account.customIconData)
+        _hasCreditLimit = State(initialValue: account.creditLimit != nil)
+        _creditLimit = State(initialValue: account.creditLimit ?? 0)
+        _billingDay = State(initialValue: account.billingDay ?? 1)
     }
 
     var body: some View {
@@ -185,6 +191,24 @@ struct EditAccountView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+
+                if account.type == .creditCard {
+                    Section("信用卡设置") {
+                        Toggle("设置信用额度", isOn: $hasCreditLimit)
+                        if hasCreditLimit {
+                            HStack {
+                                Text("¥").foregroundStyle(.secondary)
+                                TextField("额度", value: $creditLimit, format: .number)
+                                    .keyboardType(.decimalPad)
+                            }
+                        }
+                        Picker("账单日", selection: $billingDay) {
+                            ForEach(1...31, id: \.self) { day in
+                                Text("每月\(day)日").tag(day)
+                            }
+                        }
+                    }
+                }
             }
             .navigationTitle("编辑账户")
             .navigationBarTitleDisplayMode(.inline)
@@ -210,6 +234,10 @@ struct EditAccountView: View {
     private func save() {
         account.name = name
         account.customIconData = customIconData
+        if account.type == .creditCard {
+            account.creditLimit = hasCreditLimit ? creditLimit : nil
+            account.billingDay = billingDay
+        }
         try? appContainer.accountService.updateAccount(account, context: modelContext)
         dismiss()
     }

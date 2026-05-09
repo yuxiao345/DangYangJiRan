@@ -43,14 +43,14 @@ struct AddEditAccountView: View {
                 }
 
                 if accountType == .creditCard {
-                    Section("信用额度") {
-                        Toggle("设置额度", isOn: $hasCreditLimit)
+                    Section("信用卡设置") {
+                        Toggle("设置信用额度", isOn: $hasCreditLimit)
                         if hasCreditLimit {
                             CurrencyTextField(label: "额度", value: $creditLimit)
-                            Picker("账单日", selection: $billingDay) {
-                                ForEach(1...31, id: \.self) { day in
-                                    Text("每月\(day)日").tag(day)
-                                }
+                        }
+                        Picker("账单日", selection: $billingDay) {
+                            ForEach(1...31, id: \.self) { day in
+                                Text("每月\(day)日").tag(day)
                             }
                         }
                     }
@@ -78,7 +78,7 @@ struct AddEditAccountView: View {
             type: accountType,
             initialBalance: initialBalance,
             creditLimit: hasCreditLimit ? creditLimit : nil,
-            billingDay: hasCreditLimit ? billingDay : nil
+            billingDay: accountType == .creditCard ? billingDay : nil
         )
         try? appContainer.accountService.createAccount(account, ledger: ledger, context: modelContext)
         dismiss()
