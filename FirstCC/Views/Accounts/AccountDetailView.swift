@@ -58,7 +58,17 @@ struct AccountDetailView: View {
         balance = appContainer.accountService.calculateBalance(for: account, context: modelContext)
         guard let ledger = appContainer.currentLedger else { return }
         let accountID = account.id
-        let all = (try? appContainer.transactionService.fetchTransactions(for: ledger, context: modelContext, filters: nil)) ?? []
-        transactions = all.filter { $0.account?.id == accountID || $0.toAccount?.id == accountID }
+
+        let asSource = FetchDescriptor<Transaction>(
+            predicate: #Predicate { $0.account?.id == accountID },
+            sortBy: [SortDescriptor(\.date, order: .reverse)]
+        )
+        let asDest = FetchDescriptor<Transaction>(
+            predicate: #Predicate { $0.toAccount?.id == accountID },
+            sortBy: [SortDescriptor(\.date, order: .reverse)]
+        )
+        let source = (try? modelContext.fetch(asSource)) ?? []
+        let dest = (try? modelContext.fetch(asDest)) ?? []
+        transactions = (source + dest).sorted { $0.date > $1.date }
     }
 }

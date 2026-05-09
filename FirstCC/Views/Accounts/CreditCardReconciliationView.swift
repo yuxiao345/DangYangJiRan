@@ -140,14 +140,14 @@ struct StatementTransactionsView: View {
         List {
             Section("账单金额") {
                 let bankAmount = statement.statementAmount ?? 0
-                let appAmount = -totalAppAmount
-                let diff = bankAmount + appAmount
+                let rawAppAmount = totalAppAmount
+                let diff = bankAmount + rawAppAmount
 
                 LabeledContent("银行账单") {
                     CurrencyText(amount: bankAmount, currencyCode: account.currencyCode, showSign: false, font: .body)
                 }
                 LabeledContent("App记账") {
-                    CurrencyText(amount: -appAmount, currencyCode: account.currencyCode, showSign: false, font: .body)
+                    CurrencyText(amount: -rawAppAmount, currencyCode: account.currencyCode, showSign: false, font: .body)
                 }
                 LabeledContent("差额") {
                     CurrencyText(amount: diff, currencyCode: account.currencyCode, showSign: true, font: .body, foregroundColor: diff == 0 ? .secondary : .red)
