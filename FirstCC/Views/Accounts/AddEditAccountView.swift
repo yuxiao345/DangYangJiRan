@@ -16,6 +16,7 @@ struct AddEditAccountView: View {
     @State private var creditLimit: Decimal = 0
     @State private var hasCreditLimit = false
     @State private var billingDay: Int = 1
+    @State private var graceDays: Int = 20
 
     init(ledger: Ledger? = nil) {
         self.ledger = ledger
@@ -53,6 +54,17 @@ struct AddEditAccountView: View {
                                 Text("每月\(day)日").tag(day)
                             }
                         }
+                        Picker("账期", selection: $graceDays) {
+                            Text("18天").tag(18)
+                            Text("20天").tag(20)
+                            Text("25天").tag(25)
+                        }
+                        HStack {
+                            Text("还款日")
+                            Spacer()
+                            Text("每月\(computedDueDay)日")
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
             }
@@ -70,6 +82,11 @@ struct AddEditAccountView: View {
         }
     }
 
+    private var computedDueDay: Int {
+        let raw = billingDay + graceDays
+        return raw > 31 ? raw - 31 : raw
+    }
+
     private func save() {
         guard let ledger = effectiveLedger else { return }
         let account = Account(
@@ -78,7 +95,8 @@ struct AddEditAccountView: View {
             type: accountType,
             initialBalance: initialBalance,
             creditLimit: hasCreditLimit ? creditLimit : nil,
-            billingDay: accountType == .creditCard ? billingDay : nil
+            billingDay: accountType == .creditCard ? billingDay : nil,
+            graceDays: accountType == .creditCard ? graceDays : nil
         )
         try? appContainer.accountService.createAccount(account, ledger: ledger, context: modelContext)
         dismiss()

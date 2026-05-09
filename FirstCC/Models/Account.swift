@@ -12,9 +12,8 @@ final class Account {
     var customIconData: Data?
     var initialBalance: Decimal
     var creditLimit: Decimal?
-    var billDate: Date?
-    var dueDate: Date?
     var billingDay: Int?
+    var graceDays: Int?
     var isArchived: Bool
     var sortOrder: Int
     var createdAt: Date
@@ -32,6 +31,13 @@ final class Account {
         set { typeRaw = newValue.rawValue }
     }
 
+    var dueDay: Int? {
+        guard let billingDay, let graceDays else { return nil }
+        let raw = billingDay + graceDays
+        // Simple wrap: if exceeds 31, assume next month
+        return raw > 31 ? raw - 31 : raw
+    }
+
     init(
         id: UUID = UUID(),
         name: String,
@@ -42,9 +48,8 @@ final class Account {
         customIconData: Data? = nil,
         initialBalance: Decimal = 0,
         creditLimit: Decimal? = nil,
-        billDate: Date? = nil,
-        dueDate: Date? = nil,
         billingDay: Int? = nil,
+        graceDays: Int? = nil,
         isArchived: Bool = false,
         sortOrder: Int = 0
     ) {
@@ -57,9 +62,8 @@ final class Account {
         self.customIconData = customIconData
         self.initialBalance = initialBalance
         self.creditLimit = creditLimit
-        self.billDate = billDate
-        self.dueDate = dueDate
         self.billingDay = billingDay
+        self.graceDays = graceDays
         self.isArchived = isArchived
         self.sortOrder = sortOrder
         self.createdAt = Date()

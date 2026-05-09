@@ -151,6 +151,7 @@ struct EditAccountView: View {
     @State private var hasCreditLimit: Bool
     @State private var creditLimit: Decimal
     @State private var billingDay: Int
+    @State private var graceDays: Int
 
     init(account: Account) {
         self.account = account
@@ -159,6 +160,12 @@ struct EditAccountView: View {
         _hasCreditLimit = State(initialValue: account.creditLimit != nil)
         _creditLimit = State(initialValue: account.creditLimit ?? 0)
         _billingDay = State(initialValue: account.billingDay ?? 1)
+        _graceDays = State(initialValue: account.graceDays ?? 20)
+    }
+
+    private var computedDueDay: Int {
+        let raw = billingDay + graceDays
+        return raw > 31 ? raw - 31 : raw
     }
 
     var body: some View {
@@ -207,6 +214,17 @@ struct EditAccountView: View {
                                 Text("每月\(day)日").tag(day)
                             }
                         }
+                        Picker("账期", selection: $graceDays) {
+                            Text("18天").tag(18)
+                            Text("20天").tag(20)
+                            Text("25天").tag(25)
+                        }
+                        HStack {
+                            Text("还款日")
+                            Spacer()
+                            Text("每月\(computedDueDay)日")
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
             }
@@ -237,6 +255,7 @@ struct EditAccountView: View {
         if account.type == .creditCard {
             account.creditLimit = hasCreditLimit ? creditLimit : nil
             account.billingDay = billingDay
+            account.graceDays = graceDays
         }
         try? appContainer.accountService.updateAccount(account, context: modelContext)
         dismiss()
