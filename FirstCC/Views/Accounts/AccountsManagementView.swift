@@ -146,6 +146,8 @@ struct EditAccountView: View {
     let account: Account
 
     @State private var name: String
+    @State private var currencyCode: String
+    @State private var initialBalance: Decimal
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var customIconData: Data?
     @State private var hasCreditLimit: Bool
@@ -156,6 +158,8 @@ struct EditAccountView: View {
     init(account: Account) {
         self.account = account
         _name = State(initialValue: account.name)
+        _currencyCode = State(initialValue: account.currencyCode)
+        _initialBalance = State(initialValue: account.initialBalance)
         _customIconData = State(initialValue: account.customIconData)
         _hasCreditLimit = State(initialValue: account.creditLimit != nil)
         _creditLimit = State(initialValue: account.creditLimit ?? 0)
@@ -171,8 +175,22 @@ struct EditAccountView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("名称") {
+                Section("基本信息") {
                     TextField("账户名称", text: $name)
+                    HStack {
+                        Text("类型")
+                        Spacer()
+                        Text(account.type.displayName)
+                            .foregroundStyle(.secondary)
+                    }
+                    Picker("币种", selection: $currencyCode) {
+                        Text("CNY").tag("CNY")
+                        Text("USD").tag("USD")
+                    }
+                }
+
+                Section("余额") {
+                    CurrencyTextField(label: "初始余额", value: $initialBalance)
                 }
 
                 Section("图标") {
@@ -251,6 +269,8 @@ struct EditAccountView: View {
 
     private func save() {
         account.name = name
+        account.currencyCode = currencyCode
+        account.initialBalance = initialBalance
         account.customIconData = customIconData
         if account.type == .creditCard {
             account.creditLimit = hasCreditLimit ? creditLimit : nil
