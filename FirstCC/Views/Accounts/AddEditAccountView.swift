@@ -50,7 +50,7 @@ struct AddEditAccountView: View {
                             CurrencyTextField(label: "额度", value: $creditLimit)
                         }
                         Picker("账单日", selection: $billingDay) {
-                            ForEach(1...31, id: \.self) { day in
+                            ForEach(1...28, id: \.self) { day in
                                 Text("每月\(day)日").tag(day)
                             }
                         }
@@ -63,7 +63,7 @@ struct AddEditAccountView: View {
                         HStack {
                             Text("还款日")
                             Spacer()
-                            Text("每月\(computedDueDay)日")
+                            Text(computedDueDateText)
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -83,9 +83,17 @@ struct AddEditAccountView: View {
         }
     }
 
-    private var computedDueDay: Int {
-        let raw = billingDay + graceDays
-        return raw > 31 ? raw - 31 : raw
+    private var computedDueDateText: String {
+        let calendar = Calendar.current
+        var comps = calendar.dateComponents([.year, .month], from: Date())
+        comps.day = min(billingDay, 28)
+        comps.hour = 0; comps.minute = 0; comps.second = 0
+        guard let billingDate = calendar.date(from: comps),
+              let due = calendar.date(byAdding: .day, value: graceDays, to: billingDate) else {
+            return "—"
+        }
+        let dc = calendar.dateComponents([.month, .day], from: due)
+        return "\(dc.month ?? 0)月\(dc.day ?? 0)日"
     }
 
     private func save() {

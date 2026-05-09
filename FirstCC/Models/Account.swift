@@ -31,11 +31,15 @@ final class Account {
         set { typeRaw = newValue.rawValue }
     }
 
-    var dueDay: Int? {
+    var dueDate: Date? {
         guard let billingDay, let graceDays else { return nil }
-        let raw = billingDay + graceDays
-        // Simple wrap: if exceeds 31, assume next month
-        return raw > 31 ? raw - 31 : raw
+        let calendar = Calendar.current
+        let today = Date()
+        var comps = calendar.dateComponents([.year, .month], from: today)
+        comps.day = min(billingDay, 28)
+        comps.hour = 0; comps.minute = 0; comps.second = 0
+        guard let billingDate = calendar.date(from: comps) else { return nil }
+        return calendar.date(byAdding: .day, value: graceDays, to: billingDate)
     }
 
     init(

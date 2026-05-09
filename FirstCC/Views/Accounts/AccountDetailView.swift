@@ -28,8 +28,11 @@ struct AccountDetailView: View {
                     if let graceDays = account.graceDays {
                         LabeledContent("账期", value: "\(graceDays)天")
                     }
-                    if let dueDay = account.dueDay {
-                        LabeledContent("还款日", value: "每月\(dueDay)日")
+                    if let dueDate = account.dueDate {
+                        LabeledContent("还款日") {
+                            Text(dueDate.formatted(Date.FormatStyle.dateTime.month(.abbreviated).day()))
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
 
