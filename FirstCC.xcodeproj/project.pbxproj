@@ -981,7 +981,8 @@
         "78B742E8F53C850C5EE595EE",
         "AC9D861E80D1DCA0F1C0F9CB",
         "7310CF2AAAE940F9823BA210",
-        "C6C226E69DD4621020674C7E"
+        "C6C226E69DD4621020674C7E",
+        "A1B2C3D4E5F6A7B8C9D0E1F3"
       ],
       "name": "Models",
       "path": "Models",
@@ -1395,7 +1396,8 @@
         "7822D5A28FB063103354255C",
         "613B4797E192DB2E572403E3",
         "CA689B290781F7D54C2919B7",
-        "3D2E1F0A9B8C7D6E5F4A3B2C"
+        "3D2E1F0A9B8C7D6E5F4A3B2C",
+        "F3E1D0C9B8A7F6E5D4C3B2A1"
       ],
       "runOnlyForDeploymentPostprocessing": "0"
     },
@@ -1839,6 +1841,16 @@
     "3D2E1F0A9B8C7D6E5F4A3B2C": {
       "isa": "PBXBuildFile",
       "fileRef": "F1E2D3C4B5A69788796A5B4C"
+    },
+    "A1B2C3D4E5F6A7B8C9D0E1F3": {
+      "isa": "PBXFileReference",
+      "lastKnownFileType": "sourcecode.swift",
+      "path": "SchemaMigrationPlan.swift",
+      "sourceTree": "<group>"
+    },
+    "F3E1D0C9B8A7F6E5D4C3B2A1": {
+      "isa": "PBXBuildFile",
+      "fileRef": "A1B2C3D4E5F6A7B8C9D0E1F3"
     }
   },
   "rootObject": "1781F676DEDF5767F3243DB0"

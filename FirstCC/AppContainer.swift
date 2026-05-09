@@ -50,6 +50,7 @@ final class AppContainer: ObservableObject {
         do {
             modelContainer = try ModelContainer(
                 for: schema,
+                migrationPlan: FirstCCMigrationPlan.self,
                 configurations: [configuration]
             )
         } catch {
@@ -62,7 +63,11 @@ final class AppContainer: ObservableObject {
                 try? fileManager.removeItem(atPath: storeURL.path + "-wal")
                 try? fileManager.removeItem(atPath: storeURL.path + "-shm")
             }
-            modelContainer = try! ModelContainer(for: schema, configurations: [configuration])
+            modelContainer = try! ModelContainer(
+                for: schema,
+                migrationPlan: FirstCCMigrationPlan.self,
+                configurations: [configuration]
+            )
         }
 
         // Phase 3: cloudKitContainer = CKContainer(identifier: CloudKitConfig.containerIdentifier)
