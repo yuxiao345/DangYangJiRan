@@ -35,7 +35,7 @@ struct AccountListView: View {
                 }
             }
         }
-        .sheet(isPresented: $showAddSheet) {
+        .sheet(isPresented: $showAddSheet, onDismiss: { loadAccounts() }) {
             AddEditAccountView()
         }
         .onAppear(perform: loadAccounts)
