@@ -8,8 +8,6 @@ struct CreditCardReconciliationView: View {
     let account: Account
     @State private var statements: [CreditCardStatement] = []
     @State private var showAddSheet = false
-    @State private var editingStatement: CreditCardStatement?
-    @State private var viewingMonth: (year: Int, month: Int)?
 
     var body: some View {
         List {
@@ -37,9 +35,6 @@ struct CreditCardReconciliationView: View {
         .sheet(isPresented: $showAddSheet, onDismiss: { loadStatements() }) {
             AddEditStatementView(account: account)
         }
-        .sheet(item: $editingStatement, onDismiss: { loadStatements() }) { stmt in
-            AddEditStatementView(account: account, editing: stmt)
-        }
         .task { loadStatements() }
     }
 
@@ -56,53 +51,55 @@ struct CreditCardReconciliationView: View {
         let bankAmount = stmt.statementAmount ?? 0
         let diff = bankAmount + appAmount
 
-        return VStack(spacing: 6) {
-            HStack {
-                Text("\(stmt.periodMonth)月")
-                    .font(.headline)
-                Spacer()
-                if stmt.isReconciled {
-                    Label("已核对", systemImage: "checkmark.circle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.green)
-                } else if diff != 0 {
-                    Text("差额 ¥\(abs(diff).formatted(.number.precision(.fractionLength(2))))")
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                        .fontWeight(.semibold)
-                } else {
-                    Text("差额 ¥0")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+        return NavigationLink {
+            StatementTransactionsView(account: account, statement: stmt, onUpdate: { loadStatements() })
+        } label: {
+            VStack(spacing: 6) {
+                HStack {
+                    Text("\(stmt.periodMonth)月")
+                        .font(.headline)
+                    Spacer()
+                    if stmt.isReconciled {
+                        Label("已核对", systemImage: "checkmark.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                    } else if diff != 0 {
+                        Text("差额 ¥\(abs(diff).formatted(.number.precision(.fractionLength(2))))")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                            .fontWeight(.semibold)
+                    } else {
+                        Text("差额 ¥0")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
-            }
 
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("银行账单")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    CurrencyText(amount: bankAmount, currencyCode: account.currencyCode, showSign: false, font: .subheadline)
-                }
-                Spacer()
-                VStack(alignment: .center, spacing: 2) {
-                    Text("App记账")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    CurrencyText(amount: -appAmount, currencyCode: account.currencyCode, showSign: false, font: .subheadline)
-                }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("差额")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    CurrencyText(amount: diff, currencyCode: account.currencyCode, showSign: true, font: .subheadline, foregroundColor: diff == 0 ? .secondary : .red)
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("银行账单")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        CurrencyText(amount: bankAmount, currencyCode: account.currencyCode, showSign: false, font: .subheadline)
+                    }
+                    Spacer()
+                    VStack(alignment: .center, spacing: 2) {
+                        Text("App记账")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        CurrencyText(amount: -appAmount, currencyCode: account.currencyCode, showSign: false, font: .subheadline)
+                    }
+                    Spacer()
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("差额")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        CurrencyText(amount: diff, currencyCode: account.currencyCode, showSign: true, font: .subheadline, foregroundColor: diff == 0 ? .secondary : .red)
+                    }
                 }
             }
+            .padding(.vertical, 4)
         }
-        .padding(.vertical, 4)
-        .contentShape(Rectangle())
-        .onTapGesture { editingStatement = stmt }
         .swipeActions(edge: .trailing) {
             Button {
                 stmt.isReconciled = !stmt.isReconciled
@@ -125,6 +122,96 @@ struct CreditCardReconciliationView: View {
 
     private func loadStatements() {
         statements = (try? appContainer.creditCardStatementService.fetchStatements(for: account, context: modelContext)) ?? []
+    }
+}
+
+struct StatementTransactionsView: View {
+    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(\.modelContext) private var modelContext
+
+    let account: Account
+    let statement: CreditCardStatement
+    let onUpdate: () -> Void
+
+    @State private var transactions: [Transaction] = []
+    @State private var showEditSheet = false
+
+    var body: some View {
+        List {
+            Section("账单金额") {
+                let bankAmount = statement.statementAmount ?? 0
+                let appAmount = -totalAppAmount
+                let diff = bankAmount + appAmount
+
+                LabeledContent("银行账单") {
+                    CurrencyText(amount: bankAmount, currencyCode: account.currencyCode, showSign: false, font: .body)
+                }
+                LabeledContent("App记账") {
+                    CurrencyText(amount: -appAmount, currencyCode: account.currencyCode, showSign: false, font: .body)
+                }
+                LabeledContent("差额") {
+                    CurrencyText(amount: diff, currencyCode: account.currencyCode, showSign: true, font: .body, foregroundColor: diff == 0 ? .secondary : .red)
+                }
+            }
+
+            Section("App记账明细") {
+                if transactions.isEmpty {
+                    Text("该账期内无支出交易")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(transactions) { t in
+                        TransactionRowView(transaction: t)
+                    }
+                }
+            }
+        }
+        .navigationTitle("\(statement.periodMonth)月明细")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { showEditSheet = true } label: {
+                    Image(systemName: "pencil")
+                }
+            }
+        }
+        .sheet(isPresented: $showEditSheet, onDismiss: {
+            onUpdate()
+            loadTransactions()
+        }) {
+            AddEditStatementView(account: account, editing: statement)
+        }
+        .task { loadTransactions() }
+    }
+
+    private var totalAppAmount: Decimal {
+        transactions.reduce(Decimal.zero) { $0 + $1.amount }
+    }
+
+    private func loadTransactions() {
+        let billingDay = account.billingDay ?? 1
+        let calendar = Calendar.current
+        let year = statement.periodYear
+        let month = statement.periodMonth
+
+        var prevMonth = month - 1
+        var prevYear = year
+        if prevMonth < 1 { prevMonth = 12; prevYear -= 1 }
+
+        var startComps = DateComponents(year: prevYear, month: prevMonth, day: billingDay)
+        startComps.hour = 0; startComps.minute = 0; startComps.second = 0
+        guard let startDate = calendar.date(from: startComps) else { return }
+
+        var endComps = DateComponents(year: year, month: month, day: billingDay)
+        endComps.hour = 23; endComps.minute = 59; endComps.second = 59
+        guard let endDate = calendar.date(from: endComps) else { return }
+
+        let accountID = account.id
+        let descriptor = FetchDescriptor<Transaction>(
+            predicate: #Predicate { $0.account?.id == accountID && $0.isReconciled == false }
+        )
+        let all = (try? modelContext.fetch(descriptor)) ?? []
+        transactions = all.filter { t in
+            t.date >= startDate && t.date <= endDate && t.type == .expense
+        }.sorted { $0.date > $1.date }
     }
 }
 
