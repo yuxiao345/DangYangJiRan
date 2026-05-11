@@ -7,6 +7,16 @@ enum PickerSheetType: Identifiable {
     var id: Self { self }
 }
 
+struct SplitItemDraft: Identifiable {
+    var id = UUID()
+    var amount: Decimal = 0
+    var category: Category?
+    var note: String = ""
+    var member: Member?
+    var merchant: Merchant?
+    var project: Project?
+}
+
 struct AddEditTransactionView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -48,6 +58,10 @@ struct AddEditTransactionView: View {
     @State private var pendingLendingTransactions: [Transaction] = []
     @State private var selectedLendingIDs: Set<UUID> = []
     @State private var showLendingSettlementSection: Bool = false
+
+    // Split
+    @State private var isSplit = false
+    @State private var splitItems: [SplitItemDraft] = []
 
     init(editing: Transaction? = nil, prefillType: TransactionType? = nil, prefillExpenseIDs: [UUID] = []) {
         self.editing = editing
@@ -108,25 +122,8 @@ struct AddEditTransactionView: View {
                             .keyboardType(.decimalPad)
                             .font(.title2)
                     }
-                }
-
-                if type == .lending {
-                    Section("借贷方向") {
-                        Picker("方向", selection: $lendingDirection) {
-                            ForEach(LendingDirection.allCases, id: \.self) { d in
-                                Label(d.displayName, systemImage: d.systemIcon).tag(d)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        .onChange(of: lendingDirection) { _, _ in
-                            loadPendingLendingTransactions()
-                        }
-                    }
-                }
-
-                if type == .expense {
-                    Section {
-                        Toggle("可报销", isOn: $isReimbursable)
+                    if type == .expense {
+                        Toggle("拆分记账", isOn: $isSplit)
                     }
                 }
 
@@ -153,7 +150,114 @@ struct AddEditTransactionView: View {
                     }
                 }
 
-                if type != .transfer && type != .lending {
+                if isSplit && type == .expense {
+                    Section("拆分明细") {
+                        ForEach(splitItems) { item in
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Text("¥").foregroundStyle(.secondary)
+                                    TextField("0.00", value: splitAmountBinding(for: item.id), format: .number)
+                                        .keyboardType(.decimalPad)
+                                        .font(.body)
+                                    Spacer()
+                                    Button {
+                                        splitItems.removeAll { $0.id == item.id }
+                                    } label: {
+                                        Image(systemName: "minus.circle.fill")
+                                            .foregroundStyle(.red)
+                                    }
+                                }
+                                Menu {
+                                    ForEach(categories) { cat in
+                                        Button {
+                                            if let idx = splitItems.firstIndex(where: { $0.id == item.id }) {
+                                                splitItems[idx].category = cat
+                                            }
+                                        } label: {
+                                            Label(cat.name, systemImage: cat.iconName)
+                                        }
+                                    }
+                                } label: {
+                                    pickerRow(label: "分类", value: item.category?.name)
+                                }
+                                Menu {
+                                    ForEach(members) { m in
+                                        Button {
+                                            if let idx = splitItems.firstIndex(where: { $0.id == item.id }) {
+                                                splitItems[idx].member = m
+                                            }
+                                        } label: {
+                                            Label(m.name, systemImage: m.avatar)
+                                        }
+                                    }
+                                } label: {
+                                    pickerRow(label: "成员", value: item.member?.name)
+                                }
+                                Menu {
+                                    ForEach(merchants) { m in
+                                        Button {
+                                            if let idx = splitItems.firstIndex(where: { $0.id == item.id }) {
+                                                splitItems[idx].merchant = m
+                                            }
+                                        } label: {
+                                            Label(m.name, systemImage: "bag")
+                                        }
+                                    }
+                                } label: {
+                                    pickerRow(label: "商家", value: item.merchant?.name)
+                                }
+                                Menu {
+                                    ForEach(projects) { p in
+                                        Button {
+                                            if let idx = splitItems.firstIndex(where: { $0.id == item.id }) {
+                                                splitItems[idx].project = p
+                                            }
+                                        } label: {
+                                            Label(p.name, systemImage: "folder")
+                                        }
+                                    }
+                                } label: {
+                                    pickerRow(label: "项目", value: item.project?.name)
+                                }
+                            }
+                        }
+                        Button {
+                            let remaining = amount - splitTotal
+                            splitItems.append(SplitItemDraft(amount: remaining > 0 ? remaining : 0))
+                        } label: {
+                            Label("添加子项", systemImage: "plus").font(.caption)
+                        }
+                        HStack {
+                            Spacer()
+                            Text(splitTotalText)
+                                .font(.caption)
+                                .foregroundStyle(splitTotal == amount ? .green : .red)
+                                .fontWeight(.medium)
+                        }
+                    }
+                }
+
+                if type == .lending {
+                    Section("借贷方向") {
+                        Picker("方向", selection: $lendingDirection) {
+                            ForEach(LendingDirection.allCases, id: \.self) { d in
+                                Label(d.displayName, systemImage: d.systemIcon).tag(d)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .onChange(of: lendingDirection) { _, _ in
+                            loadPendingLendingTransactions()
+                        }
+                    }
+                }
+
+                if type == .expense {
+                    Section {
+                        Toggle("可报销", isOn: $isReimbursable)
+                    }
+                }
+
+                if !isSplit && type != .transfer && type != .lending {
                     Section("分类") {
                         Button { openPicker(.category) } label: {
                             pickerRow(label: "分类", value: selectedCategory?.name)
@@ -161,7 +265,7 @@ struct AddEditTransactionView: View {
                     }
                 }
 
-                if type != .transfer && type != .lending {
+                if !isSplit && type != .transfer && type != .lending {
                     Section("更多信息") {
                         Button { openPicker(.member) } label: {
                             pickerRow(label: "成员", value: selectedMember?.name)
@@ -482,12 +586,22 @@ struct AddEditTransactionView: View {
                 Text(LocalizedStringKey("选择\(label)"))
                     .foregroundStyle(.secondary)
             }
+            Image(systemName: "chevron.up.chevron.down")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
         }
         .contentShape(Rectangle())
     }
 
     private var canSave: Bool {
-        amount != 0 && selectedAccount != nil && (type == .transfer || type == .lending ? selectedToAccount != nil : true)
+        guard amount != 0, selectedAccount != nil else { return false }
+        if type == .transfer || type == .lending {
+            guard selectedToAccount != nil else { return false }
+        }
+        if isSplit && type == .expense {
+            guard splitTotal == amount else { return false }
+        }
+        return true
     }
 
     private func openPicker(_ sheet: PickerSheetType) {
@@ -526,6 +640,19 @@ struct AddEditTransactionView: View {
         selectedProject = t.project
         isReimbursable = t.isReimbursable
         if let d = t.lendingDirection { lendingDirection = d }
+        if t.isSplitParent, let children = t.splitChildren {
+            isSplit = true
+            splitItems = children.map { child in
+                SplitItemDraft(
+                    amount: abs(child.amount),
+                    category: child.category,
+                    note: child.note ?? "",
+                    member: child.member,
+                    merchant: child.merchant,
+                    project: child.project
+                )
+            }
+        }
         if let paths = t.photoURLs, !paths.isEmpty {
             photoDataList = PhotoStorage.load(paths: paths)
         }
@@ -553,6 +680,23 @@ struct AddEditTransactionView: View {
                     from: from, to: to, amount: amount, date: date,
                     note: note.isEmpty ? nil : note, ledger: ledger, context: modelContext
                 )
+            } else if isSplit && !splitItems.isEmpty && type == .expense {
+                let signedAmount: Decimal = -abs(amount)
+                let parent = Transaction(
+                    type: .expense, amount: signedAmount, note: note.isEmpty ? nil : note,
+                    date: date, account: selectedAccount,
+                    isSplitParent: true
+                )
+                parent.ledger = ledger
+                if isReimbursable { parent.reimbursementStatus = .pending }
+                if !photoDataList.isEmpty {
+                    parent.photoURLs = PhotoStorage.save(photoDataList, transactionId: parent.id)
+                }
+                modelContext.insert(parent)
+
+                createSplitChildren(parent: parent, ledger: ledger)
+                try modelContext.save()
+                NotificationCenter.default.post(name: .transactionDidChange, object: nil)
             } else {
                 let signedAmount: Decimal = signingAmount()
                 let transaction = Transaction(
@@ -585,6 +729,44 @@ struct AddEditTransactionView: View {
         } catch {
             print("Save failed: \(error)")
         }
+    }
+
+    private func splitAmountBinding(for itemID: UUID) -> Binding<Decimal> {
+        Binding(
+            get: { splitItems.first(where: { $0.id == itemID })?.amount ?? 0 },
+            set: { newValue in
+                if let i = splitItems.firstIndex(where: { $0.id == itemID }) {
+                    splitItems[i].amount = newValue
+                }
+            }
+        )
+    }
+
+    private func createSplitChildren(parent: Transaction, ledger: Ledger) {
+        for item in splitItems {
+            let child = Transaction(
+                type: .expense,
+                amount: -abs(item.amount),
+                note: item.note.isEmpty ? nil : item.note,
+                date: date,
+                account: selectedAccount,
+                category: item.category,
+                member: item.member,
+                merchant: item.merchant,
+                project: item.project,
+                parentTransaction: parent
+            )
+            child.ledger = ledger
+            modelContext.insert(child)
+        }
+    }
+
+    private var splitTotal: Decimal {
+        splitItems.reduce(Decimal.zero) { $0 + $1.amount }
+    }
+
+    private var splitTotalText: String {
+        "合计 ¥\(splitTotal.formatted(.number.precision(.fractionLength(2)))) / ¥\(amount.formatted(.number.precision(.fractionLength(2))))"
     }
 
     private func signingAmount() -> Decimal {
@@ -658,6 +840,14 @@ struct AddEditTransactionView: View {
         guard let t = try? modelContext.fetch(descriptor).first else {
             throw NSError(domain: "TransactionEdit", code: 1, userInfo: [NSLocalizedDescriptionKey: "Transaction not found"])
         }
+
+        // Delete old split children if previously a split parent
+        if original.isSplitParent, let oldChildren = original.splitChildren {
+            for child in oldChildren {
+                modelContext.delete(child)
+            }
+        }
+
         t.type = type
         t.amount = signingAmount()
         t.note = note.isEmpty ? nil : note
@@ -668,6 +858,13 @@ struct AddEditTransactionView: View {
         t.member = selectedMember
         t.merchant = selectedMerchant
         t.project = selectedProject
+
+        if isSplit && type == .expense {
+            t.isSplitParent = true
+            createSplitChildren(parent: t, ledger: ledger)
+        } else {
+            t.isSplitParent = false
+        }
 
         if t.type == .expense {
             t.reimbursementStatus = isReimbursable ? .pending : .none

@@ -17,7 +17,8 @@ struct ReconciliationServiceImpl: ReconciliationServiceProtocol {
         let descriptor = FetchDescriptor<Transaction>(
             predicate: #Predicate {
                 $0.account?.id == accountID &&
-                $0.isReconciled == false
+                $0.isReconciled == false &&
+                $0.parentTransaction == nil
             }
         )
         let allTxns = (try? context.fetch(descriptor)) ?? []

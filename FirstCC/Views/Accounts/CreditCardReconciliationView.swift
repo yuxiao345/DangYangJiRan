@@ -214,7 +214,8 @@ struct StatementTransactionsView: View {
         let accountID = account.id
         let descriptor = FetchDescriptor<Transaction>(
             predicate: #Predicate {
-                $0.account?.id == accountID
+                $0.account?.id == accountID &&
+                $0.parentTransaction == nil
             },
             sortBy: [SortDescriptor(\.date, order: .reverse)]
         )
@@ -637,7 +638,7 @@ struct AddEditStatementView: View {
         }
         let accountID = account.id
         let descriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate { $0.account?.id == accountID }
+            predicate: #Predicate { $0.account?.id == accountID && $0.parentTransaction == nil }
         )
         let allTxns = (try? modelContext.fetch(descriptor)) ?? []
         unmatchedAppTxns = allTxns.filter {

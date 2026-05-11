@@ -33,7 +33,8 @@ struct AccountServiceImpl: AccountServiceProtocol {
         let incomeDescriptor = FetchDescriptor<Transaction>(
             predicate: #Predicate {
                 ($0.account?.id == accountID || $0.toAccount?.id == accountID) &&
-                $0.isReconciled == false
+                $0.isReconciled == false &&
+                $0.parentTransaction == nil
             }
         )
         let transactions = (try? context.fetch(incomeDescriptor)) ?? []

@@ -124,7 +124,7 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
         let lower = range.lowerBound
         let upper = range.upperBound
         let predicate = #Predicate<Transaction> { t in
-            t.date >= lower && t.date <= upper
+            t.date >= lower && t.date <= upper && t.parentTransaction == nil
         }
         var descriptor = FetchDescriptor<Transaction>(predicate: predicate)
         descriptor.fetchLimit = 10000

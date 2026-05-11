@@ -84,7 +84,7 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
     ) throws -> [Transaction] {
         let ledgerID = ledger.id
         let descriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate { $0.ledger?.id == ledgerID },
+            predicate: #Predicate { $0.ledger?.id == ledgerID && $0.parentTransaction == nil },
             sortBy: [SortDescriptor(\.date, order: .reverse)]
         )
         let all = try context.fetch(descriptor)

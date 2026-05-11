@@ -66,11 +66,11 @@ struct AccountDetailView: View {
         let accountID = account.id
 
         let asSource = FetchDescriptor<Transaction>(
-            predicate: #Predicate { $0.account?.id == accountID },
+            predicate: #Predicate { $0.account?.id == accountID && $0.parentTransaction == nil },
             sortBy: [SortDescriptor(\.date, order: .reverse)]
         )
         let asDest = FetchDescriptor<Transaction>(
-            predicate: #Predicate { $0.toAccount?.id == accountID },
+            predicate: #Predicate { $0.toAccount?.id == accountID && $0.parentTransaction == nil },
             sortBy: [SortDescriptor(\.date, order: .reverse)]
         )
         let source = (try? modelContext.fetch(asSource)) ?? []

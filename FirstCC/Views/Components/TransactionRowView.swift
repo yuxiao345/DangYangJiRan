@@ -26,6 +26,11 @@ struct TransactionRowView: View {
                     if transaction.isLending {
                         lendingStatusBadge
                     }
+                    if transaction.isSplitParent {
+                        Image(systemName: "rectangle.split.2x2")
+                            .font(.caption2)
+                            .foregroundStyle(.purple)
+                    }
                     if transaction.refundGroupId != nil {
                         Image(systemName: "arrow.uturn.backward")
                             .font(.caption2)

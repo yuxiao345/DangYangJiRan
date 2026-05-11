@@ -72,6 +72,43 @@ struct TransactionDetailView: View {
                 }
             }
 
+            if transaction.hasSplitChildren, let children = transaction.splitChildren {
+                Section {
+                    ForEach(children) { child in
+                        HStack {
+                            if let cat = child.category {
+                                Image(systemName: cat.iconName)
+                                    .foregroundStyle(Color(hex: cat.colorHex))
+                                    .frame(width: 24)
+                                Text(LocalizedStringKey(cat.name))
+                                    .font(.body)
+                            } else {
+                                Image(systemName: "questionmark.circle")
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 24)
+                                Text("未分类")
+                                    .font(.body)
+                                    .foregroundStyle(.secondary)
+                            }
+                            if let m = child.member {
+                                Text(m.name)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            CurrencyText(amount: abs(child.amount), currencyCode: child.currencyCode, font: .body, foregroundColor: .red)
+                        }
+                    }
+                } header: {
+                    HStack {
+                        Label("拆分明细", systemImage: "rectangle.split.2x2")
+                        Spacer()
+                        Text("共\(children.count)项")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+
             if transaction.refundGroupId != nil {
                 Section("退款关联") {
                     LabeledContent("原交易退款") {

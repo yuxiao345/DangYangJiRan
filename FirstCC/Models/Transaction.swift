@@ -50,6 +50,14 @@ final class Transaction {
     @Relationship(deleteRule: .nullify)
     var sourceOfTransfer: Transaction? = nil
 
+    var isSplitParent: Bool
+
+    @Relationship(deleteRule: .nullify, inverse: \Transaction.splitChildren)
+    var parentTransaction: Transaction?
+
+    @Relationship(deleteRule: .cascade)
+    var splitChildren: [Transaction]?
+
     var type: TransactionType {
         get { TransactionType(rawValue: typeRaw) ?? .expense }
         set { typeRaw = newValue.rawValue }
@@ -75,6 +83,10 @@ final class Transaction {
     var isLending: Bool { lendingDirection != nil }
 
     var isLendingPending: Bool { lendingStatus == .pending }
+
+    var isSplitChild: Bool { parentTransaction != nil }
+
+    var hasSplitChildren: Bool { splitChildren?.isEmpty == false }
 
     @Relationship(deleteRule: .nullify)
     var settledByLending: Transaction? = nil
@@ -109,7 +121,9 @@ final class Transaction {
         category: Category? = nil,
         member: Member? = nil,
         merchant: Merchant? = nil,
-        project: Project? = nil
+        project: Project? = nil,
+        isSplitParent: Bool = false,
+        parentTransaction: Transaction? = nil
     ) {
         self.id = id
         self.typeRaw = type.rawValue
@@ -140,5 +154,7 @@ final class Transaction {
         self.member = member
         self.merchant = merchant
         self.project = project
+        self.isSplitParent = isSplitParent
+        self.parentTransaction = parentTransaction
     }
 }
