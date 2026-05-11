@@ -202,31 +202,24 @@ struct StatementTransactionsView: View {
     }
 
     private func loadTransactions() {
-        let billingDay = account.billingDay ?? 1
-        let calendar = Calendar.current
-        let year = statement.periodYear
-        let month = statement.periodMonth
-
-        var prevMonth = month - 1
-        var prevYear = year
-        if prevMonth < 1 { prevMonth = 12; prevYear -= 1 }
-
-        var startComps = DateComponents(year: prevYear, month: prevMonth, day: billingDay)
-        startComps.hour = 0; startComps.minute = 0; startComps.second = 0
-        guard let startDate = calendar.date(from: startComps) else { return }
-
-        var endComps = DateComponents(year: year, month: month, day: billingDay)
-        endComps.hour = 23; endComps.minute = 59; endComps.second = 59
-        guard let endDate = calendar.date(from: endComps) else { return }
+        guard let period = CreditCardStatementPeriod(
+            billingDay: account.billingDay ?? 1,
+            year: statement.periodYear,
+            month: statement.periodMonth
+        ) else {
+            transactions = []
+            return
+        }
 
         let accountID = account.id
         let descriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate { $0.account?.id == accountID && $0.isReconciled == false }
+            predicate: #Predicate {
+                $0.account?.id == accountID
+            },
+            sortBy: [SortDescriptor(\.date, order: .reverse)]
         )
-        let all = (try? modelContext.fetch(descriptor)) ?? []
-        transactions = all.filter { t in
-            t.date >= startDate && t.date <= endDate && t.type == .expense
-        }.sorted { $0.date > $1.date }
+        let accountTxns = (try? modelContext.fetch(descriptor)) ?? []
+        transactions = accountTxns.filter { $0.type == .expense && period.contains($0.date) }
     }
 }
 
@@ -250,6 +243,8 @@ struct AddEditStatementView: View {
     @State private var matches: [ReconciliationMatch] = []
     @State private var userActions: [UUID: MatchAction] = [:]
     @State private var isMatching = false
+    @State private var editingTransaction: Transaction?
+    @State private var unmatchedAppTxns: [Transaction] = []
 
     enum MatchAction {
         case confirmed(Transaction)
@@ -265,6 +260,8 @@ struct AddEditStatementView: View {
         _selectedYear = State(initialValue: editing?.periodYear ?? calendar.component(.year, from: now))
         _selectedMonth = State(initialValue: editing?.periodMonth ?? calendar.component(.month, from: now))
         _bankAmount = State(initialValue: editing?.statementAmount ?? 0)
+        _csvData = State(initialValue: editing?.bankCSVData)
+        _csvFileName = State(initialValue: editing?.bankCSVFileName ?? "")
     }
 
     var body: some View {
@@ -274,7 +271,9 @@ struct AddEditStatementView: View {
                 csvSection
                 amountSection
                 if !matches.isEmpty { matchResultsSection }
+                if !unmatchedAppTxns.isEmpty { unmatchedAppSection }
                 appAmountSection
+                confirmSection
             }
             .navigationTitle(editing != nil ? "编辑对账" : "新建对账")
             .navigationBarTitleDisplayMode(.inline)
@@ -283,6 +282,10 @@ struct AddEditStatementView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("保存") { save() }
                 }
+            }
+            .task { loadEditingCSV() }
+            .sheet(item: $editingTransaction, onDismiss: { parseAndMatch() }) { txn in
+                AddEditTransactionView(editing: txn)
             }
         }
     }
@@ -366,28 +369,42 @@ struct AddEditStatementView: View {
 
     private var matchResultsSection: some View {
         Section("对账匹配") {
-            // Summary
             HStack(spacing: 12) {
                 miniStat("银行", "\(bankItems.count)", .primary)
                 miniStat("匹配", "\(matchedCount)", .green)
-                miniStat("冲突", "\(conflictedCount)", .orange)
+                miniStat("日期疑", "\(suspectedDateCount)", .orange)
+                miniStat("金额疑", "\(suspectedAmountCount)", .yellow)
                 miniStat("未匹配", "\(unmatchedCount)", .red)
             }
             .padding(.vertical, 2)
 
-            // Matched items (auto-confirmed on save, no action needed)
-            ForEach(matches.filter { $0.status == .matched && userActions[$0.id] == nil }) { match in
+            ForEach(visibleMatches) { match in
                 matchRow(match)
             }
+        }
+    }
 
-            // Conflicted items
-            ForEach(matches.filter { $0.status == .conflicted && userActions[$0.id] == nil }) { match in
-                matchRow(match)
-            }
-
-            // Unmatched items
-            ForEach(matches.filter { $0.status == .unmatched && userActions[$0.id] == nil }) { match in
-                matchRow(match)
+    private var unmatchedAppSection: some View {
+        Section("App未匹配明细（\(unmatchedAppTxns.count)笔）") {
+            ForEach(unmatchedAppTxns) { txn in
+                Button {
+                    editingTransaction = txn
+                } label: {
+                    HStack {
+                        Text(txn.date, format: .dateTime.month(.twoDigits).day(.twoDigits))
+                            .font(.caption)
+                            .fontWeight(.medium)
+                        if let note = txn.note, !note.isEmpty {
+                            Text(note).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                        Spacer()
+                        Text(txn.amount, format: .number.precision(.fractionLength(2)))
+                            .font(.caption).fontWeight(.bold).foregroundStyle(.red)
+                        Image(systemName: "pencil.circle")
+                            .font(.caption)
+                            .foregroundStyle(.blue)
+                    }
+                }
             }
         }
     }
@@ -444,7 +461,7 @@ struct AddEditStatementView: View {
                 }
             }
 
-            // Action buttons (only for conflicted/unmatched; matched is auto-confirmed on save)
+            // Action buttons
             if action == nil {
                 HStack(spacing: 6) {
                     if match.status == .conflicted {
@@ -461,8 +478,39 @@ struct AddEditStatementView: View {
                             }.buttonStyle(.bordered).tint(.blue).controlSize(.mini)
                         }
                     }
+                    if match.status == .suspectedDateMismatch || match.status == .suspectedAmountMismatch {
+                        if let txn = match.candidates.first {
+                            Button {
+                                editingTransaction = txn
+                            } label: {
+                                VStack(spacing: 1) {
+                                    HStack(spacing: 2) {
+                                        Image(systemName: "pencil")
+                                        Text("编辑")
+                                    }
+                                    .font(.caption2)
+                                    Text(suspectedHint(for: match))
+                                        .font(.caption2)
+                                        .foregroundStyle(.orange)
+                                }
+                            }.buttonStyle(.bordered).tint(.orange).controlSize(.mini)
+                        }
+                    }
                     if match.status == .unmatched {
-                        Button { userActions[match.id] = .createNew } label: {
+                        Button {
+                            let newTxn = Transaction(
+                                type: .expense,
+                                amount: match.bankItem.amount ?? 0,
+                                currencyCode: account.currencyCode,
+                                note: match.bankItem.desc,
+                                date: match.bankItem.transDate ?? Date()
+                            )
+                            newTxn.account = account
+                            newTxn.ledger = appContainer.currentLedger
+                            modelContext.insert(newTxn)
+                            try? modelContext.save()
+                            editingTransaction = newTxn
+                        } label: {
                             Text("创建").font(.caption2)
                         }.buttonStyle(.bordered).tint(.green).controlSize(.mini)
                     }
@@ -489,12 +537,29 @@ struct AddEditStatementView: View {
                 switch match.status {
                 case .matched: Image(systemName: "link").foregroundStyle(.green)
                 case .conflicted: Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                case .suspectedDateMismatch: Image(systemName: "calendar.badge.clock").foregroundStyle(.orange)
+                case .suspectedAmountMismatch: Image(systemName: "yensign.circle").foregroundStyle(.yellow)
                 case .unmatched: Image(systemName: "questionmark.circle").foregroundStyle(.red)
                 default: EmptyView()
                 }
             }
         }
         .font(.caption)
+    }
+
+    private func suspectedHint(for match: ReconciliationMatch) -> String {
+        guard let txn = match.candidates.first,
+              let bankDate = match.bankItem.transDate,
+              let bankAmount = match.bankItem.amount else { return "" }
+        switch match.status {
+        case .suspectedDateMismatch:
+            let dayDiff = Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: bankDate), to: Calendar.current.startOfDay(for: txn.date)).day ?? 0
+            return "日期差\(abs(dayDiff))天"
+        case .suspectedAmountMismatch:
+            let diff = abs(bankAmount - txn.amount)
+            return "金额差¥\(diff.formatted(.number.precision(.fractionLength(2))))"
+        default: return ""
+        }
     }
 
     private func miniStat(_ label: String, _ value: String, _ color: Color) -> some View {
@@ -506,14 +571,40 @@ struct AddEditStatementView: View {
 
     // MARK: - Computed
 
-    private var matchedCount: Int { matches.count { $0.status == .matched && userActions[$0.id] == nil } }
-    private var conflictedCount: Int { matches.count { $0.status == .conflicted && userActions[$0.id] == nil } }
-    private var unmatchedCount: Int { matches.count { $0.status == .unmatched && userActions[$0.id] == nil } }
+    private var visibleMatches: [ReconciliationMatch] {
+        matches.filter { userActions[$0.id] == nil }
+    }
+
+    private var matchedCount: Int { visibleMatches.count { $0.status == .matched } }
+    private var conflictedCount: Int { visibleMatches.count { $0.status == .conflicted } }
+    private var suspectedDateCount: Int { visibleMatches.count { $0.status == .suspectedDateMismatch } }
+    private var suspectedAmountCount: Int { visibleMatches.count { $0.status == .suspectedAmountMismatch } }
+    private var unmatchedCount: Int { visibleMatches.count { $0.status == .unmatched } }
 
     private var appAmount: Decimal {
         appContainer.creditCardStatementService.calculateAppAmount(
             for: account, year: selectedYear, month: selectedMonth, context: modelContext
         )
+    }
+
+    private var resolvedMatches: [ReconciliationMatch] {
+        var resolved = matches
+        for index in resolved.indices {
+            if let action = userActions[resolved[index].id] {
+                switch action {
+                case .confirmed(let txn):
+                    resolved[index].userAction = .confirmed(txn)
+                case .ignored:
+                    resolved[index].userAction = .ignored
+                case .createNew:
+                    resolved[index].userAction = .createNew
+                }
+            } else if resolved[index].status == .matched,
+                      let txn = resolved[index].candidates.first {
+                resolved[index].userAction = .confirmed(txn)
+            }
+        }
+        return resolved
     }
 
     // MARK: - Actions
@@ -522,52 +613,117 @@ struct AddEditStatementView: View {
         guard let data = csvData else { return }
         isMatching = true
         bankItems = appContainer.bankOCRService.recognizeTransactions(fromCSV: data)
-        let service = ReconciliationServiceImpl()
-        matches = service.matchItems(bankItems, for: account, year: selectedYear, month: selectedMonth, context: modelContext)
+        matches = appContainer.reconciliationService.matchItems(
+            bankItems,
+            for: account,
+            year: selectedYear,
+            month: selectedMonth,
+            context: modelContext
+        )
         // Auto-fill bank amount from CSV total
         let total = bankItems.compactMap { $0.amount }.reduce(Decimal.zero, +)
         if bankAmount == 0 { bankAmount = abs(total) }
+
+        // Compute unmatched App transactions (in period but not matched to any bank item)
+        let matchedIDs = Set(matches.compactMap { $0.candidates.first?.id })
+        guard let period = CreditCardStatementPeriod(
+            billingDay: account.billingDay ?? 1,
+            year: selectedYear,
+            month: selectedMonth
+        ) else {
+            unmatchedAppTxns = []
+            isMatching = false
+            return
+        }
+        let accountID = account.id
+        let descriptor = FetchDescriptor<Transaction>(
+            predicate: #Predicate { $0.account?.id == accountID }
+        )
+        let allTxns = (try? modelContext.fetch(descriptor)) ?? []
+        unmatchedAppTxns = allTxns.filter {
+            $0.type == .expense && period.contains($0.date) && !matchedIDs.contains($0.id)
+        }.sorted { $0.date > $1.date }
+
         isMatching = false
     }
 
     private func save() {
         guard let ledger = appContainer.currentLedger else { return }
 
-        if !bankItems.isEmpty {
-            // CSV reconciliation flow
-            var finalMatches = matches
-            for i in finalMatches.indices {
-                if let action = userActions[finalMatches[i].id] {
-                    switch action {
-                    case .confirmed(let txn): finalMatches[i].userAction = .confirmed(txn)
-                    case .ignored: finalMatches[i].userAction = .ignored
-                    case .createNew: finalMatches[i].userAction = .createNew
+        let stmt: CreditCardStatement
+        if let existing = editing {
+            existing.periodYear = selectedYear
+            existing.periodMonth = selectedMonth
+            existing.statementAmount = bankAmount == 0 ? nil : bankAmount
+            existing.bankCSVData = csvData
+            existing.bankCSVFileName = csvData != nil ? csvFileName : nil
+            try? appContainer.creditCardStatementService.updateStatement(existing, context: modelContext)
+            stmt = existing
+        } else {
+            stmt = CreditCardStatement(
+                account: account,
+                periodYear: selectedYear,
+                periodMonth: selectedMonth,
+                statementAmount: bankAmount == 0 ? nil : bankAmount,
+                bankCSVData: csvData,
+                bankCSVFileName: csvData != nil ? csvFileName : nil
+            )
+            try? appContainer.creditCardStatementService.createStatement(stmt, ledger: ledger, context: modelContext)
+        }
+
+        dismiss()
+    }
+
+    private func loadEditingCSV() {
+        guard let existing = editing,
+              let data = existing.bankCSVData,
+              bankItems.isEmpty else { return }
+        csvData = data
+        csvFileName = existing.bankCSVFileName ?? ""
+        parseAndMatch()
+    }
+
+    private func confirmAction() {
+        guard let ledger = appContainer.currentLedger else { return }
+
+        _ = try? appContainer.reconciliationService.confirmReconciliation(
+            matches: resolvedMatches,
+            account: account,
+            year: selectedYear,
+            month: selectedMonth,
+            bankAmount: bankAmount,
+            ledger: ledger,
+            context: modelContext
+        )
+
+        // Update statement to mark as reconciled
+        if let stmt = editing {
+            stmt.isReconciled = true
+            stmt.reconciledAt = Date()
+            try? appContainer.creditCardStatementService.updateStatement(stmt, context: modelContext)
+        }
+
+        dismiss()
+    }
+
+    private var confirmSection: some View {
+        Group {
+            if editing != nil, !bankItems.isEmpty, !isMatching,
+               resolvedMatches.allSatisfy({ if case .pending = $0.userAction { return false }; return true }) {
+                Section {
+                    Button {
+                        confirmAction()
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Label("确认对账（完成核对）", systemImage: "checkmark.seal.fill")
+                            Spacer()
+                        }
                     }
-                } else if finalMatches[i].status == .matched, let txn = finalMatches[i].candidates.first {
-                    finalMatches[i].userAction = .confirmed(txn)
+                    .buttonStyle(.borderedProminent)
+                    .tint(.green)
                 }
             }
-            let service = ReconciliationServiceImpl()
-            _ = try? service.confirmReconciliation(
-                matches: finalMatches, account: account,
-                year: selectedYear, month: selectedMonth,
-                bankAmount: bankAmount, ledger: ledger, context: modelContext
-            )
-        } else {
-            // Manual input flow
-            if let stmt = editing {
-                stmt.periodYear = selectedYear
-                stmt.periodMonth = selectedMonth
-                stmt.statementAmount = bankAmount == 0 ? nil : bankAmount
-                try? appContainer.creditCardStatementService.updateStatement(stmt, context: modelContext)
-            } else {
-                let stmt = CreditCardStatement(
-                    account: account, periodYear: selectedYear, periodMonth: selectedMonth,
-                    statementAmount: bankAmount == 0 ? nil : bankAmount
-                )
-                try? appContainer.creditCardStatementService.createStatement(stmt, ledger: ledger, context: modelContext)
-            }
         }
-        dismiss()
     }
 }

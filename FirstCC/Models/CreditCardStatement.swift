@@ -12,6 +12,8 @@ final class CreditCardStatement {
     var isReconciled: Bool
     var reconciledAt: Date?
     var note: String?
+    var bankCSVData: Data?
+    var bankCSVFileName: String?
 
     var ledger: Ledger?
 
@@ -24,7 +26,9 @@ final class CreditCardStatement {
         reconciledAppAmount: Decimal? = nil,
         isReconciled: Bool = false,
         reconciledAt: Date? = nil,
-        note: String? = nil
+        note: String? = nil,
+        bankCSVData: Data? = nil,
+        bankCSVFileName: String? = nil
     ) {
         self.id = id
         self.account = account
@@ -35,5 +39,7 @@ final class CreditCardStatement {
         self.isReconciled = isReconciled
         self.reconciledAt = reconciledAt
         self.note = note
+        self.bankCSVData = bankCSVData
+        self.bankCSVFileName = bankCSVFileName
     }
 }

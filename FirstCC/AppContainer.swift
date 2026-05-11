@@ -14,6 +14,7 @@ final class AppContainer: ObservableObject {
     let templateService: TemplateServiceProtocol
     let recurringService: RecurringServiceProtocol
     let creditCardStatementService: CreditCardStatementServiceProtocol
+    let reconciliationService: ReconciliationServiceProtocol
     let bankOCRService: BankOCRServiceProtocol
     let memberService: MemberServiceProtocol
     let merchantService: MerchantServiceProtocol
@@ -51,7 +52,6 @@ final class AppContainer: ObservableObject {
         do {
             modelContainer = try ModelContainer(
                 for: schema,
-                migrationPlan: FirstCCMigrationPlan.self,
                 configurations: [configuration]
             )
         } catch {
@@ -66,7 +66,6 @@ final class AppContainer: ObservableObject {
             }
             modelContainer = try! ModelContainer(
                 for: schema,
-                migrationPlan: FirstCCMigrationPlan.self,
                 configurations: [configuration]
             )
         }
@@ -85,6 +84,7 @@ final class AppContainer: ObservableObject {
         projectService = ProjectServiceImpl()
         budgetService = BudgetServiceImpl()
         creditCardStatementService = CreditCardStatementServiceImpl()
+        reconciliationService = ReconciliationServiceImpl()
         bankOCRService = BankOCRServiceImpl()
     }
 

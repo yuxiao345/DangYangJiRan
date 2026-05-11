@@ -22,76 +22,50 @@ struct CreditCardStatementServiceImpl: CreditCardStatementServiceProtocol {
     }
 
     func deleteStatement(_ statement: CreditCardStatement, context: ModelContext) throws {
-        // Un-reconcile transactions within this statement's billing period
-        if let account = statement.account {
-            let calendar = Calendar.current
-            let billingDay = account.billingDay ?? 1
-            let year = statement.periodYear
-            let month = statement.periodMonth
-
-            var prevMonth = month - 1; var prevYear = year
-            if prevMonth < 1 { prevMonth = 12; prevYear -= 1 }
-
-            var startComps = DateComponents(year: prevYear, month: prevMonth, day: billingDay)
-            startComps.hour = 0; startComps.minute = 0; startComps.second = 0
-            let startDate = calendar.date(from: startComps)
-
-            var endComps = DateComponents(year: year, month: month, day: billingDay)
-            endComps.hour = 23; endComps.minute = 59; endComps.second = 59
-            let endDate = calendar.date(from: endComps)
-
+        if let account = statement.account,
+           let period = CreditCardStatementPeriod(
+                billingDay: account.billingDay ?? 1,
+                year: statement.periodYear,
+                month: statement.periodMonth
+           ) {
             let accountID = account.id
             let descriptor = FetchDescriptor<Transaction>(
-                predicate: #Predicate { $0.account?.id == accountID && $0.isReconciled == true }
-            )
-            if let reconciled = try? context.fetch(descriptor) {
-                for txn in reconciled {
-                    if let sd = startDate, let ed = endDate,
-                       txn.date >= sd && txn.date <= ed {
-                        txn.isReconciled = false
-                    }
+                predicate: #Predicate {
+                    $0.account?.id == accountID &&
+                    $0.isReconciled == true
                 }
+            )
+            let allReconciled = (try? context.fetch(descriptor)) ?? []
+            let reconciled = allReconciled.filter { period.contains($0.date) }
+            for txn in reconciled {
+                txn.isReconciled = false
             }
         }
+
         context.delete(statement)
         try context.save()
     }
 
     func calculateAppAmount(for account: Account, year: Int, month: Int, context: ModelContext) -> Decimal {
-        let calendar = Calendar.current
-        let billingDay = account.billingDay ?? 1
-
-        // Period: (billingDay of previous month) ... (billingDay of current month)
-        // e.g. billingDay=15, month=5: April 16 ... May 15
-        var prevMonth = month - 1
-        var prevYear = year
-        if prevMonth < 1 {
-            prevMonth = 12
-            prevYear -= 1
+        guard let period = CreditCardStatementPeriod(
+            billingDay: account.billingDay ?? 1,
+            year: year,
+            month: month
+        ) else {
+            return 0
         }
-
-        var startComps = DateComponents(year: prevYear, month: prevMonth, day: billingDay)
-        startComps.hour = 0
-        startComps.minute = 0
-        startComps.second = 0
-        guard let startDate = calendar.date(from: startComps) else { return 0 }
-
-        var endComps = DateComponents(year: year, month: month, day: billingDay)
-        endComps.hour = 23
-        endComps.minute = 59
-        endComps.second = 59
-        guard let endDate = calendar.date(from: endComps) else { return 0 }
 
         let accountID = account.id
         let descriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate { $0.account?.id == accountID && $0.isReconciled == false }
+            predicate: #Predicate {
+                $0.account?.id == accountID &&
+                $0.isReconciled == false
+            }
         )
-        let allTransactions = (try? context.fetch(descriptor)) ?? []
+        let allTxns = (try? context.fetch(descriptor)) ?? []
 
-        let periodTransactions = allTransactions.filter { t in
-            t.date >= startDate && t.date <= endDate && t.type == .expense
-        }
-
-        return periodTransactions.reduce(Decimal.zero) { $0 + $1.amount }
+        return allTxns
+            .filter { $0.type == .expense && period.contains($0.date) }
+            .reduce(Decimal.zero) { $0 + $1.amount }
     }
 }

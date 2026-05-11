@@ -40,3 +40,9 @@ Thumbs.db
 *.swp
 *.tmp
 /tmp/
+
+# Ghostty
+ghostty-*.txt
+
+# Claude Code worktrees
+.claude/worktrees/

@@ -20,7 +20,28 @@
       "Bash(gh auth *)",
       "Bash(git init *)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(git stash *)",
+      "Bash(git checkout *)",
+      "Bash(afplay /System/Library/Sounds/Tink.aiff)",
+      "Bash(afplay /System/Library/Sounds/Submarine.aiff)",
+      "Bash(afplay /System/Library/Sounds/Funk.aiff)",
+      "Bash(xcrun devicectl *)",
+      "Bash(xcrun xctrace *)",
+      "Bash(instruments -s devices)",
+      "Bash(defaults read *)",
+      "Bash(security find-certificate *)",
+      "Bash(openssl x509 *)",
+      "Bash(security find-identity *)",
+      "Bash(open *)",
+      "Bash(git status *)",
+      "Bash(echo \"exit:$?\")",
+      "Bash(log show *)",
+      "Bash(sed -i '' '/ReconciliationView\\\\.swift in Sources/d' FirstCC.xcodeproj/project.pbxproj)",
+      "Bash(sed -i '' '/ReconciliationView\\\\.swift.*PBXFileReference/d' FirstCC.xcodeproj/project.pbxproj)",
+      "Bash(sed -i '' '/.*CreditCardReconciliationView\\\\.swift.*,/{ *)",
+      "Bash(sed -i '' 's/0717F2FADE0D27C070224E90 \\\\/\\\\* AddEditAccountView\\\\.swift \\\\*\\\\/,$/0717F2FADE0D27C070224E90 \\\\/\\\\* AddEditAccountView.swift \\\\*\\\\/;/' FirstCC.xcodeproj/project.pbxproj)",
+      "Bash(sed -n '309,311p' FirstCC.xcodeproj/project.pbxproj)"
     ]
   }
 }
