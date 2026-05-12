@@ -10,19 +10,19 @@ final class SplitEntry {
 
     var splitGroup: SplitGroup?
 
-    var user: User?
+    var member: Member?
 
     init(
         id: UUID = UUID(),
         amount: Decimal = 0,
         isPaid: Bool = false,
         paidDate: Date? = nil,
-        user: User? = nil
+        member: Member? = nil
     ) {
         self.id = id
         self.amount = amount
         self.isPaid = isPaid
         self.paidDate = paidDate
-        self.user = user
+        self.member = member
     }
 }

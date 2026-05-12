@@ -9,6 +9,7 @@ struct TransactionDetailView: View {
     let transaction: Transaction
     @State private var showEditSheet = false
     @State private var showDeleteAlert = false
+    @State private var showSplitForm = false
     @State private var showRefundSheet = false
     @State private var photoDataList: [Data] = []
     @State private var selectedPhotoItem: PhotoItem?
@@ -106,6 +107,36 @@ struct TransactionDetailView: View {
                         Text("共\(children.count)项")
                             .foregroundStyle(.secondary)
                     }
+                }
+            }
+
+            if let group = transaction.splitGroup {
+                Section {
+                    NavigationLink {
+                        SplitDetailView(splitGroup: group)
+                    } label: {
+                        HStack {
+                            Label("成员分摊", systemImage: "person.2.circle")
+                            Spacer()
+                            Text(LocalizedStringKey(group.settlementStatus))
+                                .font(.caption)
+                                .foregroundStyle(group.settlementStatus == "已结算" ? .green : .orange)
+                        }
+                    }
+                } header: {
+                    Text("成员分摊")
+                }
+            } else if transaction.type == .expense
+                        && !transaction.isSplitParent
+                        && !transaction.hasSplitChildren {
+                Section {
+                    Button {
+                        showSplitForm = true
+                    } label: {
+                        Label("创建成员分摊", systemImage: "person.2.badge.plus")
+                    }
+                } header: {
+                    Text("成员分摊")
                 }
             }
 
@@ -267,6 +298,11 @@ struct TransactionDetailView: View {
         }
         .sheet(isPresented: $showEditSheet) {
             AddEditTransactionView(editing: transaction)
+        }
+        .sheet(isPresented: $showSplitForm) {
+            if let ledger = transaction.ledger ?? appContainer.currentLedger {
+                SplitFormView(transaction: transaction, ledger: ledger)
+            }
         }
         .sheet(isPresented: $showRefundSheet) {
             RefundSheetView(original: transaction) {

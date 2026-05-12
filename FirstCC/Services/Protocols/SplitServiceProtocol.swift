@@ -6,7 +6,7 @@ protocol SplitServiceProtocol {
         totalAmount: Decimal,
         currencyCode: String,
         splitType: SplitType,
-        members: [User],
+        members: [Member],
         amounts: [Decimal]?,
         note: String?,
         date: Date,

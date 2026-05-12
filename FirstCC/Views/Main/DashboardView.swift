@@ -30,6 +30,9 @@ struct DashboardView: View {
             }
             .navigationTitle(appContainer.currentLedger?.name ?? "荡漾计然")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    SyncStatusBadge()
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Button { showAddSheet = true } label: {
                         Image(systemName: "plus")

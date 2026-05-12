@@ -36,13 +36,7 @@ final class AppContainer: ObservableObject {
     @Published var isAuthenticated: Bool = false
 
     init() {
-        let schema = Schema([
-            Ledger.self, User.self, Account.self, Category.self,
-            Transaction.self, TransactionTemplate.self, RecurringRule.self,
-            SplitGroup.self, SplitEntry.self, BudgetBook.self, BudgetItem.self,
-            InstallmentPlan.self,
-            ExchangeRate.self, Member.self, Merchant.self, Project.self, CreditCardStatement.self
-        ])
+        let schema = Schema(versionedSchema: FirstCCSchemaV4.self)
 
         let configuration = ModelConfiguration(
             isStoredInMemoryOnly: false,
@@ -70,7 +64,7 @@ final class AppContainer: ObservableObject {
             )
         }
 
-        // Phase 3: cloudKitContainer = CKContainer(identifier: CloudKitConfig.containerIdentifier)
+        // CloudKit container — nil when entitlements unavailable (free account)
         cloudKitContainer = nil
 
         ledgerService = LedgerServiceImpl()
@@ -86,6 +80,10 @@ final class AppContainer: ObservableObject {
         creditCardStatementService = CreditCardStatementServiceImpl()
         reconciliationService = ReconciliationServiceImpl()
         bankOCRService = BankOCRServiceImpl()
+        splitService = SplitServiceImpl()
+        if let ckContainer = cloudKitContainer {
+            syncService = SyncServiceImpl(container: ckContainer)
+        }
     }
 
     func handleShareURL(_ url: URL) async {

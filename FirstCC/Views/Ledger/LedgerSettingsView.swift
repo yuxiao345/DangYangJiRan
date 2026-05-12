@@ -11,6 +11,7 @@ struct LedgerSettingsView: View {
     @State private var type: LedgerType = .personal
     @State private var currencyCode: String = "CNY"
     @State private var showDeleteAlert = false
+    @State private var showCloudShare = false
 
     private let currencies = ["CNY", "USD", "EUR", "JPY", "GBP", "HKD", "AUD", "CAD"]
 
@@ -30,6 +31,36 @@ struct LedgerSettingsView: View {
                     }
                 }
             }
+
+            Section {
+                    NavigationLink {
+                        UserListView(ledger: ledger)
+                    } label: {
+                        Label("共享成员", systemImage: "person.2.fill")
+                    }
+
+                    if ledger.isShared {
+                        Button {
+                            showCloudShare = true
+                        } label: {
+                            Label("管理共享", systemImage: "square.and.arrow.up")
+                        }
+                    } else {
+                        Button {
+                            showCloudShare = true
+                        } label: {
+                            Label("启用共享", systemImage: "person.2.badge.plus")
+                        }
+                    }
+                } header: {
+                    Text("共享管理")
+                } footer: {
+                    if ledger.isShared {
+                        Text("此账本已开启共享，其他用户可加入协作记账")
+                    } else {
+                        Text("开启后可邀请其他 iCloud 用户共同记账")
+                    }
+                }
 
             Section("数据管理") {
                 NavigationLink("账户管理") {
@@ -81,6 +112,11 @@ struct LedgerSettingsView: View {
             name = ledger.name
             type = ledger.type
             currencyCode = ledger.defaultCurrencyCode
+        }
+        .sheet(isPresented: $showCloudShare) {
+            if let container = appContainer.cloudKitContainer {
+                CloudSharingView(share: nil, container: container, ledger: ledger, isPresenting: true)
+            }
         }
         .alert("确认删除", isPresented: $showDeleteAlert) {
             Button("取消", role: .cancel) {}

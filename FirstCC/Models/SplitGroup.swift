@@ -23,6 +23,20 @@ final class SplitGroup {
         set { splitTypeRaw = newValue.rawValue }
     }
 
+    var totalPaid: Decimal {
+        (entries ?? []).filter { $0.isPaid }.reduce(0) { $0 + $1.amount }
+    }
+
+    var remainingAmount: Decimal {
+        totalAmount - totalPaid
+    }
+
+    var settlementStatus: String {
+        if totalPaid >= totalAmount { return "已结算" }
+        if totalPaid > 0 { return "部分结算" }
+        return "未结算"
+    }
+
     init(
         id: UUID = UUID(),
         totalAmount: Decimal = 0,

@@ -45,6 +45,19 @@ struct FirstCCMigrationPlan: SchemaMigrationPlan {
 
     static var stages: [MigrationStage] = [
         MigrationStage.lightweight(fromVersion: FirstCCSchemaV1.self, toVersion: FirstCCSchemaV2.self),
-        MigrationStage.lightweight(fromVersion: FirstCCSchemaV2.self, toVersion: FirstCCSchemaV3.self)
+        MigrationStage.lightweight(fromVersion: FirstCCSchemaV2.self, toVersion: FirstCCSchemaV3.self),
+        MigrationStage.lightweight(fromVersion: FirstCCSchemaV3.self, toVersion: FirstCCSchemaV4.self)
+    ]
+}
+
+enum FirstCCSchemaV4: VersionedSchema {
+    static var versionIdentifier = Schema.Version(4, 0, 0)
+
+    static var models: [any PersistentModel.Type] = [
+        Ledger.self, User.self, Account.self, Category.self,
+        Transaction.self, TransactionTemplate.self, RecurringRule.self,
+        SplitGroup.self, SplitEntry.self, BudgetBook.self, BudgetItem.self,
+        InstallmentPlan.self,
+        ExchangeRate.self, Member.self, Merchant.self, Project.self, CreditCardStatement.self
     ]
 }
