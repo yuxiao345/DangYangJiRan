@@ -23,18 +23,19 @@ final class DashboardViewModel: ObservableObject {
         let calendar = Calendar.current
         let now = Date()
         guard let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) else { return }
+        let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)!
 
         accounts = (try? accountService.fetchAccounts(for: ledger, context: context)) ?? []
         for a in accounts {
             accountBalances[a.id] = accountService.calculateBalance(for: a, context: context)
         }
 
-        let allTransactions = (try? transactionService.fetchTransactions(for: ledger, context: context, filters: nil)) ?? []
-        let monthTransactions = allTransactions.filter { $0.date >= monthStart }
-        // IDs of income transactions that settle reimbursements (exclude from income totals)
+        var filters = TransactionFilters()
+        filters.dateRange = monthStart..<monthEnd
+        let allTransactions = (try? transactionService.fetchTransactions(for: ledger, context: context, filters: filters)) ?? []
+
         let settlementIncomeIDs = Set(allTransactions.compactMap(\.reimbursedById))
-        // Exclude refunds, reimbursable expenses, and reimbursement settlement income
-        let normalTransactions = monthTransactions.filter { t in
+        let normalTransactions = allTransactions.filter { t in
             guard t.refundGroupId == nil else { return false }
             if t.type == .expense, t.isReimbursable { return false }
             if t.type == .income, settlementIncomeIDs.contains(t.id) { return false }
@@ -44,7 +45,7 @@ final class DashboardViewModel: ObservableObject {
         monthlyIncome = normalTransactions.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
         monthlyExpense = normalTransactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
 
-        recentTransactions = Array(allTransactions.prefix(10))
+        recentTransactions = Array(allTransactions.sorted(by: { $0.date > $1.date }).prefix(10))
     }
 
     var monthlyNet: Decimal {

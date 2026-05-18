@@ -31,10 +31,10 @@ final class SplitGroup {
         totalAmount - totalPaid
     }
 
-    var settlementStatus: String {
-        if totalPaid >= totalAmount { return "已结算" }
-        if totalPaid > 0 { return "部分结算" }
-        return "未结算"
+    var settlementStatus: SettlementStatus {
+        if totalPaid >= totalAmount { return .settled }
+        if totalPaid > 0 { return .partial }
+        return .unsettled
     }
 
     init(

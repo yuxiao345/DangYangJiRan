@@ -69,14 +69,13 @@ final class SyncServiceImpl: SyncServiceProtocol {
     }
 
     func createShare(for ledger: Ledger) async throws -> CKShare {
-        // CKShare creation requires the object to be persisted in CloudKit first.
-        // The root record ID is derived from the persistent model ID.
         let zoneID = CKRecordZone.ID(zoneName: "com.apple.coredata.cloudkit.zone", ownerName: CKCurrentUserDefaultName)
         let recordID = CKRecord.ID(recordName: ledger.id.uuidString, zoneID: zoneID)
         let share = CKShare(rootRecord: CKRecord(recordType: "Ledger", recordID: recordID))
         share.publicPermission = .readWrite
 
         try await container.sharedCloudDatabase.save(share)
+        ledger.isShared = true
         return share
     }
 

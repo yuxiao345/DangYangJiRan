@@ -15,12 +15,12 @@ struct TransactionRowView: View {
                     Text(LocalizedStringKey(titleText))
                         .font(.body)
                     if transaction.isReimbursable {
-                        let reimbursed = transaction.reimbursementStatus == .reimbursed
-                        Text(LocalizedStringKey(reimbursed ? "已报销" : "待报销"))
+                        let status = transaction.reimbursementStatus
+                        Text(status.displayName)
                             .font(.caption2)
                             .padding(.horizontal, 4)
-                            .background((reimbursed ? Color.green : Color.orange).opacity(0.15))
-                            .foregroundStyle(reimbursed ? .green : .orange)
+                            .background((status == .reimbursed ? Color.green : Color.orange).opacity(0.15))
+                            .foregroundStyle(status == .reimbursed ? .green : .orange)
                             .clipShape(Capsule())
                     }
                     if transaction.isLending {
@@ -130,7 +130,7 @@ struct TransactionRowView: View {
                     .foregroundStyle(.orange)
                     .clipShape(Capsule())
             case .settled:
-                Text(LocalizedStringKey("已结清"))
+                Text(LendingStatus.settled.displayName)
                     .font(.caption2)
                     .padding(.horizontal, 4)
                     .background(Color.green.opacity(0.15))

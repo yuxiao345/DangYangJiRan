@@ -2,8 +2,6 @@ import SwiftUI
 import SwiftData
 
 struct SplitEntryRowView: View {
-    @Environment(\.modelContext) private var modelContext
-    @EnvironmentObject private var appContainer: AppContainer
     let entry: SplitEntry
     let onToggle: () -> Void
 

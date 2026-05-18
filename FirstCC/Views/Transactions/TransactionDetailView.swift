@@ -118,9 +118,9 @@ struct TransactionDetailView: View {
                         HStack {
                             Label("成员分摊", systemImage: "person.2.circle")
                             Spacer()
-                            Text(LocalizedStringKey(group.settlementStatus))
+                            Text(group.settlementStatus.displayName)
                                 .font(.caption)
-                                .foregroundStyle(group.settlementStatus == "已结算" ? .green : .orange)
+                                .foregroundStyle(group.settlementStatus == .settled ? .green : .orange)
                         }
                     }
                 } header: {
@@ -169,9 +169,9 @@ struct TransactionDetailView: View {
                     LabeledContent("报销状态") {
                         switch transaction.reimbursementStatus {
                         case .pending:
-                            Text("待报销").foregroundStyle(.orange)
+                            Text(ReimbursementStatus.pending.displayName).foregroundStyle(.orange)
                         case .reimbursed:
-                            Text("已报销").foregroundStyle(.green)
+                            Text(ReimbursementStatus.reimbursed.displayName).foregroundStyle(.green)
                         default:
                             Text("—").foregroundStyle(.secondary)
                         }
@@ -201,7 +201,7 @@ struct TransactionDetailView: View {
                                 Text(LocalizedStringKey(d.pendingLabel)).foregroundStyle(.orange)
                             }
                         case .settled:
-                            Text("已结清").foregroundStyle(.green)
+                            Text(LendingStatus.settled.displayName).foregroundStyle(.green)
                         case .none:
                             Text("—").foregroundStyle(.secondary)
                         }

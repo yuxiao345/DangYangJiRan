@@ -41,7 +41,39 @@
       "Bash(sed -i '' '/ReconciliationView\\\\.swift.*PBXFileReference/d' FirstCC.xcodeproj/project.pbxproj)",
       "Bash(sed -i '' '/.*CreditCardReconciliationView\\\\.swift.*,/{ *)",
       "Bash(sed -i '' 's/0717F2FADE0D27C070224E90 \\\\/\\\\* AddEditAccountView\\\\.swift \\\\*\\\\/,$/0717F2FADE0D27C070224E90 \\\\/\\\\* AddEditAccountView.swift \\\\*\\\\/;/' FirstCC.xcodeproj/project.pbxproj)",
-      "Bash(sed -n '309,311p' FirstCC.xcodeproj/project.pbxproj)"
+      "Bash(sed -n '309,311p' FirstCC.xcodeproj/project.pbxproj)",
+      "Bash(git push *)",
+      "Bash(sw_vers)",
+      "Bash(xcrun --show-sdk-platform-version)",
+      "Bash(xcode-select -p)",
+      "Read(//Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/**)",
+      "Read(//Library/Developer/CommandLineTools/SDKs/**)",
+      "Bash(softwareupdate --list --all)",
+      "Bash(xcrun sourcekit-lsp *)",
+      "Read(//Applications/Xcode.app/**)",
+      "Bash(plutil -p /tmp/firstcc-build/Build/Products/Debug-iphonesimulator/荡漾计然.app/Info.plist)",
+      "Bash(xcrun xcodebuild *)",
+      "Bash(sqlite3 *)",
+      "Bash(claude mcp *)",
+      "Bash(npx --version)",
+      "Bash(npx @context7/mcp-server --help)",
+      "Bash(npm search *)",
+      "Bash(git *)",
+      "Bash(plutil *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash(git commit *)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/macmini/Documents/AI/10-FirstCC && xcodebuild -project FirstCC.xcodeproj -scheme 荡漾计然 -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath /tmp/firstcc-build -jobs 4 SWIFT_COMPILATION_MODE=wholemodule 2>&1 | tail -10",
+            "timeout": 120
+          }
+        ]
+      }
     ]
   }
 }

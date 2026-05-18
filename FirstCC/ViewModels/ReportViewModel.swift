@@ -1,0 +1,455 @@
+import Foundation
+import SwiftData
+
+enum ReportPeriod: Hashable {
+    case thisMonth
+    case last3Months
+    case last6Months
+    case lastYear
+    case last3Years
+
+    var label: String {
+        switch self {
+        case .thisMonth: "本月"
+        case .last3Months: "近3月"
+        case .last6Months: "近6月"
+        case .lastYear: "近1年"
+        case .last3Years: "近3年"
+        }
+    }
+
+    var dateRange: Range<Date>? {
+        let cal = Calendar.current
+        let now = Date()
+        switch self {
+        case .thisMonth:
+            return now.startOfMonth..<cal.date(byAdding: .day, value: 1, to: now)!
+        case .last3Months:
+            guard let start = cal.date(byAdding: .month, value: -3, to: now)?.startOfMonth else { return nil }
+            return start..<cal.date(byAdding: .day, value: 1, to: now)!
+        case .last6Months:
+            guard let start = cal.date(byAdding: .month, value: -6, to: now)?.startOfMonth else { return nil }
+            return start..<cal.date(byAdding: .day, value: 1, to: now)!
+        case .lastYear:
+            guard let start = cal.date(byAdding: .year, value: -1, to: now)?.startOfMonth else { return nil }
+            return start..<cal.date(byAdding: .day, value: 1, to: now)!
+        case .last3Years:
+            guard let start = cal.date(byAdding: .year, value: -3, to: now)?.startOfYear else { return nil }
+            return start..<cal.date(byAdding: .day, value: 1, to: now)!
+        }
+    }
+}
+
+struct CategoryExpenseItem: Identifiable {
+    let id: UUID
+    let name: String
+    let iconName: String
+    let colorHex: String
+    let amount: Decimal
+    let percentage: Double
+    let children: [CategoryExpenseItem]
+}
+
+struct TrendDataPoint: Identifiable {
+    let id = UUID()
+    let label: String
+    let income: Decimal
+    let expense: Decimal
+}
+
+@MainActor
+@Observable
+final class ReportViewModel {
+    static let uncategorizedUUID = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
+
+    var selectedPeriod: ReportPeriod = .thisMonth
+    var categoryExpenses: [CategoryExpenseItem] = []
+    var totalExpense: Decimal = 0
+    var selectedCategoryID: UUID?
+    var txByCategory: [UUID: [Transaction]] = [:]
+    var trendData: [TrendDataPoint] = []
+
+    var displayCategories: [CategoryExpenseItem] {
+        guard let id = selectedCategoryID else { return categoryExpenses }
+        if let parent = categoryExpenses.first(where: { $0.id == id }), !parent.children.isEmpty {
+            return parent.children
+        }
+        for top in categoryExpenses {
+            if let child = top.children.first(where: { $0.id == id }), !child.children.isEmpty {
+                return child.children
+            }
+        }
+        return []
+    }
+
+    var isShowingTransactions: Bool {
+        guard let id = selectedCategoryID else { return false }
+        if id == Self.uncategorizedUUID { return true }
+        for top in categoryExpenses {
+            if top.id == id { return top.children.isEmpty }
+            if let child = top.children.first(where: { $0.id == id }) {
+                return child.children.isEmpty
+            }
+        }
+        return true
+    }
+
+    var displayTitle: String {
+        guard let id = selectedCategoryID else { return "支出分类" }
+        for top in categoryExpenses {
+            if top.id == id { return top.name }
+            if let child = top.children.first(where: { $0.id == id }) { return child.name }
+        }
+        if id == Self.uncategorizedUUID { return "未分类" }
+        return "支出分类"
+    }
+
+    var displayTotal: Decimal {
+        if selectedCategoryID != nil {
+            return displayCategories.map(\.amount).reduce(0, +)
+        }
+        return totalExpense
+    }
+
+    var displayTransactions: [Transaction] {
+        guard let id = selectedCategoryID else { return [] }
+        if id == Self.uncategorizedUUID { return txByCategory[id] ?? [] }
+        return txByCategory[id] ?? []
+    }
+
+    func load(
+        ledger: Ledger,
+        transactionService: TransactionServiceProtocol,
+        categoryService: CategoryServiceProtocol,
+        context: ModelContext
+    ) {
+        guard let range = selectedPeriod.dateRange else { return }
+
+        let ledgerID = ledger.id
+        let startDate = range.lowerBound
+        let endDate = range.upperBound
+        let descriptor = FetchDescriptor<Transaction>(
+            predicate: #Predicate {
+                $0.ledger?.id == ledgerID &&
+                $0.date >= startDate &&
+                $0.date < endDate
+            },
+            sortBy: [SortDescriptor(\.date, order: .reverse)]
+        )
+        let all = (try? context.fetch(descriptor)) ?? []
+
+        let transactions = all.filter { t in
+            guard t.type == .expense else { return false }
+            guard !t.isSplitParent else { return false }
+            guard t.refundGroupId == nil else { return false }
+            guard !t.isReimbursable else { return false }
+            return true
+        }
+
+        let allCategories = (try? categoryService.fetchAllCategories(for: ledger, type: .expense, context: context)) ?? []
+        let categoryLookup = Dictionary(uniqueKeysWithValues: allCategories.map { ($0.id, $0) })
+
+        txByCategory = [:]
+
+        var rootMap: [UUID: (cat: Category, total: Decimal, directAmount: Decimal, children: [UUID: Decimal])] = [:]
+        var directTXByRoot: [UUID: [Transaction]] = [:]
+        var uncategorizedTotal: Decimal = 0
+        var uncategorizedTxs: [Transaction] = []
+
+        for t in transactions {
+            guard let cat = t.category else {
+                uncategorizedTotal += abs(t.amount)
+                uncategorizedTxs.append(t)
+                continue
+            }
+            let rootCat = rootCategory(for: cat)
+            let absAmt = abs(t.amount)
+
+            var entry = rootMap[rootCat.id] ?? (rootCat, 0, 0, [:])
+            entry.total += absAmt
+            if cat.id == rootCat.id {
+                entry.directAmount += absAmt
+                directTXByRoot[rootCat.id, default: []].append(t)
+            } else {
+                entry.children[cat.id, default: 0] += absAmt
+                txByCategory[cat.id, default: []].append(t)
+            }
+            rootMap[rootCat.id] = entry
+        }
+
+        totalExpense = rootMap.values.map(\.total).reduce(0, +) + uncategorizedTotal
+
+        categoryExpenses = rootMap.map { id, entry in
+            let parentTotal = entry.total
+            var childItems: [CategoryExpenseItem] = []
+
+            if entry.directAmount > 0 {
+                let directID = UUID()
+                txByCategory[directID] = directTXByRoot[id] ?? []
+                childItems.append(CategoryExpenseItem(
+                    id: directID,
+                    name: "本分类",
+                    iconName: entry.cat.iconName,
+                    colorHex: entry.cat.colorHex,
+                    amount: entry.directAmount,
+                    percentage: parentTotal > 0 ? Double(truncating: (entry.directAmount / parentTotal) as NSNumber) : 0,
+                    children: []
+                ))
+            }
+
+            let subItems = entry.children.map { childID, childAmount in
+                let childCat = categoryLookup[childID]
+                return CategoryExpenseItem(
+                    id: childID,
+                    name: childCat?.name ?? "未知",
+                    iconName: childCat?.iconName ?? "questionmark",
+                    colorHex: childCat?.colorHex ?? "#999999",
+                    amount: childAmount,
+                    percentage: parentTotal > 0 ? Double(truncating: (childAmount / parentTotal) as NSNumber) : 0,
+                    children: []
+                )
+            }.sorted { $0.amount > $1.amount }
+
+            childItems.append(contentsOf: subItems)
+
+            return CategoryExpenseItem(
+                id: id,
+                name: entry.cat.name,
+                iconName: entry.cat.iconName,
+                colorHex: entry.cat.colorHex,
+                amount: entry.total,
+                percentage: totalExpense > 0 ? Double(truncating: (entry.total / totalExpense) as NSNumber) : 0,
+                children: childItems
+            )
+        }.sorted { $0.amount > $1.amount }
+
+        if uncategorizedTotal > 0 {
+            txByCategory[Self.uncategorizedUUID] = uncategorizedTxs
+            let uncategorizedItem = CategoryExpenseItem(
+                id: Self.uncategorizedUUID,
+                name: "未分类",
+                iconName: "questionmark.circle",
+                colorHex: "#AAAAAA",
+                amount: uncategorizedTotal,
+                percentage: totalExpense > 0 ? Double(truncating: (uncategorizedTotal / totalExpense) as NSNumber) : 0,
+                children: []
+            )
+            categoryExpenses.append(uncategorizedItem)
+            categoryExpenses.sort { $0.amount > $1.amount }
+        }
+
+        if selectedCategoryID != nil, !categoryExpenses.contains(where: { $0.id == selectedCategoryID }) {
+            selectedCategoryID = nil
+        }
+    }
+
+    func loadTrendData(
+        ledger: Ledger,
+        transactionService: TransactionServiceProtocol,
+        context: ModelContext
+    ) {
+        guard let range = selectedPeriod.dateRange else { return }
+
+        let ledgerID = ledger.id
+        let startDate = range.lowerBound
+        let endDate = range.upperBound
+        let descriptor = FetchDescriptor<Transaction>(
+            predicate: #Predicate {
+                $0.ledger?.id == ledgerID &&
+                $0.date >= startDate &&
+                $0.date < endDate
+            },
+            sortBy: [SortDescriptor(\.date, order: .forward)]
+        )
+        let all = (try? context.fetch(descriptor)) ?? []
+
+        let settlementIDs = Set(all.compactMap(\.reimbursedById))
+        let filtered = all.filter { t in
+            guard t.type == .expense || t.type == .income else { return false }
+            guard !t.isSplitParent else { return false }
+            guard t.refundGroupId == nil else { return false }
+            if t.type == .expense, t.isReimbursable { return false }
+            if t.type == .income, settlementIDs.contains(t.id) { return false }
+            return true
+        }
+
+        let cal = Calendar.current
+
+        switch selectedPeriod {
+        case .last3Years:
+            // Yearly grouping
+            let df = DateFormatter()
+            df.dateFormat = "yyyy年"
+            var byYear: [String: (income: Decimal, expense: Decimal)] = [:]
+            var yearOrder: [String] = []
+
+            for t in filtered {
+                let key = df.string(from: t.date)
+                if byYear[key] == nil {
+                    yearOrder.append(key)
+                    byYear[key] = (0, 0)
+                }
+                var entry = byYear[key]!
+                if t.type == .income {
+                    entry.income += t.amount
+                } else {
+                    entry.expense += abs(t.amount)
+                }
+                byYear[key] = entry
+            }
+            trendData = yearOrder.map { key in
+                let v = byYear[key]!
+                return TrendDataPoint(label: key, income: v.income, expense: v.expense)
+            }
+
+        case .lastYear:
+            let df = DateFormatter()
+            df.dateFormat = "yyyy年M月"
+            var byMonth: [String: (income: Decimal, expense: Decimal)] = [:]
+            var monthOrder: [String] = []
+
+            for t in filtered {
+                let key = df.string(from: t.date)
+                if byMonth[key] == nil {
+                    monthOrder.append(key)
+                    byMonth[key] = (0, 0)
+                }
+                var entry = byMonth[key]!
+                if t.type == .income {
+                    entry.income += t.amount
+                } else {
+                    entry.expense += abs(t.amount)
+                }
+                byMonth[key] = entry
+            }
+            trendData = monthOrder.map { key in
+                let v = byMonth[key]!
+                return TrendDataPoint(label: key, income: v.income, expense: v.expense)
+            }
+
+        default:
+            let df = DateFormatter()
+            df.dateFormat = "M月"
+            var byMonth: [String: (income: Decimal, expense: Decimal)] = [:]
+            var monthOrder: [String] = []
+
+            for t in filtered {
+                let key = df.string(from: t.date)
+                if byMonth[key] == nil {
+                    monthOrder.append(key)
+                    byMonth[key] = (0, 0)
+                }
+                var entry = byMonth[key]!
+                if t.type == .income {
+                    entry.income += t.amount
+                } else {
+                    entry.expense += abs(t.amount)
+                }
+                byMonth[key] = entry
+            }
+            trendData = monthOrder.map { key in
+                let v = byMonth[key]!
+                return TrendDataPoint(label: key, income: v.income, expense: v.expense)
+            }
+        }
+    }
+
+    // MARK: - Test data seeding (temporary)
+
+    func seedTestData(
+        ledger: Ledger,
+        context: ModelContext
+    ) {
+        let ledgerID = ledger.id
+
+        // Category names
+        let catNames: [String] = ["三餐", "停车", "娱乐", "物业", "通讯"]
+        let catDescriptor = FetchDescriptor<Category>(
+            predicate: #Predicate { $0.ledger?.id == ledgerID }
+        )
+        let allCats = (try? context.fetch(catDescriptor)) ?? []
+        let catByName: [String: Category] = Dictionary(uniqueKeysWithValues: allCats.compactMap { c in
+            catNames.contains(c.name) ? (c.name, c) : nil
+        })
+        guard catByName.count == 5 else {
+            print("Seed: missing categories, found \(catByName.keys.sorted())")
+            return
+        }
+
+        // Get 微信支付 account
+        let acctDescriptor = FetchDescriptor<Account>(
+            predicate: #Predicate { $0.ledger?.id == ledgerID }
+        )
+        let allAccounts = (try? context.fetch(acctDescriptor)) ?? []
+        guard let account = allAccounts.first(where: { $0.name == "微信支付" }) else {
+            print("Seed: 微信支付 account not found")
+            return
+        }
+
+        let cal = Calendar.current
+        var date = cal.date(from: DateComponents(year: 2025, month: 1, day: 1))!
+        let endDate = cal.date(from: DateComponents(year: 2026, month: 5, day: 1))!
+
+        var count = 0
+        while date < endDate {
+            // 3x 餐饮 30 each
+            for _ in 0..<3 {
+                let t = Transaction(type: .expense, amount: -30, date: date, account: account, category: catByName["三餐"])
+                t.ledger = ledger
+                context.insert(t)
+                count += 1
+            }
+            // 1x 停车 20
+            let p = Transaction(type: .expense, amount: -20, date: date, account: account, category: catByName["停车"])
+            p.ledger = ledger
+            context.insert(p)
+            count += 1
+
+            // Weekly 娱乐 on Sundays
+            if cal.component(.weekday, from: date) == 1 {
+                let e = Transaction(type: .expense, amount: -100, date: date, account: account, category: catByName["娱乐"])
+                e.ledger = ledger
+                context.insert(e)
+                count += 1
+            }
+
+            // Monthly on 1st
+            if cal.component(.day, from: date) == 1 {
+                let prop = Transaction(type: .expense, amount: -700, date: date, account: account, category: catByName["物业"])
+                prop.ledger = ledger
+                context.insert(prop)
+                count += 1
+                let tel = Transaction(type: .expense, amount: -199, date: date, account: account, category: catByName["通讯"])
+                tel.ledger = ledger
+                context.insert(tel)
+                count += 1
+            }
+
+            date = cal.date(byAdding: .day, value: 1, to: date)!
+
+            // Save in batches
+            if count % 200 == 0 {
+                try? context.save()
+                print("Seed: \(count) transactions...")
+            }
+        }
+        try? context.save()
+        print("Seed complete: \(count) transactions")
+    }
+
+    func selectCategory(_ id: UUID?) {
+        if selectedCategoryID == id {
+            selectedCategoryID = nil
+        } else {
+            selectedCategoryID = id
+        }
+    }
+
+    private func rootCategory(for cat: Category) -> Category {
+        var current = cat
+        while let p = current.parent {
+            current = p
+        }
+        return current
+    }
+}

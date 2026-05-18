@@ -115,7 +115,7 @@ struct LedgerSettingsView: View {
         }
         .sheet(isPresented: $showCloudShare) {
             if let container = appContainer.cloudKitContainer {
-                CloudSharingView(share: nil, container: container, ledger: ledger, isPresenting: true)
+                CloudSharingView(share: nil, container: container, ledger: ledger, isPresenting: true, syncService: appContainer.syncService as? SyncServiceImpl)
             }
         }
         .alert("确认删除", isPresented: $showDeleteAlert) {

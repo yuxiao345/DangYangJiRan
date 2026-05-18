@@ -7,6 +7,7 @@ struct CloudSharingView: UIViewControllerRepresentable {
     let container: CKContainer
     let ledger: Ledger
     let isPresenting: Bool
+    let syncService: SyncServiceImpl?
 
     func makeUIViewController(context: Context) -> UICloudSharingController {
         let controller: UICloudSharingController
@@ -33,19 +34,24 @@ struct CloudSharingView: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UICloudSharingController, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(ledger: ledger, container: container)
+        Coordinator(ledger: ledger, container: container, syncService: syncService)
     }
 
     final class Coordinator: NSObject, UICloudSharingControllerDelegate {
         let ledger: Ledger
         let container: CKContainer
+        let syncService: SyncServiceImpl?
 
-        init(ledger: Ledger, container: CKContainer) {
+        init(ledger: Ledger, container: CKContainer, syncService: SyncServiceImpl?) {
             self.ledger = ledger
             self.container = container
+            self.syncService = syncService
         }
 
         func createShare() async throws -> CKShare {
+            if let syncService {
+                return try await syncService.createShare(for: ledger)
+            }
             let zoneID = CKRecordZone.ID(
                 zoneName: "com.apple.coredata.cloudkit.zone",
                 ownerName: CKCurrentUserDefaultName

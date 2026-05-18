@@ -153,4 +153,13 @@ enum SyncStatus {
     case syncing
     case offline
     case error(String)
+
+    var displayName: String {
+        switch self {
+        case .synced: return NSLocalizedString("已同步", comment: "")
+        case .syncing: return NSLocalizedString("同步中...", comment: "")
+        case .offline: return NSLocalizedString("离线", comment: "")
+        case .error(let msg): return msg
+        }
+    }
 }

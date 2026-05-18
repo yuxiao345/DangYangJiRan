@@ -12,9 +12,9 @@ struct SplitDetailView: View {
     private var currencyCode: String { splitGroup.currencyCode }
     private var settlementColor: Color {
         switch splitGroup.settlementStatus {
-        case "已结算": return .green
-        case "部分结算": return .orange
-        default: return .secondary
+        case .settled: return .green
+        case .partial: return .orange
+        case .unsettled: return .secondary
         }
     }
 
@@ -46,7 +46,7 @@ struct SplitDetailView: View {
                 HStack {
                     Text("状态")
                     Spacer()
-                    Text(LocalizedStringKey(splitGroup.settlementStatus))
+                    Text(splitGroup.settlementStatus.displayName)
                         .foregroundStyle(settlementColor)
                         .fontWeight(.medium)
                 }
@@ -60,7 +60,7 @@ struct SplitDetailView: View {
                 }
             }
 
-            if splitGroup.settlementStatus != "已结算" {
+            if splitGroup.settlementStatus != .settled {
                 Section {
                     Button {
                         settleAll()

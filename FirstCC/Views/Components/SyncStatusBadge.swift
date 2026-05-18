@@ -9,34 +9,39 @@ struct SyncStatusBadge: View {
             Task { try? await appContainer.syncService?.syncNow() }
         } label: {
             HStack(spacing: 4) {
-                switch appContainer.syncStatus {
-                case .synced:
-                    Image(systemName: "icloud.fill")
-                        .font(.caption2)
-                    Text("已同步")
-                        .font(.caption2)
-                case .syncing:
-                    ProgressView()
-                        .scaleEffect(0.6)
-                        .frame(width: 12, height: 12)
-                    Text("同步中...")
-                        .font(.caption2)
-                case .offline:
-                    Image(systemName: "icloud.slash")
-                        .font(.caption2)
-                    Text("离线")
-                        .font(.caption2)
-                        .foregroundStyle(.orange)
-                case .error(let msg):
-                    Image(systemName: "exclamationmark.icloud")
-                        .font(.caption2)
-                    Text(msg)
-                        .font(.caption2)
-                        .foregroundStyle(.red)
-                }
+                statusIcon
+                Text(appContainer.syncStatus.displayName)
+                    .font(.caption2)
+                    .foregroundStyle(statusColor)
             }
-            .foregroundStyle(.secondary)
         }
         .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var statusIcon: some View {
+        switch appContainer.syncStatus {
+        case .synced:
+            Image(systemName: "icloud.fill")
+                .font(.caption2)
+        case .syncing:
+            ProgressView()
+                .scaleEffect(0.6)
+                .frame(width: 12, height: 12)
+        case .offline:
+            Image(systemName: "icloud.slash")
+                .font(.caption2)
+        case .error:
+            Image(systemName: "exclamationmark.icloud")
+                .font(.caption2)
+        }
+    }
+
+    private var statusColor: Color {
+        switch appContainer.syncStatus {
+        case .offline: .orange
+        case .error: .red
+        default: .secondary
+        }
     }
 }

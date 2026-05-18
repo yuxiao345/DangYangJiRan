@@ -23,6 +23,7 @@ struct SplitServiceImpl: SplitServiceProtocol {
         )
         group.ledger = ledger
         group.transaction = transaction
+        transaction.splitGroup = group
         context.insert(group)
 
         let entryAmounts: [Decimal]
@@ -47,14 +48,14 @@ struct SplitServiceImpl: SplitServiceProtocol {
             context.insert(entry)
         }
 
-        try context.save()
+        try saveAndNotify(context: context)
         return group
     }
 
     func markEntryPaid(_ entry: SplitEntry, context: ModelContext) throws {
         entry.isPaid = true
         entry.paidDate = Date()
-        try context.save()
+        try saveAndNotify(context: context)
     }
 
     func settleSplit(_ splitGroup: SplitGroup, context: ModelContext) throws {
@@ -64,7 +65,12 @@ struct SplitServiceImpl: SplitServiceProtocol {
                 entry.paidDate = Date()
             }
         }
+        try saveAndNotify(context: context)
+    }
+
+    private func saveAndNotify(context: ModelContext) throws {
         try context.save()
+        NotificationCenter.default.post(name: .transactionDidChange, object: nil)
     }
 
     func fetchSplits(for ledger: Ledger, context: ModelContext) throws -> [SplitGroup] {
