@@ -31,6 +31,7 @@ struct TransactionListView: View {
                 monthlyExpense: $monthlyExpense
             )
             Divider()
+                .overlay(Color.designOutlineVariant)
 
             List {
                 if transactions.isEmpty {
@@ -52,12 +53,26 @@ struct TransactionListView: View {
                 }
             }
             .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
         }
+        .designScreen()
         .navigationTitle("流水")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button { showAddSheet = true } label: {
-                    Image(systemName: "plus")
+                HStack(spacing: 16) {
+                    if let ledger = appContainer.currentLedger {
+                        NavigationLink {
+                            SearchView(viewModel: SearchViewModel(
+                                ledger: ledger,
+                                transactionService: appContainer.transactionService
+                            ))
+                        } label: {
+                            Image(systemName: "magnifyingglass")
+                        }
+                    }
+                    Button { showAddSheet = true } label: {
+                        Image(systemName: "plus")
+                    }
                 }
             }
             ToolbarItem(placement: .navigationBarLeading) {

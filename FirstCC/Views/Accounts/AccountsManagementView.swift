@@ -80,15 +80,15 @@ struct AccountsManagementView: View {
             VStack(alignment: .leading) {
                 Text(LocalizedStringKey(account.name))
                 Text(account.currencyCode)
-                    .font(.caption2)
+                    .font(.designBodySmall)
                     .foregroundStyle(.secondary)
             }
             Spacer()
             let bal = balances[account.id] ?? 0
-            CurrencyText(amount: bal, currencyCode: account.currencyCode, showSign: true, font: .subheadline, foregroundColor: bal >= 0 ? .green : .red)
+            CurrencyText(amount: bal, currencyCode: account.currencyCode, showSign: true, size: 15, foregroundColor: bal >= 0 ? .green : .red)
             Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+                .font(.designBodySmall)
+                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
         }
         .contentShape(Rectangle())
         .onTapGesture { editingAccount = account }
@@ -202,13 +202,13 @@ struct EditAccountView: View {
                                 Image(systemName: account.iconName ?? "creditcard")
                                     .font(.system(size: 50))
                                     .frame(width: 80, height: 80)
-                                    .foregroundStyle(.blue)
+                                    .foregroundStyle(Color.designPrimaryContainer)
                             }
                         }
                         Spacer()
                     }
                     Text("点击更换图标")
-                        .font(.caption)
+                        .font(.designBodySmall)
                         .foregroundStyle(.secondary)
                 }
 

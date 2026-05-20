@@ -48,11 +48,11 @@ struct SplitFormView: View {
                     ForEach(members) { member in
                         HStack {
                             Image(systemName: member.avatar)
-                                .foregroundStyle(.blue)
+                                .foregroundStyle(Color.designPrimaryContainer)
                             Text(member.name)
                             Spacer()
                             if selectedMembers.contains(member.id) {
-                                Image(systemName: "checkmark").foregroundStyle(.blue)
+                                Image(systemName: "checkmark").foregroundStyle(Color.designPrimaryContainer)
                             }
                         }
                         .contentShape(Rectangle())

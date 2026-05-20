@@ -60,7 +60,8 @@ struct ReportsView: View {
                     guard let ledger = appContainer.currentLedger else { return }
                     viewModel.seedTestData(ledger: ledger, context: modelContext)
                 }
-                .font(.caption)
+                .font(.designBodySmall)
+                .foregroundStyle(.secondary)
                 .padding(.bottom, 4)
 
                 switch selectedReport {
@@ -68,7 +69,7 @@ struct ReportsView: View {
                     categoryReport
                 case .trend:
                     trendReport
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 }
             }
             .navigationTitle("报表")
@@ -77,6 +78,7 @@ struct ReportsView: View {
                 TransactionDetailView(transaction: tx)
             }
         }
+        .designScreen()
         .onAppear { loadData() }
         .onChange(of: viewModel.selectedPeriod) { _, _ in loadData() }
         .onChange(of: selectedReport) { _, newType in
@@ -98,9 +100,10 @@ struct ReportsView: View {
             VStack(spacing: 8) {
                 Image(systemName: "chart.pie")
                     .font(.largeTitle)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.designOnSurfaceVariant)
                 Text("暂无支出数据")
-                    .foregroundStyle(.secondary)
+                    .font(.designBodyMedium)
+                    .foregroundStyle(Color.designOnSurfaceVariant)
             }
             Spacer()
         } else {
@@ -115,14 +118,14 @@ struct ReportsView: View {
                     onSelectTransaction: { tx in selectedTransaction = tx },
                     transactions: viewModel.isShowingTransactions ? viewModel.displayTransactions : nil
                 )
-                .padding(16)
+                .padding(.vertical, 8)
             }
         }
     }
 
     @ViewBuilder
     private var trendReport: some View {
-        TrendChartView(dataPoints: viewModel.trendData)
+        TrendChartView(dataPoints: viewModel.trendData, period: viewModel.selectedPeriod)
     }
 
     private func loadData() {

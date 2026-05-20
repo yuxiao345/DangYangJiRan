@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PIXEL_VAULT - 控制面板</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            background: #131313;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Space Grotesk", sans-serif;
+        }
+
+        .liquid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at 20% 30%, #005224 0%, transparent 40%),
+                        radial-gradient(circle at 80% 70%, #410005 0%, transparent 40%),
+                        radial-gradient(circle at 50% 50%, #131313 0%, #000 100%);
+            filter: blur(80px);
+            opacity: 0.6;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .pixel-progress-segment {
+            width: 8px;
+            height: 12px;
+            margin-right: 2px;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ffb4ab",
+                        "on-primary": "#003917",
+                        "on-secondary-fixed-variant": "#91081a",
+                        "tertiary-fixed": "#e9ddff",
+                        "surface-container-lowest": "#0e0e0e",
+                        "secondary": "#ffb3af",
+                        "inverse-on-surface": "#313030",
+                        "on-surface-variant": "#b9cbb8",
+                        "primary-fixed": "#63ff93",
+                        "primary": "#f0ffed",
+                        "on-tertiary": "#3c0090",
+                        "surface-container-highest": "#353534",
+                        "on-primary-fixed-variant": "#005224",
+                        "surface": "#131313",
+                        "surface-container": "#201f1f",
+                        "secondary-fixed": "#ffdad7",
+                        "on-tertiary-container": "#7521ff",
+                        "surface-dim": "#131313",
+                        "on-secondary": "#68000e",
+                        "on-background": "#e5e2e1",
+                        "on-error": "#690005",
+                        "inverse-surface": "#e5e2e1",
+                        "on-primary-container": "#007134",
+                        "surface-variant": "#353534",
+                        "background": "#131313",
+                        "on-secondary-fixed": "#410005",
+                        "inverse-primary": "#006d33",
+                        "secondary-fixed-dim": "#ffb3af",
+                        "surface-container-high": "#2a2a2a",
+                        "surface-bright": "#3a3939",
+                        "tertiary-fixed-dim": "#d1bcff",
+                        "secondary-container": "#91081a",
+                        "surface-container-low": "#1c1b1b",
+                        "tertiary-container": "#e6d8ff",
+                        "on-secondary-container": "#ff9994",
+                        "on-error-container": "#ffdad6",
+                        "on-primary-fixed": "#00210b",
+                        "primary-fixed-dim": "#00e471",
+                        "error-container": "#93000a",
+                        "on-tertiary-fixed": "#23005b",
+                        "outline-variant": "#3b4b3c",
+                        "tertiary": "#fff9ff",
+                        "surface-tint": "#00e471",
+                        "on-tertiary-fixed-variant": "#5700c9",
+                        "outline": "#849584",
+                        "on-surface": "#e5e2e1",
+                        "primary-container": "#00ff7f"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-md": "24px",
+                        "margin-desktop": "40px",
+                        "margin-mobile": "16px",
+                        "stack-xl": "64px",
+                        "stack-xs": "8px",
+                        "unit": "4px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["PingFang SC", "Space Grotesk"],
+                        "body-lg": ["PingFang SC", "Space Grotesk"],
+                        "headline-md": ["PingFang SC", "Space Grotesk"],
+                        "mono-data": ["JetBrains Mono"],
+                        "display-lg-mobile": ["Space Grotesk"],
+                        "display-lg": ["Space Grotesk"],
+                        "label-caps": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "mono-data": ["14px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                        "display-lg-mobile": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="font-body-lg text-on-surface">
+<div class="liquid-bg"></div>
+<!-- Top AppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-4 h-16 bg-surface/60 backdrop-blur-3xl border-b border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)]">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="text-headline-md font-display-lg font-bold tracking-tighter text-primary">PIXEL_VAULT</span>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-on-surface" data-icon="settings">settings</span>
+</button>
+</header>
+<main class="pt-24 pb-32 px-4 max-w-lg mx-auto space-y-stack-md">
+<!-- Hero Balance Card -->
+<section class="glass-card rounded-[24px] p-6 relative overflow-hidden shadow-2xl animate-float">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary-fixed-dim/20 blur-3xl -mr-10 -mt-10"></div>
+<div class="relative z-10">
+<span class="font-body-sm text-xs text-on-surface-variant uppercase tracking-widest">资产总额</span>
+<div class="mt-2 flex items-baseline gap-1">
+<span class="font-mono-data text-headline-md text-primary-fixed-dim">$</span>
+<span class="font-display-lg-mobile text-display-lg-mobile tracking-tight">12,854.42</span>
+</div>
+<div class="mt-4 flex items-center gap-2">
+<span class="bg-primary-fixed/20 text-primary-fixed-dim font-mono-data text-xs px-2 py-1 rounded-lg border border-primary-fixed/30">本月 +4.2%</span>
+</div>
+</div>
+</section>
+<!-- Summary Grid -->
+<div class="grid grid-cols-2 gap-4">
+<div class="glass-card rounded-[24px] p-4 flex flex-col justify-between">
+<span class="font-body-sm text-[12px] text-on-surface-variant">本月收入</span>
+<div class="mt-4 flex flex-col">
+<span class="font-mono-data text-primary-fixed-dim text-headline-md">$4,200</span>
+<div class="h-1 w-full bg-white/10 mt-2 overflow-hidden rounded-full">
+<div class="h-full bg-primary-fixed-dim w-[75%] shadow-[0_0_8px_rgba(0,228,113,0.4)]"></div>
+</div>
+</div>
+</div>
+<div class="glass-card rounded-[24px] p-4 flex flex-col justify-between">
+<span class="font-body-sm text-[12px] text-on-surface-variant">本月支出</span>
+<div class="mt-4 flex flex-col">
+<span class="font-mono-data text-secondary text-headline-md">$2,140</span>
+<div class="h-1 w-full bg-white/10 mt-2 overflow-hidden rounded-full">
+<div class="h-full bg-secondary w-[45%]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Budget Section -->
+<section class="glass-card rounded-[24px] p-6 space-y-4">
+<div class="flex justify-between items-center">
+<h3 class="font-headline-md text-body-lg font-bold">本月预算</h3>
+<span class="font-mono-data text-body-sm text-on-surface-variant">已用 64%</span>
+</div>
+<div class="flex gap-[2px]">
+<!-- Pixelated Progress Bar Logic -->
+<script>
+                    const barContainer = document.currentScript.parentElement;
+                    const segments = 24;
+                    const activeSegments = 16;
+                    for (let i = 0; i < segments; i++) {
+                        const div = document.createElement('div');
+                        div.className = `h-6 w-full ${i < activeSegments ? 'bg-primary-fixed-dim shadow-[0_0_12px_rgba(0,228,113,0.3)]' : 'bg-white/5'}`;
+                        barContainer.appendChild(div);
+                    }
+                </script>
+</div>
+<div class="flex justify-between text-on-surface-variant">
+<span class="font-body-sm text-xs">已支出 $2,048.00</span>
+<span class="font-body-sm text-xs">限额 $3,200.00</span>
+</div>
+</section>
+<!-- Recent Transactions -->
+<section class="space-y-4">
+<div class="flex justify-between items-center px-1">
+<h3 class="font-headline-md text-body-lg font-bold">最近交易</h3>
+<button class="text-primary-fixed-dim font-body-sm text-xs hover:underline">查看全部</button>
+</div>
+<div class="space-y-3">
+<!-- Transaction Item -->
+<div class="glass-card rounded-xl p-4 flex items-center justify-between group hover:bg-white/5 transition-all">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center border border-white/10">
+<span class="material-symbols-outlined text-primary-fixed-dim" data-icon="coffee">coffee</span>
+</div>
+<div>
+<p class="font-body-lg font-medium">Cyber Caffeine</p>
+<p class="font-body-sm text-xs text-on-surface-variant">餐饮 • 今天</p>
+</div>
+</div>
+<span class="font-mono-data text-secondary">-$6.50</span>
+</div>
+<!-- Transaction Item -->
+<div class="glass-card rounded-xl p-4 flex items-center justify-between group hover:bg-white/5 transition-all">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center border border-white/10">
+<span class="material-symbols-outlined text-primary-fixed-dim" data-icon="directions_bus">directions_bus</span>
+</div>
+<div>
+<p class="font-body-lg font-medium">Metro Transit</p>
+<p class="font-body-sm text-xs text-on-surface-variant">交通 • 昨天</p>
+</div>
+</div>
+<span class="font-mono-data text-secondary">-$2.75</span>
+</div>
+<!-- Transaction Item -->
+<div class="glass-card rounded-xl p-4 flex items-center justify-between group hover:bg-white/5 transition-all">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center border border-white/10">
+<span class="material-symbols-outlined text-primary-fixed-dim" data-icon="shopping_bag">shopping_bag</span>
+</div>
+<div>
+<p class="font-body-lg font-medium">Nexus Retail</p>
+<p class="font-body-sm text-xs text-on-surface-variant">购物 • 2天前</p>
+</div>
+</div>
+<span class="font-mono-data text-secondary">-$142.00</span>
+</div>
+<!-- Transaction Item (Positive) -->
+<div class="glass-card rounded-xl p-4 flex items-center justify-between group hover:bg-white/5 transition-all">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center border border-white/10">
+<span class="material-symbols-outlined text-primary-fixed-dim" data-icon="payments">payments</span>
+</div>
+<div>
+<p class="font-body-lg font-medium">Stellar Freelance</p>
+<p class="font-body-sm text-xs text-on-surface-variant">收入 • 3天前</p>
+</div>
+</div>
+<span class="font-mono-data text-primary-fixed-dim">+$850.00</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-2 bg-surface-container/70 backdrop-blur-2xl border-t border-white/10 shadow-[0_-4px_24px_rgba(0,0,0,0.5)] rounded-t-xl">
+<!-- Vault (Active) -->
+<div class="flex flex-col items-center justify-center text-primary-container dark:text-primary-fixed drop-shadow-[0_0_8px_rgba(0,228,113,0.6)] active:scale-90 transition-transform duration-300 ease-out cursor-pointer">
+<span class="material-symbols-outlined mb-1" data-icon="grid_view" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+<span class="font-body-sm text-[12px]">小金库</span>
+</div>
+<!-- Flow -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant/60 hover:text-primary active:scale-90 transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined mb-1" data-icon="swap_vert">swap_vert</span>
+<span class="font-body-sm text-[12px]">流水</span>
+</div>
+<!-- Goals -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant/60 hover:text-primary active:scale-90 transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined mb-1" data-icon="leaderboard">leaderboard</span>
+<span class="font-body-sm text-[12px]">目标</span>
+</div>
+<!-- Profile -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant/60 hover:text-primary active:scale-90 transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span class="font-body-sm text-[12px]">我的</span>
+</div>
+</nav>
+<!-- Contextual FAB for Transaction -->
+<div class="fixed bottom-24 right-6 z-40">
+<button class="w-14 h-14 bg-gradient-to-br from-primary-fixed-dim to-on-primary-container rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(0,228,113,0.4)] active:scale-95 hover:scale-105 transition-all">
+<span class="material-symbols-outlined text-on-primary text-3xl" data-icon="add">add</span>
+</button>
+</div>
+<script>
+        // Micro-interaction for cards
+        document.querySelectorAll('.glass-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+            });
+        });
+
+        // Toggle Active State logic
+        const navItems = document.querySelectorAll('nav > div');
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                navItems.forEach(i => {
+                    i.classList.remove('text-primary-container', 'dark:text-primary-fixed', 'drop-shadow-[0_0_8px_rgba(0,228,113,0.6)]');
+                    i.classList.add('text-on-surface-variant/60');
+                    const icon = i.querySelector('.material-symbols-outlined');
+                    icon.style.fontVariationSettings = "'FILL' 0";
+                });
+                item.classList.add('text-primary-container', 'dark:text-primary-fixed', 'drop-shadow-[0_0_8px_rgba(0,228,113,0.6)]');
+                item.classList.remove('text-on-surface-variant/60');
+                const activeIcon = item.querySelector('.material-symbols-outlined');
+                activeIcon.style.fontVariationSettings = "'FILL' 1";
+            });
+        });
+    </script>
+</body></html>

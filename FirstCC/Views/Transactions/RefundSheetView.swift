@@ -18,7 +18,7 @@ struct RefundSheetView: View {
             Form {
                 Section {
                     LabeledContent("原交易金额") {
-                        CurrencyText(amount: abs(original.amount), currencyCode: original.currencyCode, font: .body)
+                        CurrencyText(amount: abs(original.amount), currencyCode: original.currencyCode, size: 17)
                     }
                     LabeledContent("原交易日期") {
                         Text(original.date.formatted(date: .abbreviated, time: .omitted))

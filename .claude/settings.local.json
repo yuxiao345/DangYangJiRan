@@ -59,7 +59,24 @@
       "Bash(npx @context7/mcp-server --help)",
       "Bash(npm search *)",
       "Bash(git *)",
-      "Bash(plutil *)"
+      "Bash(plutil *)",
+      "Bash(grep -n 'F646509B65034FD393994ABC\\\\|rootObject\\\\|\"objects\"\\\\|^[[:space:]]*\"},$' /Users/macmini/Documents/AI/10-FirstCC/FirstCC.xcodeproj/project.pbxproj)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(echo \"null count: $?\")",
+      "Bash(echo \"original exit: $?\")",
+      "Bash(curl -L -o /tmp/space-grotesk.zip \"https://fonts.google.com/download?family=Space+Grotesk\")",
+      "Bash(unzip -l /tmp/space-grotesk.zip)",
+      "Bash(curl -s \"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700\")",
+      "Bash(curl -s -o /Users/macmini/Documents/AI/10-FirstCC/FirstCC/Resources/Fonts/SpaceGrotesk-Light.ttf \"https://fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj62UUsj.ttf\")",
+      "Bash(curl -s -o /Users/macmini/Documents/AI/10-FirstCC/FirstCC/Resources/Fonts/SpaceGrotesk-Regular.ttf \"https://fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj7oUUsj.ttf\")",
+      "Bash(curl -s -o /Users/macmini/Documents/AI/10-FirstCC/FirstCC/Resources/Fonts/SpaceGrotesk-Medium.ttf \"https://fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj7aUUsj.ttf\")",
+      "Bash(curl -s -o /Users/macmini/Documents/AI/10-FirstCC/FirstCC/Resources/Fonts/SpaceGrotesk-SemiBold.ttf \"https://fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj7bUksj.ttf\")",
+      "Bash(curl -s -o /Users/macmini/Documents/AI/10-FirstCC/FirstCC/Resources/Fonts/SpaceGrotesk-Bold.ttf \"https://fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj7PVksj.ttf\")",
+      "Bash(curl -s -o /Users/macmini/Documents/AI/10-FirstCC/FirstCC/Resources/Fonts/JetBrainsMono-Regular.ttf \"https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjPQ.ttf\")",
+      "Bash(curl -s -o /Users/macmini/Documents/AI/10-FirstCC/FirstCC/Resources/Fonts/JetBrainsMono-Medium.ttf \"https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8-qxjPQ.ttf\")",
+      "Bash(curl -s -o /Users/macmini/Documents/AI/10-FirstCC/FirstCC/Resources/Fonts/JetBrainsMono-Bold.ttf \"https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8L6tjPQ.ttf\")",
+      "Bash(curl -s -o /Users/macmini/Documents/AI/10-FirstCC/FirstCC/Resources/Fonts/SpaceGrotesk-SemiBold.ttf \"https://fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj42Vksj.ttf\")",
+      "Bash(curl -s -o /Users/macmini/Documents/AI/10-FirstCC/FirstCC/Resources/Fonts/SpaceGrotesk-Bold.ttf \"https://fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj4PVksj.ttf\")"
     ]
   },
   "hooks": {

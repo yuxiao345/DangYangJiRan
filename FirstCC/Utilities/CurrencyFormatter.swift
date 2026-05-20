@@ -11,6 +11,8 @@ struct CurrencyFormatter {
         formatter.currencyCode = currencyCode
         formatter.maximumFractionDigits = 2
         formatter.minimumFractionDigits = 2
+        formatter.usesGroupingSeparator = true
+        formatter.currencySymbol = simpleCurrencySymbol(for: currencyCode)
 
         let number = NSDecimalNumber(decimal: amount)
         guard var result = formatter.string(from: number) else {
@@ -43,6 +45,22 @@ struct CurrencyFormatter {
         }
 
         return format(amount: amount, currencyCode: currencyCode, showSign: false)
+    }
+
+    private static func simpleCurrencySymbol(for code: String) -> String {
+        switch code {
+        case "USD", "AUD", "CAD", "SGD": return "$"
+        case "CNY", "JPY": return "¥"
+        case "EUR": return "€"
+        case "GBP": return "£"
+        case "HKD": return "HK$"
+        case "TWD": return "NT$"
+        default:
+            let f = NumberFormatter()
+            f.numberStyle = .currency
+            f.currencyCode = code
+            return f.currencySymbol ?? code
+        }
     }
 
     static func currencySymbol(for code: String) -> String {

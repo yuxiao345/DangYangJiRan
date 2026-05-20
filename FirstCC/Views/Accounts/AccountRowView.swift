@@ -17,29 +17,29 @@ struct AccountRowView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(LocalizedStringKey(account.name))
-                    .font(.body)
+                    .font(.designBodyMedium)
                 Text(account.type.displayName)
-                    .font(.caption2)
+                    .font(.designBodySmall)
                     .foregroundStyle(.secondary)
             }
 
             Spacer()
 
             VStack(alignment: .trailing, spacing: 2) {
-                CurrencyText(amount: balance, currencyCode: account.currencyCode, showSign: true, font: .body, foregroundColor: balance >= 0 ? .green : .red)
+                CurrencyText(amount: balance, currencyCode: account.currencyCode, showSign: true, size: 17, foregroundColor: balance >= 0 ? .green : .red)
 
                 if account.type == .lending, let info = lendingInfo {
                     HStack(spacing: 4) {
                         Text("应收")
-                            .font(.caption2)
+                            .font(.designBodySmall)
                             .foregroundStyle(.secondary)
-                        CurrencyText(amount: info.lendOutPending, currencyCode: account.currencyCode, showSign: false, font: .caption2, foregroundColor: info.lendOutPending > 0 ? .orange : .secondary)
+                        CurrencyText(amount: info.lendOutPending, currencyCode: account.currencyCode, showSign: false, size: 11, foregroundColor: info.lendOutPending > 0 ? .orange : .secondary)
                     }
                     HStack(spacing: 4) {
                         Text("应付")
-                            .font(.caption2)
+                            .font(.designBodySmall)
                             .foregroundStyle(.secondary)
-                        CurrencyText(amount: info.borrowInPending, currencyCode: account.currencyCode, showSign: false, font: .caption2, foregroundColor: info.borrowInPending > 0 ? .blue : .secondary)
+                        CurrencyText(amount: info.borrowInPending, currencyCode: account.currencyCode, showSign: false, size: 11, foregroundColor: info.borrowInPending > 0 ? .blue : .secondary)
                     }
                 }
             }

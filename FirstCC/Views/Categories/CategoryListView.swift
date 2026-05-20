@@ -81,7 +81,7 @@ struct CategoryListView: View {
                 Text(LocalizedStringKey(category.name))
                 if category.isSystem {
                     Text("内置")
-                        .font(.caption2)
+                        .font(.designBodySmall)
                         .foregroundStyle(.secondary)
                 }
                 Spacer()

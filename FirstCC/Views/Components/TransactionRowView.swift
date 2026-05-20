@@ -13,14 +13,14 @@ struct TransactionRowView: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 4) {
                     Text(LocalizedStringKey(titleText))
-                        .font(.body)
+                        .font(.designBodyMedium)
                     if transaction.isReimbursable {
                         let status = transaction.reimbursementStatus
                         Text(status.displayName)
-                            .font(.caption2)
+                            .font(.designLabel)
                             .padding(.horizontal, 4)
-                            .background((status == .reimbursed ? Color.green : Color.orange).opacity(0.15))
-                            .foregroundStyle(status == .reimbursed ? .green : .orange)
+                            .background((status == .reimbursed ? Color.designPrimaryFixedDim : Color.orange).opacity(0.15))
+                            .foregroundStyle(status == .reimbursed ? Color.designPrimaryFixedDim : .orange)
                             .clipShape(Capsule())
                     }
                     if transaction.isLending {
@@ -28,24 +28,24 @@ struct TransactionRowView: View {
                     }
                     if transaction.isSplitParent {
                         Image(systemName: "rectangle.split.2x2")
-                            .font(.caption2)
-                            .foregroundStyle(.purple)
+                            .font(.designBodySmall)
+                            .foregroundStyle(Color.designTertiaryContainer)
                     }
                     if transaction.refundGroupId != nil {
                         Image(systemName: "arrow.uturn.backward")
-                            .font(.caption2)
-                            .foregroundStyle(.blue)
+                            .font(.designBodySmall)
+                            .foregroundStyle(Color.designPrimaryContainer)
                     }
                     if let photos = transaction.photoURLs, !photos.isEmpty {
                         Image(systemName: "camera.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .font(.designBodySmall)
+                            .foregroundStyle(Color.designOnSurfaceVariant)
                     }
                 }
                 if let subtitle = subtitleText {
                     Text(LocalizedStringKey(subtitle))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .font(.designBodySmall)
+                        .foregroundStyle(Color.designOnSurfaceVariant)
                         .lineLimit(1)
                 }
             }
@@ -55,8 +55,8 @@ struct TransactionRowView: View {
             VStack(alignment: .trailing, spacing: 2) {
                 amountView
                 Text(transaction.date.formatted(date: .numeric, time: .omitted))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .font(.designBodySmall)
+                    .foregroundStyle(Color.designOnSurfaceVariant)
             }
         }
         .padding(.vertical, 2)
@@ -71,18 +71,18 @@ struct TransactionRowView: View {
         if transaction.isLending {
             switch transaction.lendingDirection {
             case .lendOut, .repay: return .orange
-            case .borrowIn, .collect: return .green
+            case .borrowIn, .collect: return .designAccentGreen
             case .none: return .orange
             }
         }
         switch transaction.type {
-        case .income: return .green
-        case .expense: return .red
+        case .income: return .designAccentGreen
+        case .expense: return .designAccentRed
         case .transfer: return .blue
         case .lending: break
-        case .adjustment: return .purple
+        case .adjustment: return .designAccentPurple
         }
-        return .secondary
+        return Color.designOnSurfaceVariant
     }
 
     private var titleText: String {
@@ -103,18 +103,18 @@ struct TransactionRowView: View {
     private var amountView: some View {
         switch transaction.type {
         case .income:
-            CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, font: .body, foregroundColor: .green)
+            CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, size: 17, foregroundColor: .designPrimaryFixedDim)
         case .expense:
-            CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, font: .body, foregroundColor: .red)
+            CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, size: 17, foregroundColor: .designAccentRed)
         case .transfer:
             HStack(spacing: 0) {
                 Text("↔")
-                CurrencyText(amount: abs(transaction.amount), currencyCode: transaction.currencyCode, font: .body, foregroundColor: .blue)
+                CurrencyText(amount: abs(transaction.amount), currencyCode: transaction.currencyCode, size: 17, foregroundColor: .blue)
             }
         case .lending:
-            CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, font: .body, foregroundColor: transaction.amount >= 0 ? .green : .orange)
+            CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, size: 17, foregroundColor: transaction.amount >= 0 ? .designPrimaryFixedDim : .orange)
         case .adjustment:
-            CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, font: .body, foregroundColor: transaction.amount >= 0 ? .green : .red)
+            CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, size: 17, foregroundColor: transaction.amount >= 0 ? .designPrimaryFixedDim : .designAccentRed)
         }
     }
 
@@ -124,17 +124,17 @@ struct TransactionRowView: View {
             switch transaction.lendingStatus {
             case .pending:
                 Text(LocalizedStringKey(d.pendingLabel))
-                    .font(.caption2)
+                    .font(.designLabel)
                     .padding(.horizontal, 4)
                     .background(Color.orange.opacity(0.15))
                     .foregroundStyle(.orange)
                     .clipShape(Capsule())
             case .settled:
                 Text(LendingStatus.settled.displayName)
-                    .font(.caption2)
+                    .font(.designLabel)
                     .padding(.horizontal, 4)
-                    .background(Color.green.opacity(0.15))
-                    .foregroundStyle(.green)
+                    .background(Color.designPrimaryFixedDim.opacity(0.1))
+                    .foregroundStyle(Color.designPrimaryFixedDim)
                     .clipShape(Capsule())
             case .none: EmptyView()
             }

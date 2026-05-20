@@ -10,7 +10,7 @@ struct JoinLedgerView: View {
             }
             Section {
                 Text("请让账本拥有者通过 iMessage 分享邀请链接给您。")
-                    .font(.caption)
+                    .font(.designBodySmall)
                     .foregroundStyle(.secondary)
             }
         }

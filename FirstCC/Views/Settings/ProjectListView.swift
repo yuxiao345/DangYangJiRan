@@ -19,31 +19,31 @@ struct ProjectListView: View {
         List {
             if projects.isEmpty {
                 Text("暂无项目，点击右上角 + 添加")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.designOnSurfaceVariant)
             }
             ForEach(projects) { project in
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         Image(systemName: "folder")
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.designPrimaryContainer)
                         Text(LocalizedStringKey(project.name))
-                            .font(.body)
+                            .font(.designBodyMedium)
                         Spacer()
                         if !project.isActive {
-                            Text("已结束").font(.caption2).foregroundStyle(.secondary)
+                            Text("已结束").font(.designBodySmall).foregroundStyle(Color.designOnSurfaceVariant)
                         }
                     }
                     if let desc = project.desc, !desc.isEmpty {
                         Text(desc)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(.designBodySmall)
+                            .foregroundStyle(Color.designOnSurfaceVariant)
                             .lineLimit(1)
                     }
                     if let budget = project.budget {
                         HStack(spacing: 2) {
                             Text("预算:")
-                                .font(.caption2)
-                            CurrencyText(amount: budget, currencyCode: ledgerCurrency, font: .caption2, foregroundColor: .blue)
+                                .font(.designBodySmall)
+                            CurrencyText(amount: budget, currencyCode: ledgerCurrency, size: 11, foregroundColor: .designPrimaryContainer)
                         }
                     }
                 }

@@ -35,7 +35,7 @@ struct SplitDetailView: View {
                     Text("已付金额")
                     Spacer()
                     Text(splitGroup.totalPaid, format: .currency(code: currencyCode))
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.designPrimaryFixedDim)
                 }
                 HStack {
                     Text("剩余")

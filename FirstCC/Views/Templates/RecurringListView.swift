@@ -74,22 +74,22 @@ struct RecurringListView: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 4) {
                     Text(LocalizedStringKey(t?.name ?? "周期账"))
-                        .font(.body)
+                        .font(.designBodyMedium)
                     Image(systemName: "arrow.triangle.2.circlepath")
-                        .font(.caption2)
-                        .foregroundStyle(.blue)
+                        .font(.designBodySmall)
+                        .foregroundStyle(Color.designPrimaryContainer)
                 }
                 Text(frequencyDescription(rule))
-                    .font(.caption)
+                    .font(.designBodySmall)
                     .foregroundStyle(.secondary)
                 if let next = rule.nextGenerateDate {
                     Text("下次生成: \(next.formatted(date: .abbreviated, time: .omitted))")
-                        .font(.caption2)
+                        .font(.designBodySmall)
                         .foregroundStyle(.secondary)
                 }
                 if let t, let generated = t.generatedTransactions, !generated.isEmpty {
                     Text("已生成 \(generated.count) 笔")
-                        .font(.caption2)
+                        .font(.designBodySmall)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -102,13 +102,13 @@ struct RecurringListView: View {
                         amount: t.type == .expense ? -abs(t.amount) : abs(t.amount),
                         currencyCode: t.currencyCode,
                         showSign: true,
-                        font: .body,
+                        size: 17,
                         foregroundColor: t.type == .expense ? .red : .green
                     )
                 }
                 if let account = t?.account {
                     Text(LocalizedStringKey(account.name))
-                        .font(.caption2)
+                        .font(.designBodySmall)
                         .foregroundStyle(.secondary)
                 }
             }

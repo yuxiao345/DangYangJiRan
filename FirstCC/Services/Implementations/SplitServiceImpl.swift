@@ -24,6 +24,7 @@ struct SplitServiceImpl: SplitServiceProtocol {
         group.ledger = ledger
         group.transaction = transaction
         transaction.splitGroup = group
+        transaction.isSplitParent = true
         context.insert(group)
 
         let entryAmounts: [Decimal]

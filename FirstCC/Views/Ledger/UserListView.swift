@@ -13,22 +13,22 @@ struct UserListView: View {
     var body: some View {
         List {
             if users.isEmpty {
-                Text("暂无共享成员").foregroundStyle(.secondary)
+                Text("暂无共享成员").foregroundStyle(Color.designOnSurfaceVariant)
             }
             ForEach(users) { user in
                 HStack {
                     Image(systemName: user.role == .owner ? "crown.fill" : "person.fill")
-                        .foregroundStyle(user.role == .owner ? .yellow : .blue)
+                        .foregroundStyle(user.role == .owner ? .yellow : Color.designPrimaryContainer)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(user.displayName)
                         Text(user.role.displayName)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .font(.designBodySmall)
+                            .foregroundStyle(Color.designOnSurfaceVariant)
                     }
                     Spacer()
                     Text(user.cloudKitUserRecordID)
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
+                        .font(.designBodySmall)
+                        .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
                         .lineLimit(1)
                 }
             }

@@ -90,6 +90,9 @@ struct LedgerSettingsView: View {
                 NavigationLink("待报销") {
                     PendingReimbursementView(ledger: ledger)
                 }
+                NavigationLink("数据导出") {
+                    ExportView()
+                }
             }
 
             Section {

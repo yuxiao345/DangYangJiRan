@@ -22,19 +22,19 @@ struct LedgerListView: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack(spacing: 6) {
                                     Image(systemName: ledger.iconName)
-                                        .foregroundStyle(.blue)
+                                        .foregroundStyle(Color.designPrimaryContainer)
                                     Text(ledger.name)
-                                        .font(.body)
+                                        .font(.designBodyMedium)
                                 }
                                 HStack(spacing: 6) {
                                     Text(ledger.type.displayName)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
+                                        .font(.designBodySmall)
+                                        .foregroundStyle(Color.designOnSurfaceVariant)
                                     Text("·")
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(Color.designOnSurfaceVariant)
                                     Text(ledger.defaultCurrencyCode)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
+                                        .font(.designBodySmall)
+                                        .foregroundStyle(Color.designOnSurfaceVariant)
                                 }
                             }
                             Spacer(minLength: 0)
@@ -46,13 +46,13 @@ struct LedgerListView: View {
                         openSettings(ledger)
                     } label: {
                         Image(systemName: "gearshape")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .font(.designBodyMedium)
+                            .foregroundStyle(Color.designOnSurfaceVariant)
                     }
                     .frame(width: 44)
 
                     Image(systemName: "checkmark")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.designPrimaryContainer)
                         .fontWeight(.semibold)
                         .opacity(ledger.id == appContainer.currentLedger?.id ? 1 : 0)
                         .frame(width: 24)
@@ -73,7 +73,7 @@ struct LedgerListView: View {
                     } label: {
                         Label("设置", systemImage: "gearshape")
                     }
-                    .tint(.blue)
+                    .tint(Color.designPrimaryContainer)
                 }
             }
         }

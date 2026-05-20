@@ -93,16 +93,16 @@ struct BudgetBookDetailView: View {
         return VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .firstTextBaseline) {
                 Text(label)
-                    .font(.subheadline)
+                    .font(.designBodyMedium)
                 Spacer()
-                CurrencyText(amount: spent, currencyCode: currency, font: .subheadline, foregroundColor: ratio > 1.0 ? .red : .primary)
+                CurrencyText(amount: spent, currencyCode: currency, size: 15, foregroundColor: ratio > 1.0 ? .red : .primary)
                     .fontWeight(.medium)
                 Text("/")
-                    .font(.caption2)
+                    .font(.designBodySmall)
                     .foregroundStyle(.secondary)
-                CurrencyText(amount: budget, currencyCode: currency, font: .caption, foregroundColor: .secondary)
+                CurrencyText(amount: budget, currencyCode: currency, size: 12, foregroundColor: .secondary)
                 Text("\(Int(pct))%")
-                    .font(.caption2)
+                    .font(.designBodySmall)
                     .foregroundStyle(progressColor(ratio))
             }
             if budget > 0 {
@@ -125,12 +125,12 @@ struct BudgetBookDetailView: View {
                     Text(LocalizedStringKey(cat.name))
                 } else {
                     Image(systemName: "chart.pie")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.designPrimaryContainer)
                     Text("未分类")
                 }
                 Spacer()
                 Text(item.period.displayName)
-                    .font(.caption)
+                    .font(.designBodySmall)
                     .foregroundStyle(.secondary)
             }
 
@@ -160,17 +160,17 @@ struct BudgetBookDetailView: View {
         return VStack(spacing: 2) {
             HStack(alignment: .firstTextBaseline) {
                 Text(label)
-                    .font(.caption2)
+                    .font(.designBodySmall)
                     .foregroundStyle(.secondary)
                 Spacer()
-                CurrencyText(amount: spent, currencyCode: currency, font: .caption, foregroundColor: ratio > 1.0 ? .red : .primary)
+                CurrencyText(amount: spent, currencyCode: currency, size: 12, foregroundColor: ratio > 1.0 ? .red : .primary)
                     .fontWeight(.medium)
                 Text("/")
-                    .font(.caption2)
+                    .font(.designBodySmall)
                     .foregroundStyle(.secondary)
-                CurrencyText(amount: budget, currencyCode: currency, font: .caption2, foregroundColor: .secondary)
+                CurrencyText(amount: budget, currencyCode: currency, size: 11, foregroundColor: .secondary)
                 Text("\(Int(pct))%")
-                    .font(.caption2)
+                    .font(.designBodySmall)
                     .foregroundStyle(progressColor(ratio))
             }
             if budget > 0 {

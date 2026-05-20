@@ -206,7 +206,7 @@ struct AddEditRecurringView: View {
 
     private func pickerRow(label: String, value: String?) -> some View {
         HStack {
-            Text(label).foregroundStyle(.primary)
+            Text(label).foregroundStyle(Color.designOnSurface)
             Spacer()
             if let value {
                 Text(LocalizedStringKey(value)).foregroundStyle(.secondary)

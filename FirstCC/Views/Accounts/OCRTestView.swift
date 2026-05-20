@@ -68,7 +68,7 @@ struct OCRTestView: View {
                 if let error = errorMessage {
                     Text(error)
                         .foregroundStyle(.red)
-                        .font(.caption)
+                        .font(.designBodySmall)
                         .padding(.horizontal)
                 }
 
@@ -163,9 +163,9 @@ struct OCRTestView: View {
                     VStack(spacing: 12) {
                         Image(systemName: "doc.text")
                             .font(.system(size: 48))
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.designPrimaryContainer)
                         Text("PDF 已加载（\(pdfPageCount) 页）")
-                            .font(.headline)
+                            .font(.designHeadlineMedium)
                     }
                     .frame(height: 200)
                 }
@@ -184,9 +184,9 @@ struct OCRTestView: View {
                             .font(.system(size: 48))
                             .foregroundStyle(.green)
                         Text("CSV 已加载")
-                            .font(.headline)
+                            .font(.designHeadlineMedium)
                         Text(csvFileName)
-                            .font(.caption)
+                            .font(.designBodySmall)
                             .foregroundStyle(.secondary)
                     }
                     .frame(height: 200)
@@ -229,8 +229,8 @@ struct OCRTestView: View {
             Text(title)
                 .foregroundStyle(.secondary)
             Text(hint)
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
+                .font(.designBodySmall)
+                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
         }
         .frame(maxWidth: .infinity)
         .frame(height: 200)
@@ -247,7 +247,7 @@ struct OCRTestView: View {
     private var resultsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("识别结果（\(items.count) 笔）")
-                .font(.headline)
+                .font(.designHeadlineMedium)
                 .padding(.horizontal)
 
             ForEach(items.indices, id: \.self) { i in
@@ -256,25 +256,25 @@ struct OCRTestView: View {
                     HStack {
                         if let date = item.transDate {
                             Text(date, format: .dateTime.year().month(.twoDigits).day(.twoDigits))
-                                .font(.subheadline)
+                                .font(.designBodyMedium)
                                 .fontWeight(.medium)
                         }
                         Spacer()
                         if let amount = item.amount {
                             Text(amount, format: .number.precision(.fractionLength(2)))
-                                .font(.subheadline)
+                                .font(.designBodyMedium)
                                 .fontWeight(.bold)
                                 .foregroundStyle(amount < 0 ? .red : .green)
                         }
                     }
                     if let desc = item.desc, !desc.isEmpty {
                         Text(desc)
-                            .font(.caption)
-                            .foregroundStyle(.primary)
+                            .font(.designBodySmall)
+                            .foregroundStyle(Color.designOnSurface)
                     }
                     if let raw = item.rawLine {
                         Text("OCR原文: \(raw)")
-                            .font(.caption2)
+                            .font(.designBodySmall)
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
                     }
@@ -290,20 +290,20 @@ struct OCRTestView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("OCR原始行文本（\(rawRows.count) 行）")
-                    .font(.headline)
+                    .font(.designHeadlineMedium)
                 Spacer()
                 Button {
                     UIPasteboard.general.string = rawRows.joined(separator: "\n")
                 } label: {
                     Label("复制", systemImage: "doc.on.doc")
-                        .font(.caption)
+                        .font(.designBodySmall)
                 }
             }
             .padding(.horizontal)
 
             ForEach(rawRows.indices, id: \.self) { i in
                 Text(rawRows[i])
-                    .font(.caption)
+                    .font(.designBodySmall)
                     .monospaced()
                     .padding(.horizontal)
                 Divider().padding(.horizontal)

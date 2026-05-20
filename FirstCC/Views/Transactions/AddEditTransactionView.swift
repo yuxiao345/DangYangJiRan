@@ -63,6 +63,13 @@ struct AddEditTransactionView: View {
     @State private var isSplit = false
     @State private var splitItems: [SplitItemDraft] = []
 
+    // Exchange rate
+    @State private var exchangeRate: Decimal?
+    @State private var isFetchingRate = false
+    @State private var selectedCurrencyCode: String = "CNY"
+
+    private let currencies: [String] = ["CNY", "USD", "EUR", "JPY", "GBP", "HKD", "AUD", "CAD", "KRW", "TWD", "SGD", "CHF", "NZD", "THB", "MYR", "INR"]
+
     init(editing: Transaction? = nil, prefillType: TransactionType? = nil, prefillExpenseIDs: [UUID] = []) {
         self.editing = editing
         if let t = prefillType {
@@ -92,7 +99,7 @@ struct AddEditTransactionView: View {
                                         Text("全部")
                                         Image(systemName: "chevron.right")
                                     }
-                                    .font(.caption)
+                                    .font(.designBodySmall)
                                 }
                             }
                             ScrollView(.horizontal, showsIndicators: false) {
@@ -117,10 +124,30 @@ struct AddEditTransactionView: View {
 
                 Section("金额") {
                     HStack {
-                        Text("¥").foregroundStyle(.secondary)
+                        Text(CurrencyFormatter.currencySymbol(for: selectedCurrencyCode))
+                            .foregroundStyle(.secondary)
                         TextField("0.00", value: $amount, format: .number)
                             .keyboardType(.decimalPad)
                             .font(.title2)
+                        Menu {
+                            ForEach(currencies, id: \.self) { code in
+                                Button {
+                                    selectedCurrencyCode = code
+                                    exchangeRate = nil
+                                    if needsExchangeRate { fetchExchangeRate() }
+                                } label: {
+                                    Text("\(code) (\(currencyName(code)))")
+                                }
+                            }
+                        } label: {
+                            Text(selectedCurrencyCode)
+                                .font(.designBodySmall)
+                                .foregroundStyle(Color.designPrimaryContainer)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(.blue.opacity(0.1))
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                        }
                     }
                     if type == .expense {
                         Toggle("拆分记账", isOn: $isSplit)
@@ -150,6 +177,36 @@ struct AddEditTransactionView: View {
                     }
                 }
 
+                if needsExchangeRate {
+                    Section {
+                        HStack {
+                            Text("汇率")
+                            Spacer()
+                            if isFetchingRate {
+                                ProgressView()
+                            } else if let rate = exchangeRate {
+                                Text("1 \(selectedCurrencyCode) = \(rate.formatted(.number.precision(.fractionLength(4)))) \(ledgerCurrencyCode)")
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                Button("获取汇率") { fetchExchangeRate() }
+                                    .buttonStyle(.bordered)
+                                    .controlSize(.small)
+                            }
+                        }
+                        if let converted = convertedAmountPreview {
+                            HStack {
+                                Text("换算金额")
+                                Spacer()
+                                CurrencyText(amount: converted, currencyCode: ledgerCurrencyCode, size: 17, foregroundColor: .blue)
+                            }
+                        }
+                    } header: {
+                        Text("跨币种换算")
+                    } footer: {
+                        Text("账户币种(\(selectedCurrencyCode))与账本默认币种(\(ledgerCurrencyCode))不同，将按汇率换算")
+                    }
+                }
+
                 if isSplit && type == .expense {
                     Section("拆分明细") {
                         ForEach(splitItems) { item in
@@ -158,7 +215,7 @@ struct AddEditTransactionView: View {
                                     Text("¥").foregroundStyle(.secondary)
                                     TextField("0.00", value: splitAmountBinding(for: item.id), format: .number)
                                         .keyboardType(.decimalPad)
-                                        .font(.body)
+                                        .font(.designBodyMedium)
                                     Spacer()
                                     Button {
                                         splitItems.removeAll { $0.id == item.id }
@@ -225,12 +282,12 @@ struct AddEditTransactionView: View {
                             let remaining = amount - splitTotal
                             splitItems.append(SplitItemDraft(amount: remaining > 0 ? remaining : 0))
                         } label: {
-                            Label("添加子项", systemImage: "plus").font(.caption)
+                            Label("添加子项", systemImage: "plus").font(.designBodySmall)
                         }
                         HStack {
                             Spacer()
                             Text(splitTotalText)
-                                .font(.caption)
+                                .font(.designBodySmall)
                                 .foregroundStyle(splitTotal == amount ? .green : .red)
                                 .fontWeight(.medium)
                         }
@@ -289,16 +346,16 @@ struct AddEditTransactionView: View {
                                         .foregroundStyle(selectedLendingIDs.contains(item.id) ? .blue : .secondary)
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(LocalizedStringKey(item.account?.name ?? ""))
-                                            .font(.body)
+                                            .font(.designBodyMedium)
                                         Text(displayLabelForLending(item))
-                                            .font(.caption2)
+                                            .font(.designBodySmall)
                                             .foregroundStyle(.secondary)
                                         Text(item.date.formatted(date: .abbreviated, time: .omitted))
-                                            .font(.caption2)
+                                            .font(.designBodySmall)
                                             .foregroundStyle(.secondary)
                                     }
                                     Spacer()
-                                    CurrencyText(amount: abs(item.amount), currencyCode: item.currencyCode, font: .body)
+                                    CurrencyText(amount: abs(item.amount), currencyCode: item.currencyCode, size: 17)
                                 }
                                 .contentShape(Rectangle())
                                 .onTapGesture { toggleLending(item.id) }
@@ -320,7 +377,7 @@ struct AddEditTransactionView: View {
                             HStack {
                                 Text("已选合计")
                                 Spacer()
-                                CurrencyText(amount: selectedLendingTotal, currencyCode: appContainer.currentLedger?.defaultCurrencyCode ?? "CNY", font: .body, foregroundColor: .secondary)
+                                CurrencyText(amount: selectedLendingTotal, currencyCode: appContainer.currentLedger?.defaultCurrencyCode ?? "CNY", size: 17, foregroundColor: .secondary)
                             }
                         }
                     }
@@ -336,13 +393,13 @@ struct AddEditTransactionView: View {
                                         .foregroundStyle(selectedExpenseIDs.contains(expense.id) ? .blue : .secondary)
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(LocalizedStringKey(expense.category?.name ?? ""))
-                                            .font(.body)
+                                            .font(.designBodyMedium)
                                         Text(expense.date.formatted(date: .abbreviated, time: .omitted))
-                                            .font(.caption2)
+                                            .font(.designBodySmall)
                                             .foregroundStyle(.secondary)
                                     }
                                     Spacer()
-                                    CurrencyText(amount: abs(expense.amount), currencyCode: expense.currencyCode, font: .body)
+                                    CurrencyText(amount: abs(expense.amount), currencyCode: expense.currencyCode, size: 17)
                                 }
                                 .contentShape(Rectangle())
                                 .onTapGesture { toggleExpense(expense.id) }
@@ -364,7 +421,7 @@ struct AddEditTransactionView: View {
                             HStack {
                                 Text("已选合计")
                                 Spacer()
-                                CurrencyText(amount: selectedReimbursementTotal, currencyCode: appContainer.currentLedger?.defaultCurrencyCode ?? "CNY", font: .body, foregroundColor: .secondary)
+                                CurrencyText(amount: selectedReimbursementTotal, currencyCode: appContainer.currentLedger?.defaultCurrencyCode ?? "CNY", size: 17, foregroundColor: .secondary)
                             }
                         }
                     }
@@ -415,7 +472,15 @@ struct AddEditTransactionView: View {
                 if newValue != nil { loadData() }
             }
             .onChange(of: type) { _, _ in loadCategories(); loadPendingExpenses(); loadPendingLendingTransactions() }
-            .onChange(of: selectedAccount) { _, _ in selectedLendingIDs = []; loadPendingLendingTransactions() }
+            .onChange(of: selectedAccount) { _, _ in
+                selectedLendingIDs = []
+                loadPendingLendingTransactions()
+                if editing == nil {
+                    selectedCurrencyCode = selectedAccount?.currencyCode ?? "CNY"
+                }
+                exchangeRate = nil
+                if needsExchangeRate { fetchExchangeRate() }
+            }
             .onChange(of: selectedToAccount) { _, _ in selectedLendingIDs = []; loadPendingLendingTransactions() }
             .onChange(of: selectedExpenseIDs) { _, _ in
                 guard !selectedExpenseIDs.isEmpty, editing == nil else { return }
@@ -442,9 +507,9 @@ struct AddEditTransactionView: View {
         } label: {
             VStack(spacing: 2) {
                 Image(systemName: template.category?.iconName ?? template.type.systemIcon)
-                    .font(.subheadline)
+                    .font(.designBodyMedium)
                 Text(LocalizedStringKey(template.name))
-                    .font(.caption2)
+                    .font(.designBodySmall)
                     .lineLimit(1)
             }
             .frame(width: 56, height: 52)
@@ -551,7 +616,7 @@ struct AddEditTransactionView: View {
                             photoDataList.remove(at: index)
                         } label: {
                             Image(systemName: "xmark.circle.fill")
-                                .font(.caption)
+                                .font(.designBodySmall)
                                 .foregroundStyle(.white)
                                 .background(Circle().fill(.black.opacity(0.6)))
                         }
@@ -563,7 +628,7 @@ struct AddEditTransactionView: View {
                         Image(systemName: "plus")
                             .font(.title2)
                         Text("添加")
-                            .font(.caption2)
+                            .font(.designBodySmall)
                     }
                     .frame(width: 72, height: 72)
                     .background(.background.tertiary)
@@ -577,7 +642,7 @@ struct AddEditTransactionView: View {
     private func pickerRow(label: String, value: String?) -> some View {
         HStack {
             Text(label)
-                .foregroundStyle(.primary)
+                .foregroundStyle(Color.designOnSurface)
             Spacer()
             if let value {
                 Text(LocalizedStringKey(value))
@@ -587,8 +652,8 @@ struct AddEditTransactionView: View {
                     .foregroundStyle(.secondary)
             }
             Image(systemName: "chevron.up.chevron.down")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
+                .font(.designBodySmall)
+                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
         }
         .contentShape(Rectangle())
     }
@@ -634,6 +699,7 @@ struct AddEditTransactionView: View {
         date = t.date
         selectedAccount = t.account
         selectedToAccount = t.toAccount
+        selectedCurrencyCode = t.currencyCode
         selectedCategory = t.category
         selectedMember = t.member
         selectedMerchant = t.merchant
@@ -694,6 +760,7 @@ struct AddEditTransactionView: View {
                 }
                 modelContext.insert(parent)
 
+                applyCurrency(to: parent)
                 createSplitChildren(parent: parent, ledger: ledger)
                 try modelContext.save()
                 NotificationCenter.default.post(name: .transactionDidChange, object: nil)
@@ -723,6 +790,7 @@ struct AddEditTransactionView: View {
                 if type == .income, !selectedExpenseIDs.isEmpty {
                     try linkReimbursedExpenses(to: transaction.id)
                 }
+                applyCurrency(to: transaction)
                 try appContainer.transactionService.createTransaction(transaction, ledger: ledger, context: modelContext)
             }
             dismiss()
@@ -767,6 +835,61 @@ struct AddEditTransactionView: View {
 
     private var splitTotalText: String {
         "合计 ¥\(splitTotal.formatted(.number.precision(.fractionLength(2)))) / ¥\(amount.formatted(.number.precision(.fractionLength(2))))"
+    }
+
+    private var ledgerCurrencyCode: String {
+        appContainer.currentLedger?.defaultCurrencyCode ?? "CNY"
+    }
+
+    private var needsExchangeRate: Bool {
+        selectedCurrencyCode != ledgerCurrencyCode
+    }
+
+    private var convertedAmountPreview: Decimal? {
+        guard let rate = exchangeRate else { return nil }
+        let signed = signingAmount()
+        return signed * rate
+    }
+
+    private func fetchExchangeRate() {
+        guard let service = appContainer.exchangeRateService else { return }
+        isFetchingRate = true
+        Task {
+            defer { isFetchingRate = false }
+            if let rate = try? await service.fetchRate(from: selectedCurrencyCode, to: ledgerCurrencyCode) {
+                exchangeRate = rate.rate
+            }
+        }
+    }
+
+    private func applyCurrency(to t: Transaction) {
+        t.currencyCode = selectedCurrencyCode
+        if selectedCurrencyCode != ledgerCurrencyCode, let rate = exchangeRate {
+            t.exchangeRate = rate
+            t.convertedAmount = t.amount * rate
+        }
+    }
+
+    private func currencyName(_ code: String) -> String {
+        switch code {
+        case "CNY": return "人民币"
+        case "USD": return "美元"
+        case "EUR": return "欧元"
+        case "JPY": return "日元"
+        case "GBP": return "英镑"
+        case "HKD": return "港币"
+        case "AUD": return "澳元"
+        case "CAD": return "加元"
+        case "KRW": return "韩元"
+        case "TWD": return "新台币"
+        case "SGD": return "新加坡元"
+        case "CHF": return "瑞士法郎"
+        case "NZD": return "新西兰元"
+        case "THB": return "泰铢"
+        case "MYR": return "马币"
+        case "INR": return "印度卢比"
+        default: return code
+        }
     }
 
     private func signingAmount() -> Decimal {

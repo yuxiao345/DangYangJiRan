@@ -20,23 +20,23 @@ struct MerchantListView: View {
         List {
             if merchants.isEmpty {
                 Text("暂无商家，点击右上角 + 添加")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.designOnSurfaceVariant)
             }
             ForEach(merchants) { merchant in
                 HStack {
                     Image(systemName: "storefront")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color.designSecondary)
                     VStack(alignment: .leading) {
                         Text(LocalizedStringKey(merchant.name))
                         if let cat = merchant.category, !cat.isEmpty {
                             Text(cat)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
+                                .font(.designBodySmall)
+                                .foregroundStyle(Color.designOnSurfaceVariant)
                         }
                     }
                     Spacer()
                     if !merchant.isActive {
-                        Text("已停用").font(.caption2).foregroundStyle(.secondary)
+                        Text("已停用").font(.designBodySmall).foregroundStyle(Color.designOnSurfaceVariant)
                     }
                 }
                 .contentShape(Rectangle())

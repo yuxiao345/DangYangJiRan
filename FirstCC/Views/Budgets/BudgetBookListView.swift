@@ -64,26 +64,26 @@ struct BudgetBookListView: View {
                 Image(systemName: book.isActive ? "bookmark.fill" : "bookmark")
                     .foregroundStyle(book.isActive ? .blue : .secondary)
                 Text(book.name)
-                    .font(.body)
+                    .font(.designBodyMedium)
                 Spacer()
                 if !book.isActive {
-                    Text("草稿").font(.caption2).foregroundStyle(.secondary)
+                    Text("草稿").font(.designBodySmall).foregroundStyle(.secondary)
                 }
             }
             Text("\(book.startDate.formatted(date: .abbreviated, time: .omitted)) — \(book.endDate.formatted(date: .abbreviated, time: .omitted))")
-                .font(.caption)
+                .font(.designBodySmall)
                 .foregroundStyle(.secondary)
             let totalBudget = appContainer.budgetService.totalBudget(for: book)
             if totalBudget > 0 {
                 HStack {
                     Text("总预算:")
-                        .font(.caption)
-                    CurrencyText(amount: totalBudget, currencyCode: book.ledger?.defaultCurrencyCode ?? "CNY", font: .caption, foregroundColor: .blue)
+                        .font(.designBodySmall)
+                    CurrencyText(amount: totalBudget, currencyCode: book.ledger?.defaultCurrencyCode ?? "CNY", size: 12, foregroundColor: .blue)
                     Spacer()
                     let itemCount = book.items?.count ?? 0
                     if itemCount > 0 {
                         Text("\(itemCount)项")
-                            .font(.caption2)
+                            .font(.designBodySmall)
                             .foregroundStyle(.secondary)
                     }
                 }

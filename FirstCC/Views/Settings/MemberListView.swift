@@ -21,13 +21,13 @@ struct MemberListView: View {
             ForEach(members) { member in
                 HStack {
                     Image(systemName: member.avatar)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.designPrimaryContainer)
                     Text(LocalizedStringKey(member.name))
                     Spacer()
                     if !member.isActive {
                         Text("已停用")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .font(.designBodySmall)
+                            .foregroundStyle(Color.designOnSurfaceVariant)
                     }
                 }
                 .contentShape(Rectangle())

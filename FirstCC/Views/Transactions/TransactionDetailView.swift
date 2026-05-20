@@ -29,8 +29,8 @@ struct TransactionDetailView: View {
                         Text(LocalizedStringKey(titleText))
                             .font(.title3)
                         Text(LocalizedStringKey(subtitleText))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(.designBodySmall)
+                            .foregroundStyle(Color.designOnSurfaceVariant)
                     }
                     Spacer()
                     amountView
@@ -82,22 +82,22 @@ struct TransactionDetailView: View {
                                     .foregroundStyle(Color(hex: cat.colorHex))
                                     .frame(width: 24)
                                 Text(LocalizedStringKey(cat.name))
-                                    .font(.body)
+                                    .font(.designBodyMedium)
                             } else {
                                 Image(systemName: "questionmark.circle")
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(Color.designOnSurfaceVariant)
                                     .frame(width: 24)
                                 Text("未分类")
-                                    .font(.body)
-                                    .foregroundStyle(.secondary)
+                                    .font(.designBodyMedium)
+                                    .foregroundStyle(Color.designOnSurfaceVariant)
                             }
                             if let m = child.member {
                                 Text(m.name)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
+                                    .font(.designBodySmall)
+                                    .foregroundStyle(Color.designOnSurfaceVariant)
                             }
                             Spacer()
-                            CurrencyText(amount: abs(child.amount), currencyCode: child.currencyCode, font: .body, foregroundColor: .red)
+                            CurrencyText(amount: abs(child.amount), currencyCode: child.currencyCode, size: 17, foregroundColor: .red)
                         }
                     }
                 } header: {
@@ -105,7 +105,7 @@ struct TransactionDetailView: View {
                         Label("拆分明细", systemImage: "rectangle.split.2x2")
                         Spacer()
                         Text("共\(children.count)项")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.designOnSurfaceVariant)
                     }
                 }
             }
@@ -119,8 +119,8 @@ struct TransactionDetailView: View {
                             Label("成员分摊", systemImage: "person.2.circle")
                             Spacer()
                             Text(group.settlementStatus.displayName)
-                                .font(.caption)
-                                .foregroundStyle(group.settlementStatus == .settled ? .green : .orange)
+                                .font(.designBodySmall)
+                                .foregroundStyle(group.settlementStatus == .settled ? Color.designPrimaryFixedDim : .orange)
                         }
                     }
                 } header: {
@@ -144,7 +144,7 @@ struct TransactionDetailView: View {
                 Section("退款关联") {
                     LabeledContent("原交易退款") {
                         Text("已关联")
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.designPrimaryContainer)
                     }
                 }
             }
@@ -154,11 +154,11 @@ struct TransactionDetailView: View {
                     ForEach(linkedRefunds) { refund in
                         HStack {
                             LabeledContent("退款金额") {
-                                CurrencyText(amount: abs(refund.amount), currencyCode: refund.currencyCode, font: .body, foregroundColor: .green)
+                                CurrencyText(amount: abs(refund.amount), currencyCode: refund.currencyCode, size: 17, foregroundColor: .designPrimaryFixedDim)
                             }
                             Text(refund.date.formatted(date: .abbreviated, time: .omitted))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .font(.designBodySmall)
+                                .foregroundStyle(Color.designOnSurfaceVariant)
                         }
                     }
                 }
@@ -171,9 +171,9 @@ struct TransactionDetailView: View {
                         case .pending:
                             Text(ReimbursementStatus.pending.displayName).foregroundStyle(.orange)
                         case .reimbursed:
-                            Text(ReimbursementStatus.reimbursed.displayName).foregroundStyle(.green)
+                            Text(ReimbursementStatus.reimbursed.displayName).foregroundStyle(Color.designPrimaryFixedDim)
                         default:
-                            Text("—").foregroundStyle(.secondary)
+                            Text("—").foregroundStyle(Color.designOnSurfaceVariant)
                         }
                     }
                 }
@@ -184,9 +184,9 @@ struct TransactionDetailView: View {
                     ForEach(settledExpenses) { expense in
                         HStack {
                             Text(LocalizedStringKey(expense.category?.name ?? ""))
-                                .font(.body)
+                                .font(.designBodyMedium)
                             Spacer()
-                            CurrencyText(amount: abs(expense.amount), currencyCode: expense.currencyCode, font: .body)
+                            CurrencyText(amount: abs(expense.amount), currencyCode: expense.currencyCode, size: 17)
                         }
                     }
                 }
@@ -201,9 +201,9 @@ struct TransactionDetailView: View {
                                 Text(LocalizedStringKey(d.pendingLabel)).foregroundStyle(.orange)
                             }
                         case .settled:
-                            Text(LendingStatus.settled.displayName).foregroundStyle(.green)
+                            Text(LendingStatus.settled.displayName).foregroundStyle(Color.designPrimaryFixedDim)
                         case .none:
-                            Text("—").foregroundStyle(.secondary)
+                            Text("—").foregroundStyle(Color.designOnSurfaceVariant)
                         }
                     }
                 }
@@ -213,9 +213,9 @@ struct TransactionDetailView: View {
                         ForEach(settledLendingTransactions) { item in
                             HStack {
                                 Text(LocalizedStringKey(item.lendingDirection?.displayName ?? ""))
-                                    .font(.body)
+                                    .font(.designBodyMedium)
                                 Spacer()
-                                CurrencyText(amount: abs(item.amount), currencyCode: item.currencyCode, font: .body)
+                                CurrencyText(amount: abs(item.amount), currencyCode: item.currencyCode, size: 17)
                             }
                         }
                     }
@@ -259,10 +259,10 @@ struct TransactionDetailView: View {
                     FlowLayout(spacing: 6) {
                         ForEach(transaction.tags, id: \.self) { tag in
                             Text(tag)
-                                .font(.caption)
+                                .font(.designBodySmall)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(.blue.opacity(0.1))
+                                .background(Color.designPrimaryContainer.opacity(0.1))
                                 .clipShape(Capsule())
                         }
                     }
@@ -327,13 +327,13 @@ struct TransactionDetailView: View {
             }
         }
         switch transaction.type {
-        case .income: return .green
-        case .expense: return .red
+        case .income: return Color.designPrimaryFixedDim
+        case .expense: return Color.designAccentRed
         case .transfer: return .blue
         case .lending: break
-        case .adjustment: return .purple
+        case .adjustment: return Color.designTertiaryContainer
         }
-        return .secondary
+        return Color.designOnSurfaceVariant
     }
 
     private var titleText: String {
@@ -354,18 +354,18 @@ struct TransactionDetailView: View {
     private var amountView: some View {
         switch transaction.type {
         case .income:
-            CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, font: .title2, foregroundColor: .green)
+            CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, size: 22, foregroundColor: .designPrimaryFixedDim)
         case .expense:
-            CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, font: .title2, foregroundColor: .red)
+            CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, size: 22, foregroundColor: .designAccentRed)
         case .transfer:
             HStack(spacing: 0) {
                 Text("↔").font(.title2)
-                CurrencyText(amount: abs(transaction.amount), currencyCode: transaction.currencyCode, font: .title2, foregroundColor: .blue)
+                CurrencyText(amount: abs(transaction.amount), currencyCode: transaction.currencyCode, size: 22, foregroundColor: .blue)
             }
         case .lending:
-            CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, font: .title2, foregroundColor: transaction.amount >= 0 ? .green : .orange)
+            CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, size: 22, foregroundColor: transaction.amount >= 0 ? .designPrimaryFixedDim : .orange)
         case .adjustment:
-            CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, font: .title2, foregroundColor: transaction.amount >= 0 ? .green : .red)
+            CurrencyText(amount: transaction.amount, currencyCode: transaction.currencyCode, showSign: true, size: 22, foregroundColor: transaction.amount >= 0 ? .designPrimaryFixedDim : .designAccentRed)
         }
     }
 

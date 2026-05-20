@@ -32,7 +32,9 @@ struct CalendarStripView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(Color(uiColor: .systemBackground))
+        .background(.ultraThinMaterial)
+        .background(Color.designGlassBg)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     // MARK: - Summary Bar
@@ -45,7 +47,7 @@ struct CalendarStripView: View {
                 }
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.caption.weight(.medium))
+                    .font(.designBodySmall.weight(.medium))
             }
             .buttonStyle(.plain)
 
@@ -56,9 +58,9 @@ struct CalendarStripView: View {
             } label: {
                 HStack(spacing: 4) {
                     Text(monthTitle)
-                        .font(.subheadline.weight(.medium))
+                        .font(.designHeadlineMedium)
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.caption2)
+                        .font(.designBodySmall)
                 }
             }
             .buttonStyle(.plain)
@@ -69,7 +71,7 @@ struct CalendarStripView: View {
                 }
             } label: {
                 Image(systemName: "chevron.right")
-                    .font(.caption.weight(.medium))
+                    .font(.designBodySmall.weight(.medium))
             }
             .buttonStyle(.plain)
 
@@ -77,11 +79,11 @@ struct CalendarStripView: View {
 
             HStack(spacing: 16) {
                 Text("收 \(CurrencyFormatter.formatShort(amount: monthlyIncome, currencyCode: ""))")
-                    .font(.caption2)
-                    .foregroundStyle(.green)
+                    .font(.designMonoDataSmall)
+                    .foregroundStyle(Color.designAccentGreen)
                 Text("支 \(CurrencyFormatter.formatShort(amount: monthlyExpense, currencyCode: ""))")
-                    .font(.caption2)
-                    .foregroundStyle(.red)
+                    .font(.designMonoDataSmall)
+                    .foregroundStyle(Color.designAccentRed)
             }
         }
     }
@@ -92,8 +94,8 @@ struct CalendarStripView: View {
         HStack(spacing: 0) {
             ForEach(weekLabels, id: \.self) { label in
                 Text(label)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .font(.designLabel)
+                    .foregroundStyle(Color.designOnSurfaceVariant)
                     .frame(maxWidth: .infinity)
             }
         }

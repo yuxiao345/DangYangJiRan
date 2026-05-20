@@ -29,19 +29,19 @@ struct PendingReimbursementView: View {
                             .font(.title3)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(LocalizedStringKey(expense.category?.name ?? ""))
-                                .font(.body)
+                                .font(.designBodyMedium)
                             if let note = expense.note, !note.isEmpty {
                                 Text(note)
-                                    .font(.caption2)
+                                    .font(.designBodySmall)
                                     .foregroundStyle(.secondary)
                                     .lineLimit(1)
                             }
                         }
                         Spacer()
                         VStack(alignment: .trailing, spacing: 2) {
-                            CurrencyText(amount: abs(expense.amount), currencyCode: expense.currencyCode, font: .body)
+                            CurrencyText(amount: abs(expense.amount), currencyCode: expense.currencyCode, size: 17)
                             Text(expense.date.formatted(date: .abbreviated, time: .omitted))
-                                .font(.caption2)
+                                .font(.designBodySmall)
                                 .foregroundStyle(.secondary)
                         }
                     }

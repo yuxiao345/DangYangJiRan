@@ -9,7 +9,6 @@ struct DashboardView: View {
     @State private var editingTransaction: Transaction?
 
     init() {
-        // ViewModel is set up in onAppear with real ledger
         _viewModel = StateObject(wrappedValue: DashboardViewModel(
             ledger: Ledger(name: ""), accountService: AccountServiceImpl(), transactionService: TransactionServiceImpl()
         ))
@@ -17,18 +16,61 @@ struct DashboardView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Monthly Summary Card
-                    summaryCard
-                    // Account Balance Cards
-                    accountSection
-                    // Recent Transactions
-                    recentSection
+            VStack(spacing: 0) {
+                // Fixed top content
+                VStack(spacing: 16) {
+                    heroBalanceCard
+                    incomeExpenseGrid
+                    budgetCard
                 }
-                .padding()
+                .padding(16)
+
+                // Recent transactions header
+                HStack {
+                    Text("最近交易")
+                        .font(.designBodyMedium.weight(.bold))
+                        .foregroundStyle(Color.designOnSurface)
+                    Spacer()
+                    NavigationLink("全部") {
+                        TransactionListView()
+                    }
+                    .font(.designBodyCaption)
+                    .foregroundStyle(Color.designAccentGreen)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+                .padding(.bottom, 12)
+
+                // Independently scrollable transaction list
+                if viewModel.recentTransactions.isEmpty {
+                    Spacer()
+                    VStack(spacing: 8) {
+                        Image(systemName: "tray")
+                            .font(.system(size: 40))
+                            .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+                        Text("本月暂无交易记录")
+                            .font(.designBodyMedium)
+                            .foregroundStyle(Color.designOnSurfaceVariant)
+                    }
+                    Spacer()
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(viewModel.recentTransactions) { transaction in
+                                NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
+                                    transactionCard(transaction)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 16)
+                    }
+                }
             }
-            .navigationTitle(appContainer.currentLedger?.name ?? "荡漾计然")
+            .designScreen()
+            .navigationTitle(appContainer.currentLedger?.name ?? "小金库")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     SyncStatusBadge()
@@ -55,110 +97,275 @@ struct DashboardView: View {
         }
     }
 
-    private var summaryCard: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Text("本月收支")
-                    .font(.headline)
-                Spacer()
+    // MARK: - Hero Balance Card
+
+    private var heroBalanceCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("总资产")
+                .font(.designLabel)
+                .foregroundStyle(Color.designOnSurfaceVariant)
+                .tracking(1.2)
+
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(CurrencyFormatter.currencySymbol(for: ledgerCurrency))
+                    .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
+                    .foregroundStyle(Color.designPrimaryFixedDim)
+                Text(formattedBalance)
+                    .font(.designDisplayMobile)
+                    .foregroundStyle(Color.designOnSurface)
+                    .tracking(-0.6)
             }
-            HStack(spacing: 24) {
-                VStack {
-                    Text("收入")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    CurrencyText(amount: viewModel.monthlyIncome, currencyCode: ledgerCurrency, showSign: true, font: .title3, foregroundColor: .green)
-                        .fontWeight(.semibold)
+
+            if let pct = viewModel.balanceChangePercent {
+                HStack(spacing: 4) {
+                    Image(systemName: pct >= 0 ? "arrow.up.right" : "arrow.down.right")
+                        .font(.system(size: 10).weight(.bold))
+                    Text(String(format: "%@%.1f%%", pct >= 0 ? "+" : "", Double(truncating: pct as NSNumber)))
+                        .font(.designLabel)
+                    Text("较上月")
+                        .font(.designBodyCaption)
+                        .foregroundStyle(Color.designOnSurfaceVariant)
                 }
-                VStack {
-                    Text("支出")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    CurrencyText(amount: viewModel.monthlyExpense, currencyCode: ledgerCurrency, showSign: true, font: .title3, foregroundColor: .red)
-                        .fontWeight(.semibold)
-                }
-                VStack {
-                    Text("结余")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    CurrencyText(amount: viewModel.monthlyNet, currencyCode: ledgerCurrency, showSign: true, font: .title3, foregroundColor: viewModel.monthlyNet >= 0 ? .green : .red)
-                        .fontWeight(.semibold)
+                .foregroundStyle(pct >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background {
+                    Capsule()
+                        .fill((pct >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed).opacity(0.12))
                 }
             }
         }
-        .padding()
-        .background(.background.secondary)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(20)
+        .glassCard(cornerRadius: 24)
+        .overlay(alignment: .topTrailing) {
+            Circle()
+                .fill(Color.designPrimaryFixedDim.opacity(0.15))
+                .frame(width: 100, height: 100)
+                .blur(radius: 30)
+                .offset(x: 20, y: -20)
+        }
     }
 
-    private var accountSection: some View {
-        VStack(spacing: 8) {
-            HStack {
-                Text("账户")
-                    .font(.headline)
-                Spacer()
-                NavigationLink("全部") {
-                    AccountListView()
-                }
-            }
-            if viewModel.accounts.isEmpty {
-                Text("暂无账户")
-                    .foregroundStyle(.secondary)
-                    .padding()
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(viewModel.accounts.prefix(5)) { account in
-                            NavigationLink(destination: AccountDetailView(account: account)) {
-                                accountCard(account)
-                            }
-                            .buttonStyle(.plain)
-                        }
+    // MARK: - Income / Expense Grid
+
+    private var incomeExpenseGrid: some View {
+        HStack(spacing: 12) {
+            metricCard(
+                label: "本月收入",
+                amount: viewModel.monthlyIncome,
+                color: Color.designPrimaryFixedDim
+            )
+            metricCard(
+                label: "本月支出",
+                amount: viewModel.monthlyExpense,
+                color: Color.designAccentRed
+            )
+        }
+    }
+
+    private func metricCard(label: String, amount: Decimal, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label)
+                .font(.designLabelSmall)
+                .foregroundStyle(Color.designOnSurfaceVariant)
+                .tracking(1.0)
+
+            CurrencyText(amount: abs(amount), currencyCode: ledgerCurrency, showSign: false, size: 22, foregroundColor: color, fractionDigits: 0)
+
+            let maxRef = max(viewModel.monthlyIncome, viewModel.monthlyExpense)
+            let frac = maxRef > 0 ? Double(truncating: (amount / maxRef) as NSNumber) : 0
+            GeometryReader { geo in
+                Capsule()
+                    .fill(Color.designOnSurfaceVariant.opacity(0.12))
+                    .overlay(alignment: .leading) {
+                        Capsule()
+                            .fill(color.opacity(0.5))
+                            .frame(width: max(4, geo.size.width * frac))
                     }
-                }
             }
+            .frame(height: 3)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .glassCard(cornerRadius: 16)
     }
 
-    private func accountCard(_ account: Account) -> some View {
-        let bal = viewModel.accountBalances[account.id] ?? 0
-        return VStack(alignment: .leading, spacing: 4) {
-            Label(account.name, systemImage: account.iconName ?? "creditcard")
-                .font(.subheadline)
-            CurrencyText(amount: bal, currencyCode: account.currencyCode, showSign: true, font: .caption, foregroundColor: bal >= 0 ? .green : .red)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(.background.tertiary)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-    }
+    // MARK: - Budget Card
 
-    private var recentSection: some View {
-        VStack(spacing: 8) {
-            HStack {
-                Text("最近交易")
-                    .font(.headline)
-                Spacer()
-                NavigationLink("全部") {
-                    TransactionListView()
+    @ViewBuilder
+    private var budgetCard: some View {
+        if viewModel.hasBudget {
+            VStack(spacing: 12) {
+                HStack {
+                    Text("本月预算")
+                        .font(.designBodyMedium.weight(.bold))
+                        .foregroundStyle(Color.designOnSurface)
+                    Spacer()
+                    Text("已用 \(String(format: "%.0f%%", viewModel.budgetFraction * 100))")
+                        .font(.designMonoDataSmall)
+                        .foregroundStyle(Color.designOnSurfaceVariant)
+                }
+
+                PixelProgressBar(
+                    progress: viewModel.budgetFraction,
+                    tint: viewModel.budgetFraction > 0.8 ? Color.designAccentRed : Color.designPrimaryFixedDim,
+                    totalBlocks: 24
+                )
+
+                HStack {
+                    Text("已支出 \(formatBudgetAmount(viewModel.budgetSpent))")
+                        .font(.designBodyCaption)
+                        .foregroundStyle(Color.designOnSurfaceVariant)
+                    Spacer()
+                    Text("预算 \(formatBudgetAmount(viewModel.budgetLimit))")
+                        .font(.designBodyCaption)
+                        .foregroundStyle(Color.designOnSurfaceVariant)
                 }
             }
-            if viewModel.recentTransactions.isEmpty {
-                Text("暂无交易记录")
-                    .foregroundStyle(.secondary)
-                    .padding()
-            } else {
-                ForEach(viewModel.recentTransactions) { transaction in
-                    NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
-                        TransactionRowView(transaction: transaction)
+            .padding(16)
+            .glassCard(cornerRadius: 16)
+        } else {
+            NavigationLink {
+                BudgetBookListView(ledger: appContainer.currentLedger)
+            } label: {
+                VStack(spacing: 8) {
+                    Text("本月预算")
+                        .font(.designBodyMedium.weight(.bold))
+                        .foregroundStyle(Color.designOnSurface)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    HStack {
+                        Image(systemName: "plus.circle")
+                            .font(.title3)
+                        Text("设置预算，掌控每月开支")
+                            .font(.designBodyMedium)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
                     }
+                    .foregroundStyle(Color.designOnSurfaceVariant)
                 }
+                .padding(16)
+                .glassCard(cornerRadius: 16)
             }
+            .buttonStyle(.plain)
         }
+    }
+
+    // MARK: - Transaction Card
+
+    private func transactionCard(_ transaction: Transaction) -> some View {
+        HStack(spacing: 10) {
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color.designSurfaceContainer)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(Color.designOutlineVariant.opacity(0.3), lineWidth: 1)
+                }
+                .frame(width: 38, height: 38)
+                .overlay {
+                    Image(systemName: transactionIcon(transaction))
+                        .font(.system(size: 16))
+                        .foregroundStyle(transactionIconColor(transaction))
+                }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(LocalizedStringKey(transactionTitle(transaction)))
+                    .font(.designBodyMedium.weight(.medium))
+                    .foregroundStyle(Color.designOnSurface)
+                    .lineLimit(1)
+                Text(transactionSubtitle(transaction))
+                    .font(.designBodyCaption)
+                    .foregroundStyle(Color.designOnSurfaceVariant)
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            transactionAmountView(transaction)
+        }
+        .padding(12)
+        .glassCard(cornerRadius: 12)
+    }
+
+    private func transactionIcon(_ tx: Transaction) -> String {
+        if let d = tx.lendingDirection { return d.systemIcon }
+        return tx.category?.iconName ?? tx.type.systemIcon
+    }
+
+    private func transactionIconColor(_ tx: Transaction) -> Color {
+        if tx.isLending { return .orange }
+        switch tx.type {
+        case .income: return Color.designPrimaryFixedDim
+        case .expense: return Color.designAccentRed
+        default: return Color.designOnSurfaceVariant
+        }
+    }
+
+    private func transactionTitle(_ tx: Transaction) -> String {
+        if let d = tx.lendingDirection { return d.displayName }
+        return tx.merchant?.name ?? "未知商家"
+    }
+
+    private func transactionSubtitle(_ tx: Transaction) -> String {
+        if tx.isLending {
+            let from = tx.account?.name ?? "—"
+            let to = tx.toAccount?.name ?? "—"
+            return "\(from) → \(to)"
+        }
+        let cat = tx.category?.name ?? tx.type.displayName
+        return "\(cat) · \(relativeDateString(tx.date))"
+    }
+
+    private func relativeDateString(_ date: Date) -> String {
+        let calendar = Calendar.current
+        let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: Date())).day ?? 0
+        switch days {
+        case 0: return "今天"
+        case 1: return "昨天"
+        default: return "\(days)天前"
+        }
+    }
+
+    @ViewBuilder
+    private func transactionAmountView(_ tx: Transaction) -> some View {
+        let color: Color = {
+            switch tx.type {
+            case .income: return Color.designPrimaryFixedDim
+            case .expense: return Color.designAccentRed
+            case .transfer: return .blue
+            case .lending: return tx.amount >= 0 ? Color.designPrimaryFixedDim : .orange
+            case .adjustment: return tx.amount >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed
+            }
+        }()
+        CurrencyText(amount: tx.amount, currencyCode: tx.currencyCode, showSign: true, size: 15, foregroundColor: color)
+    }
+
+    // MARK: - Helpers
+
+    private var formattedBalance: String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.minimumFractionDigits = 2
+        formatter.maximumFractionDigits = 2
+        formatter.usesGroupingSeparator = true
+        return formatter.string(from: abs(viewModel.totalBalance) as NSDecimalNumber) ?? "0.00"
     }
 
     private var ledgerCurrency: String {
         appContainer.currentLedger?.defaultCurrencyCode ?? "CNY"
+    }
+
+    private func formatBudgetAmount(_ amount: Decimal) -> String {
+        let symbol = CurrencyFormatter.currencySymbol(for: ledgerCurrency)
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 0
+        formatter.usesGroupingSeparator = true
+        let raw = formatter.string(from: abs(amount) as NSDecimalNumber) ?? "0"
+        return "\(symbol)\(raw)"
     }
 
     private func refresh() {
@@ -169,10 +376,17 @@ struct DashboardView: View {
             transactionService: appContainer.transactionService
         )
         vm.load(context: modelContext)
+        vm.loadBudget(context: modelContext, budgetService: appContainer.budgetService)
         viewModel.monthlyIncome = vm.monthlyIncome
         viewModel.monthlyExpense = vm.monthlyExpense
         viewModel.recentTransactions = vm.recentTransactions
         viewModel.accounts = vm.accounts
         viewModel.accountBalances = vm.accountBalances
+        viewModel.totalBalance = vm.totalBalance
+        viewModel.previousMonthBalance = vm.previousMonthBalance
+        viewModel.balanceChangePercent = vm.balanceChangePercent
+        viewModel.budgetSpent = vm.budgetSpent
+        viewModel.budgetLimit = vm.budgetLimit
+        viewModel.hasBudget = vm.hasBudget
     }
 }

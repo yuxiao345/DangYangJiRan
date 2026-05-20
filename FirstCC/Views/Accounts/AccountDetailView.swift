@@ -11,7 +11,7 @@ struct AccountDetailView: View {
     var body: some View {
         List {
             Section("余额") {
-                CurrencyText(amount: balance, currencyCode: account.currencyCode, showSign: true, font: .largeTitle, foregroundColor: balance >= 0 ? .green : .red)
+                CurrencyText(amount: balance, currencyCode: account.currencyCode, showSign: true, size: 34, foregroundColor: balance >= 0 ? .green : .red)
                     .fontWeight(.bold)
             }
 
@@ -19,7 +19,7 @@ struct AccountDetailView: View {
                 Section("信用额度") {
                     if let limit = account.creditLimit {
                         LabeledContent("总额度") {
-                            CurrencyText(amount: limit, currencyCode: account.currencyCode, font: .body)
+                            CurrencyText(amount: limit, currencyCode: account.currencyCode, size: 17)
                         }
                     }
                     if let billingDay = account.billingDay {

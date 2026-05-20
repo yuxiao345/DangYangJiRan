@@ -98,6 +98,24 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
             if let type = filters.type, t.type != type {
                 return false
             }
+            if let amountRange = filters.amountRange {
+                guard amountRange.contains(abs(t.amount)) else { return false }
+            }
+            if let keyword = filters.keyword, !keyword.isEmpty {
+                let tokens = keyword.lowercased().split(separator: " ").map(String.init)
+                guard !tokens.isEmpty else { return true }
+                let match = tokens.allSatisfy { token in
+                    if let note = t.note, note.lowercased().contains(token) { return true }
+                    if t.tags.contains(where: { $0.lowercased().contains(token) }) { return true }
+                    if let name = t.merchant?.name, name.lowercased().contains(token) { return true }
+                    if let name = t.category?.name, name.lowercased().contains(token) { return true }
+                    if let name = t.account?.name, name.lowercased().contains(token) { return true }
+                    if let name = t.member?.name, name.lowercased().contains(token) { return true }
+                    if let name = t.project?.name, name.lowercased().contains(token) { return true }
+                    return false
+                }
+                guard match else { return false }
+            }
             return true
         }
     }

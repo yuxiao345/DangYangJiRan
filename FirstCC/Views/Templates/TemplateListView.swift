@@ -62,16 +62,16 @@ struct TemplateListView: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 4) {
                     Text(LocalizedStringKey(t.name))
-                        .font(.body)
+                        .font(.designBodyMedium)
                     if t.isRecurring {
                         Image(systemName: "arrow.triangle.2.circlepath")
-                            .font(.caption2)
-                            .foregroundStyle(.blue)
+                            .font(.designBodySmall)
+                            .foregroundStyle(Color.designPrimaryContainer)
                     }
                 }
                 if let note = t.note, !note.isEmpty {
                     Text(note)
-                        .font(.caption2)
+                        .font(.designBodySmall)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
@@ -83,7 +83,7 @@ struct TemplateListView: View {
                 amountView(t)
                 if let account = t.account {
                     Text(LocalizedStringKey(account.name))
-                        .font(.caption2)
+                        .font(.designBodySmall)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -96,7 +96,7 @@ struct TemplateListView: View {
         CurrencyText(
             amount: abs(t.amount),
             currencyCode: t.currencyCode,
-            font: .body,
+            size: 17,
             foregroundColor: t.type == .expense ? Color.red : Color.green
         )
     }

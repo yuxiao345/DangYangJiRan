@@ -1246,6 +1246,7 @@
 		"1034C7815287DAE7BF2D7474": {
 			"isa": "PBXGroup",
 			"children": [
+				"52608EFCED9D48B5B9339A00",
 				"52F9091D742FCE20260EAC52",
 				"3017D10289DEA882FD8F3D17",
 				"368AB4F546722A1C79687401",
@@ -1305,7 +1306,8 @@
 			"isa": "PBXGroup",
 			"children": [
 				"B7179DD40F926BA5C3E05A8B",
-				"7DB63CE4205FA78E2BE83CF3"
+				"7DB63CE4205FA78E2BE83CF3",
+				"F00300000000000000000001"
 			],
 			"name": "Resources",
 			"path": "Resources",
@@ -1331,7 +1333,8 @@
 				"616DDCA24AD507E700D4E02A",
 				"01D75752123DF42AB96E4272",
 				"1BD4A1F1B5AEBDDC7F400369",
-				"57D09B8E37F1973C7B325B97"
+				"57D09B8E37F1973C7B325B97",
+				"0CB28F94C2944BCF91F3F91E"
 			],
 			"name": "Utilities",
 			"path": "Utilities",
@@ -1342,7 +1345,8 @@
 			"children": [
 				"72F57251B9C5FD271B8EE399",
 				"5FC8D84871E3B70292214887",
-				"E45CC9E82755427EADB2BA5F"
+				"E45CC9E82755427EADB2BA5F",
+				"C94FFA096DE246CEABA8BC8C"
 			],
 			"name": "ViewModels",
 			"path": "ViewModels",
@@ -1359,11 +1363,13 @@
 				"70D7BE057289A0AB182528D0",
 				"F8C3A4171F38FE203852329C",
 				"E92846422C3B70B59FD919BA",
+				"F646509B65034FD393994ABC",
 				"3CADCC2FF717CC9CDD60F912",
 				"AEFB5EBD2D59C9844FEB0CCC",
 				"4799740253C08B485C6D33BD",
 				"4AC87128EB2345B988F8A53F",
-				"49364D66AD60B7797AE0209D"
+				"49364D66AD60B7797AE0209D",
+				"09420293DA2A46DA9A043457"
 			],
 			"name": "Views",
 			"path": "Views",
@@ -1416,7 +1422,10 @@
 				"9F2082BE56246CA6F98D918C",
 				"1C9129B1EACD775E7DEFFE6F",
 				"D630BB06AF584365B63460B4",
-				"948C7C0635F94E2580295008"
+				"948C7C0635F94E2580295008",
+				"2F3A5FF037084473AC0DA0A2",
+				"C57EFB0CAB1BC4F3B58C9EFF",
+				"18ABC6DFCE6F5ED9EC1F849F"
 			],
 			"name": "Implementations",
 			"path": "Implementations",
@@ -1631,7 +1640,15 @@
 			"isa": "PBXResourcesBuildPhase",
 			"buildActionMask": "2147483647",
 			"files": [
-				"4C123E5116650484726DA9F7"
+				"4C123E5116650484726DA9F7",
+				"F00200000000000000000001",
+				"F00200000000000000000002",
+				"F00200000000000000000003",
+				"F00200000000000000000004",
+				"F00200000000000000000005",
+				"F00200000000000000000006",
+				"F00200000000000000000007",
+				"F00200000000000000000008"
 			],
 			"runOnlyForDeploymentPostprocessing": "0"
 		},
@@ -1772,7 +1789,17 @@
 				"A44361F54D4542FE908424FE",
 				"DE7AC17290274739B1858192",
 				"85DD12DBCBCD4B9AAD4EA49D",
-				"2760B2289D5E47E78D2DA298"
+				"2760B2289D5E47E78D2DA298",
+				"D73A02FE5CF844B68F520A93",
+				"658D3C8C26A342D6855FE548",
+				"F727E0EE67944E628D7560C9",
+				"7DB8954774354740A7A4811F",
+				"596C1CEAA36D42549B006075",
+				"04B2DFDBA99124ACF5FAADD0",
+				"BDE2DDF9CBABDBC0EAA80CCF",
+				"261BEF666A3141FFBC1E399A",
+				"F6D356DFD6374A3DBDF4CB1B",
+				"1FB0F56F196C4AC6AED0C63D"
 			],
 			"runOnlyForDeploymentPostprocessing": "0"
 		},
@@ -1903,7 +1930,6 @@
 				"CODE_SIGN_STYLE": "Automatic",
 				"CURRENT_PROJECT_VERSION": "1",
 				"ENABLE_PREVIEWS": "YES",
-				"GENERATE_INFOPLIST_FILE": "YES",
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation": "YES",
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents": "YES",
 				"INFOPLIST_KEY_UILaunchScreen_Generation": "YES",
@@ -1917,7 +1943,18 @@
 				"SWIFT_VERSION": "5.0",
 				"TARGETED_DEVICE_FAMILY": "1,2",
 				"IPHONEOS_DEPLOYMENT_TARGET": "18.0",
-				"ENABLE_USER_SCRIPT_SANDBOXING": "NO"
+				"ENABLE_USER_SCRIPT_SANDBOXING": "NO",
+				"GENERATE_INFOPLIST_FILE": "YES",
+				"INFOPLIST_KEY_UIAppFonts": [
+					"SpaceGrotesk-Light.ttf",
+					"SpaceGrotesk-Regular.ttf",
+					"SpaceGrotesk-Medium.ttf",
+					"SpaceGrotesk-SemiBold.ttf",
+					"SpaceGrotesk-Bold.ttf",
+					"JetBrainsMono-Regular.ttf",
+					"JetBrainsMono-Medium.ttf",
+					"JetBrainsMono-Bold.ttf"
+				]
 			},
 			"name": "Debug"
 		},
@@ -1929,7 +1966,6 @@
 				"CODE_SIGN_STYLE": "Automatic",
 				"CURRENT_PROJECT_VERSION": "1",
 				"ENABLE_PREVIEWS": "YES",
-				"GENERATE_INFOPLIST_FILE": "YES",
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation": "YES",
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents": "YES",
 				"INFOPLIST_KEY_UILaunchScreen_Generation": "YES",
@@ -1943,7 +1979,18 @@
 				"SWIFT_VERSION": "5.0",
 				"TARGETED_DEVICE_FAMILY": "1,2",
 				"IPHONEOS_DEPLOYMENT_TARGET": "18.0",
-				"ENABLE_USER_SCRIPT_SANDBOXING": "NO"
+				"ENABLE_USER_SCRIPT_SANDBOXING": "NO",
+				"GENERATE_INFOPLIST_FILE": "YES",
+				"INFOPLIST_KEY_UIAppFonts": [
+					"SpaceGrotesk-Light.ttf",
+					"SpaceGrotesk-Regular.ttf",
+					"SpaceGrotesk-Medium.ttf",
+					"SpaceGrotesk-SemiBold.ttf",
+					"SpaceGrotesk-Bold.ttf",
+					"JetBrainsMono-Regular.ttf",
+					"JetBrainsMono-Medium.ttf",
+					"JetBrainsMono-Bold.ttf"
+				]
 			},
 			"name": "Release"
 		},
@@ -2131,6 +2178,245 @@
 		"2760B2289D5E47E78D2DA298": {
 			"isa": "PBXBuildFile",
 			"fileRef": "123B6255B17F4B3C9C8C6249"
+		},
+		"0CB28F94C2944BCF91F3F91E": {
+			"isa": "PBXFileReference",
+			"lastKnownFileType": "sourcecode.swift",
+			"path": "ChineseExpressionParser.swift",
+			"sourceTree": "<group>"
+		},
+		"C94FFA096DE246CEABA8BC8C": {
+			"isa": "PBXFileReference",
+			"lastKnownFileType": "sourcecode.swift",
+			"path": "SearchViewModel.swift",
+			"sourceTree": "<group>"
+		},
+		"B2FFD3FD75A04C9997B5688A": {
+			"isa": "PBXFileReference",
+			"lastKnownFileType": "sourcecode.swift",
+			"path": "SearchView.swift",
+			"sourceTree": "<group>"
+		},
+		"D73A02FE5CF844B68F520A93": {
+			"isa": "PBXBuildFile",
+			"fileRef": "0CB28F94C2944BCF91F3F91E"
+		},
+		"658D3C8C26A342D6855FE548": {
+			"isa": "PBXBuildFile",
+			"fileRef": "C94FFA096DE246CEABA8BC8C"
+		},
+		"F727E0EE67944E628D7560C9": {
+			"isa": "PBXBuildFile",
+			"fileRef": "B2FFD3FD75A04C9997B5688A"
+		},
+		"F646509B65034FD393994ABC": {
+			"isa": "PBXGroup",
+			"children": [
+				"B2FFD3FD75A04C9997B5688A"
+			],
+			"name": "Search",
+			"path": "Search",
+			"sourceTree": "<group>"
+		},
+		"2F3A5FF037084473AC0DA0A2": {
+			"isa": "PBXFileReference",
+			"lastKnownFileType": "sourcecode.swift",
+			"path": "ExportServiceImpl.swift",
+			"sourceTree": "<group>"
+		},
+		"7DB8954774354740A7A4811F": {
+			"isa": "PBXBuildFile",
+			"fileRef": "2F3A5FF037084473AC0DA0A2"
+		},
+		"F43852648FA74DB282DDF581": {
+			"isa": "PBXFileReference",
+			"lastKnownFileType": "sourcecode.swift",
+			"path": "ExportView.swift",
+			"sourceTree": "<group>"
+		},
+		"596C1CEAA36D42549B006075": {
+			"isa": "PBXBuildFile",
+			"fileRef": "F43852648FA74DB282DDF581"
+		},
+		"09420293DA2A46DA9A043457": {
+			"isa": "PBXGroup",
+			"children": [
+				"F43852648FA74DB282DDF581"
+			],
+			"name": "Export",
+			"path": "Export",
+			"sourceTree": "<group>"
+		},
+		"C57EFB0CAB1BC4F3B58C9EFF": {
+			"isa": "PBXFileReference",
+			"lastKnownFileType": "sourcecode.swift",
+			"path": "CurrencyServiceImpl.swift",
+			"sourceTree": "<group>"
+		},
+		"18ABC6DFCE6F5ED9EC1F849F": {
+			"isa": "PBXFileReference",
+			"lastKnownFileType": "sourcecode.swift",
+			"path": "ExchangeRateServiceImpl.swift",
+			"sourceTree": "<group>"
+		},
+		"04B2DFDBA99124ACF5FAADD0": {
+			"isa": "PBXBuildFile",
+			"fileRef": "C57EFB0CAB1BC4F3B58C9EFF"
+		},
+		"BDE2DDF9CBABDBC0EAA80CCF": {
+			"isa": "PBXBuildFile",
+			"fileRef": "18ABC6DFCE6F5ED9EC1F849F"
+		},
+		"5EB8D17FE42944A3A42FB518": {
+			"isa": "PBXFileReference",
+			"lastKnownFileType": "sourcecode.swift",
+			"path": "Color+Design.swift",
+			"sourceTree": "<group>"
+		},
+		"261BEF666A3141FFBC1E399A": {
+			"isa": "PBXBuildFile",
+			"fileRef": "5EB8D17FE42944A3A42FB518"
+		},
+		"DA7460A1C78E4A85AB33785E": {
+			"isa": "PBXFileReference",
+			"lastKnownFileType": "sourcecode.swift",
+			"path": "GlassModifiers.swift",
+			"sourceTree": "<group>"
+		},
+		"F6D356DFD6374A3DBDF4CB1B": {
+			"isa": "PBXBuildFile",
+			"fileRef": "DA7460A1C78E4A85AB33785E"
+		},
+		"017F172F8DFF42798BFA46D6": {
+			"isa": "PBXFileReference",
+			"lastKnownFileType": "sourcecode.swift",
+			"path": "Font+Design.swift",
+			"sourceTree": "<group>"
+		},
+		"1FB0F56F196C4AC6AED0C63D": {
+			"isa": "PBXBuildFile",
+			"fileRef": "017F172F8DFF42798BFA46D6"
+		},
+		"52608EFCED9D48B5B9339A00": {
+			"isa": "PBXGroup",
+			"children": [
+				"5EB8D17FE42944A3A42FB518",
+				"DA7460A1C78E4A85AB33785E",
+				"017F172F8DFF42798BFA46D6"
+			],
+			"name": "DesignSystem",
+			"path": "DesignSystem",
+			"sourceTree": "<group>"
+		},
+		"F00100000000000000000001": {
+			"isa": "PBXFileReference",
+			"explicitFileType": "file",
+			"includeInIndex": "0",
+			"path": "SpaceGrotesk-Light.ttf",
+			"sourceTree": "<group>"
+		},
+		"F00100000000000000000002": {
+			"isa": "PBXFileReference",
+			"explicitFileType": "file",
+			"includeInIndex": "0",
+			"path": "SpaceGrotesk-Regular.ttf",
+			"sourceTree": "<group>"
+		},
+		"F00100000000000000000003": {
+			"isa": "PBXFileReference",
+			"explicitFileType": "file",
+			"includeInIndex": "0",
+			"path": "SpaceGrotesk-Medium.ttf",
+			"sourceTree": "<group>"
+		},
+		"F00100000000000000000004": {
+			"isa": "PBXFileReference",
+			"explicitFileType": "file",
+			"includeInIndex": "0",
+			"path": "SpaceGrotesk-SemiBold.ttf",
+			"sourceTree": "<group>"
+		},
+		"F00100000000000000000005": {
+			"isa": "PBXFileReference",
+			"explicitFileType": "file",
+			"includeInIndex": "0",
+			"path": "SpaceGrotesk-Bold.ttf",
+			"sourceTree": "<group>"
+		},
+		"F00100000000000000000006": {
+			"isa": "PBXFileReference",
+			"explicitFileType": "file",
+			"includeInIndex": "0",
+			"path": "JetBrainsMono-Regular.ttf",
+			"sourceTree": "<group>"
+		},
+		"F00100000000000000000007": {
+			"isa": "PBXFileReference",
+			"explicitFileType": "file",
+			"includeInIndex": "0",
+			"path": "JetBrainsMono-Medium.ttf",
+			"sourceTree": "<group>"
+		},
+		"F00100000000000000000008": {
+			"isa": "PBXFileReference",
+			"explicitFileType": "file",
+			"includeInIndex": "0",
+			"path": "JetBrainsMono-Bold.ttf",
+			"sourceTree": "<group>"
+		},
+		"F00200000000000000000001": {
+			"isa": "PBXBuildFile",
+			"fileRef": "F00100000000000000000001"
+		},
+		"F00200000000000000000002": {
+			"isa": "PBXBuildFile",
+			"fileRef": "F00100000000000000000002"
+		},
+		"F00200000000000000000003": {
+			"isa": "PBXBuildFile",
+			"fileRef": "F00100000000000000000003"
+		},
+		"F00200000000000000000004": {
+			"isa": "PBXBuildFile",
+			"fileRef": "F00100000000000000000004"
+		},
+		"F00200000000000000000005": {
+			"isa": "PBXBuildFile",
+			"fileRef": "F00100000000000000000005"
+		},
+		"F00200000000000000000006": {
+			"isa": "PBXBuildFile",
+			"fileRef": "F00100000000000000000006"
+		},
+		"F00200000000000000000007": {
+			"isa": "PBXBuildFile",
+			"fileRef": "F00100000000000000000007"
+		},
+		"F00200000000000000000008": {
+			"isa": "PBXBuildFile",
+			"fileRef": "F00100000000000000000008"
+		},
+		"F00300000000000000000001": {
+			"isa": "PBXGroup",
+			"children": [
+				"F00100000000000000000001",
+				"F00100000000000000000002",
+				"F00100000000000000000003",
+				"F00100000000000000000004",
+				"F00100000000000000000005",
+				"F00100000000000000000006",
+				"F00100000000000000000007",
+				"F00100000000000000000008"
+			],
+			"name": "Fonts",
+			"path": "Fonts",
+			"sourceTree": "<group>"
+		},
+		"F00400000000000000000001": {
+			"isa": "PBXFileReference",
+			"lastKnownFileType": "text.plist.xml",
+			"path": "Info.plist",
+			"sourceTree": "<group>"
 		}
 	},
 	"rootObject": "1781F676DEDF5767F3243DB0"

@@ -70,7 +70,7 @@ struct SearchablePickerView<Item: Identifiable & Hashable>: View {
             Spacer()
             if item.id == selection?.id {
                 Image(systemName: "checkmark")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.designPrimaryContainer)
             }
         }
         .contentShape(Rectangle())

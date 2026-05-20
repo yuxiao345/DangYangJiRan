@@ -16,6 +16,8 @@ struct SettingsView: View {
                     Label("深色模式", systemImage: "moon")
                 }
             }
+            .designScreen()
+            .scrollContentBackground(.hidden)
             .navigationTitle("设置")
         }
     }

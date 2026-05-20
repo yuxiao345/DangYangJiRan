@@ -65,7 +65,7 @@ struct AddEditBudgetItemView: View {
                     HStack {
                         Text("总预算")
                         Spacer()
-                        CurrencyText(amount: total, currencyCode: book.ledger?.defaultCurrencyCode ?? "CNY", font: .body, foregroundColor: .blue)
+                        CurrencyText(amount: total, currencyCode: book.ledger?.defaultCurrencyCode ?? "CNY", size: 17, foregroundColor: .blue)
                     }
                 }
 

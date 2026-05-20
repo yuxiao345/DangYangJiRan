@@ -27,6 +27,8 @@ struct AccountListView: View {
                 }
             }
         }
+        .designScreen()
+        .scrollContentBackground(.hidden)
         .navigationTitle("账户")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {

@@ -8,6 +8,12 @@ final class DashboardViewModel: ObservableObject {
     @Published var recentTransactions: [Transaction] = []
     @Published var accounts: [Account] = []
     @Published var accountBalances: [UUID: Decimal] = [:]
+    @Published var totalBalance: Decimal = 0
+    @Published var previousMonthBalance: Decimal = 0
+    @Published var balanceChangePercent: Decimal? = nil
+    @Published var budgetSpent: Decimal = 0
+    @Published var budgetLimit: Decimal = 0
+    @Published var hasBudget: Bool = false
 
     private let accountService: AccountServiceProtocol
     private let transactionService: TransactionServiceProtocol
@@ -26,8 +32,11 @@ final class DashboardViewModel: ObservableObject {
         let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)!
 
         accounts = (try? accountService.fetchAccounts(for: ledger, context: context)) ?? []
+        totalBalance = 0
         for a in accounts {
-            accountBalances[a.id] = accountService.calculateBalance(for: a, context: context)
+            let bal = accountService.calculateBalance(for: a, context: context)
+            accountBalances[a.id] = bal
+            totalBalance += bal
         }
 
         var filters = TransactionFilters()
@@ -45,10 +54,36 @@ final class DashboardViewModel: ObservableObject {
         monthlyIncome = normalTransactions.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
         monthlyExpense = normalTransactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
 
-        recentTransactions = Array(allTransactions.sorted(by: { $0.date > $1.date }).prefix(10))
+        recentTransactions = Array(allTransactions.sorted(by: { $0.date > $1.date }).prefix(20))
+
+        // Previous month balance = current balance - this month's net
+        let net = monthlyIncome - monthlyExpense
+        previousMonthBalance = totalBalance - net
+        if previousMonthBalance != 0 {
+            let change = (totalBalance - previousMonthBalance) / previousMonthBalance * 100
+            balanceChangePercent = change
+        } else {
+            balanceChangePercent = nil
+        }
+    }
+
+    func loadBudget(context: ModelContext, budgetService: BudgetServiceProtocol) {
+        guard let books = try? budgetService.fetchBooks(for: ledger, context: context),
+              let activeBook = books.first(where: { $0.isActive }) ?? books.first else {
+            hasBudget = false
+            return
+        }
+        hasBudget = true
+        budgetSpent = budgetService.totalCurrentPeriodSpending(for: activeBook, context: context)
+        budgetLimit = budgetService.totalCurrentPeriodBudget(for: activeBook)
     }
 
     var monthlyNet: Decimal {
         monthlyIncome - monthlyExpense
+    }
+
+    var budgetFraction: Double {
+        guard budgetLimit > 0 else { return 0 }
+        return max(0, min(1, Double(truncating: (budgetSpent / budgetLimit) as NSNumber)))
     }
 }

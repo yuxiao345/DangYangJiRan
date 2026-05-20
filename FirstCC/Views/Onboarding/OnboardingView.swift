@@ -10,14 +10,14 @@ struct OnboardingView: View {
 
                 Image(systemName: "book.pages")
                     .font(.system(size: 80))
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.designPrimaryContainer)
 
                 Text("荡漾计然")
                     .font(.largeTitle)
                     .fontWeight(.bold)
 
                 Text("家庭记账，一目了然")
-                    .font(.subheadline)
+                    .font(.designBodyMedium)
                     .foregroundStyle(.secondary)
 
                 Spacer()

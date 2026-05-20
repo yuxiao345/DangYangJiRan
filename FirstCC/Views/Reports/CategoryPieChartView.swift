@@ -11,6 +11,8 @@ struct CategoryPieChartView: View {
     let onSelectTransaction: ((Transaction) -> Void)?
     let transactions: [Transaction]?
 
+    @State private var selectedAngle: Double?
+
     var body: some View {
         VStack(spacing: 12) {
             if let txs = transactions, !txs.isEmpty {
@@ -27,11 +29,24 @@ struct CategoryPieChartView: View {
     private var donutChart: some View {
         Chart(categories) { item in
             SectorMark(
-                angle: .value("金额", abs(item.amount)),
+                angle: .value("金额", abs(Double(truncating: item.amount as NSNumber))),
                 innerRadius: .ratio(0.55),
                 angularInset: 1
             )
             .foregroundStyle(Color(hex: item.colorHex) ?? .gray)
+        }
+        .chartAngleSelection(value: $selectedAngle)
+        .onChange(of: selectedAngle) { _, angle in
+            guard let angle else { return }
+            var cumulative: Double = 0
+            for item in categories {
+                cumulative += Double(truncating: item.amount as NSNumber)
+                if angle <= cumulative {
+                    onCategoryTap(item.id)
+                    selectedAngle = nil
+                    return
+                }
+            }
         }
         .chartBackground { _ in
             VStack(spacing: 2) {
@@ -41,22 +56,28 @@ struct CategoryPieChartView: View {
                     } label: {
                         HStack(spacing: 2) {
                             Image(systemName: "chevron.left")
-                                .font(.caption2)
+                                .font(.designBodySmall)
                             Text(centerTitle)
-                                .font(.caption2)
+                                .font(.designBodySmall)
                         }
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.designAccentGreen)
                     }
                 } else {
                     Text(centerTitle)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .font(.designBodySmall)
+                        .foregroundStyle(Color.designOnSurfaceVariant)
                 }
-                Text(CurrencyFormatter.formatShort(amount: totalExpense, currencyCode: ""))
-                    .font(.headline.weight(.bold))
+                CurrencyText(amount: totalExpense, currencyCode: "", size: 17, foregroundColor: Color.designOnSurface)
+                    .fontWeight(.bold)
             }
         }
         .frame(height: 220)
+        .padding(12)
+        .background {
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(Color.designOutlineVariant.opacity(0.3), lineWidth: 1)
+        }
+        .padding(.horizontal, 12)
     }
 
     // MARK: - Legend
@@ -67,67 +88,72 @@ struct CategoryPieChartView: View {
                 Button {
                     onCategoryTap(item.id)
                 } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: item.iconName)
-                            .font(.caption)
-                            .foregroundStyle(Color(hex: item.colorHex) ?? .gray)
-                            .frame(width: 20)
+                    VStack(spacing: 4) {
+                        HStack(spacing: 8) {
+                            PixelBlock(color: Color(hex: item.colorHex) ?? .gray, size: 10)
 
-                        Text(item.name)
-                            .font(.subheadline)
-                            .foregroundStyle(.primary)
+                            Text(item.name)
+                                .font(.designBodyMedium)
+                                .foregroundStyle(Color.designOnSurface)
 
-                        Spacer()
+                            Spacer()
 
-                        VStack(alignment: .trailing, spacing: 2) {
-                            Text(CurrencyFormatter.formatShort(amount: item.amount, currencyCode: ""))
-                                .font(.subheadline.weight(.medium))
-                            Text(String(format: "%.1f%%", item.percentage * 100))
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
+                            VStack(alignment: .trailing, spacing: 2) {
+                                CurrencyText(amount: item.amount, currencyCode: "", size: 15, foregroundColor: Color.designOnSurface)
+                                    .fontWeight(.medium)
+                                Text(String(format: "%.1f%%", item.percentage * 100))
+                                    .font(.designMonoDataSmall)
+                                    .foregroundStyle(Color.designOnSurfaceVariant)
+                            }
+
+                            Image(systemName: "chevron.right")
+                                .font(.designBodySmall)
+                                .foregroundStyle(Color.designOnSurfaceVariant)
                         }
 
-                        Image(systemName: "chevron.right")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                        PixelProgressBar(progress: item.percentage, tint: Color(hex: item.colorHex) ?? .gray, totalBlocks: 16)
                     }
                     .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
                 }
                 .buttonStyle(.plain)
 
                 if item.id != categories.last?.id {
-                    Divider().padding(.leading, 28)
+                    Divider().padding(.leading, 12)
                 }
             }
         }
-        .padding(.horizontal, 4)
+        .background {
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(Color.designOutlineVariant.opacity(0.3), lineWidth: 1)
+        }
+        .padding(.horizontal, 12)
     }
 
     // MARK: - Transaction List
 
     private func transactionList(_ txs: [Transaction]) -> some View {
         VStack(spacing: 0) {
-            // Header
             HStack {
                 Button {
                     onCenterTap()
                 } label: {
                     HStack(spacing: 2) {
                         Image(systemName: "chevron.left")
-                            .font(.caption.weight(.medium))
+                            .font(.designBodySmall.weight(.medium))
                         Text(centerTitle)
-                            .font(.subheadline.weight(.medium))
+                            .font(.designBodyMedium.weight(.medium))
                     }
+                    .foregroundStyle(Color.designAccentGreen)
                 }
                 .buttonStyle(.plain)
 
                 Spacer()
 
-                Text(CurrencyFormatter.formatShort(amount: totalExpense, currencyCode: ""))
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(.primary)
+                CurrencyText(amount: totalExpense, currencyCode: "", size: 15, foregroundColor: Color.designOnSurface)
+                    .fontWeight(.bold)
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, 12)
             .padding(.bottom, 8)
 
             Divider()
@@ -147,3 +173,4 @@ struct CategoryPieChartView: View {
         }
     }
 }
+

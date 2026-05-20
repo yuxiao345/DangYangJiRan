@@ -11,7 +11,7 @@ struct SyncStatusBadge: View {
             HStack(spacing: 4) {
                 statusIcon
                 Text(appContainer.syncStatus.displayName)
-                    .font(.caption2)
+                    .font(.designBodySmall)
                     .foregroundStyle(statusColor)
             }
         }
@@ -23,17 +23,17 @@ struct SyncStatusBadge: View {
         switch appContainer.syncStatus {
         case .synced:
             Image(systemName: "icloud.fill")
-                .font(.caption2)
+                .font(.designBodySmall)
         case .syncing:
             ProgressView()
                 .scaleEffect(0.6)
                 .frame(width: 12, height: 12)
         case .offline:
             Image(systemName: "icloud.slash")
-                .font(.caption2)
+                .font(.designBodySmall)
         case .error:
             Image(systemName: "exclamationmark.icloud")
-                .font(.caption2)
+                .font(.designBodySmall)
         }
     }
 

@@ -53,6 +53,7 @@ struct CategoryExpenseItem: Identifiable {
 struct TrendDataPoint: Identifiable {
     let id = UUID()
     let label: String
+    let yearLabel: String?
     let income: Decimal
     let expense: Decimal
 }
@@ -141,7 +142,6 @@ final class ReportViewModel {
         let transactions = all.filter { t in
             guard t.type == .expense else { return false }
             guard !t.isSplitParent else { return false }
-            guard t.refundGroupId == nil else { return false }
             guard !t.isReimbursable else { return false }
             return true
         }
@@ -158,20 +158,20 @@ final class ReportViewModel {
 
         for t in transactions {
             guard let cat = t.category else {
-                uncategorizedTotal += abs(t.amount)
+                uncategorizedTotal += netAmount(t)
                 uncategorizedTxs.append(t)
                 continue
             }
             let rootCat = rootCategory(for: cat)
-            let absAmt = abs(t.amount)
+            let amt = netAmount(t)
 
             var entry = rootMap[rootCat.id] ?? (rootCat, 0, 0, [:])
-            entry.total += absAmt
+            entry.total += amt
             if cat.id == rootCat.id {
-                entry.directAmount += absAmt
+                entry.directAmount += amt
                 directTXByRoot[rootCat.id, default: []].append(t)
             } else {
-                entry.children[cat.id, default: 0] += absAmt
+                entry.children[cat.id, default: 0] += amt
                 txByCategory[cat.id, default: []].append(t)
             }
             rootMap[rootCat.id] = entry
@@ -267,7 +267,6 @@ final class ReportViewModel {
         let filtered = all.filter { t in
             guard t.type == .expense || t.type == .income else { return false }
             guard !t.isSplitParent else { return false }
-            guard t.refundGroupId == nil else { return false }
             if t.type == .expense, t.isReimbursable { return false }
             if t.type == .income, settlementIDs.contains(t.id) { return false }
             return true
@@ -277,79 +276,82 @@ final class ReportViewModel {
 
         switch selectedPeriod {
         case .last3Years:
-            // Yearly grouping
-            let df = DateFormatter()
-            df.dateFormat = "yyyy年"
-            var byYear: [String: (income: Decimal, expense: Decimal)] = [:]
-            var yearOrder: [String] = []
+            let monthDF = DateFormatter()
+            monthDF.dateFormat = "M月"
+            let yearDF = DateFormatter()
+            yearDF.dateFormat = "yyyy年"
+
+            var byYearMonth: [String: (yearLabel: String?, monthLabel: String, income: Decimal, expense: Decimal)] = [:]
+            var order: [String] = []
+            var prevYear: String?
 
             for t in filtered {
-                let key = df.string(from: t.date)
-                if byYear[key] == nil {
-                    yearOrder.append(key)
-                    byYear[key] = (0, 0)
-                }
-                var entry = byYear[key]!
-                if t.type == .income {
-                    entry.income += t.amount
-                } else {
-                    entry.expense += abs(t.amount)
-                }
-                byYear[key] = entry
-            }
-            trendData = yearOrder.map { key in
-                let v = byYear[key]!
-                return TrendDataPoint(label: key, income: v.income, expense: v.expense)
-            }
+                let yearKey = yearDF.string(from: t.date)
+                let monthKey = monthDF.string(from: t.date)
+                let compoundKey = "\(yearKey)\(monthKey)"
 
-        case .lastYear:
-            let df = DateFormatter()
-            df.dateFormat = "yyyy年M月"
-            var byMonth: [String: (income: Decimal, expense: Decimal)] = [:]
-            var monthOrder: [String] = []
-
-            for t in filtered {
-                let key = df.string(from: t.date)
-                if byMonth[key] == nil {
-                    monthOrder.append(key)
-                    byMonth[key] = (0, 0)
+                if byYearMonth[compoundKey] == nil {
+                    order.append(compoundKey)
+                    let isNewYear = yearKey != prevYear
+                    byYearMonth[compoundKey] = (
+                        yearLabel: isNewYear ? yearKey : nil,
+                        monthLabel: monthKey,
+                        income: 0,
+                        expense: 0
+                    )
+                    prevYear = yearKey
                 }
-                var entry = byMonth[key]!
+                var entry = byYearMonth[compoundKey]!
                 if t.type == .income {
-                    entry.income += t.amount
+                    entry.income += ledgerAmount(t)
                 } else {
-                    entry.expense += abs(t.amount)
+                    entry.expense += netAmount(t)
                 }
-                byMonth[key] = entry
+                byYearMonth[compoundKey] = entry
             }
-            trendData = monthOrder.map { key in
-                let v = byMonth[key]!
-                return TrendDataPoint(label: key, income: v.income, expense: v.expense)
+            trendData = order.map { key in
+                let v = byYearMonth[key]!
+                return TrendDataPoint(
+                    label: key,
+                    yearLabel: v.yearLabel,
+                    income: v.income,
+                    expense: v.expense
+                )
             }
 
         default:
-            let df = DateFormatter()
-            df.dateFormat = "M月"
+            // Use year-qualified keys when the period spans multiple years to avoid merging
+            // e.g. May 2025 and May 2026 must be separate bars
+            let cal = Calendar.current
+            let startYear = cal.component(.year, from: range.lowerBound)
+            let endYear = cal.component(.year, from: range.upperBound)
+            let useYearPrefix = startYear != endYear
+
+            let monthDF = DateFormatter()
+            monthDF.dateFormat = "M月"
+            let yearDF = DateFormatter()
+            yearDF.dateFormat = "yyyy年"
+
             var byMonth: [String: (income: Decimal, expense: Decimal)] = [:]
             var monthOrder: [String] = []
 
             for t in filtered {
-                let key = df.string(from: t.date)
+                let key = useYearPrefix ? "\(yearDF.string(from: t.date))\(monthDF.string(from: t.date))" : monthDF.string(from: t.date)
                 if byMonth[key] == nil {
                     monthOrder.append(key)
                     byMonth[key] = (0, 0)
                 }
                 var entry = byMonth[key]!
                 if t.type == .income {
-                    entry.income += t.amount
+                    entry.income += ledgerAmount(t)
                 } else {
-                    entry.expense += abs(t.amount)
+                    entry.expense += netAmount(t)
                 }
                 byMonth[key] = entry
             }
             trendData = monthOrder.map { key in
                 let v = byMonth[key]!
-                return TrendDataPoint(label: key, income: v.income, expense: v.expense)
+                return TrendDataPoint(label: key, yearLabel: nil, income: v.income, expense: v.expense)
             }
         }
     }
@@ -443,6 +445,17 @@ final class ReportViewModel {
         } else {
             selectedCategoryID = id
         }
+    }
+
+    /// Amount in ledger's default currency (converted if cross-currency)
+    private func ledgerAmount(_ t: Transaction) -> Decimal {
+        t.convertedAmount ?? t.amount
+    }
+
+    /// Net amount for expense aggregation: positive for regular, negative for refunds
+    private func netAmount(_ t: Transaction) -> Decimal {
+        let base = ledgerAmount(t)
+        return t.refundGroupId != nil ? -abs(base) : abs(base)
     }
 
     private func rootCategory(for cat: Category) -> Category {

@@ -63,20 +63,20 @@ struct CreditCardReconciliationView: View {
             VStack(spacing: 6) {
                 HStack {
                     Text("\(stmt.periodMonth)月")
-                        .font(.headline)
+                        .font(.designHeadlineMedium)
                     Spacer()
                     if stmt.isReconciled {
                         Label("已核对", systemImage: "checkmark.circle.fill")
-                            .font(.caption)
-                            .foregroundStyle(.green)
+                            .font(.designBodySmall)
+                            .foregroundStyle(Color.designPrimaryFixedDim)
                     } else if diff != 0 {
                         Text("差额 ¥\(abs(diff).formatted(.number.precision(.fractionLength(2))))")
-                            .font(.caption)
+                            .font(.designBodySmall)
                             .foregroundStyle(.red)
                             .fontWeight(.semibold)
                     } else {
                         Text("差额 ¥0")
-                            .font(.caption)
+                            .font(.designBodySmall)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -84,23 +84,23 @@ struct CreditCardReconciliationView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("银行账单")
-                            .font(.caption2)
+                            .font(.designBodySmall)
                             .foregroundStyle(.secondary)
-                        CurrencyText(amount: bankAmount, currencyCode: account.currencyCode, showSign: false, font: .subheadline)
+                        CurrencyText(amount: bankAmount, currencyCode: account.currencyCode, showSign: false, size: 15)
                     }
                     Spacer()
                     VStack(alignment: .center, spacing: 2) {
                         Text("App记账")
-                            .font(.caption2)
+                            .font(.designBodySmall)
                             .foregroundStyle(.secondary)
-                        CurrencyText(amount: -appAmount, currencyCode: account.currencyCode, showSign: false, font: .subheadline)
+                        CurrencyText(amount: -appAmount, currencyCode: account.currencyCode, showSign: false, size: 15)
                     }
                     Spacer()
                     VStack(alignment: .trailing, spacing: 2) {
                         Text("差额")
-                            .font(.caption2)
+                            .font(.designBodySmall)
                             .foregroundStyle(.secondary)
-                        CurrencyText(amount: diff, currencyCode: account.currencyCode, showSign: true, font: .subheadline, foregroundColor: diff == 0 ? .secondary : .red)
+                        CurrencyText(amount: diff, currencyCode: account.currencyCode, showSign: true, size: 15, foregroundColor: diff == 0 ? .secondary : .red)
                     }
                 }
             }
@@ -134,13 +134,13 @@ struct StatementTransactionsView: View {
                 let diff = bankAmount + rawAppAmount
 
                 LabeledContent("银行账单") {
-                    CurrencyText(amount: bankAmount, currencyCode: account.currencyCode, showSign: false, font: .body)
+                    CurrencyText(amount: bankAmount, currencyCode: account.currencyCode, showSign: false, size: 17)
                 }
                 LabeledContent("App记账") {
-                    CurrencyText(amount: -rawAppAmount, currencyCode: account.currencyCode, showSign: false, font: .body)
+                    CurrencyText(amount: -rawAppAmount, currencyCode: account.currencyCode, showSign: false, size: 17)
                 }
                 LabeledContent("差额") {
-                    CurrencyText(amount: diff, currencyCode: account.currencyCode, showSign: true, font: .body, foregroundColor: diff == 0 ? .secondary : .red)
+                    CurrencyText(amount: diff, currencyCode: account.currencyCode, showSign: true, size: 17, foregroundColor: diff == 0 ? .secondary : .red)
                 }
             }
 
@@ -313,7 +313,7 @@ struct AddEditStatementView: View {
             if let _ = csvData {
                 HStack {
                     Label("\(csvFileName)（\(bankItems.count)笔）", systemImage: "tablecells")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.designPrimaryFixedDim)
                     Spacer()
                     Button("清除") {
                         csvData = nil
@@ -322,11 +322,11 @@ struct AddEditStatementView: View {
                         matches = []
                         userActions = [:]
                     }
-                    .font(.caption)
+                    .font(.designBodySmall)
                     .foregroundStyle(.red)
                 }
                 if isMatching {
-                    HStack { ProgressView(); Text("匹配中…").font(.caption).foregroundStyle(.secondary) }
+                    HStack { ProgressView(); Text("匹配中…").font(.designBodySmall).foregroundStyle(.secondary) }
                 }
             } else {
                 Button {
@@ -361,7 +361,7 @@ struct AddEditStatementView: View {
                 Button("用CSV总额填充: ¥\(abs(csvTotal).formatted(.number.precision(.fractionLength(2))))") {
                     bankAmount = abs(csvTotal)
                 }
-                .font(.caption)
+                .font(.designBodySmall)
             }
         }
     }
@@ -393,17 +393,17 @@ struct AddEditStatementView: View {
                 } label: {
                     HStack {
                         Text(txn.date, format: .dateTime.month(.twoDigits).day(.twoDigits))
-                            .font(.caption)
+                            .font(.designBodySmall)
                             .fontWeight(.medium)
                         if let note = txn.note, !note.isEmpty {
-                            Text(note).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                            Text(note).font(.designBodySmall).foregroundStyle(.secondary).lineLimit(1)
                         }
                         Spacer()
                         Text(txn.amount, format: .number.precision(.fractionLength(2)))
-                            .font(.caption).fontWeight(.bold).foregroundStyle(.red)
+                            .font(.designBodySmall).fontWeight(.bold).foregroundStyle(.red)
                         Image(systemName: "pencil.circle")
-                            .font(.caption)
-                            .foregroundStyle(.blue)
+                            .font(.designBodySmall)
+                            .foregroundStyle(Color.designPrimaryContainer)
                     }
                 }
             }
@@ -417,12 +417,12 @@ struct AddEditStatementView: View {
                     amount: -appAmount,
                     currencyCode: account.currencyCode,
                     showSign: false,
-                    font: .body
+                    size: 17
                 )
             }
             LabeledContent("差额") {
                 let diff = (bankAmount) + appAmount
-                CurrencyText(amount: diff, currencyCode: account.currencyCode, showSign: true, font: .body, foregroundColor: diff == 0 ? .secondary : .red)
+                CurrencyText(amount: diff, currencyCode: account.currencyCode, showSign: true, size: 17, foregroundColor: diff == 0 ? .secondary : .red)
             }
         }
     }
@@ -435,16 +435,16 @@ struct AddEditStatementView: View {
             HStack {
                 if let date = match.bankItem.transDate {
                     Text(date, format: .dateTime.month(.twoDigits).day(.twoDigits))
-                        .font(.caption)
+                        .font(.designBodySmall)
                         .fontWeight(.medium)
                 }
                 if let desc = match.bankItem.desc {
-                    Text(desc).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    Text(desc).font(.designBodySmall).foregroundStyle(.secondary).lineLimit(1)
                 }
                 Spacer()
                 if let amount = match.bankItem.amount {
                     Text(amount, format: .number.precision(.fractionLength(2)))
-                        .font(.caption).fontWeight(.bold).foregroundStyle(.red)
+                        .font(.designBodySmall).fontWeight(.bold).foregroundStyle(.red)
                 }
                 matchBadge(match, action: action)
             }
@@ -454,11 +454,11 @@ struct AddEditStatementView: View {
                 switch action {
                 case .confirmed(let txn):
                     Text("已确认匹配 App: ¥\(abs(txn.amount).formatted(.number.precision(.fractionLength(2))))")
-                        .font(.caption2).foregroundStyle(.green)
+                        .font(.designBodySmall).foregroundStyle(Color.designPrimaryFixedDim)
                 case .ignored:
-                    Text("已忽略").font(.caption2).foregroundStyle(.secondary)
+                    Text("已忽略").font(.designBodySmall).foregroundStyle(.secondary)
                 case .createNew:
-                    Text("将创建新交易").font(.caption2).foregroundStyle(.blue)
+                    Text("将创建新交易").font(.designBodySmall).foregroundStyle(Color.designPrimaryContainer)
                 }
             }
 
@@ -472,9 +472,9 @@ struct AddEditStatementView: View {
                             } label: {
                                 VStack(spacing: 1) {
                                     Text("¥\(abs(txn.amount).formatted(.number.precision(.fractionLength(2))))")
-                                        .font(.caption2)
+                                        .font(.designBodySmall)
                                     Text(txn.date, format: .dateTime.month(.twoDigits).day(.twoDigits))
-                                        .font(.caption2)
+                                        .font(.designBodySmall)
                                 }
                             }.buttonStyle(.bordered).tint(.blue).controlSize(.mini)
                         }
@@ -489,9 +489,9 @@ struct AddEditStatementView: View {
                                         Image(systemName: "pencil")
                                         Text("编辑")
                                     }
-                                    .font(.caption2)
+                                    .font(.designBodySmall)
                                     Text(suspectedHint(for: match))
-                                        .font(.caption2)
+                                        .font(.designBodySmall)
                                         .foregroundStyle(.orange)
                                 }
                             }.buttonStyle(.bordered).tint(.orange).controlSize(.mini)
@@ -512,16 +512,16 @@ struct AddEditStatementView: View {
                             try? modelContext.save()
                             editingTransaction = newTxn
                         } label: {
-                            Text("创建").font(.caption2)
+                            Text("创建").font(.designBodySmall)
                         }.buttonStyle(.bordered).tint(.green).controlSize(.mini)
                     }
                     Button { userActions[match.id] = .ignored } label: {
-                        Text("忽略").font(.caption2)
+                        Text("忽略").font(.designBodySmall)
                     }.buttonStyle(.bordered).tint(.secondary).controlSize(.mini)
                 }
             } else {
                 Button("撤销") { userActions.removeValue(forKey: match.id) }
-                    .font(.caption2).buttonStyle(.bordered).tint(.orange).controlSize(.mini)
+                    .font(.designBodySmall).buttonStyle(.bordered).tint(.orange).controlSize(.mini)
             }
         }
     }
@@ -530,13 +530,13 @@ struct AddEditStatementView: View {
         Group {
             if let action {
                 switch action {
-                case .confirmed: Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                case .confirmed: Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.designPrimaryFixedDim)
                 case .ignored: Image(systemName: "eye.slash.fill").foregroundStyle(.secondary)
-                case .createNew: Image(systemName: "plus.circle.fill").foregroundStyle(.blue)
+                case .createNew: Image(systemName: "plus.circle.fill").foregroundStyle(Color.designPrimaryContainer)
                 }
             } else {
                 switch match.status {
-                case .matched: Image(systemName: "link").foregroundStyle(.green)
+                case .matched: Image(systemName: "link").foregroundStyle(Color.designPrimaryFixedDim)
                 case .conflicted: Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
                 case .suspectedDateMismatch: Image(systemName: "calendar.badge.clock").foregroundStyle(.orange)
                 case .suspectedAmountMismatch: Image(systemName: "yensign.circle").foregroundStyle(.yellow)
@@ -545,7 +545,7 @@ struct AddEditStatementView: View {
                 }
             }
         }
-        .font(.caption)
+        .font(.designBodySmall)
     }
 
     private func suspectedHint(for match: ReconciliationMatch) -> String {
@@ -565,8 +565,8 @@ struct AddEditStatementView: View {
 
     private func miniStat(_ label: String, _ value: String, _ color: Color) -> some View {
         VStack(spacing: 1) {
-            Text(value).font(.caption).fontWeight(.bold).foregroundStyle(color)
-            Text(label).font(.caption2).foregroundStyle(.secondary)
+            Text(value).font(.designBodySmall).fontWeight(.bold).foregroundStyle(color)
+            Text(label).font(.designBodySmall).foregroundStyle(.secondary)
         }
     }
 

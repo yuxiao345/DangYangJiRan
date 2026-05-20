@@ -8,14 +8,14 @@ struct SplitEntryRowView: View {
     var body: some View {
         HStack {
             Image(systemName: entry.member?.avatar ?? "person.circle")
-                .foregroundStyle(.blue)
+                .foregroundStyle(Color.designPrimaryContainer)
                 .frame(width: 32)
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.member?.name ?? "未知成员")
-                    .font(.body)
+                    .font(.designBodyMedium)
                 if let paidDate = entry.paidDate {
                     Text("已付于 \(paidDate.formatted(date: .abbreviated, time: .omitted))")
-                        .font(.caption2)
+                        .font(.designBodySmall)
                         .foregroundStyle(.secondary)
                 }
             }

@@ -81,6 +81,9 @@ final class AppContainer: ObservableObject {
         reconciliationService = ReconciliationServiceImpl()
         bankOCRService = BankOCRServiceImpl()
         splitService = SplitServiceImpl()
+        exportService = ExportServiceImpl()
+        currencyService = CurrencyServiceImpl()
+        exchangeRateService = ExchangeRateServiceImpl()
         if let ckContainer = cloudKitContainer {
             syncService = SyncServiceImpl(container: ckContainer)
         }

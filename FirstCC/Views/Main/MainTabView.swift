@@ -39,5 +39,6 @@ struct MainTabView: View {
                 }
                 .tag(4)
         }
+        .tint(Color.designAccentGreen)
     }
 }
