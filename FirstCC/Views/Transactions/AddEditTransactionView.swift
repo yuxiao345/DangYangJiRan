@@ -7,6 +7,15 @@ enum PickerSheetType: Identifiable {
     var id: Self { self }
 }
 
+protocol NameProviding {
+    var name: String { get }
+}
+extension Account: NameProviding {}
+extension Category: NameProviding {}
+extension Member: NameProviding {}
+extension Merchant: NameProviding {}
+extension Project: NameProviding {}
+
 struct SplitItemDraft: Identifiable {
     var id = UUID()
     var amount: Decimal = 0
@@ -26,6 +35,9 @@ struct AddEditTransactionView: View {
 
     @State private var type: TransactionType = .expense
     @State private var amount: Decimal = 0
+    @State private var amountString: String = ""
+    @State private var showNumpad: Bool = false
+    @State private var showTemplates: Bool = false
     @State private var note: String = ""
     @State private var date: Date = Date()
     @State private var selectedAccount: Account?
@@ -83,391 +95,134 @@ struct AddEditTransactionView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                // Template quick-pick at top
-                if !templates.isEmpty {
-                    Section {
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text("模板")
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                                    .textCase(.uppercase)
-                                Spacer()
-                                Button { openPicker(.template) } label: {
-                                    HStack(spacing: 2) {
-                                        Text("全部")
-                                        Image(systemName: "chevron.right")
-                                    }
-                                    .font(.designBodySmall)
-                                }
-                            }
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 8) {
-                                    ForEach(templates.prefix(5)) { template in
-                                        templateChip(template)
-                                    }
-                                }
-                            }
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(spacing: 16) {
+                        // Template quick-pick
+                        if !templates.isEmpty {
+                            templateSection
+                        }
+
+                        // Type switcher
+                        typeSwitcher
+
+                        // Amount display + toggles
+                        amountSection
+
+                        // Account grid
+                        if !accounts.isEmpty {
+                            accountGridSection
+                        }
+
+                        // To-account for transfer/lending
+                        if (type == .transfer || type == .lending), !accounts.isEmpty {
+                            toAccountGridSection
+                        }
+
+                        // Category grid (not split/transfer/lending)
+                        if !isSplit, type != .transfer, type != .lending {
+                            categoryGridSection
+                        }
+
+                        // Split detail
+                        if isSplit, type == .expense {
+                            splitDetailSection
+                        }
+
+                        // Member grid
+                        if !isSplit, type != .transfer, type != .lending {
+                            memberGridSection
+                        }
+
+                        // Merchant + Project
+                        if !isSplit, type != .transfer, type != .lending {
+                            merchantSection
+                            projectSection
+                        }
+
+                        // Lending direction
+                        if type == .lending {
+                            lendingDirectionSection
+                        }
+
+                        // Exchange rate
+                        if needsExchangeRate {
+                            exchangeRateSection
+                        }
+
+                        // Pending lending settlement
+                        if (lendingDirection == .collect || lendingDirection == .repay), !pendingLendingTransactions.isEmpty {
+                            pendingLendingSection
+                        }
+
+                        // Pending reimbursement
+                        if type == .income, !pendingExpenses.isEmpty {
+                            pendingReimbursementSection
+                        }
+
+                        // Details (note, date, photo)
+                        detailsSection
+
+                        // Delete button
+                        if editing != nil {
+                            deleteButton
                         }
                     }
+                    .padding(16)
                 }
 
-                Section {
-                    Picker("类型", selection: $type) {
-                        ForEach([TransactionType.expense, .income, .transfer, .lending, .adjustment], id: \.self) { t in
-                            Label(t.displayName, systemImage: t.systemIcon).tag(t)
-                        }
+                // Bottom: numpad + save button
+                VStack(spacing: 12) {
+                    if showNumpad {
+                        numpadView
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
-                    .pickerStyle(.segmented)
+                    // Save button
+                    Button {
+                        save()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Text(editing != nil ? "更新账单" : "保存账单")
+                                .font(.designBodyMedium.weight(.bold))
+                            Image(systemName: "send")
+                                .font(.system(size: 16))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(
+                            Capsule()
+                                .fill(Color.designPrimaryContainer.opacity(0.85))
+                                .shadow(color: Color.designPrimaryContainer.opacity(0.4), radius: 20, x: 0, y: 0)
+                        )
+                        .foregroundStyle(Color.designOnPrimaryContainer)
+                    }
+                    .disabled(!canSave)
+                    .opacity(canSave ? 1 : 0.4)
+                    .buttonStyle(.plain)
                 }
-
-                Section("金额") {
-                    HStack {
-                        Text(CurrencyFormatter.currencySymbol(for: selectedCurrencyCode))
-                            .foregroundStyle(.secondary)
-                        TextField("0.00", value: $amount, format: .number)
-                            .keyboardType(.decimalPad)
-                            .font(.title2)
-                        Menu {
-                            ForEach(currencies, id: \.self) { code in
-                                Button {
-                                    selectedCurrencyCode = code
-                                    exchangeRate = nil
-                                    if needsExchangeRate { fetchExchangeRate() }
-                                } label: {
-                                    Text("\(code) (\(currencyName(code)))")
-                                }
-                            }
-                        } label: {
-                            Text(selectedCurrencyCode)
-                                .font(.designBodySmall)
-                                .foregroundStyle(Color.designPrimaryContainer)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(.blue.opacity(0.1))
-                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+                .padding(.top, 12)
+                .background(
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                        .overlay(alignment: .top) {
+                            Rectangle()
+                                .fill(Color.designGlassBorderHighlight)
+                                .frame(height: 1)
                         }
-                    }
-                    if type == .expense {
-                        Toggle("拆分记账", isOn: $isSplit)
-                    }
-                }
-
-                Section("账户") {
-                    if accounts.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("暂无账户").foregroundStyle(.secondary)
-                            NavigationLink("去添加账户") {
-                                AddEditAccountView()
-                            }
-                        }
-                    } else {
-                        Button { openPicker(.account) } label: {
-                            pickerRow(
-                                label: (type == .transfer || type == .lending) ? "转出账户" : "账户",
-                                value: selectedAccount?.name
-                            )
-                        }
-                        if type == .transfer || type == .lending {
-                            Button { openPicker(.toAccount) } label: {
-                                pickerRow(label: "转入账户", value: selectedToAccount?.name)
-                            }
-                        }
-                    }
-                }
-
-                if needsExchangeRate {
-                    Section {
-                        HStack {
-                            Text("汇率")
-                            Spacer()
-                            if isFetchingRate {
-                                ProgressView()
-                            } else if let rate = exchangeRate {
-                                Text("1 \(selectedCurrencyCode) = \(rate.formatted(.number.precision(.fractionLength(4)))) \(ledgerCurrencyCode)")
-                                    .foregroundStyle(.secondary)
-                            } else {
-                                Button("获取汇率") { fetchExchangeRate() }
-                                    .buttonStyle(.bordered)
-                                    .controlSize(.small)
-                            }
-                        }
-                        if let converted = convertedAmountPreview {
-                            HStack {
-                                Text("换算金额")
-                                Spacer()
-                                CurrencyText(amount: converted, currencyCode: ledgerCurrencyCode, size: 17, foregroundColor: .blue)
-                            }
-                        }
-                    } header: {
-                        Text("跨币种换算")
-                    } footer: {
-                        Text("账户币种(\(selectedCurrencyCode))与账本默认币种(\(ledgerCurrencyCode))不同，将按汇率换算")
-                    }
-                }
-
-                if isSplit && type == .expense {
-                    Section("拆分明细") {
-                        ForEach(splitItems) { item in
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack {
-                                    Text("¥").foregroundStyle(.secondary)
-                                    TextField("0.00", value: splitAmountBinding(for: item.id), format: .number)
-                                        .keyboardType(.decimalPad)
-                                        .font(.designBodyMedium)
-                                    Spacer()
-                                    Button {
-                                        splitItems.removeAll { $0.id == item.id }
-                                    } label: {
-                                        Image(systemName: "minus.circle.fill")
-                                            .foregroundStyle(.red)
-                                    }
-                                }
-                                Menu {
-                                    ForEach(categories) { cat in
-                                        Button {
-                                            if let idx = splitItems.firstIndex(where: { $0.id == item.id }) {
-                                                splitItems[idx].category = cat
-                                            }
-                                        } label: {
-                                            Label(cat.name, systemImage: cat.iconName)
-                                        }
-                                    }
-                                } label: {
-                                    pickerRow(label: "分类", value: item.category?.name)
-                                }
-                                Menu {
-                                    ForEach(members) { m in
-                                        Button {
-                                            if let idx = splitItems.firstIndex(where: { $0.id == item.id }) {
-                                                splitItems[idx].member = m
-                                            }
-                                        } label: {
-                                            Label(m.name, systemImage: m.avatar)
-                                        }
-                                    }
-                                } label: {
-                                    pickerRow(label: "成员", value: item.member?.name)
-                                }
-                                Menu {
-                                    ForEach(merchants) { m in
-                                        Button {
-                                            if let idx = splitItems.firstIndex(where: { $0.id == item.id }) {
-                                                splitItems[idx].merchant = m
-                                            }
-                                        } label: {
-                                            Label(m.name, systemImage: "bag")
-                                        }
-                                    }
-                                } label: {
-                                    pickerRow(label: "商家", value: item.merchant?.name)
-                                }
-                                Menu {
-                                    ForEach(projects) { p in
-                                        Button {
-                                            if let idx = splitItems.firstIndex(where: { $0.id == item.id }) {
-                                                splitItems[idx].project = p
-                                            }
-                                        } label: {
-                                            Label(p.name, systemImage: "folder")
-                                        }
-                                    }
-                                } label: {
-                                    pickerRow(label: "项目", value: item.project?.name)
-                                }
-                            }
-                        }
-                        Button {
-                            let remaining = amount - splitTotal
-                            splitItems.append(SplitItemDraft(amount: remaining > 0 ? remaining : 0))
-                        } label: {
-                            Label("添加子项", systemImage: "plus").font(.designBodySmall)
-                        }
-                        HStack {
-                            Spacer()
-                            Text(splitTotalText)
-                                .font(.designBodySmall)
-                                .foregroundStyle(splitTotal == amount ? .green : .red)
-                                .fontWeight(.medium)
-                        }
-                    }
-                }
-
-                if type == .lending {
-                    Section("借贷方向") {
-                        Picker("方向", selection: $lendingDirection) {
-                            ForEach(LendingDirection.allCases, id: \.self) { d in
-                                Label(d.displayName, systemImage: d.systemIcon).tag(d)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        .onChange(of: lendingDirection) { _, _ in
-                            loadPendingLendingTransactions()
-                        }
-                    }
-                }
-
-                if type == .expense {
-                    Section {
-                        Toggle("可报销", isOn: $isReimbursable)
-                    }
-                }
-
-                if !isSplit && type != .transfer && type != .lending {
-                    Section("分类") {
-                        Button { openPicker(.category) } label: {
-                            pickerRow(label: "分类", value: selectedCategory?.name)
-                        }
-                    }
-                }
-
-                if !isSplit && type != .transfer && type != .lending {
-                    Section("更多信息") {
-                        Button { openPicker(.member) } label: {
-                            pickerRow(label: "成员", value: selectedMember?.name)
-                        }
-                        Button { openPicker(.merchant) } label: {
-                            pickerRow(label: "商家", value: selectedMerchant?.name)
-                        }
-                        Button { openPicker(.project) } label: {
-                            pickerRow(label: "项目", value: selectedProject?.name)
-                        }
-                    }
-                }
-
-                if (lendingDirection == .collect || lendingDirection == .repay) && !pendingLendingTransactions.isEmpty {
-                    Section {
-                        DisclosureGroup(isExpanded: $showLendingSettlementSection) {
-                            ForEach(pendingLendingTransactions) { item in
-                                HStack {
-                                    Image(systemName: selectedLendingIDs.contains(item.id)
-                                          ? "checkmark.circle.fill" : "circle")
-                                        .foregroundStyle(selectedLendingIDs.contains(item.id) ? .blue : .secondary)
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(LocalizedStringKey(item.account?.name ?? ""))
-                                            .font(.designBodyMedium)
-                                        Text(displayLabelForLending(item))
-                                            .font(.designBodySmall)
-                                            .foregroundStyle(.secondary)
-                                        Text(item.date.formatted(date: .abbreviated, time: .omitted))
-                                            .font(.designBodySmall)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    Spacer()
-                                    CurrencyText(amount: abs(item.amount), currencyCode: item.currencyCode, size: 17)
-                                }
-                                .contentShape(Rectangle())
-                                .onTapGesture { toggleLending(item.id) }
-                            }
-                        } label: {
-                            HStack {
-                                Text(lendingDirection == .collect ? "关联待收款" : "关联待付款")
-                                Spacer()
-                                if !selectedLendingIDs.isEmpty {
-                                    Text("\(selectedLendingIDs.count)笔")
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                        }
-                    }
-
-                    if !selectedLendingIDs.isEmpty {
-                        Section {
-                            HStack {
-                                Text("已选合计")
-                                Spacer()
-                                CurrencyText(amount: selectedLendingTotal, currencyCode: appContainer.currentLedger?.defaultCurrencyCode ?? "CNY", size: 17, foregroundColor: .secondary)
-                            }
-                        }
-                    }
-                }
-
-                if type == .income && !pendingExpenses.isEmpty {
-                    Section {
-                        DisclosureGroup(isExpanded: $showReimbursementSection) {
-                            ForEach(pendingExpenses) { expense in
-                                HStack {
-                                    Image(systemName: selectedExpenseIDs.contains(expense.id)
-                                          ? "checkmark.circle.fill" : "circle")
-                                        .foregroundStyle(selectedExpenseIDs.contains(expense.id) ? .blue : .secondary)
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(LocalizedStringKey(expense.category?.name ?? ""))
-                                            .font(.designBodyMedium)
-                                        Text(expense.date.formatted(date: .abbreviated, time: .omitted))
-                                            .font(.designBodySmall)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    Spacer()
-                                    CurrencyText(amount: abs(expense.amount), currencyCode: expense.currencyCode, size: 17)
-                                }
-                                .contentShape(Rectangle())
-                                .onTapGesture { toggleExpense(expense.id) }
-                            }
-                        } label: {
-                            HStack {
-                                Text("关联待报销")
-                                Spacer()
-                                if !selectedExpenseIDs.isEmpty {
-                                    Text("\(selectedExpenseIDs.count)笔")
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                        }
-                    }
-
-                    if !selectedExpenseIDs.isEmpty {
-                        Section {
-                            HStack {
-                                Text("已选合计")
-                                Spacer()
-                                CurrencyText(amount: selectedReimbursementTotal, currencyCode: appContainer.currentLedger?.defaultCurrencyCode ?? "CNY", size: 17, foregroundColor: .secondary)
-                            }
-                        }
-                    }
-                }
-
-                Section("详情") {
-                    TextField("备注", text: $note)
-                    DatePicker("日期", selection: $date, displayedComponents: [.date, .hourAndMinute])
-                }
-
-                Section("照片附件") {
-                    photoGrid
-                }
-                .onChange(of: selectedPickerItems) { _, items in
-                    Task {
-                        for item in items {
-                            if let data = try? await item.loadTransferable(type: Data.self) {
-                                photoDataList.append(data)
-                            }
-                        }
-                        selectedPickerItems = []
-                    }
-                }
-
-                if editing != nil {
-                    Section {
-                        Button(role: .destructive) {
-                            showDeleteAlert = true
-                        } label: {
-                            Label("删除此交易", systemImage: "trash")
-                        }
-                    }
-                }
+                )
             }
+            .designScreen()
+            .animation(.easeInOut(duration: 0.25), value: showNumpad)
             .navigationTitle(editing != nil ? "编辑交易" : "记一笔")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("保存") { save() }
-                        .disabled(!canSave)
-                }
             }
-            .task { loadData(); prefillEditing() }
+            .task { loadData(); prefillEditing(); syncAmountString() }
             .onChange(of: pickerSheet) { _, newValue in
                 if newValue != nil { loadData() }
             }
@@ -485,6 +240,7 @@ struct AddEditTransactionView: View {
             .onChange(of: selectedExpenseIDs) { _, _ in
                 guard !selectedExpenseIDs.isEmpty, editing == nil else { return }
                 amount = selectedReimbursementTotal
+                syncAmountString()
             }
             .alert("确认删除", isPresented: $showDeleteAlert) {
                 Button("取消", role: .cancel) {}
@@ -501,20 +257,840 @@ struct AddEditTransactionView: View {
         }
     }
 
+    // MARK: - Template Section
+
+    private var templateSection: some View {
+        VStack(spacing: 0) {
+            // Collapsed: just the label + expand button
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showTemplates.toggle()
+                }
+            } label: {
+                HStack {
+                    Text("模板")
+                        .font(.designLabel)
+                        .foregroundStyle(Color.designOnSurfaceVariant)
+                    Spacer()
+                    HStack(spacing: 2) {
+                        Text(showTemplates ? "收起" : "展开")
+                        Image(systemName: showTemplates ? "chevron.up" : "chevron.down")
+                    }
+                    .font(.designLabel)
+                    .foregroundStyle(Color.designAccentGreen)
+                }
+            }
+            .buttonStyle(.plain)
+
+            // Expanded: 4 common templates + 更多
+            if showTemplates, !templates.isEmpty {
+                HStack(spacing: 8) {
+                    ForEach(topRecentItems(items: templates, recentKey: "recent_template", selected: nil)) { template in
+                        templateChip(template)
+                    }
+                    Button {
+                        openPicker(.template)
+                    } label: {
+                        VStack(spacing: 4) {
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 16))
+                            Text("更多")
+                                .font(.custom("SpaceGrotesk-Medium", fixedSize: 11))
+                        }
+                        .frame(width: 64, height: 56)
+                        .glassCard(cornerRadius: 12)
+                        .foregroundStyle(Color.designAccentGreen)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.top, 8)
+            }
+        }
+        .padding(12)
+        .glassCard(cornerRadius: 12)
+    }
+
+    // MARK: - Type Switcher
+
+    private var typeSwitcher: some View {
+        HStack(spacing: 4) {
+            ForEach([TransactionType.expense, .income, .transfer, .lending], id: \.self) { t in
+                Button {
+                    type = t
+                } label: {
+                    Label(t.displayName, systemImage: t.systemIcon)
+                        .font(.designLabel)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(
+                            type == t
+                                ? Color.designPrimaryContainer.opacity(0.2)
+                                : Color.clear
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(
+                                    type == t ? Color.designPrimaryContainer.opacity(0.4) : Color.clear,
+                                    lineWidth: 1
+                                )
+                        )
+                }
+                .foregroundStyle(type == t ? Color.designPrimaryContainer : Color.designOnSurfaceVariant)
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(4)
+        .glassCard(cornerRadius: 12)
+    }
+
+    // MARK: - Amount Section
+
+    private var amountSection: some View {
+        // Amount centered, toggles overlay on the right
+        VStack(spacing: 4) {
+            Text("金额录入")
+                .font(.designLabel)
+                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.7))
+                .tracking(1.0)
+            Button {
+                withAnimation { showNumpad.toggle() }
+            } label: {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(CurrencyFormatter.currencySymbol(for: selectedCurrencyCode))
+                        .font(.custom("SpaceGrotesk-SemiBold", fixedSize: 24))
+                        .foregroundStyle(Color.designPrimaryContainer)
+                    Text(amountString.isEmpty ? "0.00" : amountString)
+                        .font(.custom("JetBrainsMono-Medium", fixedSize: 32))
+                        .foregroundStyle(Color.designPrimary)
+                        .tracking(-0.02)
+                    Image(systemName: showNumpad ? "keyboard_arrow_down" : "keyboard_arrow_up")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.designPrimaryContainer.opacity(0.5))
+                }
+            }
+            .buttonStyle(.plain)
+        }
+        .frame(maxWidth: .infinity)
+        .overlay(alignment: .trailing) {
+            if type == .expense {
+                VStack(spacing: 12) {
+                    toggleButton(label: "拆分记账", isOn: $isSplit)
+                    toggleButton(label: "可报销", isOn: $isReimbursable)
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .glassCard(cornerRadius: 24)
+        .overlay(alignment: .bottom) {
+            // Currency chip
+            Menu {
+                ForEach(currencies, id: \.self) { code in
+                    Button {
+                        selectedCurrencyCode = code
+                        exchangeRate = nil
+                        if needsExchangeRate { fetchExchangeRate() }
+                    } label: {
+                        Text("\(code) (\(currencyName(code)))")
+                    }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(selectedCurrencyCode)
+                        .font(.designLabel)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 8))
+                }
+                .foregroundStyle(Color.designOnSurfaceVariant)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 3)
+                .background(Color.designSurfaceContainer)
+                .clipShape(Capsule())
+            }
+            .offset(y: 12)
+        }
+    }
+
+    private func toggleButton(label: String, isOn: Binding<Bool>) -> some View {
+        Button {
+            isOn.wrappedValue.toggle()
+        } label: {
+            VStack(spacing: 4) {
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(isOn.wrappedValue ? Color.designPrimaryFixedDim.opacity(0.2) : Color.designOnSurfaceVariant.opacity(0.1))
+                    .frame(width: 36, height: 18)
+                    .overlay(alignment: isOn.wrappedValue ? .trailing : .leading) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(isOn.wrappedValue ? Color.designPrimaryFixedDim : Color.designOutline)
+                            .frame(width: 12, height: 12)
+                            .padding(.horizontal, 2)
+                    }
+                Text(label)
+                    .font(.custom("SpaceGrotesk-Medium", fixedSize: 10))
+                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.7))
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Account Grid
+
+    // MARK: - Account Row
+
+    private var accountGridSection: some View {
+        recentPickerRow(
+            title: (type == .transfer || type == .lending) ? "转出账户" : "账户",
+            items: accounts,
+            itemIcon: { $0.iconName ?? "creditcard" },
+            itemColor: { Color(hex: $0.colorHex ?? "#007AFF") },
+            recentKey: "recent_account",
+            selectedItem: selectedAccount,
+            onSelect: { selectedAccount = $0 },
+            onMore: { openPicker(.account) }
+        )
+    }
+
+    private var toAccountGridSection: some View {
+        recentPickerRow(
+            title: "转入账户",
+            items: accounts.filter { $0.id != selectedAccount?.id },
+            itemIcon: { $0.iconName ?? "creditcard" },
+            itemColor: { Color(hex: $0.colorHex ?? "#007AFF") },
+            recentKey: "recent_toaccount",
+            selectedItem: selectedToAccount,
+            onSelect: { selectedToAccount = $0 },
+            onMore: { openPicker(.toAccount) }
+        )
+    }
+
+    // MARK: - Category Row
+
+    private var categoryGridSection: some View {
+        recentPickerRow(
+            title: "分类",
+            items: categories,
+            itemIcon: { $0.iconName },
+            itemColor: { Color(hex: $0.colorHex) },
+            recentKey: "recent_category",
+            selectedItem: selectedCategory,
+            onSelect: { selectedCategory = $0 },
+            onMore: { openPicker(.category) }
+        )
+    }
+
+    // MARK: - Member Row
+
+    private var memberGridSection: some View {
+        recentPickerRow(
+            title: "成员",
+            items: members,
+            itemIcon: { _ in "person" },
+            itemColor: { _ in Color.designSecondary },
+            recentKey: "recent_member",
+            selectedItem: selectedMember,
+            onSelect: { selectedMember = $0 },
+            onMore: { openPicker(.member) }
+        )
+    }
+
+    // MARK: - Merchant Row
+
+    private var merchantSection: some View {
+        recentPickerRow(
+            title: "商家",
+            items: merchants,
+            itemIcon: { _ in "bag" },
+            itemColor: { _ in Color.designOnSurfaceVariant },
+            recentKey: "recent_merchant",
+            selectedItem: selectedMerchant,
+            onSelect: { selectedMerchant = $0 },
+            onMore: { openPicker(.merchant) }
+        )
+    }
+
+    // MARK: - Project Row
+
+    private var projectSection: some View {
+        recentPickerRow(
+            title: "项目",
+            items: projects,
+            itemIcon: { _ in "folder" },
+            itemColor: { _ in Color.designOnSurfaceVariant },
+            recentKey: "recent_project",
+            selectedItem: selectedProject,
+            onSelect: { selectedProject = $0 },
+            onMore: { openPicker(.project) }
+        )
+    }
+
+    // MARK: - Unified Recent Picker Row (4常用 + 更多)
+
+    private func recentPickerRow<T: Identifiable>(
+        title: String,
+        items: [T],
+        itemIcon: @escaping (T) -> String,
+        itemColor: @escaping (T) -> Color,
+        recentKey: String,
+        selectedItem: T?,
+        onSelect: @escaping (T) -> Void,
+        onMore: @escaping () -> Void
+    ) -> some View {
+        VStack(spacing: 8) {
+            HStack {
+                Text(title)
+                    .font(.designLabel)
+                    .foregroundStyle(Color.designPrimary.opacity(0.8))
+                Spacer()
+                Button {
+                    onMore()
+                } label: {
+                    HStack(spacing: 2) {
+                        Text("更多")
+                        Image(systemName: "chevron.right")
+                    }
+                    .font(.designLabel)
+                    .foregroundStyle(Color.designAccentGreen)
+                }
+            }
+
+            HStack(spacing: 8) {
+                ForEach(topRecentItems(items: items, recentKey: recentKey, selected: selectedItem)) { item in
+                    Button {
+                        onSelect(item)
+                    } label: {
+                        VStack(spacing: 4) {
+                            Image(systemName: itemIcon(item))
+                                .font(.system(size: 18))
+                                .foregroundStyle(
+                                    selectedItem?.id == item.id as? AnyHashable
+                                        ? itemColor(item)
+                                        : Color.designOnSurfaceVariant
+                                )
+                            if let np = item as? any NameProviding {
+                                Text(LocalizedStringKey(np.name))
+                                    .font(.system(size: 10))
+                                    .lineLimit(1)
+                                    .foregroundStyle(
+                                        selectedItem?.id == item.id as? AnyHashable
+                                            ? itemColor(item)
+                                            : Color.designOnSurfaceVariant
+                                    )
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .glassCard(cornerRadius: 12)
+                        .opacity(selectedItem?.id == item.id as? AnyHashable ? 1 : 0.55)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(
+                                    selectedItem?.id == item.id as? AnyHashable
+                                        ? itemColor(item).opacity(0.5)
+                                        : Color.clear,
+                                    lineWidth: 1
+                                )
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    /// Returns up to 4 items from the list, prioritizing recently-used and always including the selected item.
+    private func topRecentItems<T: Identifiable>(items: [T], recentKey: String, selected: T?) -> [T] {
+        let recentIDs = UserDefaults.standard.stringArray(forKey: recentKey) ?? []
+        var result: [T] = []
+
+        // Always include selected item first
+        if let sel = selected {
+            result.append(sel)
+        }
+
+        // Add recent items (skip selected since already added)
+        for idStr in recentIDs {
+            guard result.count < 4 else { break }
+            if let item = items.first(where: { "\($0.id)" == idStr }),
+               selected?.id != item.id as? AnyHashable {
+                result.append(item)
+            }
+        }
+
+        // Fill remaining slots from items list
+        if result.count < 4 {
+            for item in items {
+                guard result.count < 4 else { break }
+                if !result.contains(where: { "\($0.id)" == "\(item.id)" }) {
+                    result.append(item)
+                }
+            }
+        }
+
+        return Array(result.prefix(4))
+    }
+
+    // MARK: - Split Detail Section
+
+    private var splitDetailSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("拆分明细")
+                    .font(.designLabel)
+                    .foregroundStyle(Color.designPrimary.opacity(0.8))
+                Spacer()
+                Button {
+                    let remaining = amount - splitTotal
+                    splitItems.append(SplitItemDraft(amount: remaining > 0 ? remaining : 0))
+                } label: {
+                    Label("添加子项", systemImage: "plus")
+                        .font(.designLabel)
+                        .foregroundStyle(Color.designAccentGreen)
+                }
+            }
+
+            ForEach(splitItems) { item in
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text(CurrencyFormatter.currencySymbol(for: selectedCurrencyCode))
+                            .foregroundStyle(Color.designOnSurfaceVariant)
+                        TextField("0.00", text: Binding(
+                            get: { splitItems.first(where: { $0.id == item.id })?.amount.formatted(.number.precision(.fractionLength(2))) ?? "" },
+                            set: { newValue in
+                                if let idx = splitItems.firstIndex(where: { $0.id == item.id }),
+                                   let parsed = Decimal(string: newValue) {
+                                    splitItems[idx].amount = parsed
+                                }
+                            }
+                        ))
+                        .keyboardType(.decimalPad)
+                        .font(.custom("JetBrainsMono-Medium", fixedSize: 17))
+                        .foregroundStyle(Color.designOnSurface)
+                        Spacer()
+                        Button {
+                            splitItems.removeAll { $0.id == item.id }
+                        } label: {
+                            Image(systemName: "minus.circle.fill")
+                                .foregroundStyle(Color.designAccentRed)
+                        }
+                    }
+                    HStack(spacing: 8) {
+                        splitSubMenu(label: "分类", value: item.category?.name) {
+                            ForEach(categories) { cat in
+                                Button {
+                                    if let idx = splitItems.firstIndex(where: { $0.id == item.id }) {
+                                        splitItems[idx].category = cat
+                                    }
+                                } label: {
+                                    Label(cat.name, systemImage: cat.iconName)
+                                }
+                            }
+                        }
+                        splitSubMenu(label: "成员", value: item.member?.name) {
+                            ForEach(members) { m in
+                                Button {
+                                    if let idx = splitItems.firstIndex(where: { $0.id == item.id }) {
+                                        splitItems[idx].member = m
+                                    }
+                                } label: {
+                                    Label(m.name, systemImage: m.avatar)
+                                }
+                            }
+                        }
+                        splitSubMenu(label: "商家", value: item.merchant?.name) {
+                            ForEach(merchants) { m in
+                                Button {
+                                    if let idx = splitItems.firstIndex(where: { $0.id == item.id }) {
+                                        splitItems[idx].merchant = m
+                                    }
+                                } label: {
+                                    Label(m.name, systemImage: "bag")
+                                }
+                            }
+                        }
+                        splitSubMenu(label: "项目", value: item.project?.name) {
+                            ForEach(projects) { p in
+                                Button {
+                                    if let idx = splitItems.firstIndex(where: { $0.id == item.id }) {
+                                        splitItems[idx].project = p
+                                    }
+                                } label: {
+                                    Label(p.name, systemImage: "folder")
+                                }
+                            }
+                        }
+                    }
+                }
+                .padding(12)
+                .glassCard(cornerRadius: 12)
+            }
+
+            HStack {
+                Spacer()
+                Text("合计 ¥\(splitTotal.formatted(.number.precision(.fractionLength(2)))) / ¥\(amount.formatted(.number.precision(.fractionLength(2))))")
+                    .font(.custom("JetBrainsMono-Medium", fixedSize: 14))
+                    .foregroundStyle(splitTotal == amount ? Color.designPrimaryFixedDim : Color.designAccentRed)
+            }
+        }
+    }
+
+    private func splitSubMenu<Content: View>(label: String, value: String?, @ViewBuilder content: () -> Content) -> some View {
+        Menu {
+            content()
+        } label: {
+            HStack(spacing: 4) {
+                Text(value ?? label)
+                    .font(.designBodySmall)
+                    .foregroundStyle(value != nil ? Color.designOnSurface : Color.designOnSurfaceVariant)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 8))
+                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.designSurfaceContainer)
+            .clipShape(Capsule())
+        }
+    }
+
+    // MARK: - Lending Direction
+
+    private var lendingDirectionSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("借贷方向")
+                .font(.designLabel)
+                .foregroundStyle(Color.designPrimary.opacity(0.8))
+            HStack(spacing: 4) {
+                ForEach(LendingDirection.allCases, id: \.self) { d in
+                    Button {
+                        lendingDirection = d
+                        loadPendingLendingTransactions()
+                    } label: {
+                        Label(d.displayName, systemImage: d.systemIcon)
+                            .font(.designLabel)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                            .background(
+                                lendingDirection == d
+                                    ? Color.designPrimaryContainer.opacity(0.2)
+                                    : Color.clear
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(
+                                        lendingDirection == d ? Color.designPrimaryContainer.opacity(0.4) : Color.clear,
+                                        lineWidth: 1
+                                    )
+                            )
+                    }
+                    .foregroundStyle(lendingDirection == d ? Color.designPrimaryContainer : Color.designOnSurfaceVariant)
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(4)
+            .glassCard(cornerRadius: 12)
+        }
+    }
+
+    // MARK: - Exchange Rate
+
+    private var exchangeRateSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("跨币种换算")
+                .font(.designLabel)
+                .foregroundStyle(Color.designPrimary.opacity(0.8))
+
+            VStack(spacing: 12) {
+                HStack {
+                    Text("汇率")
+                        .font(.designBodyMedium)
+                        .foregroundStyle(Color.designOnSurface)
+                    Spacer()
+                    if isFetchingRate {
+                        ProgressView()
+                    } else if let rate = exchangeRate {
+                        Text("1 \(selectedCurrencyCode) = \(rate.formatted(.number.precision(.fractionLength(4)))) \(ledgerCurrencyCode)")
+                            .font(.custom("JetBrainsMono-Medium", fixedSize: 13))
+                            .foregroundStyle(Color.designOnSurfaceVariant)
+                    } else {
+                        Button("获取汇率") { fetchExchangeRate() }
+                            .font(.designLabel)
+                            .foregroundStyle(Color.designAccentGreen)
+                    }
+                }
+                if let converted = convertedAmountPreview {
+                    HStack {
+                        Text("换算金额")
+                            .font(.designBodyMedium)
+                            .foregroundStyle(Color.designOnSurface)
+                        Spacer()
+                        CurrencyText(amount: converted, currencyCode: ledgerCurrencyCode, size: 17, foregroundColor: Color.designPrimaryFixedDim)
+                    }
+                }
+            }
+            .padding(12)
+            .glassCard(cornerRadius: 12)
+        }
+    }
+
+    // MARK: - Pending Lending Settlement
+
+    private var pendingLendingSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(lendingDirection == .collect ? "关联待收款" : "关联待付款")
+                .font(.designLabel)
+                .foregroundStyle(Color.designPrimary.opacity(0.8))
+
+            VStack(spacing: 8) {
+                ForEach(pendingLendingTransactions) { item in
+                    HStack {
+                        Image(systemName: selectedLendingIDs.contains(item.id) ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(selectedLendingIDs.contains(item.id) ? Color.designPrimaryFixedDim : Color.designOnSurfaceVariant)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(LocalizedStringKey(item.account?.name ?? ""))
+                                .font(.designBodyMedium)
+                                .foregroundStyle(Color.designOnSurface)
+                            Text(displayLabelForLending(item))
+                                .font(.designBodySmall)
+                                .foregroundStyle(Color.designOnSurfaceVariant)
+                        }
+                        Spacer()
+                        CurrencyText(amount: abs(item.amount), currencyCode: item.currencyCode, size: 15)
+                    }
+                    .padding(10)
+                    .contentShape(Rectangle())
+                    .onTapGesture { toggleLending(item.id) }
+                }
+                if !selectedLendingIDs.isEmpty {
+                    HStack {
+                        Text("已选合计")
+                            .font(.designBodyMedium)
+                            .foregroundStyle(Color.designOnSurface)
+                        Spacer()
+                        CurrencyText(amount: selectedLendingTotal, currencyCode: ledgerCurrencyCode, size: 17, foregroundColor: Color.designPrimaryFixedDim)
+                    }
+                    .padding(.top, 4)
+                }
+            }
+            .padding(12)
+            .glassCard(cornerRadius: 12)
+        }
+    }
+
+    // MARK: - Pending Reimbursement
+
+    private var pendingReimbursementSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("关联待报销")
+                .font(.designLabel)
+                .foregroundStyle(Color.designPrimary.opacity(0.8))
+
+            VStack(spacing: 8) {
+                ForEach(pendingExpenses) { expense in
+                    HStack {
+                        Image(systemName: selectedExpenseIDs.contains(expense.id) ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(selectedExpenseIDs.contains(expense.id) ? Color.designPrimaryFixedDim : Color.designOnSurfaceVariant)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(LocalizedStringKey(expense.category?.name ?? ""))
+                                .font(.designBodyMedium)
+                                .foregroundStyle(Color.designOnSurface)
+                            Text(expense.date.formatted(date: .abbreviated, time: .omitted))
+                                .font(.designBodySmall)
+                                .foregroundStyle(Color.designOnSurfaceVariant)
+                        }
+                        Spacer()
+                        CurrencyText(amount: abs(expense.amount), currencyCode: expense.currencyCode, size: 15)
+                    }
+                    .padding(10)
+                    .contentShape(Rectangle())
+                    .onTapGesture { toggleExpense(expense.id) }
+                }
+                if !selectedExpenseIDs.isEmpty {
+                    HStack {
+                        Text("已选合计")
+                            .font(.designBodyMedium)
+                            .foregroundStyle(Color.designOnSurface)
+                        Spacer()
+                        CurrencyText(amount: selectedReimbursementTotal, currencyCode: ledgerCurrencyCode, size: 17, foregroundColor: Color.designPrimaryFixedDim)
+                    }
+                    .padding(.top, 4)
+                }
+            }
+            .padding(12)
+            .glassCard(cornerRadius: 12)
+        }
+    }
+
+    // MARK: - Details Section
+
+    private var detailsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("详情")
+                .font(.designLabel)
+                .foregroundStyle(Color.designPrimary.opacity(0.8))
+
+            VStack(spacing: 12) {
+                // Note
+                TextField("备注", text: $note)
+                    .font(.designBodyMedium)
+                    .foregroundStyle(Color.designOnSurface)
+                    .padding(12)
+                    .background(Color.designSurfaceContainer)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                // Date + Photo
+                HStack(spacing: 12) {
+                    DatePicker("日期", selection: $date, displayedComponents: [.date, .hourAndMinute])
+                        .labelsHidden()
+                        .font(.designBodySmall)
+                        .padding(10)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.designSurfaceContainer)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                    PhotosPicker(selection: $selectedPickerItems, maxSelectionCount: 5, matching: .images) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "camera")
+                            Text("附件")
+                        }
+                        .font(.designBodySmall)
+                        .foregroundStyle(Color.designOnSurfaceVariant)
+                        .padding(10)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.designSurfaceContainer)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    .disabled(photoDataList.count >= 5)
+                }
+
+                // Photo preview
+                if !photoDataList.isEmpty {
+                    photoGrid
+                }
+            }
+            .padding(12)
+            .glassCard(cornerRadius: 16)
+        }
+        .onChange(of: selectedPickerItems) { _, items in
+            Task {
+                for item in items {
+                    if let data = try? await item.loadTransferable(type: Data.self) {
+                        photoDataList.append(data)
+                    }
+                }
+                selectedPickerItems = []
+            }
+        }
+    }
+
+    // MARK: - Delete Button
+
+    private var deleteButton: some View {
+        Button(role: .destructive) {
+            showDeleteAlert = true
+        } label: {
+            Label("删除此交易", systemImage: "trash")
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.designAccentRed.opacity(0.1))
+                )
+                .foregroundStyle(Color.designAccentRed)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Numpad
+
+    private var numpadView: some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+            ForEach(1...9, id: \.self) { n in
+                numpadButton("\(n)") { appendDigit(n) }
+            }
+            numpadButton(".") { appendDot() }
+            numpadButton("0") { appendDigit(0) }
+            numpadButton(action: backspace) {
+                Image(systemName: "delete.backward")
+                    .font(.system(size: 20))
+            }
+        }
+    }
+
+    private func numpadButton(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(Color.designSurfaceContainer)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .foregroundStyle(Color.designOnSurface)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func numpadButton(action: @escaping () -> Void, @ViewBuilder label: () -> some View) -> some View {
+        Button(action: action) {
+            label()
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(Color.designSurfaceContainer)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .foregroundStyle(Color.designOnSurface)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func appendDigit(_ digit: Int) {
+        if amountString == "0" || amountString == "0.00" { amountString = "\(digit)" }
+        else { amountString += "\(digit)" }
+        syncAmountFromString()
+    }
+
+    private func appendDot() {
+        if amountString.contains(".") { return }
+        if amountString.isEmpty { amountString = "0." }
+        else { amountString += "." }
+        syncAmountFromString()
+    }
+
+    private func backspace() {
+        if amountString.count <= 1 { amountString = "0" }
+        else { amountString.removeLast() }
+        syncAmountFromString()
+    }
+
+    private func syncAmountFromString() {
+        amount = Decimal(string: amountString.replacingOccurrences(of: ",", with: "")) ?? 0
+    }
+
+    private func syncAmountString() {
+        if amount == 0 { amountString = "" }
+        else {
+            let f = NumberFormatter()
+            f.numberStyle = .decimal
+            f.minimumFractionDigits = 0
+            f.maximumFractionDigits = 2
+            amountString = f.string(from: amount as NSDecimalNumber) ?? "\(amount)"
+        }
+    }
+
     private func templateChip(_ template: TransactionTemplate) -> some View {
         Button {
             applyTemplate(template)
         } label: {
-            VStack(spacing: 2) {
+            VStack(spacing: 4) {
                 Image(systemName: template.category?.iconName ?? template.type.systemIcon)
-                    .font(.designBodyMedium)
+                    .font(.system(size: 16))
                 Text(LocalizedStringKey(template.name))
-                    .font(.designBodySmall)
+                    .font(.custom("SpaceGrotesk-Medium", fixedSize: 11))
                     .lineLimit(1)
             }
-            .frame(width: 56, height: 52)
-            .background(.background.secondary)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .frame(width: 64, height: 56)
+            .glassCard(cornerRadius: 12)
+            .foregroundStyle(Color.designOnSurface)
         }
         .buttonStyle(.plain)
     }
@@ -607,8 +1183,8 @@ struct AddEditTransactionView: View {
                                 Image(uiImage: uiImage)
                                     .resizable()
                                     .scaledToFill()
-                                    .frame(width: 72, height: 72)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .frame(width: 64, height: 64)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
                             }
                         }
                         .buttonStyle(.plain)
@@ -616,25 +1192,13 @@ struct AddEditTransactionView: View {
                             photoDataList.remove(at: index)
                         } label: {
                             Image(systemName: "xmark.circle.fill")
-                                .font(.designBodySmall)
-                                .foregroundStyle(.white)
-                                .background(Circle().fill(.black.opacity(0.6)))
+                                .font(.system(size: 14))
+                                .foregroundStyle(Color.designAccentRed)
+                                .background(Circle().fill(Color.designSurfaceContainerLowest))
                         }
                         .offset(x: 6, y: -6)
                     }
                 }
-                PhotosPicker(selection: $selectedPickerItems, maxSelectionCount: 5, matching: .images) {
-                    VStack(spacing: 4) {
-                        Image(systemName: "plus")
-                            .font(.title2)
-                        Text("添加")
-                            .font(.designBodySmall)
-                    }
-                    .frame(width: 72, height: 72)
-                    .background(.background.tertiary)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
-                .disabled(photoDataList.count >= 5)
             }
         }
     }
@@ -722,6 +1286,7 @@ struct AddEditTransactionView: View {
         if let paths = t.photoURLs, !paths.isEmpty {
             photoDataList = PhotoStorage.load(paths: paths)
         }
+        syncAmountString()
     }
 
     private func applyTemplate(_ template: TransactionTemplate) {
@@ -734,6 +1299,7 @@ struct AddEditTransactionView: View {
         selectedMember = template.member
         selectedMerchant = template.merchant
         selectedProject = template.project
+        syncAmountString()
     }
 
     private func save() {
