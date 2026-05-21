@@ -33,14 +33,7 @@ struct CreateLedgerView: View {
                 }
             }
             .navigationTitle("创建账本")
-            .alert("创建失败", isPresented: Binding(
-                get: { errorMessage != nil },
-                set: { if !$0 { errorMessage = nil } }
-            )) {
-                Button("好") { errorMessage = nil }
-            } message: {
-                Text(errorMessage ?? "")
-            }
+            .errorAlert("创建失败", message: $errorMessage)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("创建") {

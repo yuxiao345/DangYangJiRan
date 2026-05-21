@@ -140,34 +140,10 @@ struct TransactionListView: View {
 
     // MARK: - Grouping
 
+    private static let dateGroupLocale = Locale(identifier: "zh_CN")
+
     private var groupedByDate: [(key: String, value: [Transaction])] {
-        let cal = Calendar.current
-        let today = cal.startOfDay(for: Date())
-        let yesterday = cal.date(byAdding: .day, value: -1, to: today) ?? today
-
-        var todayTx: [Transaction] = []
-        var yesterdayTx: [Transaction] = []
-        var other: [String: [Transaction]] = [:]
-
-        for t in transactions {
-            let day = cal.startOfDay(for: t.date)
-            if day == today {
-                todayTx.append(t)
-            } else if day == yesterday {
-                yesterdayTx.append(t)
-            } else {
-                let key = t.date.formatted(.dateTime.month(.abbreviated).day(.defaultDigits).locale(Locale(identifier: "zh_CN")))
-                other[key, default: []].append(t)
-            }
-        }
-
-        var result: [(String, [Transaction])] = []
-        if !todayTx.isEmpty { result.append(("今天", todayTx)) }
-        if !yesterdayTx.isEmpty { result.append(("昨天", yesterdayTx)) }
-        for key in other.keys.sorted(by: >) {
-            if let list = other[key] { result.append((key, list)) }
-        }
-        return result
+        transactions.groupedByRelativeDate(locale: Self.dateGroupLocale)
     }
 
     // MARK: - Data Loading

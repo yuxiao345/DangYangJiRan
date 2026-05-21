@@ -62,4 +62,8 @@ extension Date {
     var firstWeekdayOfMonth: Int {
         Calendar.current.component(.weekday, from: startOfMonth)
     }
+
+    func adding(_ component: Calendar.Component, value: Int) -> Date {
+        Calendar.current.date(byAdding: component, value: value, to: self) ?? self
+    }
 }

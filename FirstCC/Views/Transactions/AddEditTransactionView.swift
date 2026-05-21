@@ -103,14 +103,6 @@ struct AddEditTransactionView: View {
         return f
     }()
 
-    private let decimalFormatter: NumberFormatter = {
-        let f = NumberFormatter()
-        f.numberStyle = .decimal
-        f.minimumFractionDigits = 0
-        f.maximumFractionDigits = 2
-        return f
-    }()
-
     init(editing: Transaction? = nil, prefillType: TransactionType? = nil, prefillExpenseIDs: [UUID] = [], displayMode: Bool = false) {
         self.editing = editing
         self.displayMode = displayMode
@@ -156,14 +148,7 @@ struct AddEditTransactionView: View {
             } message: {
                 Text("此操作不可撤销，确定要删除此交易吗？")
             }
-            .alert("保存失败", isPresented: Binding(
-                get: { errorMessage != nil },
-                set: { if !$0 { errorMessage = nil } }
-            )) {
-                Button("好") { errorMessage = nil }
-            } message: {
-                Text(errorMessage ?? "")
-            }
+            .errorAlert("保存失败", message: $errorMessage)
             .sheet(item: $pickerSheet) { sheet in
                 pickerContent(for: sheet)
             }
@@ -233,7 +218,7 @@ struct AddEditTransactionView: View {
                             categoryGridSection
                         }
 
-                        // Split detail (hidden in view mode — displayOnlySections handles it)
+                        // Split detail
                         if isSplit, type == .expense, !isViewing {
                             splitDetailSection
                         }
@@ -1399,42 +1384,11 @@ struct AddEditTransactionView: View {
     // MARK: - Numpad
 
     private var numpadView: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-            ForEach(1...9, id: \.self) { n in
-                numpadButton("\(n)") { appendDigit(n) }
-            }
-            numpadButton(".") { appendDot() }
-            numpadButton("0") { appendDigit(0) }
-            numpadButton(action: backspace) {
-                Image(systemName: "delete.backward")
-                    .font(.system(size: 20))
-            }
-        }
-    }
-
-    private func numpadButton(_ title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
-                .background(Color.designSurfaceContainer)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .foregroundStyle(Color.designOnSurface)
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func numpadButton(action: @escaping () -> Void, @ViewBuilder label: () -> some View) -> some View {
-        Button(action: action) {
-            label()
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
-                .background(Color.designSurfaceContainer)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .foregroundStyle(Color.designOnSurface)
-        }
-        .buttonStyle(.plain)
+        NumpadGrid(
+            onDigit: { appendDigit($0) },
+            onDot: { appendDot() },
+            onDelete: { backspace() }
+        )
     }
 
     private func appendDigit(_ digit: Int) {
@@ -1496,7 +1450,7 @@ struct AddEditTransactionView: View {
         let amt = item.amount
         if amt == 0 { splitAmountString = "" }
         else {
-            splitAmountString = decimalFormatter.string(from: amt as NSDecimalNumber) ?? "\(amt)"
+            splitAmountString = CurrencyFormatter.decimalFormatter.string(from: amt as NSDecimalNumber) ?? "\(amt)"
         }
         if !showNumpad { withAnimation { showNumpad = true } }
     }
@@ -1509,7 +1463,7 @@ struct AddEditTransactionView: View {
     private func syncAmountString() {
         if amount == 0 { amountString = "" }
         else {
-            amountString = decimalFormatter.string(from: amount as NSDecimalNumber) ?? "\(amount)"
+            amountString = CurrencyFormatter.decimalFormatter.string(from: amount as NSDecimalNumber) ?? "\(amount)"
         }
     }
 

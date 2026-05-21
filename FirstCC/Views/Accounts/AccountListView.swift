@@ -49,7 +49,7 @@ struct AccountListView: View {
                 Text(CurrencyFormatter.currencySymbol(for: appContainer.currentLedger?.defaultCurrencyCode ?? "CNY"))
                     .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
                     .foregroundStyle(Color.designPrimaryFixedDim)
-                Text(formatTotalAssets(total))
+                Text(CurrencyFormatter.formatDecimal(amount: total, fractionDigits: 2))
                     .font(.designDisplayMobile)
                     .foregroundStyle(Color.designOnSurface)
                     .tracking(-0.6)
@@ -106,7 +106,7 @@ struct AccountListView: View {
     private func groupHeader(type: AccountType, count: Int) -> some View {
         HStack(spacing: 6) {
             RoundedRectangle(cornerRadius: 2)
-                .fill(groupAccentColor(for: type))
+                .fill(Color.accountAccent(for: type))
                 .frame(width: 3, height: 20)
 
             Text(type.displayName)
@@ -130,14 +130,6 @@ struct AccountListView: View {
             }
         }
         return groups
-    }
-
-    private func groupAccentColor(for type: AccountType) -> Color {
-        Color.accountAccent(for: type)
-    }
-
-    private func formatTotalAssets(_ value: Decimal) -> String {
-        CurrencyFormatter.formatDecimal(amount: value, fractionDigits: 2)
     }
 
     private func loadAccounts() {

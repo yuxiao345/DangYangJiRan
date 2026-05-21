@@ -52,11 +52,7 @@ enum ChineseExpressionParser {
         let cal = Calendar.current
         let today = Date()
         let startOfToday = today.startOfDay
-        let tomorrowStart = offset(.day, 1, from: startOfToday)
-
-        func offset(_ comp: Calendar.Component, _ val: Int, from date: Date) -> Date {
-            cal.date(byAdding: comp, value: val, to: date) ?? date
-        }
+        let tomorrowStart = startOfToday.adding(.day, value: 1)
 
         // Ordered by specificity (longer/more specific patterns first)
         let patterns: [(String, (NSTextCheckingResult, String) -> DateMatch?)] = [
@@ -79,13 +75,13 @@ enum ChineseExpressionParser {
             // "最近X天" / "过去X天"
             ("(最近|过去)(\\d+)天", { match, str in
                 guard let n = Int((str as NSString).substring(with: match.range(at: 2))) else { return nil }
-                let start = offset(.day, -n, from: startOfToday)
+                let start = startOfToday.adding(.day, value: -n)
                 return DateMatch(range: start..<tomorrowStart, matched: match.fullString(in: str), remaining: remove(match, from: str))
             }),
             // "最近X周/星期/礼拜"
             ("(最近|过去)(\\d+)个?(?:周|星期|礼拜)", { match, str in
                 guard let n = Int((str as NSString).substring(with: match.range(at: 2))) else { return nil }
-                let start = offset(.day, -(n * 7), from: startOfToday)
+                let start = startOfToday.adding(.day, value: -(n * 7))
                 return DateMatch(range: start..<tomorrowStart, matched: match.fullString(in: str), remaining: remove(match, from: str))
             }),
             // "最近X个月" / "最近X月"
@@ -114,172 +110,172 @@ enum ChineseExpressionParser {
         let fixedExpressions: [(String, Range<Date>)] = [
             ("今天", startOfToday..<tomorrowStart),
             ("昨天", {
-                let start = offset(.day, -1, from: startOfToday)
+                let start = startOfToday.adding(.day, value: -1)
                 return start..<startOfToday
             }()),
             ("明天", {
-                let start = offset(.day, 1, from: startOfToday)
-                let end = offset(.day, 1, from: start)
+                let start = startOfToday.adding(.day, value: 1)
+                let end = start.adding(.day, value: 1)
                 return start..<end
             }()),
             ("本周", {
                 let start = today.startOfWeek
-                let end = offset(.day, 7, from: start)
+                let end = start.adding(.day, value: 7)
                 return start..<end
             }()),
             ("这周", {
                 let start = today.startOfWeek
-                let end = offset(.day, 7, from: start)
+                let end = start.adding(.day, value: 7)
                 return start..<end
             }()),
             ("这个星期", {
                 let start = today.startOfWeek
-                let end = offset(.day, 7, from: start)
+                let end = start.adding(.day, value: 7)
                 return start..<end
             }()),
             ("这个礼拜", {
                 let start = today.startOfWeek
-                let end = offset(.day, 7, from: start)
+                let end = start.adding(.day, value: 7)
                 return start..<end
             }()),
             ("上周", {
                 let thisMonday = today.startOfWeek
-                let prevMonday = offset(.day, -7, from: thisMonday)
+                let prevMonday = thisMonday.adding(.day, value: -7)
                 return prevMonday..<thisMonday
             }()),
             ("上个星期", {
                 let thisMonday = today.startOfWeek
-                let prevMonday = offset(.day, -7, from: thisMonday)
+                let prevMonday = thisMonday.adding(.day, value: -7)
                 return prevMonday..<thisMonday
             }()),
             ("上个礼拜", {
                 let thisMonday = today.startOfWeek
-                let prevMonday = offset(.day, -7, from: thisMonday)
+                let prevMonday = thisMonday.adding(.day, value: -7)
                 return prevMonday..<thisMonday
             }()),
             ("本月", {
                 let start = today.startOfMonth
-                let end = offset(.month, 1, from: start)
+                let end = start.adding(.month, value: 1)
                 return start..<end
             }()),
             ("这个月", {
                 let start = today.startOfMonth
-                let end = offset(.month, 1, from: start)
+                let end = start.adding(.month, value: 1)
                 return start..<end
             }()),
             ("上个月", {
                 let thisMonth = today.startOfMonth
-                let prevMonth = offset(.month, -1, from: thisMonth)
+                let prevMonth = thisMonth.adding(.month, value: -1)
                 return prevMonth..<thisMonth
             }()),
             ("上月", {
                 let thisMonth = today.startOfMonth
-                let prevMonth = offset(.month, -1, from: thisMonth)
+                let prevMonth = thisMonth.adding(.month, value: -1)
                 return prevMonth..<thisMonth
             }()),
             ("下个月", {
                 let thisMonth = today.startOfMonth
-                let nextMonth = offset(.month, 1, from: thisMonth)
-                let end = offset(.month, 1, from: nextMonth)
+                let nextMonth = thisMonth.adding(.month, value: 1)
+                let end = nextMonth.adding(.month, value: 1)
                 return nextMonth..<end
             }()),
             ("下月", {
                 let thisMonth = today.startOfMonth
-                let nextMonth = offset(.month, 1, from: thisMonth)
-                let end = offset(.month, 1, from: nextMonth)
+                let nextMonth = thisMonth.adding(.month, value: 1)
+                let end = nextMonth.adding(.month, value: 1)
                 return nextMonth..<end
             }()),
             ("今年", {
                 let start = today.startOfYear
-                let end = offset(.year, 1, from: start)
+                let end = start.adding(.year, value: 1)
                 return start..<end
             }()),
             ("去年", {
                 let thisYear = today.startOfYear
-                let prevYear = offset(.year, -1, from: thisYear)
+                let prevYear = thisYear.adding(.year, value: -1)
                 return prevYear..<thisYear
             }()),
             ("前年", {
                 let thisYear = today.startOfYear
-                let prevYear = offset(.year, -2, from: thisYear)
-                let end = offset(.year, 1, from: prevYear)
+                let prevYear = thisYear.adding(.year, value: -2)
+                let end = prevYear.adding(.year, value: 1)
                 return prevYear..<end
             }()),
             ("明年", {
                 let thisYear = today.startOfYear
-                let nextYear = offset(.year, 1, from: thisYear)
-                let end = offset(.year, 1, from: nextYear)
+                let nextYear = thisYear.adding(.year, value: 1)
+                let end = nextYear.adding(.year, value: 1)
                 return nextYear..<end
             }()),
             ("上半年", {
                 let start = today.startOfYear
-                let mid = offset(.month, 6, from: start)
+                let mid = start.adding(.month, value: 6)
                 return start..<mid
             }()),
             ("下半年", {
                 let start = today.startOfYear
-                let mid = offset(.month, 6, from: start)
-                let end = offset(.year, 1, from: start)
+                let mid = start.adding(.month, value: 6)
+                let end = start.adding(.year, value: 1)
                 return mid..<end
             }()),
             ("Q1", {
                 let start = today.startOfYear
-                let end = offset(.month, 3, from: start)
+                let end = start.adding(.month, value: 3)
                 return start..<end
             }()),
             ("Q2", {
-                let start = offset(.month, 3, from: today.startOfYear)
-                let end = offset(.month, 3, from: start)
+                let start = today.startOfYear.adding(.month, value: 3)
+                let end = start.adding(.month, value: 3)
                 return start..<end
             }()),
             ("Q3", {
-                let start = offset(.month, 6, from: today.startOfYear)
-                let end = offset(.month, 3, from: start)
+                let start = today.startOfYear.adding(.month, value: 6)
+                let end = start.adding(.month, value: 3)
                 return start..<end
             }()),
             ("Q4", {
-                let start = offset(.month, 9, from: today.startOfYear)
-                let end = offset(.year, 1, from: today.startOfYear)
+                let start = today.startOfYear.adding(.month, value: 9)
+                let end = today.startOfYear.adding(.year, value: 1)
                 return start..<end
             }()),
             ("一季度", {
                 let start = today.startOfYear
-                let end = offset(.month, 3, from: start)
+                let end = start.adding(.month, value: 3)
                 return start..<end
             }()),
             ("二季度", {
-                let start = offset(.month, 3, from: today.startOfYear)
-                let end = offset(.month, 3, from: start)
+                let start = today.startOfYear.adding(.month, value: 3)
+                let end = start.adding(.month, value: 3)
                 return start..<end
             }()),
             ("三季度", {
-                let start = offset(.month, 6, from: today.startOfYear)
-                let end = offset(.month, 3, from: start)
+                let start = today.startOfYear.adding(.month, value: 6)
+                let end = start.adding(.month, value: 3)
                 return start..<end
             }()),
             ("四季度", {
-                let start = offset(.month, 9, from: today.startOfYear)
-                let end = offset(.year, 1, from: today.startOfYear)
+                let start = today.startOfYear.adding(.month, value: 9)
+                let end = today.startOfYear.adding(.year, value: 1)
                 return start..<end
             }()),
             ("第一季度", {
                 let start = today.startOfYear
-                let end = offset(.month, 3, from: start)
+                let end = start.adding(.month, value: 3)
                 return start..<end
             }()),
             ("第二季度", {
-                let start = offset(.month, 3, from: today.startOfYear)
-                let end = offset(.month, 3, from: start)
+                let start = today.startOfYear.adding(.month, value: 3)
+                let end = start.adding(.month, value: 3)
                 return start..<end
             }()),
             ("第三季度", {
-                let start = offset(.month, 6, from: today.startOfYear)
-                let end = offset(.month, 3, from: start)
+                let start = today.startOfYear.adding(.month, value: 6)
+                let end = start.adding(.month, value: 3)
                 return start..<end
             }()),
             ("第四季度", {
-                let start = offset(.month, 9, from: today.startOfYear)
-                let end = offset(.year, 1, from: today.startOfYear)
+                let start = today.startOfYear.adding(.month, value: 9)
+                let end = today.startOfYear.adding(.year, value: 1)
                 return start..<end
             }()),
         ]

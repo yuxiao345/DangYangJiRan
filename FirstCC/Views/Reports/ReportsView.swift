@@ -37,7 +37,6 @@ struct ReportsView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Report type picker — glass pill
                 HStack(spacing: 0) {
                     ForEach(ReportType.allCases, id: \.self) { type in
                         Button {
@@ -67,7 +66,6 @@ struct ReportsView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
 
-                // Period picker — pill chips, equal width filled
                 HStack(spacing: 8) {
                     ForEach(selectedReport.supportedPeriods, id: \.self) { period in
                         Button {

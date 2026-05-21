@@ -92,14 +92,7 @@ struct AddEditCategoryView: View {
             }
             .navigationTitle(editing == nil ? "新建分类" : "编辑分类")
             .navigationBarTitleDisplayMode(.inline)
-            .alert("保存失败", isPresented: Binding(
-                get: { errorMessage != nil },
-                set: { if !$0 { errorMessage = nil } }
-            )) {
-                Button("好") { errorMessage = nil }
-            } message: {
-                Text(errorMessage ?? "")
-            }
+            .errorAlert("保存失败", message: $errorMessage)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") { dismiss() }

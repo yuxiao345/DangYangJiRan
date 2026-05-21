@@ -1,17 +1,60 @@
 import Foundation
 
 struct CurrencyFormatter {
+
+    static let decimalFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.minimumFractionDigits = 0
+        f.maximumFractionDigits = 2
+        return f
+    }()
+
+    private static let currencyFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .currency
+        f.maximumFractionDigits = 2
+        f.minimumFractionDigits = 2
+        f.usesGroupingSeparator = true
+        return f
+    }()
+
+    private static let shortWanFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.maximumFractionDigits = 1
+        f.minimumFractionDigits = 0
+        return f
+    }()
+
+    private static let shortIntegerFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.maximumFractionDigits = 0
+        f.minimumFractionDigits = 0
+        f.usesGroupingSeparator = true
+        return f
+    }()
+
+    private static let decimalCustomFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.usesGroupingSeparator = true
+        return f
+    }()
+
+    private static let symbolFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .currency
+        return f
+    }()
+
     static func format(
         amount: Decimal,
         currencyCode: String = "CNY",
         showSign: Bool = true
     ) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
+        let formatter = currencyFormatter
         formatter.currencyCode = currencyCode
-        formatter.maximumFractionDigits = 2
-        formatter.minimumFractionDigits = 2
-        formatter.usesGroupingSeparator = true
         formatter.currencySymbol = simpleCurrencySymbol(for: currencyCode)
 
         let number = NSDecimalNumber(decimal: amount)
@@ -37,21 +80,13 @@ struct CurrencyFormatter {
         if absValue >= 10000 {
             let wan = absValue / 10000
             let number = NSDecimalNumber(decimal: wan)
-            let formatter = NumberFormatter()
-            formatter.maximumFractionDigits = 1
-            formatter.minimumFractionDigits = 0
-            if let formatted = formatter.string(from: number) {
+            if let formatted = shortWanFormatter.string(from: number) {
                 return "\(sign)\(symbol)\(formatted)万"
             }
         }
 
         let number = NSDecimalNumber(decimal: absValue)
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 0
-        formatter.minimumFractionDigits = 0
-        formatter.usesGroupingSeparator = true
-        if let formatted = formatter.string(from: number) {
+        if let formatted = shortIntegerFormatter.string(from: number) {
             return "\(sign)\(symbol)\(formatted)"
         }
         return "\(sign)\(symbol)0"
@@ -63,11 +98,9 @@ struct CurrencyFormatter {
         showAbs: Bool = false
     ) -> String {
         let value = showAbs ? amount.absoluteValue : amount
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
+        let formatter = decimalCustomFormatter
         formatter.minimumFractionDigits = fractionDigits
         formatter.maximumFractionDigits = fractionDigits
-        formatter.usesGroupingSeparator = true
         return formatter.string(from: value as NSDecimalNumber) ?? "\(value)"
     }
 
@@ -80,16 +113,14 @@ struct CurrencyFormatter {
         case "HKD": return "HK$"
         case "TWD": return "NT$"
         default:
-            let f = NumberFormatter()
-            f.numberStyle = .currency
+            let f = symbolFormatter
             f.currencyCode = code
             return f.currencySymbol ?? code
         }
     }
 
     static func currencySymbol(for code: String) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
+        let formatter = symbolFormatter
         formatter.currencyCode = code
         return formatter.currencySymbol ?? code
     }

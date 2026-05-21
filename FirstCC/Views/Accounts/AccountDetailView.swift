@@ -46,7 +46,7 @@ struct AccountDetailView: View {
                 Text(CurrencyFormatter.currencySymbol(for: account.currencyCode))
                     .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
                     .foregroundStyle(Color.designPrimaryFixedDim)
-                Text(formatBalance(balance))
+                Text(CurrencyFormatter.formatDecimal(amount: balance, fractionDigits: 2, showAbs: true))
                     .font(.designDisplayMobile)
                     .foregroundStyle(Color.designOnSurface)
                     .tracking(-0.6)
@@ -256,33 +256,7 @@ struct AccountDetailView: View {
     // MARK: - Date grouping
 
     private var transactionDateGroups: [(key: String, value: [Transaction])] {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        let yesterday = calendar.date(byAdding: .day, value: -1, to: today) ?? today
-
-        var todayTx: [Transaction] = []
-        var yesterdayTx: [Transaction] = []
-        var other: [String: [Transaction]] = [:]
-
-        for t in transactions {
-            let day = calendar.startOfDay(for: t.date)
-            if day == today {
-                todayTx.append(t)
-            } else if day == yesterday {
-                yesterdayTx.append(t)
-            } else {
-                let key = t.date.formatted(.dateTime.month(.abbreviated).day(.defaultDigits))
-                other[key, default: []].append(t)
-            }
-        }
-
-        var result: [(String, [Transaction])] = []
-        if !todayTx.isEmpty { result.append(("今天", todayTx)) }
-        if !yesterdayTx.isEmpty { result.append(("昨天", yesterdayTx)) }
-        for key in other.keys.sorted(by: >) {
-            if let list = other[key] { result.append((key, list)) }
-        }
-        return result
+        transactions.groupedByRelativeDate()
     }
 
     // MARK: - Load
@@ -305,7 +279,4 @@ struct AccountDetailView: View {
         transactions = (source + dest).sorted { $0.date > $1.date }
     }
 
-    private func formatBalance(_ value: Decimal) -> String {
-        CurrencyFormatter.formatDecimal(amount: value, fractionDigits: 2, showAbs: true)
-    }
 }

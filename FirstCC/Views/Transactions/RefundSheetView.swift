@@ -22,14 +22,6 @@ struct RefundSheetView: View {
         return Double(truncating: (amount / maxRefund) as NSNumber)
     }
 
-    private let decimalFormatter: NumberFormatter = {
-        let f = NumberFormatter()
-        f.numberStyle = .decimal
-        f.minimumFractionDigits = 0
-        f.maximumFractionDigits = 2
-        return f
-    }()
-
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -57,14 +49,7 @@ struct RefundSheetView: View {
             .animation(.easeInOut(duration: 0.25), value: showNumpad)
             .navigationTitle("退款")
             .navigationBarTitleDisplayMode(.inline)
-            .alert("退款失败", isPresented: Binding(
-                get: { errorMessage != nil },
-                set: { if !$0 { errorMessage = nil } }
-            )) {
-                Button("好") { errorMessage = nil }
-            } message: {
-                Text(errorMessage ?? "")
-            }
+            .errorAlert("退款失败", message: $errorMessage)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") { dismiss() }
@@ -267,17 +252,11 @@ struct RefundSheetView: View {
 
     private var numpadView: some View {
         VStack(spacing: 8) {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                ForEach(1...9, id: \.self) { n in
-                    numpadButton("\(n)") { appendDigit(n) }
-                }
-                numpadButton(".") { appendDot() }
-                numpadButton("0") { appendDigit(0) }
-                numpadButton(action: backspace) {
-                    Image(systemName: "delete.backward")
-                        .font(.system(size: 20))
-                }
-            }
+            NumpadGrid(
+                onDigit: { appendDigit($0) },
+                onDot: { appendDot() },
+                onDelete: { backspace() }
+            )
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
@@ -291,31 +270,6 @@ struct RefundSheetView: View {
                         .frame(height: 1)
                 }
         )
-    }
-
-    private func numpadButton(_ title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
-                .background(Color.designSurfaceContainer)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .foregroundStyle(Color.designOnSurface)
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func numpadButton(action: @escaping () -> Void, @ViewBuilder label: () -> some View) -> some View {
-        Button(action: action) {
-            label()
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
-                .background(Color.designSurfaceContainer)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .foregroundStyle(Color.designOnSurface)
-        }
-        .buttonStyle(.plain)
     }
 
     private func appendDigit(_ digit: Int) {
@@ -346,7 +300,7 @@ struct RefundSheetView: View {
     private func syncAmountString() {
         if amount == 0 { amountString = "" }
         else {
-            amountString = decimalFormatter.string(from: amount as NSDecimalNumber) ?? "\(amount)"
+            amountString = CurrencyFormatter.decimalFormatter.string(from: amount as NSDecimalNumber) ?? "\(amount)"
         }
     }
 
