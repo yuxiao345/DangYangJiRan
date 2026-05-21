@@ -10,53 +10,343 @@ struct RefundSheetView: View {
     let onDone: () -> Void
 
     @State private var amount: Decimal = 0
+    @State private var amountString: String = ""
     @State private var date: Date = Date()
     @State private var note: String = ""
+    @State private var showNumpad: Bool = false
+    @State private var errorMessage: String?
+
+    private var maxRefund: Decimal { abs(original.amount) }
+    private var refundFraction: Double {
+        guard maxRefund > 0 else { return 0 }
+        return Double(truncating: (amount / maxRefund) as NSNumber)
+    }
+
+    private let decimalFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.minimumFractionDigits = 0
+        f.maximumFractionDigits = 2
+        return f
+    }()
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    LabeledContent("原交易金额") {
-                        CurrencyText(amount: abs(original.amount), currencyCode: original.currencyCode, size: 17)
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(spacing: 24) {
+                        originalSummaryCard
+                        refundInputCard
+
+                        if amount > maxRefund {
+                            overflowWarning
+                        }
+
+                        decorativeGlow
                     }
-                    LabeledContent("原交易日期") {
-                        Text(original.date.formatted(date: .abbreviated, time: .omitted))
-                            .foregroundStyle(.secondary)
-                    }
+                    .padding(16)
                 }
 
-                Section("退款信息") {
-                    HStack {
-                        Text("¥")
-                        TextField("退款金额", value: $amount, format: .number)
-                            .keyboardType(.decimalPad)
-                    }
-                    DatePicker("退款日期", selection: $date, displayedComponents: .date)
-                    TextField("备注（可选）", text: $note)
-                }
-
-                if amount > abs(original.amount) {
-                    Section {
-                        Label("退款金额超过原交易金额", systemImage: "exclamationmark.triangle")
-                            .foregroundStyle(.orange)
-                    }
+                // Bottom numpad
+                if showNumpad {
+                    numpadView
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
+            .designScreen()
+            .animation(.easeInOut(duration: 0.25), value: showNumpad)
             .navigationTitle("退款")
             .navigationBarTitleDisplayMode(.inline)
+            .alert("退款失败", isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )) {
+                Button("好") { errorMessage = nil }
+            } message: {
+                Text(errorMessage ?? "")
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("确认退款") { save() }
-                        .disabled(amount <= 0)
+                        .fontWeight(.bold)
+                        .disabled(amount <= 0 || amountString.isEmpty)
                 }
             }
             .onAppear {
-                amount = abs(original.amount)
+                amount = maxRefund
+                syncAmountString()
             }
+        }
+    }
+
+    // MARK: - Original Summary Card
+
+    private var originalSummaryCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("原交易摘要")
+                .font(.designLabel)
+                .foregroundStyle(Color.designOnSurfaceVariant)
+                .tracking(1.0)
+
+            VStack(spacing: 0) {
+                HStack {
+                    Text("原交易金额")
+                        .font(.designBodyMedium)
+                        .foregroundStyle(Color.designOnSurfaceVariant)
+                    Spacer()
+                    CurrencyText(
+                        amount: maxRefund,
+                        currencyCode: original.currencyCode,
+                        size: 24,
+                        foregroundColor: Color.designOnSurface
+                    )
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+
+                Divider()
+                    .overlay(Color.designOnSurfaceVariant.opacity(0.1))
+                    .padding(.horizontal, 20)
+
+                HStack {
+                    Text("原交易日期")
+                        .font(.designBodyMedium)
+                        .foregroundStyle(Color.designOnSurfaceVariant)
+                    Spacer()
+                    Text(original.date.formatted(date: .abbreviated, time: .omitted))
+                        .font(.designBodyMedium)
+                        .foregroundStyle(Color.designOnSurface)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+            }
+            .glassCard(cornerRadius: 24)
+        }
+    }
+
+    // MARK: - Refund Input Card
+
+    private var refundInputCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("退款详情")
+                .font(.designLabel)
+                .foregroundStyle(Color.designOnSurfaceVariant)
+                .tracking(1.0)
+
+            VStack(spacing: 0) {
+                // Amount input with custom numpad trigger
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("退款金额")
+                        .font(.designBodySmall)
+                        .foregroundStyle(Color.designOnSurfaceVariant)
+                        .padding(.horizontal, 20)
+
+                    Button {
+                        withAnimation { showNumpad.toggle() }
+                    } label: {
+                        HStack(alignment: .firstTextBaseline, spacing: 4) {
+                            Text("¥")
+                                .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
+                                .foregroundStyle(Color.designPrimary)
+                            Text(amountString.isEmpty ? "0.00" : amountString)
+                                .font(.custom("JetBrainsMono-Medium", fixedSize: 32))
+                                .foregroundStyle(Color.designOnSurface)
+                                .tracking(-0.02)
+                            Spacer()
+                            Image(systemName: showNumpad ? "keyboard_arrow_down" : "keyboard_arrow_up")
+                                .font(.system(size: 14))
+                                .foregroundStyle(Color.designPrimaryContainer.opacity(0.5))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 8)
+                    .overlay(alignment: .bottom) {
+                        Rectangle()
+                            .fill(amountString.isEmpty ? Color.designOutlineVariant.opacity(0.2) : Color.designPrimaryContainer.opacity(0.4))
+                            .frame(height: 2)
+                            .padding(.horizontal, 20)
+                    }
+
+                    HStack {
+                        Text("最大可退金额 \(CurrencyFormatter.currencySymbol(for: original.currencyCode))\(maxRefund.formatted(.number.precision(.fractionLength(2))))")
+                            .font(.designBodySmall)
+                            .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.7))
+                        Spacer()
+                        PixelProgressBar(
+                            progress: min(refundFraction, 1.0),
+                            tint: refundFraction > 1.0 ? Color.designAccentRed : Color.designPrimaryFixedDim,
+                            totalBlocks: 20
+                        )
+                        .frame(width: 80, height: 6)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                }
+                .padding(.vertical, 20)
+
+                Divider()
+                    .overlay(Color.designOnSurfaceVariant.opacity(0.1))
+                    .padding(.horizontal, 20)
+
+                // Date picker
+                HStack {
+                    Text("退款日期")
+                        .font(.designBodyMedium)
+                        .foregroundStyle(Color.designOnSurfaceVariant)
+                    Spacer()
+                    DatePicker("", selection: $date, displayedComponents: .date)
+                        .labelsHidden()
+                        .font(.designBodyMedium)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+
+                Divider()
+                    .overlay(Color.designOnSurfaceVariant.opacity(0.1))
+                    .padding(.horizontal, 20)
+
+                // Note
+                TextEditor(text: $note)
+                    .font(.designBodyMedium)
+                    .foregroundStyle(Color.designOnSurface)
+                    .frame(minHeight: 80)
+                    .scrollContentBackground(.hidden)
+                    .padding(12)
+                    .background(Color.designSurfaceContainer.opacity(0.5))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(alignment: .topLeading) {
+                        if note.isEmpty {
+                            Text("备注（可选）")
+                                .font(.designBodyMedium)
+                                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 20)
+                                .allowsHitTesting(false)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+            }
+            .glassCard(cornerRadius: 24)
+        }
+    }
+
+    // MARK: - Overflow Warning
+
+    private var overflowWarning: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 14))
+            Text("退款金额超过原交易金额")
+                .font(.designBodySmall)
+        }
+        .foregroundStyle(Color.designAccentRed)
+        .frame(maxWidth: .infinity)
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.designAccentRed.opacity(0.1))
+        )
+    }
+
+    // MARK: - Decorative
+
+    private var decorativeGlow: some View {
+        Circle()
+            .fill(Color.designPrimaryContainer.opacity(0.08))
+            .frame(width: 128, height: 128)
+            .blur(radius: 48)
+            .padding(.top, 8)
+    }
+
+    // MARK: - Numpad
+
+    private var numpadView: some View {
+        VStack(spacing: 8) {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                ForEach(1...9, id: \.self) { n in
+                    numpadButton("\(n)") { appendDigit(n) }
+                }
+                numpadButton(".") { appendDot() }
+                numpadButton("0") { appendDigit(0) }
+                numpadButton(action: backspace) {
+                    Image(systemName: "delete.backward")
+                        .font(.system(size: 20))
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+        .padding(.top, 12)
+        .background(
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .overlay(alignment: .top) {
+                    Rectangle()
+                        .fill(Color.designGlassBorderHighlight)
+                        .frame(height: 1)
+                }
+        )
+    }
+
+    private func numpadButton(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(Color.designSurfaceContainer)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .foregroundStyle(Color.designOnSurface)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func numpadButton(action: @escaping () -> Void, @ViewBuilder label: () -> some View) -> some View {
+        Button(action: action) {
+            label()
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(Color.designSurfaceContainer)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .foregroundStyle(Color.designOnSurface)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func appendDigit(_ digit: Int) {
+        if amountString == "0" || amountString == "0.00" { amountString = "\(digit)" }
+        else { amountString += "\(digit)" }
+        syncAmountFromString()
+    }
+
+    private func appendDot() {
+        if amountString.contains(".") { return }
+        if amountString.isEmpty { amountString = "0." }
+        else { amountString += "." }
+        syncAmountFromString()
+    }
+
+    private func backspace() {
+        if amountString.count <= 1 { amountString = "0" }
+        else { amountString.removeLast() }
+        syncAmountFromString()
+    }
+
+    private func syncAmountFromString() {
+        amount = Decimal(string: amountString.replacingOccurrences(of: ",", with: "")) ?? 0
+    }
+
+    // MARK: - Helpers
+
+    private func syncAmountString() {
+        if amount == 0 { amountString = "" }
+        else {
+            amountString = decimalFormatter.string(from: amount as NSDecimalNumber) ?? "\(amount)"
         }
     }
 
@@ -70,7 +360,7 @@ struct RefundSheetView: View {
             onDone()
             dismiss()
         } catch {
-            print("Refund failed: \(error)")
+            errorMessage = error.localizedDescription
         }
     }
 }

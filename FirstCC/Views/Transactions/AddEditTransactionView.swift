@@ -32,7 +32,9 @@ struct AddEditTransactionView: View {
     @EnvironmentObject private var appContainer: AppContainer
 
     let editing: Transaction?
+    let displayMode: Bool
 
+    @State private var isEditing: Bool = false
     @State private var type: TransactionType = .expense
     @State private var amount: Decimal = 0
     @State private var amountString: String = ""
@@ -54,6 +56,7 @@ struct AddEditTransactionView: View {
     @State private var projects: [Project] = []
     @State private var templates: [TransactionTemplate] = []
     @State private var showDeleteAlert = false
+    @State private var errorMessage: String?
     @State private var pickerSheet: PickerSheetType?
     @State private var selectedPickerItems: [PhotosPickerItem] = []
     @State private var photoDataList: [Data] = []
@@ -74,16 +77,44 @@ struct AddEditTransactionView: View {
     // Split
     @State private var isSplit = false
     @State private var splitItems: [SplitItemDraft] = []
+    @State private var selectedSplitItemID: UUID?
+    @State private var splitAmountString: String = ""
 
     // Exchange rate
     @State private var exchangeRate: Decimal?
     @State private var isFetchingRate = false
     @State private var selectedCurrencyCode: String = "CNY"
 
+    // Display-only data (loaded when displayMode=true, isViewing)
+    @State private var linkedRefunds: [Transaction] = []
+    @State private var settledExpenses: [Transaction] = []
+    @State private var settledLendingTransactions: [Transaction] = []
+    @State private var showRefundSheet = false
+    @State private var showSplitForm = false
+
     private let currencies: [String] = ["CNY", "USD", "EUR", "JPY", "GBP", "HKD", "AUD", "CAD", "KRW", "TWD", "SGD", "CHF", "NZD", "THB", "MYR", "INR"]
 
-    init(editing: Transaction? = nil, prefillType: TransactionType? = nil, prefillExpenseIDs: [UUID] = []) {
+    private let splitAmountFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.minimumFractionDigits = 2
+        f.maximumFractionDigits = 2
+        f.locale = Locale(identifier: "en_US")
+        return f
+    }()
+
+    private let decimalFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.minimumFractionDigits = 0
+        f.maximumFractionDigits = 2
+        return f
+    }()
+
+    init(editing: Transaction? = nil, prefillType: TransactionType? = nil, prefillExpenseIDs: [UUID] = [], displayMode: Bool = false) {
         self.editing = editing
+        self.displayMode = displayMode
+        if displayMode { _isEditing = State(initialValue: false) }
         if let t = prefillType {
             _type = State(initialValue: t)
         }
@@ -93,136 +124,13 @@ struct AddEditTransactionView: View {
         }
     }
 
+    private var isViewing: Bool { displayMode && !isEditing }
+
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                ScrollView {
-                    VStack(spacing: 16) {
-                        // Template quick-pick
-                        if !templates.isEmpty {
-                            templateSection
-                        }
-
-                        // Type switcher
-                        typeSwitcher
-
-                        // Amount display + toggles
-                        amountSection
-
-                        // Account grid
-                        if !accounts.isEmpty {
-                            accountGridSection
-                        }
-
-                        // To-account for transfer/lending
-                        if (type == .transfer || type == .lending), !accounts.isEmpty {
-                            toAccountGridSection
-                        }
-
-                        // Category grid (not split/transfer/lending)
-                        if !isSplit, type != .transfer, type != .lending {
-                            categoryGridSection
-                        }
-
-                        // Split detail
-                        if isSplit, type == .expense {
-                            splitDetailSection
-                        }
-
-                        // Member grid
-                        if !isSplit, type != .transfer, type != .lending {
-                            memberGridSection
-                        }
-
-                        // Merchant + Project
-                        if !isSplit, type != .transfer, type != .lending {
-                            merchantSection
-                            projectSection
-                        }
-
-                        // Lending direction
-                        if type == .lending {
-                            lendingDirectionSection
-                        }
-
-                        // Exchange rate
-                        if needsExchangeRate {
-                            exchangeRateSection
-                        }
-
-                        // Pending lending settlement
-                        if (lendingDirection == .collect || lendingDirection == .repay), !pendingLendingTransactions.isEmpty {
-                            pendingLendingSection
-                        }
-
-                        // Pending reimbursement
-                        if type == .income, !pendingExpenses.isEmpty {
-                            pendingReimbursementSection
-                        }
-
-                        // Details (note, date, photo)
-                        detailsSection
-
-                        // Delete button
-                        if editing != nil {
-                            deleteButton
-                        }
-                    }
-                    .padding(16)
-                }
-
-                // Bottom: numpad + save button
-                VStack(spacing: 12) {
-                    if showNumpad {
-                        numpadView
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
-                    // Save button
-                    Button {
-                        save()
-                    } label: {
-                        HStack(spacing: 8) {
-                            Text(editing != nil ? "更新账单" : "保存账单")
-                                .font(.designBodyMedium.weight(.bold))
-                            Image(systemName: "send")
-                                .font(.system(size: 16))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(
-                            Capsule()
-                                .fill(Color.designPrimaryContainer.opacity(0.85))
-                                .shadow(color: Color.designPrimaryContainer.opacity(0.4), radius: 20, x: 0, y: 0)
-                        )
-                        .foregroundStyle(Color.designOnPrimaryContainer)
-                    }
-                    .disabled(!canSave)
-                    .opacity(canSave ? 1 : 0.4)
-                    .buttonStyle(.plain)
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 8)
-                .padding(.top, 12)
-                .background(
-                    Rectangle()
-                        .fill(.ultraThinMaterial)
-                        .overlay(alignment: .top) {
-                            Rectangle()
-                                .fill(Color.designGlassBorderHighlight)
-                                .frame(height: 1)
-                        }
-                )
-            }
+        baseContent
             .designScreen()
             .animation(.easeInOut(duration: 0.25), value: showNumpad)
-            .navigationTitle(editing != nil ? "编辑交易" : "记一笔")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
-                }
-            }
-            .task { loadData(); prefillEditing(); syncAmountString() }
+            .task { loadData(); prefillEditing(); syncAmountString(); loadDisplayData() }
             .onChange(of: pickerSheet) { _, newValue in
                 if newValue != nil { loadData() }
             }
@@ -248,11 +156,480 @@ struct AddEditTransactionView: View {
             } message: {
                 Text("此操作不可撤销，确定要删除此交易吗？")
             }
+            .alert("保存失败", isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )) {
+                Button("好") { errorMessage = nil }
+            } message: {
+                Text(errorMessage ?? "")
+            }
             .sheet(item: $pickerSheet) { sheet in
                 pickerContent(for: sheet)
             }
             .sheet(item: $selectedPhotoItem) { item in
                 FullScreenPhotoView(data: item.data)
+            }
+            .sheet(isPresented: $showRefundSheet) {
+                if let t = editing {
+                    RefundSheetView(original: t) {
+                        loadLinkedRefunds()
+                    }
+                }
+            }
+            .sheet(isPresented: $showSplitForm) {
+                if let t = editing, let ledger = appContainer.currentLedger {
+                    SplitFormView(transaction: t, ledger: ledger)
+                }
+            }
+    }
+
+    @ViewBuilder
+    private var baseContent: some View {
+        if displayMode {
+            contentView
+                .navigationTitle(isEditing ? "编辑交易" : "交易详情")
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationBarBackButtonHidden(isEditing)
+                .toolbar { displayModeToolbar }
+        } else {
+            NavigationStack {
+                contentView
+                    .navigationTitle(editing != nil ? "编辑交易" : "记一笔")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar { normalToolbar }
+            }
+        }
+    }
+
+    private var contentView: some View {
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(spacing: 16) {
+                    // Template quick-pick (hidden in display mode)
+                    if !displayMode, !templates.isEmpty {
+                        templateSection
+                    }
+
+                    Group {
+                        // Type switcher
+                        typeSwitcher
+
+                        // Amount display + toggles
+                        amountSection
+
+                        // Account grid
+                        if !accounts.isEmpty {
+                            accountGridSection
+                        }
+
+                        // To-account for transfer/lending
+                        if (type == .transfer || type == .lending), !accounts.isEmpty {
+                            toAccountGridSection
+                        }
+
+                        // Category grid (not split/transfer/lending)
+                        if !isSplit, type != .transfer, type != .lending {
+                            categoryGridSection
+                        }
+
+                        // Split detail (hidden in view mode — displayOnlySections handles it)
+                        if isSplit, type == .expense, !isViewing {
+                            splitDetailSection
+                        }
+
+                        // Member grid
+                        if !isSplit, type != .transfer, type != .lending {
+                            memberGridSection
+                        }
+
+                        // Merchant + Project
+                        if !isSplit, type != .transfer, type != .lending {
+                            merchantSection
+                            projectSection
+                        }
+
+                        // Lending direction
+                        if type == .lending {
+                            lendingDirectionSection
+                        }
+
+                        // Exchange rate
+                        if needsExchangeRate {
+                            exchangeRateSection
+                        }
+
+                        // Pending lending settlement (not in view mode)
+                        if !isViewing, (lendingDirection == .collect || lendingDirection == .repay), !pendingLendingTransactions.isEmpty {
+                            pendingLendingSection
+                        }
+
+                        // Pending reimbursement (not in view mode)
+                        if !isViewing, type == .income, !pendingExpenses.isEmpty {
+                            pendingReimbursementSection
+                        }
+
+                        // Details (note, date, photo)
+                        detailsSection
+                    }
+                    .disabled(isViewing)
+
+                    // --- Read-only extra sections (isViewing only) ---
+                    if isViewing {
+                        displayOnlySections
+                    }
+
+                    // Delete button (not in view mode)
+                    if editing != nil, !isViewing {
+                        deleteButton
+                    }
+                }
+                .padding(16)
+            }
+
+            // Bottom: numpad + save button (hidden in view mode)
+            if !isViewing {
+                VStack(spacing: 12) {
+                    if showNumpad {
+                        if selectedSplitItemID != nil {
+                            HStack {
+                                Text("编辑子项金额")
+                                    .font(.designLabel)
+                                    .foregroundStyle(Color.designOnSurfaceVariant)
+                                Spacer()
+                                Text("\(CurrencyFormatter.currencySymbol(for: selectedCurrencyCode))\(splitAmountString.isEmpty ? "0.00" : splitAmountString)")
+                                    .font(.custom("JetBrainsMono-Medium", fixedSize: 18))
+                                    .foregroundStyle(Color.designPrimary)
+                            }
+                            .padding(.horizontal, 4)
+                        }
+                        numpadView
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+                    if !showNumpad {
+                    Button {
+                        save()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Text(editing != nil ? "更新账单" : "保存账单")
+                                .font(.designBodyMedium.weight(.bold))
+                            Image(systemName: "send")
+                                .font(.system(size: 16))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(
+                            Capsule()
+                                .fill(Color.designPrimaryContainer.opacity(0.85))
+                                .shadow(color: Color.designPrimaryContainer.opacity(0.4), radius: 20, x: 0, y: 0)
+                        )
+                        .foregroundStyle(Color.designOnPrimaryContainer)
+                    }
+                    .disabled(!canSave)
+                    .opacity(canSave ? 1 : 0.4)
+                    .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+                .padding(.top, 12)
+                .background(
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                        .overlay(alignment: .top) {
+                            Rectangle()
+                                .fill(Color.designGlassBorderHighlight)
+                                .frame(height: 1)
+                        }
+                )
+            }
+        }
+    }
+
+    // MARK: - Toolbars
+
+    @ToolbarContentBuilder
+    private var normalToolbar: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            Button("取消") { dismiss() }
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var displayModeToolbar: some ToolbarContent {
+        if isEditing {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("取消") { cancelEditing() }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button("保存") { save() }
+                    .disabled(!canSave)
+            }
+        } else {
+            ToolbarItem(placement: .primaryAction) {
+                HStack(spacing: 12) {
+                    if canRefund {
+                        Button { showRefundSheet = true } label: {
+                            Label("退款", systemImage: "arrow.uturn.backward")
+                        }
+                    }
+                    Button { enterEditMode() } label: {
+                        Label("编辑", systemImage: "pencil")
+                    }
+                    Button(role: .destructive) { showDeleteAlert = true } label: {
+                        Label("删除", systemImage: "trash")
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Display-Only Sections
+
+    @ViewBuilder
+    private var displayOnlySections: some View {
+        // Split children read-only
+        if let t = editing, t.hasSplitChildren, let children = t.splitChildren {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("拆分明细")
+                    .font(.designLabel)
+                    .foregroundStyle(Color.designPrimary.opacity(0.8))
+                VStack(spacing: 8) {
+                    ForEach(children) { child in
+                        HStack {
+                            if let cat = child.category {
+                                Image(systemName: cat.iconName)
+                                    .foregroundStyle(Color(hex: cat.colorHex))
+                                    .frame(width: 24)
+                                Text(LocalizedStringKey(cat.name))
+                                    .font(.designBodyMedium)
+                                    .foregroundStyle(Color.designOnSurface)
+                            } else {
+                                Image(systemName: "questionmark.circle")
+                                    .foregroundStyle(Color.designOnSurfaceVariant)
+                                    .frame(width: 24)
+                                Text("未分类")
+                                    .font(.designBodyMedium)
+                                    .foregroundStyle(Color.designOnSurfaceVariant)
+                            }
+                            if let m = child.member {
+                                Text(m.name)
+                                    .font(.designBodySmall)
+                                    .foregroundStyle(Color.designOnSurfaceVariant)
+                            }
+                            Spacer()
+                            CurrencyText(amount: abs(child.amount), currencyCode: child.currencyCode, size: 17, foregroundColor: .designAccentRed)
+                        }
+                    }
+                }
+                .padding(12)
+                .glassCard(cornerRadius: 12)
+            }
+        }
+
+        // Member split group
+        if let group = editing?.splitGroup {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("成员分摊")
+                    .font(.designLabel)
+                    .foregroundStyle(Color.designPrimary.opacity(0.8))
+                NavigationLink {
+                    SplitDetailView(splitGroup: group)
+                } label: {
+                    HStack {
+                        Label("成员分摊", systemImage: "person.2.circle")
+                            .foregroundStyle(Color.designOnSurface)
+                        Spacer()
+                        Text(group.settlementStatus.displayName)
+                            .font(.designBodySmall)
+                            .foregroundStyle(group.settlementStatus == .settled ? Color.designPrimaryFixedDim : .orange)
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(Color.designOnSurfaceVariant)
+                    }
+                    .padding(12)
+                    .glassCard(cornerRadius: 12)
+                }
+                .buttonStyle(.plain)
+            }
+        } else if let t = editing, t.type == .expense, !t.isSplitParent, !t.hasSplitChildren {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("成员分摊")
+                    .font(.designLabel)
+                    .foregroundStyle(Color.designPrimary.opacity(0.8))
+                Button {
+                    showSplitForm = true
+                } label: {
+                    Label("创建成员分摊", systemImage: "person.2.badge.plus")
+                        .foregroundStyle(Color.designAccentGreen)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(12)
+                        .glassCard(cornerRadius: 12)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+
+        // Refund linking
+        if let t = editing, t.refundGroupId != nil {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("退款关联")
+                    .font(.designLabel)
+                    .foregroundStyle(Color.designPrimary.opacity(0.8))
+                HStack {
+                    Label("原交易退款", systemImage: "arrow.uturn.backward")
+                        .foregroundStyle(Color.designOnSurface)
+                    Spacer()
+                    Text("已关联")
+                        .font(.designBodySmall)
+                        .foregroundStyle(Color.designPrimaryContainer)
+                }
+                .padding(12)
+                .glassCard(cornerRadius: 12)
+            }
+        }
+
+        // Linked refunds list
+        if !linkedRefunds.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("已退款")
+                    .font(.designLabel)
+                    .foregroundStyle(Color.designPrimary.opacity(0.8))
+                VStack(spacing: 8) {
+                    ForEach(linkedRefunds) { refund in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("退款金额")
+                                    .font(.designBodyMedium)
+                                    .foregroundStyle(Color.designOnSurface)
+                                Text(refund.date.formatted(date: .abbreviated, time: .omitted))
+                                    .font(.designBodySmall)
+                                    .foregroundStyle(Color.designOnSurfaceVariant)
+                            }
+                            Spacer()
+                            CurrencyText(amount: abs(refund.amount), currencyCode: refund.currencyCode, size: 17, foregroundColor: .designPrimaryFixedDim)
+                        }
+                    }
+                }
+                .padding(12)
+                .glassCard(cornerRadius: 12)
+            }
+        }
+
+        // Reimbursement status
+        if let t = editing, t.isReimbursable {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("报销状态")
+                    .font(.designLabel)
+                    .foregroundStyle(Color.designPrimary.opacity(0.8))
+                HStack {
+                    Text("报销状态")
+                        .font(.designBodyMedium)
+                        .foregroundStyle(Color.designOnSurface)
+                    Spacer()
+                    switch t.reimbursementStatus {
+                    case .pending:
+                        Text(ReimbursementStatus.pending.displayName).foregroundStyle(.orange)
+                    case .reimbursed:
+                        Text(ReimbursementStatus.reimbursed.displayName).foregroundStyle(Color.designPrimaryFixedDim)
+                    default:
+                        Text("—").foregroundStyle(Color.designOnSurfaceVariant)
+                    }
+                }
+                .padding(12)
+                .glassCard(cornerRadius: 12)
+            }
+        }
+
+        // Settled expenses (报销结算)
+        if !settledExpenses.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("报销结算")
+                    .font(.designLabel)
+                    .foregroundStyle(Color.designPrimary.opacity(0.8))
+                VStack(spacing: 8) {
+                    ForEach(settledExpenses) { expense in
+                        HStack {
+                            Text(LocalizedStringKey(expense.category?.name ?? ""))
+                                .font(.designBodyMedium)
+                                .foregroundStyle(Color.designOnSurface)
+                            Spacer()
+                            CurrencyText(amount: abs(expense.amount), currencyCode: expense.currencyCode, size: 17)
+                        }
+                    }
+                }
+                .padding(12)
+                .glassCard(cornerRadius: 12)
+            }
+        }
+
+        // Lending status
+        if let t = editing, t.isLending {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("借贷状态")
+                    .font(.designLabel)
+                    .foregroundStyle(Color.designPrimary.opacity(0.8))
+                HStack {
+                    Text("借贷状态")
+                        .font(.designBodyMedium)
+                        .foregroundStyle(Color.designOnSurface)
+                    Spacer()
+                    switch t.lendingStatus {
+                    case .pending:
+                        if let d = t.lendingDirection {
+                            Text(LocalizedStringKey(d.pendingLabel)).foregroundStyle(.orange)
+                        }
+                    case .settled:
+                        Text(LendingStatus.settled.displayName).foregroundStyle(Color.designPrimaryFixedDim)
+                    case .none:
+                        Text("—").foregroundStyle(Color.designOnSurfaceVariant)
+                    }
+                }
+                .padding(12)
+                .glassCard(cornerRadius: 12)
+            }
+
+            if !settledLendingTransactions.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("借贷结算")
+                        .font(.designLabel)
+                        .foregroundStyle(Color.designPrimary.opacity(0.8))
+                    VStack(spacing: 8) {
+                        ForEach(settledLendingTransactions) { item in
+                            HStack {
+                                Text(LocalizedStringKey(item.lendingDirection?.displayName ?? ""))
+                                    .font(.designBodyMedium)
+                                    .foregroundStyle(Color.designOnSurface)
+                                Spacer()
+                                CurrencyText(amount: abs(item.amount), currencyCode: item.currencyCode, size: 17)
+                            }
+                        }
+                    }
+                    .padding(12)
+                    .glassCard(cornerRadius: 12)
+                }
+            }
+        }
+
+        // Tags
+        if let t = editing, !t.tags.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("标签")
+                    .font(.designLabel)
+                    .foregroundStyle(Color.designPrimary.opacity(0.8))
+                FlowLayout(spacing: 6) {
+                    ForEach(t.tags, id: \.self) { tag in
+                        Text(tag)
+                            .font(.designBodySmall)
+                            .foregroundStyle(Color.designOnSurfaceVariant)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.designPrimaryContainer.opacity(0.1))
+                            .clipShape(Capsule())
+                    }
+                }
+                .padding(12)
+                .glassCard(cornerRadius: 12)
             }
         }
     }
@@ -354,7 +731,14 @@ struct AddEditTransactionView: View {
                 .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.7))
                 .tracking(1.0)
             Button {
-                withAnimation { showNumpad.toggle() }
+                withAnimation {
+                    if showNumpad {
+                        syncSplitAmountToItem()
+                        selectedSplitItemID = nil
+                        splitAmountString = ""
+                    }
+                    showNumpad.toggle()
+                }
             } label: {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(CurrencyFormatter.currencySymbol(for: selectedCurrencyCode))
@@ -557,6 +941,7 @@ struct AddEditTransactionView: View {
             HStack(spacing: 8) {
                 ForEach(topRecentItems(items: items, recentKey: recentKey, selected: selectedItem)) { item in
                     Button {
+                        saveRecentID("\(item.id)", forKey: recentKey)
                         onSelect(item)
                     } label: {
                         VStack(spacing: 4) {
@@ -596,6 +981,13 @@ struct AddEditTransactionView: View {
                 }
             }
         }
+    }
+
+    private func saveRecentID(_ id: String, forKey key: String) {
+        var ids = UserDefaults.standard.stringArray(forKey: key) ?? []
+        ids.removeAll { $0 == id }
+        ids.insert(id, at: 0)
+        UserDefaults.standard.set(Array(ids.prefix(8)), forKey: key)
     }
 
     /// Returns up to 4 items from the list, prioritizing recently-used and always including the selected item.
@@ -652,22 +1044,24 @@ struct AddEditTransactionView: View {
             ForEach(splitItems) { item in
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text(CurrencyFormatter.currencySymbol(for: selectedCurrencyCode))
-                            .foregroundStyle(Color.designOnSurfaceVariant)
-                        TextField("0.00", text: Binding(
-                            get: { splitItems.first(where: { $0.id == item.id })?.amount.formatted(.number.precision(.fractionLength(2))) ?? "" },
-                            set: { newValue in
-                                if let idx = splitItems.firstIndex(where: { $0.id == item.id }),
-                                   let parsed = Decimal(string: newValue) {
-                                    splitItems[idx].amount = parsed
-                                }
+                        Button {
+                            selectSplitItem(item)
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text(CurrencyFormatter.currencySymbol(for: selectedCurrencyCode))
+                                    .foregroundStyle(Color.designOnSurfaceVariant)
+                                Text(formatSplitItemAmount(item))
+                                    .font(.custom("JetBrainsMono-Medium", fixedSize: 17))
+                                    .foregroundStyle(selectedSplitItemID == item.id ? Color.designPrimary : Color.designOnSurface)
                             }
-                        ))
-                        .keyboardType(.decimalPad)
-                        .font(.custom("JetBrainsMono-Medium", fixedSize: 17))
-                        .foregroundStyle(Color.designOnSurface)
+                        }
+                        .buttonStyle(.plain)
                         Spacer()
                         Button {
+                            if selectedSplitItemID == item.id {
+                                selectedSplitItemID = nil
+                                splitAmountString = ""
+                            }
                             splitItems.removeAll { $0.id == item.id }
                         } label: {
                             Image(systemName: "minus.circle.fill")
@@ -1044,36 +1438,78 @@ struct AddEditTransactionView: View {
     }
 
     private func appendDigit(_ digit: Int) {
-        if amountString == "0" || amountString == "0.00" { amountString = "\(digit)" }
-        else { amountString += "\(digit)" }
-        syncAmountFromString()
+        if selectedSplitItemID != nil {
+            if splitAmountString == "0" || splitAmountString == "0.00" { splitAmountString = "\(digit)" }
+            else { splitAmountString += "\(digit)" }
+            syncSplitAmountToItem()
+        } else {
+            if amountString == "0" || amountString == "0.00" { amountString = "\(digit)" }
+            else { amountString += "\(digit)" }
+            syncAmountFromString()
+        }
     }
 
     private func appendDot() {
-        if amountString.contains(".") { return }
-        if amountString.isEmpty { amountString = "0." }
-        else { amountString += "." }
-        syncAmountFromString()
+        if selectedSplitItemID != nil {
+            if splitAmountString.contains(".") { return }
+            if splitAmountString.isEmpty { splitAmountString = "0." }
+            else { splitAmountString += "." }
+            syncSplitAmountToItem()
+        } else {
+            if amountString.contains(".") { return }
+            if amountString.isEmpty { amountString = "0." }
+            else { amountString += "." }
+            syncAmountFromString()
+        }
     }
 
     private func backspace() {
-        if amountString.count <= 1 { amountString = "0" }
-        else { amountString.removeLast() }
-        syncAmountFromString()
+        if selectedSplitItemID != nil {
+            if splitAmountString.count <= 1 { splitAmountString = "0" }
+            else { splitAmountString.removeLast() }
+            syncSplitAmountToItem()
+        } else {
+            if amountString.count <= 1 { amountString = "0" }
+            else { amountString.removeLast() }
+            syncAmountFromString()
+        }
     }
 
     private func syncAmountFromString() {
         amount = Decimal(string: amountString.replacingOccurrences(of: ",", with: "")) ?? 0
     }
 
+    private func syncSplitAmountToItem() {
+        guard let id = selectedSplitItemID, let idx = splitItems.firstIndex(where: { $0.id == id }) else { return }
+        splitItems[idx].amount = Decimal(string: splitAmountString.replacingOccurrences(of: ",", with: "")) ?? 0
+    }
+
+    private func selectSplitItem(_ item: SplitItemDraft) {
+        if selectedSplitItemID == item.id {
+            syncSplitAmountToItem()
+            selectedSplitItemID = nil
+            splitAmountString = ""
+            return
+        }
+        syncSplitAmountToItem()
+        selectedSplitItemID = item.id
+        let amt = item.amount
+        if amt == 0 { splitAmountString = "" }
+        else {
+            splitAmountString = decimalFormatter.string(from: amt as NSDecimalNumber) ?? "\(amt)"
+        }
+        if !showNumpad { withAnimation { showNumpad = true } }
+    }
+
+    private func formatSplitItemAmount(_ item: SplitItemDraft) -> String {
+        if item.amount == 0 { return "0.00" }
+        return splitAmountFormatter.string(from: item.amount as NSDecimalNumber) ?? "0.00"
+    }
+
     private func syncAmountString() {
         if amount == 0 { amountString = "" }
         else {
-            let f = NumberFormatter()
-            f.numberStyle = .decimal
-            f.minimumFractionDigits = 0
-            f.maximumFractionDigits = 2
-            amountString = f.string(from: amount as NSDecimalNumber) ?? "\(amount)"
+            amountString = decimalFormatter.string(from: amount as NSDecimalNumber) ?? "\(amount)"
         }
     }
 
@@ -1359,21 +1795,15 @@ struct AddEditTransactionView: View {
                 applyCurrency(to: transaction)
                 try appContainer.transactionService.createTransaction(transaction, ledger: ledger, context: modelContext)
             }
-            dismiss()
-        } catch {
-            print("Save failed: \(error)")
-        }
-    }
-
-    private func splitAmountBinding(for itemID: UUID) -> Binding<Decimal> {
-        Binding(
-            get: { splitItems.first(where: { $0.id == itemID })?.amount ?? 0 },
-            set: { newValue in
-                if let i = splitItems.firstIndex(where: { $0.id == itemID }) {
-                    splitItems[i].amount = newValue
-                }
+            if displayMode {
+                isEditing = false
+                loadDisplayData()
+            } else {
+                dismiss()
             }
-        )
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     private func createSplitChildren(parent: Transaction, ledger: Ledger) {
@@ -1399,9 +1829,6 @@ struct AddEditTransactionView: View {
         splitItems.reduce(Decimal.zero) { $0 + $1.amount }
     }
 
-    private var splitTotalText: String {
-        "合计 ¥\(splitTotal.formatted(.number.precision(.fractionLength(2)))) / ¥\(amount.formatted(.number.precision(.fractionLength(2))))"
-    }
 
     private var ledgerCurrencyCode: String {
         appContainer.currentLedger?.defaultCurrencyCode ?? "CNY"
@@ -1650,5 +2077,96 @@ struct AddEditTransactionView: View {
         }
         try? appContainer.transactionService.deleteTransaction(t, context: modelContext)
         dismiss()
+    }
+
+    // MARK: - Display Mode Actions
+
+    private func enterEditMode() {
+        withAnimation(.easeInOut(duration: 0.2)) { isEditing = true }
+    }
+
+    private func cancelEditing() {
+        prefillEditing()
+        withAnimation(.easeInOut(duration: 0.2)) { isEditing = false }
+    }
+
+    private var canRefund: Bool {
+        guard let t = editing else { return false }
+        return (t.type == .expense || t.type == .income) && t.refundGroupId == nil
+    }
+
+    // MARK: - Display-Only Data Loading
+
+    private func loadDisplayData() {
+        guard displayMode, editing != nil else { return }
+        loadLinkedRefunds()
+        loadSettledExpenses()
+        loadSettledLendingTransactions()
+    }
+
+    private func loadLinkedRefunds() {
+        guard let t = editing else { return }
+        let tid = t.id
+        let descriptor = FetchDescriptor<Transaction>(
+            predicate: #Predicate { $0.refundGroupId == tid }
+        )
+        linkedRefunds = (try? modelContext.fetch(descriptor)) ?? []
+    }
+
+    private func loadSettledExpenses() {
+        guard let t = editing else { return }
+        let tid = t.id
+        let descriptor = FetchDescriptor<Transaction>(
+            predicate: #Predicate { $0.reimbursedById == tid }
+        )
+        settledExpenses = (try? modelContext.fetch(descriptor)) ?? []
+    }
+
+    private func loadSettledLendingTransactions() {
+        guard let t = editing else { return }
+        let tid = t.id
+        let descriptor = FetchDescriptor<Transaction>(
+            predicate: #Predicate { $0.settledByLendingTransactionId == tid }
+        )
+        settledLendingTransactions = (try? modelContext.fetch(descriptor)) ?? []
+    }
+}
+
+// MARK: - FlowLayout
+
+private struct FlowLayout: Layout {
+    var spacing: CGFloat = 6
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        layout(proposal: proposal, subviews: subviews).size
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let result = layout(proposal: proposal, subviews: subviews)
+        for (index, subview) in subviews.enumerated() {
+            subview.place(at: CGPoint(x: bounds.minX + result.positions[index].x, y: bounds.minY + result.positions[index].y), proposal: proposal)
+        }
+    }
+
+    private func layout(proposal: ProposedViewSize, subviews: Subviews) -> (size: CGSize, positions: [CGPoint]) {
+        let maxWidth = proposal.width ?? .infinity
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var lineHeight: CGFloat = 0
+        var positions: [CGPoint] = []
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x + size.width > maxWidth && x > 0 {
+                x = 0
+                y += lineHeight + spacing
+                lineHeight = 0
+            }
+            positions.append(CGPoint(x: x, y: y))
+            x += size.width + spacing
+            lineHeight = max(lineHeight, size.height)
+        }
+
+        return (CGSize(width: maxWidth, height: y + lineHeight), positions)
     }
 }

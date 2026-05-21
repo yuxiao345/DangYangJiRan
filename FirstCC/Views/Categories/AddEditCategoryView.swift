@@ -16,6 +16,7 @@ struct AddEditCategoryView: View {
     @State private var type: TransactionType = .expense
     @State private var selectedParent: Category?
     @State private var availableParents: [Category] = []
+    @State private var errorMessage: String?
 
     init(editing: Category? = nil, ledger: Ledger? = nil) {
         self.editing = editing
@@ -91,6 +92,14 @@ struct AddEditCategoryView: View {
             }
             .navigationTitle(editing == nil ? "新建分类" : "编辑分类")
             .navigationBarTitleDisplayMode(.inline)
+            .alert("保存失败", isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )) {
+                Button("好") { errorMessage = nil }
+            } message: {
+                Text(errorMessage ?? "")
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") { dismiss() }
@@ -145,7 +154,7 @@ struct AddEditCategoryView: View {
             }
             dismiss()
         } catch {
-            print("Failed to save category: \(error)")
+            errorMessage = error.localizedDescription
         }
     }
 }

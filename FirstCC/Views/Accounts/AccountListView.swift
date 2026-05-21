@@ -10,25 +10,14 @@ struct AccountListView: View {
     @State private var lendingInfos: [UUID: AccountRowView.LendingAccountInfo] = [:]
 
     var body: some View {
-        List {
-            ForEach(accountGroups, id: \.type) { group in
-                Section(group.type.displayName) {
-                    ForEach(group.accounts) { account in
-                        NavigationLink {
-                            AccountDetailView(account: account)
-                        } label: {
-                            AccountRowView(
-                                account: account,
-                                balance: balances[account.id] ?? 0,
-                                lendingInfo: lendingInfos[account.id]
-                            )
-                        }
-                    }
-                }
+        ScrollView {
+            VStack(spacing: 24) {
+                totalAssetsCard
+                accountGroupsView
             }
+            .padding(16)
         }
         .designScreen()
-        .scrollContentBackground(.hidden)
         .navigationTitle("账户")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -46,6 +35,92 @@ struct AccountListView: View {
         }
     }
 
+    // MARK: - Total Assets Hero Card
+
+    private var totalAssetsCard: some View {
+        let total = balances.values.reduce(Decimal.zero, +)
+        return VStack(alignment: .leading, spacing: 8) {
+            Text("总资产")
+                .font(.designLabel)
+                .foregroundStyle(Color.designOnSurfaceVariant)
+                .tracking(1.2)
+
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(CurrencyFormatter.currencySymbol(for: appContainer.currentLedger?.defaultCurrencyCode ?? "CNY"))
+                    .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
+                    .foregroundStyle(Color.designPrimaryFixedDim)
+                Text(formatTotalAssets(total))
+                    .font(.designDisplayMobile)
+                    .foregroundStyle(Color.designOnSurface)
+                    .tracking(-0.6)
+            }
+
+            HStack(spacing: 8) {
+                Text("共 \(accounts.count) 个账户")
+                    .font(.custom("JetBrainsMono-Medium", fixedSize: 12))
+                    .foregroundStyle(Color.designOnSurfaceVariant)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule()
+                            .fill(Color.designSurfaceContainer.opacity(0.6))
+                    )
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(20)
+        .glassCard(cornerRadius: 24)
+        .overlay(alignment: .topTrailing) {
+            Circle()
+                .fill(Color.designPrimaryFixedDim.opacity(0.12))
+                .frame(width: 80, height: 80)
+                .blur(radius: 24)
+                .offset(x: 10, y: -10)
+        }
+    }
+
+    // MARK: - Account Groups
+
+    private var accountGroupsView: some View {
+        let groups = accountGroups
+        return ForEach(groups, id: \.type) { group in
+            VStack(alignment: .leading, spacing: 12) {
+                groupHeader(type: group.type, count: group.accounts.count)
+
+                ForEach(group.accounts) { account in
+                    NavigationLink {
+                        AccountDetailView(account: account)
+                    } label: {
+                        AccountRowView(
+                            account: account,
+                            balance: balances[account.id] ?? 0,
+                            lendingInfo: lendingInfos[account.id]
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private func groupHeader(type: AccountType, count: Int) -> some View {
+        HStack(spacing: 6) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(groupAccentColor(for: type))
+                .frame(width: 3, height: 20)
+
+            Text(type.displayName)
+                .font(.designBodyMedium.weight(.bold))
+                .foregroundStyle(Color.designOnSurface)
+
+            Text("(\(count))")
+                .font(.custom("JetBrainsMono-Medium", fixedSize: 13))
+                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+        }
+    }
+
+    // MARK: - Helpers
+
     private var accountGroups: [(type: AccountType, accounts: [Account])] {
         var groups: [(AccountType, [Account])] = []
         for type in AccountType.allCases {
@@ -55,6 +130,14 @@ struct AccountListView: View {
             }
         }
         return groups
+    }
+
+    private func groupAccentColor(for type: AccountType) -> Color {
+        Color.accountAccent(for: type)
+    }
+
+    private func formatTotalAssets(_ value: Decimal) -> String {
+        CurrencyFormatter.formatDecimal(amount: value, fractionDigits: 2)
     }
 
     private func loadAccounts() {
@@ -79,12 +162,10 @@ struct AccountListView: View {
 
         let allLending = all.filter { $0.typeRaw == lendingTypeRaw }
 
-        // 借出 = money went TO the lending account (toAccount)
         let lendOutPending = allLending
             .filter { $0.lendingDirectionRaw == lendOutRaw && $0.lendingStatusRaw == pendingRaw && $0.toAccount?.id == accountID }
             .reduce(Decimal.zero) { $0 + $1.amount + ($1.settledAmount ?? 0) }
 
-        // 借入 = money came FROM the lending account (account)
         let borrowInPending = allLending
             .filter { $0.lendingDirectionRaw == borrowInRaw && $0.lendingStatusRaw == pendingRaw && $0.account?.id == accountID }
             .reduce(Decimal.zero) { $0 + $1.amount - ($1.settledAmount ?? 0) }

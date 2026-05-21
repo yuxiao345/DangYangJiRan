@@ -5,15 +5,27 @@ struct TransactionRowView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: iconName)
-                .font(.title3)
-                .foregroundStyle(iconColor)
-                .frame(width: 32)
+            // Left colored border
+            RoundedRectangle(cornerRadius: 2)
+                .fill(borderColor)
+                .frame(width: 4)
+                .padding(.vertical, 8)
+
+            // Icon container
+            RoundedRectangle(cornerRadius: 10)
+                .fill(iconBgColor)
+                .frame(width: 40, height: 40)
+                .overlay {
+                    Image(systemName: iconName)
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(iconColor)
+                }
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 4) {
                     Text(LocalizedStringKey(titleText))
-                        .font(.designBodyMedium)
+                        .font(.designBodyMedium.weight(.medium))
+                        .foregroundStyle(Color.designOnSurface)
                     if transaction.isReimbursable {
                         let status = transaction.reimbursementStatus
                         Text(status.displayName)
@@ -54,13 +66,28 @@ struct TransactionRowView: View {
 
             VStack(alignment: .trailing, spacing: 2) {
                 amountView
-                Text(transaction.date.formatted(date: .numeric, time: .omitted))
-                    .font(.designBodySmall)
-                    .foregroundStyle(Color.designOnSurfaceVariant)
+                if let badge = categoryBadge {
+                    Text(badge)
+                        .font(.custom("SpaceGrotesk-Bold", fixedSize: 10))
+                        .foregroundStyle(Color.designOnSurfaceVariant)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.designSurfaceContainer)
+                        .clipShape(Capsule())
+                }
             }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 6)
+        .padding(.trailing, 14)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.designGlassBorderHighlight, lineWidth: 1)
+        )
     }
+
+    // MARK: - Computed properties
 
     private var iconName: String {
         if let d = transaction.lendingDirection { return d.systemIcon }
@@ -76,7 +103,7 @@ struct TransactionRowView: View {
             }
         }
         switch transaction.type {
-        case .income: return .designAccentGreen
+        case .income: return .designPrimaryFixedDim
         case .expense: return .designAccentRed
         case .transfer: return .blue
         case .lending: break
@@ -85,18 +112,45 @@ struct TransactionRowView: View {
         return Color.designOnSurfaceVariant
     }
 
+    private var iconBgColor: Color {
+        switch transaction.type {
+        case .income: return Color.designPrimaryFixedDim.opacity(0.1)
+        case .expense: return Color.designAccentRed.opacity(0.1)
+        case .transfer: return Color.blue.opacity(0.1)
+        case .lending: return Color.orange.opacity(0.1)
+        case .adjustment: return Color.designAccentPurple.opacity(0.1)
+        }
+    }
+
+    private var borderColor: Color {
+        if transaction.isLending { return .orange }
+        switch transaction.type {
+        case .income: return .designPrimaryFixedDim
+        case .expense: return .designAccentRed
+        case .transfer: return .blue
+        case .lending: return .orange
+        case .adjustment: return .designAccentPurple
+        }
+    }
+
     private var titleText: String {
         if let d = transaction.lendingDirection { return d.displayName }
+        if transaction.type == .transfer { return transaction.type.displayName }
         return transaction.category?.name ?? transaction.type.displayName
     }
 
     private var subtitleText: String? {
-        if transaction.isLending {
+        if transaction.isLending || transaction.type == .transfer {
             let from = transaction.account?.name ?? "—"
             let to = transaction.toAccount?.name ?? "—"
             return "\(NSLocalizedString(from, comment: "")) → \(NSLocalizedString(to, comment: ""))"
         }
         return transaction.note
+    }
+
+    private var categoryBadge: String? {
+        if transaction.isLending || transaction.type == .transfer { return nil }
+        return transaction.member?.name ?? transaction.merchant?.name
     }
 
     @ViewBuilder

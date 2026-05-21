@@ -1,6 +1,5 @@
 import SwiftUI
 import SwiftData
-import PhotosUI
 
 struct AccountsManagementView: View {
     @EnvironmentObject private var appContainer: AppContainer
@@ -148,7 +147,8 @@ struct EditAccountView: View {
     @State private var name: String
     @State private var currencyCode: String
     @State private var initialBalance: Decimal
-    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var selectedLogoID: String? = nil
+    @State private var showLogoPicker = false
     @State private var customIconData: Data?
     @State private var hasCreditLimit: Bool
     @State private var creditLimit: Decimal
@@ -179,8 +179,12 @@ struct EditAccountView: View {
                             .foregroundStyle(.secondary)
                     }
                     Picker("币种", selection: $currencyCode) {
-                        Text("CNY").tag("CNY")
-                        Text("USD").tag("USD")
+                        Text("CNY (人民币)").tag("CNY")
+                        Text("USD (美元)").tag("USD")
+                        Text("EUR (欧元)").tag("EUR")
+                        Text("JPY (日元)").tag("JPY")
+                        Text("GBP (英镑)").tag("GBP")
+                        Text("HKD (港币)").tag("HKD")
                     }
                 }
 
@@ -188,28 +192,43 @@ struct EditAccountView: View {
                     CurrencyTextField(label: "初始余额", value: $initialBalance)
                 }
 
-                Section("图标") {
-                    HStack {
-                        Spacer()
-                        PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                            if let data = customIconData, let uiImage = UIImage(data: data) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 80, height: 80)
-                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                Section("Logo") {
+                    Button {
+                        showLogoPicker = true
+                    } label: {
+                        HStack {
+                            Text("选择Logo")
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            if let logoID = selectedLogoID, let logo = BankLogoPresets.all.first(where: { $0.id == logoID }) {
+                                HStack(spacing: 8) {
+                                    Image(uiImage: logo.logoImage)
+                                        .resizable()
+                                        .frame(width: 28, height: 28)
+                                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                                    Text(logo.name)
+                                        .foregroundStyle(.secondary)
+                                }
+                            } else if customIconData != nil {
+                                HStack(spacing: 8) {
+                                    if let data = customIconData, let img = UIImage(data: data) {
+                                        Image(uiImage: img)
+                                            .resizable()
+                                            .frame(width: 28, height: 28)
+                                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                                    }
+                                    Text("已设置")
+                                        .foregroundStyle(.secondary)
+                                }
                             } else {
                                 Image(systemName: account.iconName ?? "creditcard")
-                                    .font(.system(size: 50))
-                                    .frame(width: 80, height: 80)
-                                    .foregroundStyle(Color.designPrimaryContainer)
+                                    .font(.system(size: 18))
+                                    .foregroundStyle(.secondary)
+                                Text("不选择（使用类型图标）")
+                                    .foregroundStyle(.secondary)
                             }
                         }
-                        Spacer()
                     }
-                    Text("点击更换图标")
-                        .font(.designBodySmall)
-                        .foregroundStyle(.secondary)
                 }
 
                 if account.type == .creditCard {
@@ -246,21 +265,23 @@ struct EditAccountView: View {
                         .disabled(name.isEmpty)
                 }
             }
-            .onChange(of: selectedPhoto) { _, newValue in
-                Task {
-                    if let data = try? await newValue?.loadTransferable(type: Data.self) {
-                        customIconData = data
-                    }
-                }
+            .sheet(isPresented: $showLogoPicker) {
+                BankLogoPickerView(selectedLogoID: $selectedLogoID)
             }
         }
     }
 
     private func save() {
+        let logoData: Data? = {
+            if let logoID = selectedLogoID {
+                return BankLogoPresets.all.first(where: { $0.id == logoID })?.logoData
+            }
+            return customIconData
+        }()
         account.name = name
         account.currencyCode = currencyCode
         account.initialBalance = initialBalance
-        account.customIconData = customIconData
+        account.customIconData = logoData
         if account.type == .creditCard {
             account.creditLimit = hasCreditLimit ? creditLimit : nil
             account.billingDay = billingDay

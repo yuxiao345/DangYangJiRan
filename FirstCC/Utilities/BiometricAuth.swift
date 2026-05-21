@@ -37,15 +37,23 @@ enum BiometricAuth {
     }
 
     static func authenticate(reason: String = String(localized: "解锁以访问账本")) async -> Bool {
-        guard isAvailable else { return true }
+        // Try biometrics first (Face ID / Touch ID without passcode fallback)
+        let bioContext = LAContext()
+        var error: NSError?
+        if bioContext.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
+            let success = await withCheckedContinuation { c in
+                bioContext.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { result, _ in
+                    c.resume(returning: result)
+                }
+            }
+            if success { return true }
+        }
 
-        let context = LAContext()
-        return await withCheckedContinuation { continuation in
-            context.evaluatePolicy(
-                .deviceOwnerAuthentication,
-                localizedReason: reason
-            ) { success, _ in
-                continuation.resume(returning: success)
+        // Fallback to device passcode
+        let passcodeContext = LAContext()
+        return await withCheckedContinuation { c in
+            passcodeContext.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, _ in
+                c.resume(returning: success)
             }
         }
     }

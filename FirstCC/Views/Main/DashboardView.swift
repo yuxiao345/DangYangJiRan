@@ -16,45 +16,41 @@ struct DashboardView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // Fixed top content
-                VStack(spacing: 16) {
-                    heroBalanceCard
-                    incomeExpenseGrid
-                    budgetCard
-                }
-                .padding(16)
-
-                // Recent transactions header
-                HStack {
-                    Text("最近交易")
-                        .font(.designBodyMedium.weight(.bold))
-                        .foregroundStyle(Color.designOnSurface)
-                    Spacer()
-                    NavigationLink("全部") {
-                        TransactionListView()
+            ScrollView {
+                VStack(spacing: 0) {
+                    VStack(spacing: 16) {
+                        heroBalanceCard
+                        incomeExpenseGrid
+                        budgetCard
                     }
-                    .font(.designBodyCaption)
-                    .foregroundStyle(Color.designAccentGreen)
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
-                .padding(.bottom, 12)
+                    .padding(16)
 
-                // Independently scrollable transaction list
-                if viewModel.recentTransactions.isEmpty {
-                    Spacer()
-                    VStack(spacing: 8) {
-                        Image(systemName: "tray")
-                            .font(.system(size: 40))
-                            .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
-                        Text("本月暂无交易记录")
-                            .font(.designBodyMedium)
-                            .foregroundStyle(Color.designOnSurfaceVariant)
+                    HStack {
+                        Text("最近交易")
+                            .font(.designBodyMedium.weight(.bold))
+                            .foregroundStyle(Color.designOnSurface)
+                        Spacer()
+                        NavigationLink("全部") {
+                            TransactionListView()
+                        }
+                        .font(.designBodyCaption)
+                        .foregroundStyle(Color.designAccentGreen)
                     }
-                    Spacer()
-                } else {
-                    ScrollView {
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                    .padding(.bottom, 12)
+
+                    if viewModel.recentTransactions.isEmpty {
+                        VStack(spacing: 8) {
+                            Image(systemName: "tray")
+                                .font(.system(size: 40))
+                                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+                            Text("本月暂无交易记录")
+                                .font(.designBodyMedium)
+                                .foregroundStyle(Color.designOnSurfaceVariant)
+                        }
+                        .padding(.top, 60)
+                    } else {
                         LazyVStack(spacing: 12) {
                             ForEach(viewModel.recentTransactions) { transaction in
                                 NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
@@ -70,7 +66,6 @@ struct DashboardView: View {
             }
             .designScreen()
             .navigationTitle(appContainer.currentLedger?.name ?? "小金库")
-            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     SyncStatusBadge()
@@ -305,11 +300,12 @@ struct DashboardView: View {
 
     private func transactionTitle(_ tx: Transaction) -> String {
         if let d = tx.lendingDirection { return d.displayName }
-        return tx.merchant?.name ?? "未知商家"
+        if tx.type == .transfer { return tx.type.displayName }
+        return tx.merchant?.name ?? tx.category?.name ?? tx.type.displayName
     }
 
     private func transactionSubtitle(_ tx: Transaction) -> String {
-        if tx.isLending {
+        if tx.isLending || tx.type == .transfer {
             let from = tx.account?.name ?? "—"
             let to = tx.toAccount?.name ?? "—"
             return "\(from) → \(to)"
@@ -345,12 +341,7 @@ struct DashboardView: View {
     // MARK: - Helpers
 
     private var formattedBalance: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.minimumFractionDigits = 2
-        formatter.maximumFractionDigits = 2
-        formatter.usesGroupingSeparator = true
-        return formatter.string(from: abs(viewModel.totalBalance) as NSDecimalNumber) ?? "0.00"
+        CurrencyFormatter.formatDecimal(amount: viewModel.totalBalance, fractionDigits: 2)
     }
 
     private var ledgerCurrency: String {
@@ -359,12 +350,7 @@ struct DashboardView: View {
 
     private func formatBudgetAmount(_ amount: Decimal) -> String {
         let symbol = CurrencyFormatter.currencySymbol(for: ledgerCurrency)
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.minimumFractionDigits = 0
-        formatter.maximumFractionDigits = 0
-        formatter.usesGroupingSeparator = true
-        let raw = formatter.string(from: abs(amount) as NSDecimalNumber) ?? "0"
+        let raw = CurrencyFormatter.formatDecimal(amount: amount, fractionDigits: 0, showAbs: true)
         return "\(symbol)\(raw)"
     }
 

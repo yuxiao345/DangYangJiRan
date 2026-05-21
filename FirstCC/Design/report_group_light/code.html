@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PIXEL_VAULT - Reports</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary": "#5d5f5f",
+                        "on-tertiary": "#ffffff",
+                        "surface-bright": "#fcf9f8",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "primary-fixed-dim": "#30e27a",
+                        "secondary": "#5c5f60",
+                        "outline-variant": "#bbcbba",
+                        "tertiary-fixed": "#e2e2e2",
+                        "on-primary-fixed-variant": "#005226",
+                        "surface-container-low": "#f6f3f2",
+                        "on-surface-variant": "#3c4a3d",
+                        "tertiary-container": "#b5b6b6",
+                        "on-background": "#1c1b1b",
+                        "on-primary-fixed": "#00210c",
+                        "surface-container-highest": "#e5e2e1",
+                        "on-secondary-fixed-variant": "#454748",
+                        "primary-fixed": "#62ff96",
+                        "inverse-primary": "#30e27a",
+                        "inverse-on-surface": "#f3f0ef",
+                        "surface-tint": "#006d35",
+                        "surface-dim": "#dcd9d9",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed": "#191c1d",
+                        "error": "#ba1a1a",
+                        "surface": "#fcf9f8",
+                        "secondary-fixed": "#e1e3e4",
+                        "surface-container-high": "#ebe7e7",
+                        "secondary-fixed-dim": "#c5c7c8",
+                        "on-surface": "#1c1b1b",
+                        "outline": "#6c7b6c",
+                        "primary-container": "#00d16b",
+                        "on-primary-container": "#005326",
+                        "primary": "#006d35",
+                        "on-secondary-container": "#626566",
+                        "on-secondary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "surface-container": "#f0edec",
+                        "secondary-container": "#e1e3e4",
+                        "on-primary": "#ffffff",
+                        "background": "#fcf9f8",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "surface-variant": "#e5e2e1",
+                        "inverse-surface": "#313030",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#c6c6c7",
+                        "on-tertiary-container": "#464748"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "64px",
+                        "container-max": "1440px",
+                        "base": "8px",
+                        "margin-mobile": "16px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Space Grotesk"],
+                        "headline-lg-mobile": ["Space Grotesk"],
+                        "headline-lg": ["Space Grotesk"],
+                        "label-md": ["Space Grotesk"],
+                        "label-sm": ["Space Grotesk"],
+                        "display": ["Space Grotesk"],
+                        "body-md": ["Space Grotesk"],
+                        "body-lg": ["Space Grotesk"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "headline-lg": ["40px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "label-sm": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                        "display": ["64px", {"lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Space Grotesk', sans-serif; background-color: #fcf9f8; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+        }
+        .pixel-border {
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
+            border: 1px solid #e5e2e1;
+        }
+        .donut-gradient {
+            background: conic-gradient(
+                #00D16B 0% 98.2%, 
+                #FFD700 98.2% 99.5%, 
+                #FF4B4B 99.5% 100%
+            );
+        }
+        .pixel-progress-segment {
+            width: 8.33%;
+            height: 100%;
+            border-right: 1px solid rgba(252, 249, 248, 0.4);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="bg-surface/40 dark:bg-surface-container/40 backdrop-blur-xl text-primary border-b border-white/10 shadow-sm fixed top-0 pt-safe flex justify-between items-center px-margin-mobile h-16 w-full z-50">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer active:scale-95 transition-transform">grid_view</span>
+<h1 class="font-headline-md text-headline-md font-bold tracking-tight text-on-surface">PIXEL_VAULT</h1>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary cursor-pointer active:scale-95 transition-transform">calendar_today</span>
+</div>
+</header>
+<main class="pt-20 px-margin-mobile max-w-lg mx-auto">
+<!-- Title & Main Filters -->
+<div class="mb-6">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-4">报表</h2>
+<!-- Tab Segmented Control -->
+<div class="glass-card rounded-full p-1 flex mb-4 border border-outline/10">
+<button class="flex-1 py-2 rounded-full bg-primary-container text-on-primary-container font-label-md text-label-md shadow-sm">分类占比</button>
+<button class="flex-1 py-2 rounded-full text-on-surface-variant font-label-md text-label-md hover:bg-white/5">收支趋势</button>
+</div>
+<!-- Time Range Filters -->
+<div class="flex gap-2 justify-between">
+<button class="flex-1 py-1.5 rounded-xl border border-outline/20 font-label-sm text-label-sm bg-surface-container-highest text-on-surface-variant">本月</button>
+<button class="flex-1 py-1.5 rounded-xl border border-outline/20 font-label-sm text-label-sm text-on-surface-variant opacity-60">近3月</button>
+<button class="flex-1 py-1.5 rounded-xl border border-outline/20 font-label-sm text-label-sm text-on-surface-variant opacity-60">近6月</button>
+</div>
+</div>
+<!-- Donut Chart Hero -->
+<section class="glass-card rounded-3xl p-8 flex flex-col items-center mb-8 relative overflow-hidden">
+<div class="relative w-56 h-56 flex items-center justify-center">
+<!-- Donut Chart SVG/CSS Hybrid -->
+<div class="donut-gradient w-full h-full rounded-full flex items-center justify-center p-8">
+<div class="bg-surface-container-lowest w-full h-full rounded-full flex flex-col items-center justify-center shadow-inner">
+<span class="text-on-surface-variant font-label-sm text-label-sm mb-1 opacity-60">支出分类</span>
+<span class="font-headline-md text-headline-md tracking-tight">¥6,466.80</span>
+</div>
+</div>
+</div>
+<p class="mt-6 text-on-surface-variant/40 font-label-sm text-label-sm uppercase tracking-widest">生成测试数据</p>
+</section>
+<!-- Category Breakdown List -->
+<section class="space-y-4">
+<!-- Item 1: Shopping -->
+<div class="glass-card rounded-2xl p-4 transition-all hover:translate-y-[-2px]">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 rounded-sm bg-primary"></div>
+<span class="font-body-md text-body-md font-medium">购物</span>
+</div>
+<div class="text-right">
+<div class="font-label-md text-label-md">¥6,350.00</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant/60">98.2%</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant opacity-40 ml-2">chevron_right</span>
+</div>
+<!-- Pixelated Progress Bar -->
+<div class="h-4 w-full bg-surface-container-high rounded-sm overflow-hidden flex border border-outline/10">
+<div class="h-full bg-primary-container flex w-[98.2%]">
+<div class="pixel-progress-segment"></div><div class="pixel-progress-segment"></div><div class="pixel-progress-segment"></div><div class="pixel-progress-segment"></div>
+<div class="pixel-progress-segment"></div><div class="pixel-progress-segment"></div><div class="pixel-progress-segment"></div><div class="pixel-progress-segment"></div>
+<div class="pixel-progress-segment"></div><div class="pixel-progress-segment"></div><div class="pixel-progress-segment"></div><div class="pixel-progress-segment"></div>
+</div>
+</div>
+</div>
+<!-- Item 2: Food -->
+<div class="glass-card rounded-2xl p-4 opacity-90 transition-all hover:translate-y-[-2px]">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 rounded-sm bg-warning" style="background-color: #FFD700;"></div>
+<span class="font-body-md text-body-md font-medium">餐饮</span>
+</div>
+<div class="text-right">
+<div class="font-label-md text-label-md">¥86.80</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant/60">1.3%</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant opacity-40 ml-2">chevron_right</span>
+</div>
+<div class="h-4 w-full bg-surface-container-high rounded-sm overflow-hidden flex border border-outline/10">
+<div class="h-full bg-[#FFD700] flex w-[1.3%] min-w-[8px]"></div>
+</div>
+</div>
+<!-- Item 3: Social -->
+<div class="glass-card rounded-2xl p-4 opacity-80 transition-all hover:translate-y-[-2px]">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 rounded-sm bg-error"></div>
+<span class="font-body-md text-body-md font-medium">人情</span>
+</div>
+<div class="text-right">
+<div class="font-label-md text-label-md">¥20.00</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant/60">0.3%</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant opacity-40 ml-2">chevron_right</span>
+</div>
+<div class="h-4 w-full bg-surface-container-high rounded-sm overflow-hidden flex border border-outline/10">
+<div class="h-full bg-error flex w-[0.3%] min-w-[4px]"></div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-md flex justify-around items-center px-4 z-50 bg-surface/40 dark:bg-surface-container/40 backdrop-blur-2xl rounded-full h-20 overflow-hidden border border-white/20 shadow-[0_40px_40px_rgba(0,0,0,0.04)]">
+<div class="flex flex-col items-center justify-center text-on-surface-variant opacity-60 hover:opacity-100 active:scale-90 transition-all duration-300">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-sm text-label-sm">Overview</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant opacity-60 hover:opacity-100 active:scale-90 transition-all duration-300">
+<span class="material-symbols-outlined">credit_card</span>
+<span class="font-label-sm text-label-sm">Accounts</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant opacity-60 hover:opacity-100 active:scale-90 transition-all duration-300">
+<span class="material-symbols-outlined">list_alt</span>
+<span class="font-label-sm text-label-sm">Flow</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-primary text-on-primary rounded-full w-16 h-16 scale-110 shadow-lg shadow-primary/20 active:scale-90 transition-all duration-300">
+<span class="material-symbols-outlined">bar_chart</span>
+<span class="font-label-sm text-label-sm">Reports</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant opacity-60 hover:opacity-100 active:scale-90 transition-all duration-300">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</div>
+</nav>
+<script>
+        // Micro-interaction for buttons
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('mousedown', () => btn.classList.add('scale-95'));
+            btn.addEventListener('mouseup', () => btn.classList.remove('scale-95'));
+            btn.addEventListener('mouseleave', () => btn.classList.remove('scale-95'));
+        });
+    </script>
+</body></html>

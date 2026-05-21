@@ -8,7 +8,6 @@ enum PreviewContainer {
             Ledger.self, User.self, Account.self, Category.self,
             Transaction.self, TransactionTemplate.self, RecurringRule.self,
             SplitGroup.self, SplitEntry.self, BudgetBook.self, BudgetItem.self,
-            InstallmentPlan.self,
             ExchangeRate.self
         ])
 

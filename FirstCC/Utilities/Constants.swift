@@ -1,9 +1,9 @@
 import Foundation
 
 enum Constants {
-    static let appName = "荡漾计然"
-    static let bundleIdentifier = "com.firstcc.app"
-    static let cloudKitContainerIdentifier = "iCloud.com.firstcc"
+    static let appName = "钱伲"
+    static let bundleIdentifier = "com.qianey.app"
+    static let cloudKitContainerIdentifier = "iCloud.com.qianey"
 
     static let defaultCurrency = "CNY"
     static let defaultLocale = "zh_CN"

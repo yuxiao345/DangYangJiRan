@@ -11,36 +11,49 @@ struct CalendarStripView: View {
     @Binding var monthlyIncome: Decimal
     @Binding var monthlyExpense: Decimal
 
+    /// weekdayOffset: how many empty cells before day 1, assuming columns start from Monday.
+    /// Calendar.weekday: 1=Sun 2=Mon … 7=Sat. Column 0 = Mon, so offset = (weekday-2+7)%7.
     var daysInMonth: Int { selectedMonth.daysInMonth }
-    var weekdayOffset: Int { selectedMonth.firstWeekdayOfMonth - 1 }
+    var weekdayOffset: Int { (selectedMonth.firstWeekdayOfMonth - 2 + 7) % 7 }
     var monthTitle: String { selectedMonth.monthDisplay }
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 2), count: 7)
-    private let weekLabels = ["日", "一", "二", "三", "四", "五", "六"]
+    private let weekLabels = ["一", "二", "三", "四", "五", "六", "日"]
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 0) {
             summaryBar
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+                .padding(.bottom, 6)
+
+            weekdayHeader
+                .padding(.horizontal, 12)
+                .padding(.bottom, 4)
 
             if isExpanded {
-                weekdayHeader
                 monthGrid
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 8)
             } else {
-                weekdayHeader
                 weekStrip
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 8)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
         .background(.ultraThinMaterial)
         .background(Color.designGlassBg)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24)
+                .stroke(Color.designGlassBorderHighlight, lineWidth: 1)
+        )
     }
 
     // MARK: - Summary Bar
 
     private var summaryBar: some View {
-        HStack {
+        HStack(spacing: 0) {
             Button {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     selectedMonth = Calendar.current.date(byAdding: .month, value: -1, to: selectedMonth)?.startOfMonth ?? selectedMonth
@@ -48,6 +61,7 @@ struct CalendarStripView: View {
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.designBodySmall.weight(.medium))
+                    .foregroundStyle(Color.designOnSurfaceVariant)
             }
             .buttonStyle(.plain)
 
@@ -56,12 +70,11 @@ struct CalendarStripView: View {
                     isExpanded.toggle()
                 }
             } label: {
-                HStack(spacing: 4) {
-                    Text(monthTitle)
-                        .font(.designHeadlineMedium)
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.designBodySmall)
-                }
+                Text(monthTitle)
+                    .font(.custom("SpaceGrotesk-SemiBold", fixedSize: 20))
+                    .foregroundStyle(Color.designOnSurface)
+                    .tracking(-0.02)
+                    .padding(.horizontal, 8)
             }
             .buttonStyle(.plain)
 
@@ -72,18 +85,33 @@ struct CalendarStripView: View {
             } label: {
                 Image(systemName: "chevron.right")
                     .font(.designBodySmall.weight(.medium))
+                    .foregroundStyle(Color.designOnSurfaceVariant)
             }
             .buttonStyle(.plain)
 
             Spacer()
 
-            HStack(spacing: 16) {
-                Text("收 \(CurrencyFormatter.formatShort(amount: monthlyIncome, currencyCode: ""))")
-                    .font(.designMonoDataSmall)
-                    .foregroundStyle(Color.designAccentGreen)
-                Text("支 \(CurrencyFormatter.formatShort(amount: monthlyExpense, currencyCode: ""))")
-                    .font(.designMonoDataSmall)
-                    .foregroundStyle(Color.designAccentRed)
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 0) {
+                    Text("收")
+                        .font(.designLabel)
+                        .foregroundStyle(Color.designPrimaryFixedDim)
+                        .frame(width: 16, alignment: .leading)
+                    Text(CurrencyFormatter.formatShort(amount: monthlyIncome, currencyCode: ""))
+                        .font(.designMonoDataSmall)
+                        .foregroundStyle(Color.designPrimaryFixedDim)
+                        .frame(alignment: .leading)
+                }
+                HStack(spacing: 0) {
+                    Text("支")
+                        .font(.designLabel)
+                        .foregroundStyle(Color.designAccentRed)
+                        .frame(width: 16, alignment: .leading)
+                    Text(CurrencyFormatter.formatShort(amount: monthlyExpense, currencyCode: ""))
+                        .font(.designMonoDataSmall)
+                        .foregroundStyle(Color.designAccentRed)
+                        .frame(alignment: .leading)
+                }
             }
         }
     }
@@ -94,19 +122,19 @@ struct CalendarStripView: View {
         HStack(spacing: 0) {
             ForEach(weekLabels, id: \.self) { label in
                 Text(label)
-                    .font(.designLabel)
-                    .foregroundStyle(Color.designOnSurfaceVariant)
+                    .font(.custom("SpaceGrotesk-Bold", fixedSize: 11))
+                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+                    .tracking(1.0)
                     .frame(maxWidth: .infinity)
             }
         }
     }
 
-    // MARK: - Week Strip (shows week of selected day, or current week)
+    // MARK: - Week Strip
 
     private var weekStrip: some View {
-        let cal = Calendar.current
         let weekDates = displayWeekDates
-
+        let cal = Calendar.current
         let selMonth = cal.component(.month, from: selectedMonth)
         let selYear = cal.component(.year, from: selectedMonth)
         let today = cal.component(.day, from: Date())
@@ -114,33 +142,27 @@ struct CalendarStripView: View {
         let todayYear = cal.component(.year, from: Date())
         let isSelCurrentMonth = (todayMonth == selMonth && todayYear == selYear)
 
-        return LazyVGrid(columns: columns, spacing: 2) {
+        return HStack(spacing: 2) {
             ForEach(weekDates, id: \.self) { date in
                 let d = cal.component(.day, from: date)
                 let dm = cal.component(.month, from: date)
                 let dy = cal.component(.year, from: date)
                 let inMonth = (dm == selMonth && dy == selYear)
-                let expense = inMonth ? (dailyExpense[d] ?? 0) : 0
-                let income = inMonth ? (dailyIncome[d] ?? 0) : 0
-                let fraction = maxDailyExpense > 0 ? Double(truncating: (expense / maxDailyExpense) as NSNumber) : 0
-                let isTodayDate = isSelCurrentMonth && d == today
+                let isTodayDate = isSelCurrentMonth && d == today && inMonth
+                let isSel = selectedDay == d && inMonth
+                let hasTx = inMonth && ((dailyExpense[d] ?? 0) > 0 || (dailyIncome[d] ?? 0) > 0)
 
                 CalendarDayCell(
                     day: d,
-                    expenseFraction: fraction,
-                    hasIncome: income > 0,
+                    hasTransaction: hasTx,
                     isToday: isTodayDate,
-                    isSelected: selectedDay == d && inMonth,
-                    isCurrentMonth: inMonth
-                ) {
-                    if inMonth {
-                        if selectedDay == d {
-                            selectedDay = nil
-                        } else {
-                            selectedDay = d
-                        }
+                    isSelected: isSel,
+                    isCurrentMonth: inMonth,
+                    onTap: {
+                        if selectedDay == d { selectedDay = nil }
+                        else { selectedDay = d }
                     }
-                }
+                )
             }
         }
     }
@@ -167,49 +189,47 @@ struct CalendarStripView: View {
                 let d = prevDays - weekdayOffset + i + 1
                 CalendarDayCell(
                     day: d,
-                    expenseFraction: 0,
-                    hasIncome: false,
+                    hasTransaction: false,
                     isToday: false,
                     isSelected: false,
-                    isCurrentMonth: false
-                ) {}
+                    isCurrentMonth: false,
+                    onTap: {}
+                )
             }
 
             ForEach(1...daysInMonth, id: \.self) { d in
-                let expense = dailyExpense[d] ?? 0
-                let income = dailyIncome[d] ?? 0
-                let fraction = maxDailyExpense > 0 ? Double(truncating: (expense / maxDailyExpense) as NSNumber) : 0
+                let hasTx = (dailyExpense[d] ?? 0) > 0 || (dailyIncome[d] ?? 0) > 0
                 let isTodayDate = isSelCurrentMonth && d == today
 
                 CalendarDayCell(
                     day: d,
-                    expenseFraction: fraction,
-                    hasIncome: income > 0,
+                    hasTransaction: hasTx,
                     isToday: isTodayDate,
                     isSelected: selectedDay == d,
-                    isCurrentMonth: true
-                ) {
-                    if selectedDay == d {
-                        selectedDay = nil
-                    } else {
-                        selectedDay = d
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            isExpanded = false
+                    isCurrentMonth: true,
+                    onTap: {
+                        if selectedDay == d {
+                            selectedDay = nil
+                        } else {
+                            selectedDay = d
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                isExpanded = false
+                            }
                         }
                     }
-                }
+                )
             }
 
             if trailingCells > 0 {
                 ForEach(1...trailingCells, id: \.self) { d in
                     CalendarDayCell(
                         day: d,
-                        expenseFraction: 0,
-                        hasIncome: false,
+                        hasTransaction: false,
                         isToday: false,
                         isSelected: false,
-                        isCurrentMonth: false
-                    ) {}
+                        isCurrentMonth: false,
+                        onTap: {}
+                    )
                 }
             }
         }
@@ -227,7 +247,10 @@ struct CalendarStripView: View {
         } else {
             refDate = Date()
         }
-        let weekStart = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: refDate)) ?? refDate
-        return (0..<7).compactMap { cal.date(byAdding: .day, value: $0, to: weekStart) }
+        // Force week to start on Monday, regardless of Calendar locale
+        let weekday = cal.component(.weekday, from: refDate) // 1=Sun..7=Sat
+        let daysFromMonday = (weekday + 5) % 7
+        let monday = cal.date(byAdding: .day, value: -daysFromMonday, to: cal.startOfDay(for: refDate)) ?? refDate
+        return (0..<7).compactMap { cal.date(byAdding: .day, value: $0, to: monday) }
     }
 }

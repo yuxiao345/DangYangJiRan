@@ -20,7 +20,7 @@ struct AppLockView: View {
                         .font(.system(size: 48))
                         .foregroundStyle(Color.designPrimary)
 
-                    Text("荡漾计然")
+                    Text("钱伲")
                         .font(.custom("SpaceGrotesk-Bold", fixedSize: 28))
                         .foregroundStyle(Color.designOnSurface)
 

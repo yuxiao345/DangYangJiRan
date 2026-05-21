@@ -18,13 +18,23 @@ struct CategoryPieChartView: View {
             if let txs = transactions, !txs.isEmpty {
                 transactionList(txs)
             } else {
-                donutChart
-                categoryLegend
+                donutCard
+                categoryList
             }
         }
     }
 
-    // MARK: - Donut Chart
+    // MARK: - Donut Card
+
+    private var donutCard: some View {
+        VStack(spacing: 0) {
+            donutChart
+        }
+        .frame(maxWidth: .infinity)
+        .padding(24)
+        .glassCard(cornerRadius: 24)
+        .padding(.horizontal, 12)
+    }
 
     private var donutChart: some View {
         Chart(categories) { item in
@@ -72,25 +82,21 @@ struct CategoryPieChartView: View {
             }
         }
         .frame(height: 220)
-        .padding(12)
-        .background {
-            RoundedRectangle(cornerRadius: 4)
-                .stroke(Color.designOutlineVariant.opacity(0.3), lineWidth: 1)
-        }
-        .padding(.horizontal, 12)
     }
 
-    // MARK: - Legend
+    // MARK: - Category List
 
-    private var categoryLegend: some View {
-        VStack(spacing: 0) {
+    private var categoryList: some View {
+        VStack(spacing: 8) {
             ForEach(categories) { item in
                 Button {
                     onCategoryTap(item.id)
                 } label: {
-                    VStack(spacing: 4) {
+                    VStack(spacing: 8) {
                         HStack(spacing: 8) {
-                            PixelBlock(color: Color(hex: item.colorHex) ?? .gray, size: 10)
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(Color(hex: item.colorHex) ?? .gray)
+                                .frame(width: 12, height: 12)
 
                             Text(item.name)
                                 .font(.designBodyMedium)
@@ -108,24 +114,16 @@ struct CategoryPieChartView: View {
 
                             Image(systemName: "chevron.right")
                                 .font(.designBodySmall)
-                                .foregroundStyle(Color.designOnSurfaceVariant)
+                                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
                         }
 
                         PixelProgressBar(progress: item.percentage, tint: Color(hex: item.colorHex) ?? .gray, totalBlocks: 16)
                     }
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 12)
+                    .padding(12)
+                    .glassCard(cornerRadius: 16)
                 }
                 .buttonStyle(.plain)
-
-                if item.id != categories.last?.id {
-                    Divider().padding(.leading, 12)
-                }
             }
-        }
-        .background {
-            RoundedRectangle(cornerRadius: 4)
-                .stroke(Color.designOutlineVariant.opacity(0.3), lineWidth: 1)
         }
         .padding(.horizontal, 12)
     }
@@ -173,4 +171,3 @@ struct CategoryPieChartView: View {
         }
     }
 }
-

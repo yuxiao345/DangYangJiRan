@@ -21,7 +21,6 @@ final class AppContainer: ObservableObject {
     let projectService: ProjectServiceProtocol
     private(set) var splitService: SplitServiceProtocol?
     private(set) var budgetService: BudgetServiceProtocol
-    private(set) var installmentService: InstallmentServiceProtocol?
     private(set) var currencyService: CurrencyServiceProtocol?
     private(set) var exchangeRateService: ExchangeRateServiceProtocol?
     private(set) var syncService: SyncServiceProtocol?

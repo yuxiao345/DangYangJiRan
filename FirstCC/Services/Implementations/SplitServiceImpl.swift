@@ -32,12 +32,9 @@ struct SplitServiceImpl: SplitServiceProtocol {
         case .equal:
             let share = totalAmount / Decimal(members.count)
             entryAmounts = Array(repeating: share, count: members.count)
-        case .percentage where amounts != nil:
-            entryAmounts = amounts!
-        case .fixed where amounts != nil:
-            entryAmounts = amounts!
-        default:
-            throw SplitError.invalidAmounts
+        case .percentage, .fixed:
+            guard let amounts else { throw SplitError.invalidAmounts }
+            entryAmounts = amounts
         }
 
         for (index, member) in members.enumerated() {

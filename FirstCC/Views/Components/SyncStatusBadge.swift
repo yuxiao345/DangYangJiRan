@@ -8,12 +8,8 @@ struct SyncStatusBadge: View {
         Button {
             Task { try? await appContainer.syncService?.syncNow() }
         } label: {
-            HStack(spacing: 4) {
-                statusIcon
-                Text(appContainer.syncStatus.displayName)
-                    .font(.designBodySmall)
-                    .foregroundStyle(statusColor)
-            }
+            statusIcon
+                .foregroundStyle(statusColor)
         }
         .buttonStyle(.plain)
     }

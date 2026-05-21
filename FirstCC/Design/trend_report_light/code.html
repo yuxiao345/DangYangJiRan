@@ -1,0 +1,296 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>PIXEL_VAULT - 收支趋势</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#f0edec",
+                        "inverse-on-surface": "#f3f0ef",
+                        "on-tertiary-container": "#464748",
+                        "on-primary-fixed": "#00210c",
+                        "on-error-container": "#93000a",
+                        "tertiary": "#5d5f5f",
+                        "error-container": "#ffdad6",
+                        "surface-bright": "#fcf9f8",
+                        "secondary-container": "#e1e3e4",
+                        "tertiary-fixed": "#e2e2e2",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "on-primary-container": "#005326",
+                        "surface-tint": "#006d35",
+                        "secondary-fixed-dim": "#c5c7c8",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed": "#62ff96",
+                        "surface-variant": "#e5e2e1",
+                        "surface-container-highest": "#e5e2e1",
+                        "secondary": "#5c5f60",
+                        "on-background": "#1c1b1b",
+                        "surface-container-low": "#f6f3f2",
+                        "error": "#ba1a1a",
+                        "surface-dim": "#dcd9d9",
+                        "secondary-fixed": "#e1e3e4",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error": "#ffffff",
+                        "outline": "#6c7b6c",
+                        "on-surface-variant": "#3c4a3d",
+                        "on-secondary-container": "#626566",
+                        "on-surface": "#1c1b1b",
+                        "on-secondary-fixed": "#191c1d",
+                        "primary-fixed-dim": "#30e27a",
+                        "on-secondary-fixed-variant": "#454748",
+                        "surface": "#fcf9f8",
+                        "primary": "#006d35",
+                        "inverse-primary": "#30e27a",
+                        "tertiary-container": "#b5b6b6",
+                        "background": "#fcf9f8",
+                        "surface-container-high": "#ebe7e7",
+                        "outline-variant": "#bbcbba",
+                        "tertiary-fixed-dim": "#c6c6c7",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "inverse-surface": "#313030",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed-variant": "#005226",
+                        "primary-container": "#00d16b",
+                        "on-tertiary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-md": "24px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "64px",
+                        "gutter": "24px",
+                        "base": "8px",
+                        "container-max": "1440px",
+                        "stack-xs": "8px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "label-caps": ["JetBrains Mono"],
+                        "headline-md": ["Space Grotesk", "PingFang SC"],
+                        "mono-data": ["JetBrains Mono"],
+                        "display": ["Space Grotesk"],
+                        "display-lg-mobile": ["Space Grotesk"],
+                        "body-md": ["Space Grotesk", "PingFang SC"],
+                        "body-sm": ["Space Grotesk", "PingFang SC"],
+                        "body-lg": ["Space Grotesk", "PingFang SC"],
+                        "label-md": ["Space Grotesk", "PingFang SC"],
+                        "label-sm": ["Space Grotesk", "PingFang SC"],
+                        "headline-lg": ["Space Grotesk", "PingFang SC"]
+                    },
+                    "fontSize": {
+                        "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "mono-data": ["14px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                        "display": ["64px", {"lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+                        "display-lg-mobile": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "label-sm": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                        "headline-lg": ["40px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background: radial-gradient(circle at top left, #F8F9FA, #F2F4F7);
+            min-height: 100vh;
+            font-family: 'Space Grotesk', 'PingFang SC', sans-serif;
+        }
+        .pixel-glass {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 
+                0 4px 6px -1px rgba(0, 0, 0, 0.05),
+                0 10px 15px -3px rgba(0, 0, 0, 0.03),
+                inset 0 1px 1px rgba(255, 255, 255, 0.9);
+        }
+        .retro-grid {
+            background-image: radial-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+            background-size: 12px 12px;
+        }
+        .pixel-block-primary {
+            background-image: linear-gradient(to bottom, #006d35 80%, transparent 80%);
+            background-size: 100% 10px;
+        }
+        .pixel-block-secondary {
+            background-image: linear-gradient(to bottom, #ba1a1a 80%, transparent 80%);
+            background-size: 100% 10px;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="pb-32 text-on-surface">
+<!-- TopAppBar (Matched SCREEN_49 structure) -->
+<header class="w-full sticky top-0 z-50 bg-white/40 backdrop-blur-[24px] border-b border-black/5 shadow-sm flex items-center justify-between px-margin-mobile h-16">
+<div class="flex items-center gap-4">
+<button class="active:scale-95 duration-200 transition-transform">
+<span class="material-symbols-outlined text-primary">menu</span>
+</button>
+<h1 class="font-display-lg-mobile text-display-lg-mobile uppercase tracking-tighter text-primary">PIXEL_VAULT</h1>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-secondary opacity-60">calendar_month</span>
+<div class="w-8 h-8 rounded-full bg-primary-container overflow-hidden border border-white">
+<img alt="avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCL2ZDhGdNahtxf2rCsxniOn_L-Nkz9zzG4HfrMXsITMHDm-KOcIjK-dxxCfFIGLpaoeMkK5342xBCjTnqMfUltnKyj2OhTisNjrrCRNLW42Qok4XYWQutNDnOH_UQ2YBeysGoLsAJhXDw9zRPaZ9nec4UrV9TECx9yQkvGl42EXCKVEEx85ddjyK3aZ04qR0f4mqfevnfDOxzJK-28WLQlHGhRFDoCwwqrQD5WSHorclcHmpTTadUWEQcxwfR_SMw1nY7UwuiSARX">
+</div>
+</div>
+</header>
+<main class="px-margin-mobile pt-stack-md space-y-stack-md max-w-container-max mx-auto">
+<!-- Headline Section -->
+<div class="flex justify-between items-end">
+<div>
+<h2 class="font-headline-md text-headline-md text-primary">报表</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">财务数据概览</p>
+</div>
+<div class="flex p-1 bg-surface-container rounded-lg gap-1 border border-black/5">
+<button class="px-3 py-1 font-label-caps text-label-caps bg-primary text-on-primary rounded shadow-sm">收支趋势</button>
+<button class="px-3 py-1 font-label-caps text-label-caps text-secondary hover:text-on-surface transition-colors">分类占比</button>
+</div>
+</div>
+<!-- Range Selector -->
+<div class="flex gap-2">
+<button class="flex-1 py-2 font-label-caps text-label-caps bg-white/50 border border-black/5 rounded-lg text-secondary hover:bg-white transition-all">近1月</button>
+<button class="flex-1 py-2 font-label-caps text-label-caps bg-primary/10 border border-primary/30 rounded-lg text-primary font-bold">近6月</button>
+<button class="flex-1 py-2 font-label-caps text-label-caps bg-white/50 border border-black/5 rounded-lg text-secondary hover:bg-white transition-all">近1年</button>
+</div>
+<!-- Summary Cards -->
+<div class="grid grid-cols-3 gap-2">
+<div class="pixel-glass p-3 rounded-xl space-y-1">
+<div class="flex items-center gap-1 text-primary">
+<span class="w-2 h-2 bg-primary inline-block"></span>
+<span class="font-label-caps text-[10px] opacity-80 uppercase">收入</span>
+</div>
+<div class="font-mono-data text-headline-md text-primary">¥108k</div>
+</div>
+<div class="pixel-glass p-3 rounded-xl space-y-1">
+<div class="flex items-center gap-1 text-error">
+<span class="w-2 h-2 bg-error inline-block"></span>
+<span class="font-label-caps text-[10px] opacity-80 uppercase">支出</span>
+</div>
+<div class="font-mono-data text-headline-md text-error">¥62.6k</div>
+</div>
+<div class="pixel-glass p-3 rounded-xl space-y-1">
+<div class="flex items-center gap-1 text-tertiary">
+<span class="w-2 h-2 bg-tertiary inline-block"></span>
+<span class="font-label-caps text-[10px] opacity-80 uppercase">结余</span>
+</div>
+<div class="font-mono-data text-headline-md text-on-surface">¥45.4k</div>
+</div>
+</div>
+<!-- Main Trend Chart (Exact structure from SCREEN_49) -->
+<div class="pixel-glass rounded-2xl p-6 relative overflow-hidden">
+<div class="flex justify-between items-center mb-6">
+
+<div class="flex gap-2">
+<span class="font-label-caps text-[10px] text-on-surface-variant flex items-center gap-1">
+<span class="w-2 h-2 bg-primary"></span> 收入
+                    </span>
+<span class="font-label-caps text-[10px] text-on-surface-variant flex items-center gap-1">
+<span class="w-2 h-2 bg-error/30"></span> 支出
+                    </span>
+</div>
+</div>
+<!-- Visual Chart Simulation -->
+<div class="h-64 retro-grid relative flex items-end justify-between px-2 pb-8 pt-4">
+<!-- Data Columns with Stacked Pixel Blocks -->
+<div class="w-8 flex flex-col justify-end gap-0.5 group relative">
+<div class="w-full pixel-block-secondary h-20 opacity-30 group-hover:opacity-100 transition-opacity"></div>
+<div class="w-full pixel-block-primary h-32"></div>
+<div class="absolute -bottom-6 left-1/2 -translate-x-1/2 font-label-caps text-[10px] text-on-surface-variant">5月</div>
+</div>
+<div class="w-8 flex flex-col justify-end gap-0.5 group relative">
+<div class="w-full pixel-block-secondary h-24 opacity-30 group-hover:opacity-100 transition-opacity"></div>
+<div class="w-full pixel-block-primary h-40"></div>
+<div class="absolute -bottom-6 left-1/2 -translate-x-1/2 font-label-caps text-[10px] text-on-surface-variant">6月</div>
+</div>
+<div class="w-8 flex flex-col justify-end gap-0.5 group relative">
+<div class="w-full pixel-block-secondary h-32 opacity-30 group-hover:opacity-100 transition-opacity"></div>
+<div class="w-full pixel-block-primary h-48"></div>
+<div class="absolute -bottom-6 left-1/2 -translate-x-1/2 font-label-caps text-[10px] text-on-surface-variant">7月</div>
+</div>
+<div class="w-8 flex flex-col justify-end gap-0.5 group relative">
+<div class="w-full pixel-block-secondary h-28 opacity-30 group-hover:opacity-100 transition-opacity"></div>
+<div class="w-full pixel-block-primary h-44"></div>
+<div class="absolute -bottom-6 left-1/2 -translate-x-1/2 font-label-caps text-[10px] text-on-surface-variant">8月</div>
+</div>
+<div class="w-8 flex flex-col justify-end gap-0.5 group relative">
+<div class="w-full pixel-block-secondary h-16 opacity-30 group-hover:opacity-100 transition-opacity"></div>
+<div class="w-full pixel-block-primary h-36"></div>
+<div class="absolute -bottom-6 left-1/2 -translate-x-1/2 font-label-caps text-[10px] text-on-surface-variant">9月</div>
+</div>
+<div class="w-8 flex flex-col justify-end gap-0.5 group relative">
+<div class="w-full pixel-block-secondary h-12 opacity-30 group-hover:opacity-100 transition-opacity"></div>
+<div class="w-full pixel-block-primary h-28"></div>
+<div class="absolute -bottom-6 left-1/2 -translate-x-1/2 font-label-caps text-[10px] text-on-surface-variant">10月</div>
+</div>
+<!-- Line Overlay Simulation -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none overflow-visible px-2 pb-8 pt-4" preserveAspectRatio="none" viewBox="0 0 300 180">
+<path class="opacity-60" d="M 25,140 L 75,120 L 125,100 L 175,110 L 225,130 L 275,150" fill="none" stroke="#6c7b6c" stroke-dasharray="4 4" stroke-width="2.5"></path>
+<!-- Square Pixel Nodes -->
+<rect fill="#ffffff" height="6" stroke="#6c7b6c" stroke-width="1.5" width="6" x="22" y="137"></rect>
+<rect fill="#ffffff" height="6" stroke="#6c7b6c" stroke-width="1.5" width="6" x="72" y="117"></rect>
+<rect fill="#ffffff" height="6" stroke="#6c7b6c" stroke-width="1.5" width="6" x="122" y="97"></rect>
+<rect fill="#ffffff" height="6" stroke="#6c7b6c" stroke-width="1.5" width="6" x="172" y="107"></rect>
+<rect fill="#ffffff" height="6" stroke="#6c7b6c" stroke-width="1.5" width="6" x="222" y="127"></rect>
+<rect fill="#ffffff" height="6" stroke="#6c7b6c" stroke-width="1.5" width="6" x="272" y="147"></rect>
+</svg>
+</div>
+
+</div>
+</main>
+<!-- Bottom Navigation Bar (Matched SCREEN_49 arrangement) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-white/60 backdrop-blur-2xl border-t border-black/5 shadow-[0_-10px_30px_rgba(0,0,0,0.03)] px-4 py-2 pb-safe flex justify-around items-center rounded-t-2xl">
+<a class="flex flex-col items-center justify-center text-secondary opacity-60 hover:opacity-100 transition-opacity p-2" href="#">
+<span class="material-symbols-outlined">account_balance</span>
+<span class="font-label-caps text-[10px] mt-1">Vault</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary opacity-60 hover:opacity-100 transition-opacity p-2" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="font-label-caps text-[10px] mt-1">Ledger</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary opacity-60 hover:opacity-100 transition-opacity p-2" href="#">
+<span class="material-symbols-outlined">add_circle</span>
+<span class="font-label-caps text-[10px] mt-1">Add</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary/10 text-primary rounded-xl px-4 py-2 border border-primary/20 shadow-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">bar_chart</span>
+<span class="font-label-caps text-[10px] mt-0.5">Report</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary opacity-60 hover:opacity-100 transition-opacity p-2" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-caps text-[10px] mt-1">Set</span>
+</a>
+</nav>
+<script>
+        // Interactive visual feedback for pixel columns
+        document.querySelectorAll('.group').forEach(item => {
+            item.addEventListener('touchstart', () => {
+                item.style.transform = 'translateY(-2px)';
+                item.style.transition = 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+            });
+            item.addEventListener('touchend', () => {
+                item.style.transform = 'translateY(0)';
+            });
+        });
+    </script>
+
+
+</body></html>

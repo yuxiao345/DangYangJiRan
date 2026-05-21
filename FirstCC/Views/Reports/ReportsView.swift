@@ -37,32 +37,75 @@ struct ReportsView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                Picker("报表类型", selection: $selectedReport) {
+                // Report type picker — glass pill
+                HStack(spacing: 0) {
                     ForEach(ReportType.allCases, id: \.self) { type in
-                        Text(type.label).tag(type)
+                        Button {
+                            selectedReport = type
+                        } label: {
+                            Text(type.label)
+                                .font(.designLabel)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(
+                                    selectedReport == type
+                                        ? Color.designPrimaryContainer.opacity(0.25)
+                                        : Color.clear
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
+                        .foregroundStyle(
+                            selectedReport == type
+                                ? Color.designOnSurface
+                                : Color.designOnSurfaceVariant
+                        )
+                        .buttonStyle(.plain)
                     }
                 }
-                .pickerStyle(.segmented)
+                .padding(4)
+                .glassCard(cornerRadius: 14)
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
 
-                Picker("时段", selection: $viewModel.selectedPeriod) {
+                // Period picker — pill chips, equal width filled
+                HStack(spacing: 8) {
                     ForEach(selectedReport.supportedPeriods, id: \.self) { period in
-                        Text(period.label).tag(period)
+                        Button {
+                            viewModel.selectedPeriod = period
+                        } label: {
+                            Text(period.label)
+                                .font(.custom("JetBrainsMono-Medium", fixedSize: 12))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                                .background(
+                                    viewModel.selectedPeriod == period
+                                        ? Color.designPrimaryContainer.opacity(0.2)
+                                        : Color.designSurfaceContainer.opacity(0.6)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
+                        .foregroundStyle(
+                            viewModel.selectedPeriod == period
+                                ? Color.designOnSurface
+                                : Color.designOnSurfaceVariant
+                        )
+                        .buttonStyle(.plain)
                     }
                 }
-                .pickerStyle(.segmented)
+                .padding(4)
+                .glassCard(cornerRadius: 14)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
 
-                // Temporary seed button
+                #if DEBUG
                 Button("生成测试数据") {
                     guard let ledger = appContainer.currentLedger else { return }
                     viewModel.seedTestData(ledger: ledger, context: modelContext)
                 }
-                .font(.designBodySmall)
-                .foregroundStyle(.secondary)
+                .font(.custom("JetBrainsMono-Medium", fixedSize: 10))
+                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
                 .padding(.bottom, 4)
+                #endif
 
                 switch selectedReport {
                 case .category:
@@ -73,7 +116,6 @@ struct ReportsView: View {
                 }
             }
             .navigationTitle("报表")
-            .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(item: $selectedTransaction) { tx in
                 TransactionDetailView(transaction: tx)
             }

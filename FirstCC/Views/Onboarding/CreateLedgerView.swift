@@ -11,6 +11,7 @@ struct CreateLedgerView: View {
     @State private var name = ""
     @State private var ledgerType: LedgerType = .family
     @State private var currencyCode = "CNY"
+    @State private var errorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -32,6 +33,14 @@ struct CreateLedgerView: View {
                 }
             }
             .navigationTitle("创建账本")
+            .alert("创建失败", isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )) {
+                Button("好") { errorMessage = nil }
+            } message: {
+                Text(errorMessage ?? "")
+            }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("创建") {
@@ -57,7 +66,7 @@ struct CreateLedgerView: View {
             onDone?(ledger)
             dismiss()
         } catch {
-            print("Failed to create ledger: \(error)")
+            errorMessage = error.localizedDescription
         }
     }
 }

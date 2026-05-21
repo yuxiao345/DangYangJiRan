@@ -11,61 +11,117 @@ struct AccountRowView: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
-            accountIcon
-                .frame(width: 32)
+        HStack(spacing: 10) {
+            iconView
+                .frame(width: 32, height: 32)
+                .background(
+                    RoundedRectangle(cornerRadius: 9)
+                        .fill(Color.designSurfaceContainer.opacity(0.6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 9)
+                                .stroke(accentColor.opacity(0.3), lineWidth: 1)
+                        )
+                )
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(LocalizedStringKey(account.name))
                     .font(.designBodyMedium)
-                Text(account.type.displayName)
-                    .font(.designBodySmall)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.designOnSurface)
+                if let badge = typeBadge {
+                    Text(badge)
+                        .font(.custom("JetBrainsMono-Medium", fixedSize: 10))
+                        .foregroundStyle(accentColor)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(accentColor.opacity(0.12))
+                        .clipShape(Capsule())
+                }
             }
 
             Spacer()
 
             VStack(alignment: .trailing, spacing: 2) {
-                CurrencyText(amount: balance, currencyCode: account.currencyCode, showSign: true, size: 17, foregroundColor: balance >= 0 ? .green : .red)
+                CurrencyText(
+                    amount: balance,
+                    currencyCode: account.currencyCode,
+                    showSign: true,
+                    size: 17,
+                    foregroundColor: balanceColor
+                )
 
                 if account.type == .lending, let info = lendingInfo {
-                    HStack(spacing: 4) {
-                        Text("应收")
-                            .font(.designBodySmall)
-                            .foregroundStyle(.secondary)
-                        CurrencyText(amount: info.lendOutPending, currencyCode: account.currencyCode, showSign: false, size: 11, foregroundColor: info.lendOutPending > 0 ? .orange : .secondary)
-                    }
-                    HStack(spacing: 4) {
-                        Text("应付")
-                            .font(.designBodySmall)
-                            .foregroundStyle(.secondary)
-                        CurrencyText(amount: info.borrowInPending, currencyCode: account.currencyCode, showSign: false, size: 11, foregroundColor: info.borrowInPending > 0 ? .blue : .secondary)
-                    }
+                    lendingSubtext(info: info)
                 }
             }
         }
-        .padding(.vertical, 4)
+        .padding(14)
+        .glassCard(cornerRadius: 16)
     }
 
-    @ViewBuilder
-    private var accountIcon: some View {
-        if let data = account.customIconData, let uiImage = UIImage(data: data) {
-            Image(uiImage: uiImage)
-                .resizable()
-                .scaledToFit()
-                .clipShape(RoundedRectangle(cornerRadius: 4))
-        } else {
-            Image(systemName: account.iconName ?? "creditcard")
-                .font(.title3)
-                .foregroundStyle(accountColor)
+    // MARK: - Icon
+
+    private var iconView: some View {
+        Group {
+            if let data = account.customIconData, let uiImage = UIImage(data: data) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFit()
+                    .padding(7)
+            } else {
+                Image(systemName: account.iconName ?? account.type.systemIcon)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(accentColor)
+            }
         }
     }
 
-    private var accountColor: Color {
-        if let hex = account.colorHex {
-            Color(hex: hex)
-        } else {
-            .blue
+    // MARK: - Badge
+
+    private var typeBadge: String? {
+        switch account.type {
+        case .creditCard:
+            if balance < 0 { return "待还款" }
+            return nil
+        case .lending:
+            return "借贷"
+        default:
+            return nil
         }
+    }
+
+    // MARK: - Lending subtext
+
+    private func lendingSubtext(info: LendingAccountInfo) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            if info.lendOutPending > 0 {
+                HStack(spacing: 4) {
+                    Text("应收")
+                        .font(.designBodySmall)
+                        .foregroundStyle(Color.designOnSurfaceVariant)
+                    CurrencyText(amount: info.lendOutPending, currencyCode: account.currencyCode, showSign: false, size: 11, foregroundColor: .orange)
+                }
+            }
+            if info.borrowInPending > 0 {
+                HStack(spacing: 4) {
+                    Text("应付")
+                        .font(.designBodySmall)
+                        .foregroundStyle(Color.designOnSurfaceVariant)
+                    CurrencyText(amount: info.borrowInPending, currencyCode: account.currencyCode, showSign: false, size: 11, foregroundColor: .blue)
+                }
+            }
+        }
+    }
+
+    // MARK: - Colors
+
+    private var accentColor: Color {
+        Color.accountAccent(for: account.type)
+    }
+
+    private var balanceColor: Color {
+        if account.type == .creditCard {
+            return balance < 0 ? .designAccentRed : .designPrimaryFixedDim
+        }
+        return balance >= 0 ? .designPrimaryFixedDim : .designAccentRed
     }
 }

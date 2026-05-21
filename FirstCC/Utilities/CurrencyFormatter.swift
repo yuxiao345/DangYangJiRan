@@ -32,6 +32,7 @@ struct CurrencyFormatter {
     ) -> String {
         let absValue = amount.absoluteValue
         let sign = amount.isNegative ? "-" : ""
+        let symbol = simpleCurrencySymbol(for: currencyCode.isEmpty ? "CNY" : currencyCode)
 
         if absValue >= 10000 {
             let wan = absValue / 10000
@@ -40,11 +41,34 @@ struct CurrencyFormatter {
             formatter.maximumFractionDigits = 1
             formatter.minimumFractionDigits = 0
             if let formatted = formatter.string(from: number) {
-                return "\(sign)\(formatted)万"
+                return "\(sign)\(symbol)\(formatted)万"
             }
         }
 
-        return format(amount: amount, currencyCode: currencyCode, showSign: false)
+        let number = NSDecimalNumber(decimal: absValue)
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 0
+        formatter.minimumFractionDigits = 0
+        formatter.usesGroupingSeparator = true
+        if let formatted = formatter.string(from: number) {
+            return "\(sign)\(symbol)\(formatted)"
+        }
+        return "\(sign)\(symbol)0"
+    }
+
+    static func formatDecimal(
+        amount: Decimal,
+        fractionDigits: Int = 2,
+        showAbs: Bool = false
+    ) -> String {
+        let value = showAbs ? amount.absoluteValue : amount
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.minimumFractionDigits = fractionDigits
+        formatter.maximumFractionDigits = fractionDigits
+        formatter.usesGroupingSeparator = true
+        return formatter.string(from: value as NSDecimalNumber) ?? "\(value)"
     }
 
     private static func simpleCurrencySymbol(for code: String) -> String {

@@ -23,9 +23,6 @@ final class Account {
     @Relationship(deleteRule: .nullify)
     var transactions: [Transaction]? = []
 
-    @Relationship(deleteRule: .cascade)
-    var installmentPlans: [InstallmentPlan]? = []
-
     var type: AccountType {
         get { AccountType(rawValue: typeRaw) ?? .other }
         set { typeRaw = newValue.rawValue }

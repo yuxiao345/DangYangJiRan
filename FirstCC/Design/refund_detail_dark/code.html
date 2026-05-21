@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>退款交易 - Pixel-Glass UI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        .glass-card {
+            backdrop-filter: blur(40px);
+            background: rgba(255, 255, 255, 0.05);
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 10px 15px -3px rgba(0,0,0,0.2);
+        }
+
+        .pixel-border-sm {
+            box-shadow: 0 0 0 1px rgba(0, 255, 127, 0.2);
+            position: relative;
+        }
+
+        .pixel-border-sm::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border: 1px solid rgba(0, 255, 127, 0.1);
+            pointer-events: none;
+        }
+
+        .chunky-progress {
+            background: repeating-linear-gradient(
+                90deg,
+                #00e471 0,
+                #00e471 8px,
+                transparent 8px,
+                transparent 10px
+            );
+        }
+
+        body {
+            background-color: #131313;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(0, 228, 113, 0.08) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(117, 33, 255, 0.05) 0px, transparent 50%);
+            min-height: 100vh;
+        }
+
+        /* Input specific styling to match Pixel-Glass */
+        input::placeholder {
+            color: rgba(185, 203, 184, 0.4);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#ffb3af",
+                        "on-primary": "#003917",
+                        "surface-variant": "#353534",
+                        "on-tertiary-container": "#7521ff",
+                        "on-secondary-fixed": "#410005",
+                        "surface-container": "#201f1f",
+                        "error": "#ffb4ab",
+                        "background": "#131313",
+                        "secondary-container": "#91081a",
+                        "error-container": "#93000a",
+                        "inverse-on-surface": "#313030",
+                        "on-primary-container": "#007134",
+                        "surface-dim": "#131313",
+                        "on-secondary-fixed-variant": "#91081a",
+                        "primary-container": "#00ff7f",
+                        "outline": "#849584",
+                        "tertiary-fixed-dim": "#d1bcff",
+                        "surface-tint": "#00e471",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-container": "#ff9994",
+                        "on-tertiary-fixed": "#23005b",
+                        "on-secondary": "#68000e",
+                        "surface-container-highest": "#353534",
+                        "secondary-fixed": "#ffdad7",
+                        "tertiary": "#fff9ff",
+                        "on-tertiary-fixed-variant": "#5700c9",
+                        "inverse-surface": "#e5e2e1",
+                        "on-primary-fixed-variant": "#005224",
+                        "on-primary-fixed": "#00210b",
+                        "surface-container-low": "#1c1b1b",
+                        "primary-fixed-dim": "#00e471",
+                        "on-error": "#690005",
+                        "primary": "#f0ffed",
+                        "inverse-primary": "#006d33",
+                        "on-surface": "#e5e2e1",
+                        "on-tertiary": "#3c0090",
+                        "surface-container-high": "#2a2a2a",
+                        "primary-fixed": "#63ff93",
+                        "on-surface-variant": "#b9cbb8",
+                        "surface-container-lowest": "#0e0e0e",
+                        "on-background": "#e5e2e1",
+                        "outline-variant": "#3b4b3c",
+                        "tertiary-container": "#e6d8ff",
+                        "surface-bright": "#3a3939",
+                        "tertiary-fixed": "#e9ddff",
+                        "surface": "#131313",
+                        "secondary-fixed-dim": "#ffb3af"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "stack-xs": "8px",
+                        "margin-desktop": "40px",
+                        "stack-xl": "64px",
+                        "stack-md": "24px",
+                        "gutter": "24px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Space Grotesk", "sans-serif"],
+                        "mono-data": ["JetBrains Mono", "monospace"],
+                        "label-caps": ["JetBrains Mono", "monospace"],
+                        "headline-md": ["Space Grotesk", "sans-serif"],
+                        "display-lg": ["Space Grotesk", "sans-serif"],
+                        "display-lg-mobile": ["Space Grotesk", "sans-serif"],
+                        "body-lg": ["Space Grotesk", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "mono-data": ["14px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                        "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "display-lg-mobile": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-sm text-on-surface antialiased">
+<!-- Top AppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-4 h-16 bg-white/5 dark:bg-white/10 backdrop-blur-xl border-b border-white/5 shadow-sm rounded-b-xl">
+<button class="text-on-surface-variant font-label-md text-[14px] hover:opacity-80 transition-opacity active:scale-95 duration-150">取消</button>
+<h1 class="font-headline-md text-headline-md text-on-surface font-semibold tracking-tight">退款</h1>
+<button class="text-primary-container font-label-md text-[14px] font-bold hover:opacity-80 transition-opacity active:scale-95 duration-150">确认退款</button>
+</header>
+<main class="pt-24 pb-32 px-4 max-w-md mx-auto space-y-6">
+<!-- Original Transaction Summary -->
+<section class="glass-card rounded-[24px] p-6 space-y-4">
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant font-body-sm">原交易金额</span>
+<span class="font-mono-data text-body-lg text-on-surface">¥ 5,000.00</span>
+</div>
+<div class="h-[1px] bg-white/5 w-full"></div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant font-body-sm">原交易日期</span>
+<span class="font-mono-data text-body-sm text-on-surface-variant">2026年5月20日</span>
+</div>
+</section>
+<!-- Form Section Header -->
+<div class="px-2">
+<h2 class="text-on-surface-variant font-label-caps uppercase tracking-widest text-[12px]">退款信息</h2>
+</div>
+<!-- Refund Input Section -->
+<section class="glass-card rounded-[24px] overflow-hidden">
+<!-- Amount Input -->
+<div class="p-6 pb-2">
+<div class="flex items-baseline space-x-2 border-b border-white/10 pb-4 group focus-within:border-primary-container transition-colors">
+<span class="text-headline-md font-mono-data text-on-surface">¥</span>
+<input class="bg-transparent border-none focus:ring-0 w-full font-display-lg-mobile text-display-lg-mobile text-on-surface font-bold tracking-tight outline-none" placeholder="0.00" type="text" value="5,000"/>
+</div>
+<div class="mt-2 flex justify-between items-center">
+<span class="text-on-surface-variant text-[12px] font-body-sm">最大可退金额 ¥ 5,000.00</span>
+<div class="h-1.5 w-24 bg-white/5 rounded-full overflow-hidden">
+<div class="h-full w-full chunky-progress"></div>
+</div>
+</div>
+</div>
+<!-- Date Selector -->
+<div class="px-6 py-4 flex justify-between items-center border-t border-white/5 group cursor-pointer hover:bg-white/5 transition-colors">
+<span class="text-on-surface font-body-sm">退款日期</span>
+<div class="flex items-center space-x-2 bg-primary-container/10 px-3 py-1.5 rounded-xl border border-primary-container/20">
+<span class="font-mono-data text-primary-container text-body-sm">2026年5月21日</span>
+<span class="material-symbols-outlined text-[18px] text-primary-container">calendar_today</span>
+</div>
+</div>
+<!-- Notes Input -->
+<div class="px-6 py-6 border-t border-white/5">
+<textarea class="bg-surface-container-low/40 rounded-xl w-full p-4 border border-white/5 text-on-surface font-body-sm focus:border-primary-container/50 focus:ring-0 outline-none transition-all min-h-[100px]" placeholder="备注 (可选)"></textarea>
+</div>
+</section>
+<!-- Visual Decorative Element (Pixel Art Style) -->
+<div class="flex justify-center py-4">
+<div class="flex space-x-1">
+<div class="w-2 h-2 bg-primary-container/20"></div>
+<div class="w-2 h-2 bg-primary-container/40"></div>
+<div class="w-2 h-2 bg-primary-container"></div>
+<div class="w-2 h-2 bg-primary-container/40"></div>
+<div class="w-2 h-2 bg-primary-container/20"></div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-8 pt-4 bg-white/5 dark:bg-white/10 backdrop-blur-2xl border-t border-white/5 rounded-t-[32px] shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-white/5 p-2 rounded-xl transition-all cursor-pointer">
+<span class="material-symbols-outlined mb-1">receipt_long</span>
+<span class="font-label-sm text-[10px]">明细</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-white/5 p-2 rounded-xl transition-all cursor-pointer">
+<span class="material-symbols-outlined mb-1">analytics</span>
+<span class="font-label-sm text-[10px]">统计</span>
+</div>
+<!-- Center Action (Conceptual FAB placement for layout balance) -->
+<div class="flex flex-col items-center justify-center -mt-8">
+<div class="w-14 h-14 bg-primary-container rounded-[18px] flex items-center justify-center shadow-lg shadow-primary-container/20 active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-on-primary font-bold text-[32px]">add</span>
+</div>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-white/5 p-2 rounded-xl transition-all cursor-pointer">
+<span class="material-symbols-outlined mb-1">family_restroom</span>
+<span class="font-label-sm text-[10px]">家庭</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-white/5 p-2 rounded-xl transition-all cursor-pointer">
+<span class="material-symbols-outlined mb-1">settings</span>
+<span class="font-label-sm text-[10px]">设置</span>
+</div>
+</nav>
+<!-- Subtle Grain Overlay for Nostalgia -->
+<div class="fixed inset-0 pointer-events-none opacity-[0.03] z-[9999]" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCpPGyf3GXQ67O69ZZoG462D0chBftPk5zdDFd60WMibyJmpYFQoGTuqHv1UHOH-Z4-Phh3Z_4bgevGCmsCzvv5Q1oxIVNCvmU33BEBGyqcYxqpScvWaYdFgE3QVkcBcYn910rb8CIYPygmbo2q-B6lo17lUsMMdhcUipj4TNuWuv2XX9eC4h9C0z-CNKsfy6e6DxSXngaZ7ZOLVhj32z0gHH872YVMt4KA-cqZN8h41QWeHgay7IgSjMCHZOlv6Xk676fusq3ZBWt8');"></div>
+<script>
+        // Micro-interaction for the confirm button
+        document.querySelector('.text-primary-container').addEventListener('click', function() {
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = 'scale(1)';
+                alert('退款申请已提交');
+            }, 150);
+        });
+
+        // Numeric input formatting
+        const amountInput = document.querySelector('input[type="text"]');
+        amountInput.addEventListener('input', function(e) {
+            let val = e.target.value.replace(/[^\d.]/g, '');
+            if (val.split('.').length > 2) val = val.substring(0, val.lastIndexOf('.'));
+            e.target.value = val;
+        });
+    </script>
+</body></html>

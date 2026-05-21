@@ -21,21 +21,22 @@ enum ReportPeriod: Hashable {
     var dateRange: Range<Date>? {
         let cal = Calendar.current
         let now = Date()
+        let end = cal.date(byAdding: .day, value: 1, to: now) ?? now
         switch self {
         case .thisMonth:
-            return now.startOfMonth..<cal.date(byAdding: .day, value: 1, to: now)!
+            return now.startOfMonth..<end
         case .last3Months:
             guard let start = cal.date(byAdding: .month, value: -3, to: now)?.startOfMonth else { return nil }
-            return start..<cal.date(byAdding: .day, value: 1, to: now)!
+            return start..<end
         case .last6Months:
             guard let start = cal.date(byAdding: .month, value: -6, to: now)?.startOfMonth else { return nil }
-            return start..<cal.date(byAdding: .day, value: 1, to: now)!
+            return start..<end
         case .lastYear:
             guard let start = cal.date(byAdding: .year, value: -1, to: now)?.startOfMonth else { return nil }
-            return start..<cal.date(byAdding: .day, value: 1, to: now)!
+            return start..<end
         case .last3Years:
             guard let start = cal.date(byAdding: .year, value: -3, to: now)?.startOfYear else { return nil }
-            return start..<cal.date(byAdding: .day, value: 1, to: now)!
+            return start..<end
         }
     }
 }
@@ -301,7 +302,7 @@ final class ReportViewModel {
                     )
                     prevYear = yearKey
                 }
-                var entry = byYearMonth[compoundKey]!
+                guard var entry = byYearMonth[compoundKey] else { continue }
                 if t.type == .income {
                     entry.income += ledgerAmount(t)
                 } else {
@@ -309,14 +310,15 @@ final class ReportViewModel {
                 }
                 byYearMonth[compoundKey] = entry
             }
-            trendData = order.map { key in
-                let v = byYearMonth[key]!
-                return TrendDataPoint(
-                    label: key,
-                    yearLabel: v.yearLabel,
-                    income: v.income,
-                    expense: v.expense
-                )
+            trendData = order.compactMap { key in
+                byYearMonth[key].map { v in
+                    TrendDataPoint(
+                        label: key,
+                        yearLabel: v.yearLabel,
+                        income: v.income,
+                        expense: v.expense
+                    )
+                }
             }
 
             if let maxIn = trendData.max(by: { $0.income < $1.income }), maxIn.income > 0 {
@@ -348,7 +350,7 @@ final class ReportViewModel {
                     monthOrder.append(key)
                     byMonth[key] = (0, 0)
                 }
-                var entry = byMonth[key]!
+                guard var entry = byMonth[key] else { continue }
                 if t.type == .income {
                     entry.income += ledgerAmount(t)
                 } else {
@@ -356,9 +358,10 @@ final class ReportViewModel {
                 }
                 byMonth[key] = entry
             }
-            trendData = monthOrder.map { key in
-                let v = byMonth[key]!
-                return TrendDataPoint(label: key, yearLabel: nil, income: v.income, expense: v.expense)
+            trendData = monthOrder.compactMap { key in
+                byMonth[key].map { v in
+                    TrendDataPoint(label: key, yearLabel: nil, income: v.income, expense: v.expense)
+                }
             }
 
             if let maxIn = trendData.max(by: { $0.income < $1.income }), maxIn.income > 0 {
@@ -370,8 +373,9 @@ final class ReportViewModel {
         }
     }
 
-    // MARK: - Test data seeding (temporary)
+    // MARK: - Test data seeding (DEBUG only)
 
+    #if DEBUG
     func seedTestData(
         ledger: Ledger,
         context: ModelContext
@@ -403,8 +407,11 @@ final class ReportViewModel {
         }
 
         let cal = Calendar.current
-        var date = cal.date(from: DateComponents(year: 2025, month: 1, day: 1))!
-        let endDate = cal.date(from: DateComponents(year: 2026, month: 5, day: 1))!
+        guard var date = cal.date(from: DateComponents(year: 2025, month: 1, day: 1)),
+              let endDate = cal.date(from: DateComponents(year: 2026, month: 5, day: 1)) else {
+            print("Seed: date creation failed")
+            return
+        }
 
         var count = 0
         while date < endDate {
@@ -441,7 +448,11 @@ final class ReportViewModel {
                 count += 1
             }
 
-            date = cal.date(byAdding: .day, value: 1, to: date)!
+            guard let nextDate = cal.date(byAdding: .day, value: 1, to: date) else {
+                print("Seed: date iteration failed at \(date)")
+                break
+            }
+            date = nextDate
 
             // Save in batches
             if count % 200 == 0 {
@@ -452,6 +463,7 @@ final class ReportViewModel {
         try? context.save()
         print("Seed complete: \(count) transactions")
     }
+    #endif
 
     func selectCategory(_ id: UUID?) {
         if selectedCategoryID == id {

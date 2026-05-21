@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PIXEL_VAULT | Transaction Flow</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            background-color: #131313;
+            color: #e5e2e1;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .pixel-border {
+            box-shadow: 
+                0 -4px 0 0 #00ff7f,
+                0 4px 0 0 #00ff7f,
+                -4px 0 0 0 #00ff7f,
+                4px 0 0 0 #00ff7f;
+        }
+
+        .glass-edge {
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .mesh-gradient {
+            background: radial-gradient(at 0% 0%, rgba(0, 255, 127, 0.15) 0px, transparent 50%),
+                        radial-gradient(at 100% 100%, rgba(145, 8, 26, 0.1) 0px, transparent 50%),
+                        radial-gradient(at 50% 50%, rgba(20, 20, 20, 1) 0px, transparent 100%);
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .pixel-text-shadow {
+            text-shadow: 2px 2px 0px rgba(0, 255, 127, 0.3);
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 127, 0.2);
+            border-radius: 10px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#23005b",
+                        "surface-bright": "#3a3939",
+                        "secondary-fixed-dim": "#ffb3af",
+                        "on-error": "#690005",
+                        "primary-container": "#00ff7f",
+                        "surface-container": "#201f1f",
+                        "primary-fixed": "#63ff93",
+                        "on-surface-variant": "#b9cbb8",
+                        "inverse-primary": "#006d33",
+                        "outline": "#849584",
+                        "surface-container-lowest": "#0e0e0e",
+                        "on-secondary-fixed-variant": "#91081a",
+                        "surface-tint": "#00e471",
+                        "inverse-surface": "#e5e2e1",
+                        "inverse-on-surface": "#313030",
+                        "on-surface": "#e5e2e1",
+                        "surface": "#131313",
+                        "on-primary": "#003917",
+                        "surface-container-high": "#2a2a2a",
+                        "on-secondary-container": "#ff9994",
+                        "surface-dim": "#131313",
+                        "secondary": "#ffb3af",
+                        "on-tertiary": "#3c0090",
+                        "outline-variant": "#3b4b3c",
+                        "on-secondary-fixed": "#410005",
+                        "tertiary-fixed-dim": "#d1bcff",
+                        "surface-container-highest": "#353534",
+                        "background": "#131313",
+                        "on-background": "#e5e2e1",
+                        "primary-fixed-dim": "#00e471",
+                        "on-primary-fixed": "#00210b",
+                        "primary": "#f0ffed",
+                        "tertiary-fixed": "#e9ddff",
+                        "on-tertiary-container": "#7521ff",
+                        "tertiary-container": "#e6d8ff",
+                        "on-tertiary-fixed-variant": "#5700c9",
+                        "secondary-container": "#91081a",
+                        "error": "#ffb4ab",
+                        "error-container": "#93000a",
+                        "surface-variant": "#353534",
+                        "secondary-fixed": "#ffdad7",
+                        "on-secondary": "#68000e",
+                        "on-primary-fixed-variant": "#005224",
+                        "on-primary-container": "#007134",
+                        "tertiary": "#fff9ff",
+                        "surface-container-low": "#1c1b1b",
+                        "on-error-container": "#ffdad6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-xs": "8px",
+                        "stack-xl": "64px",
+                        "unit": "4px",
+                        "stack-md": "24px",
+                        "gutter": "24px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "40px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Space Grotesk"],
+                        "display-lg-mobile": ["Space Grotesk"],
+                        "mono-data": ["JetBrains Mono"],
+                        "label-caps": ["JetBrains Mono"],
+                        "display-lg": ["Space Grotesk"],
+                        "body-sm": ["Space Grotesk"],
+                        "body-lg": ["Space Grotesk"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "display-lg-mobile": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "mono-data": ["14px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                        "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-sm text-on-surface">
+<div class="mesh-gradient"></div>
+<!-- Top AppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface/60 dark:bg-surface-container/60 backdrop-blur-[40px] border-b border-white/20 shadow-md flex justify-between items-center px-gutter py-stack-xs">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden border border-primary-container/30">
+<img alt="User" class="w-full h-full object-cover" data-alt="A detailed pixel-art avatar of a modern tech user with neon green hair and cybernetic goggles. The art style is clean 8-bit aesthetic with sharp edges and vibrant colors. The background is a subtle dark glass texture, maintaining a high-end futuristic profile identity consistent with a premium fintech application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWvsg1UJ1YHJQJAI2CS9JuwVlJQLGrAEDKqbC6j_cd-kIwRWzxryo4JwYirjhuMu46l1Hjas0Vpdo5UZyTe7Hh4pHrLLyS0Nz8xitBUk376xUs4XtqSM4uk9BuGgFK-MvdDY1HSGtvDBoa2nB11nxEAo7N-RYa3J4Q9rjE1bYIrXuMG8TK-XmOaQGlHlAWPRZwhYmerLVOcckDT1ndXKjarTcoBPZVBS3_M3GQEcBO6BssyjKXsQ2uWPFW7vaWkzvP0GGg0aiO40Ps"/>
+</div>
+<span class="font-display-lg text-headline-md tracking-tighter text-primary dark:text-primary-fixed">PIXEL_VAULT</span>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant dark:text-outline hover:bg-white/10 transition-colors p-2 rounded-lg active:scale-95 duration-200" data-icon="settings">settings</button>
+</header>
+<main class="pt-20 pb-24 px-4 max-w-xl mx-auto space-y-stack-md">
+<!-- Calendar Section -->
+<section class="bg-surface/80 dark:bg-surface-container-highest/60 backdrop-blur-[24px] rounded-2xl glass-edge p-stack-md shadow-xl">
+<div class="flex justify-between items-center mb-6">
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-primary-fixed">2024年10月</span>
+<h2 class="font-headline-md text-headline-md">收支明细</h2>
+</div>
+<div class="bg-surface-container-low/40 px-3 py-1 rounded-xl border border-white/10 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-primary-fixed" data-icon="calendar_today">calendar_today</span>
+<span class="font-mono-data text-mono-data">24日, 周四</span>
+</div>
+</div>
+<!-- Week Strip -->
+<div class="flex justify-between items-center gap-2">
+<!-- Days -->
+<div class="flex flex-col items-center gap-2 flex-1">
+<span class="font-label-caps text-[10px] text-outline opacity-70">Mon</span>
+<div class="w-full py-3 rounded-lg text-center hover:bg-white/5 transition-colors cursor-pointer">
+<span class="font-mono-data text-on-surface">21</span>
+</div>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1">
+<span class="font-label-caps text-[10px] text-outline opacity-70">Tue</span>
+<div class="w-full py-3 rounded-lg text-center hover:bg-white/5 transition-colors cursor-pointer">
+<span class="font-mono-data text-on-surface">22</span>
+</div>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1">
+<span class="font-label-caps text-[10px] text-outline opacity-70">Wed</span>
+<div class="w-full py-3 rounded-lg text-center hover:bg-white/5 transition-colors cursor-pointer">
+<span class="font-mono-data text-on-surface">23</span>
+</div>
+</div>
+<!-- Selected Day -->
+<div class="flex flex-col items-center gap-2 flex-1">
+<span class="font-label-caps text-[10px] text-primary-fixed font-bold">Thu</span>
+<div class="w-full py-3 bg-primary-container/20 glass-edge rounded-lg text-center relative overflow-hidden">
+<div class="absolute inset-0 pixel-border opacity-60"></div>
+<span class="font-mono-data text-primary-fixed font-bold relative z-10">24</span>
+</div>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1">
+<span class="font-label-caps text-[10px] text-outline opacity-70">Fri</span>
+<div class="w-full py-3 rounded-lg text-center hover:bg-white/5 transition-colors cursor-pointer">
+<span class="font-mono-data text-on-surface">25</span>
+</div>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1">
+<span class="font-label-caps text-[10px] text-outline opacity-70">Sat</span>
+<div class="w-full py-3 rounded-lg text-center hover:bg-white/5 transition-colors cursor-pointer">
+<span class="font-mono-data text-on-surface">26</span>
+</div>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1">
+<span class="font-label-caps text-[10px] text-outline opacity-70">Sun</span>
+<div class="w-full py-3 rounded-lg text-center hover:bg-white/5 transition-colors cursor-pointer">
+<span class="font-mono-data text-on-surface">27</span>
+</div>
+</div>
+</div>
+<!-- Expand Handle -->
+<div class="mt-4 flex justify-center">
+<button class="w-8 h-1 bg-outline/30 rounded-full hover:bg-primary-fixed/50 transition-colors"></button>
+</div>
+</section>
+<!-- Transaction List Section -->
+<div class="flex items-center justify-between px-2">
+<h3 class="font-headline-md text-headline-md text-on-surface">10月24日 流水</h3>
+<span class="font-label-caps text-label-caps text-outline">共 4 笔</span>
+</div>
+<section class="space-y-4">
+<!-- Transaction Card 1 -->
+<div class="group bg-surface/40 hover:bg-surface/60 backdrop-blur-[40px] rounded-2xl glass-edge p-4 flex items-center justify-between transition-all duration-300 active:scale-[0.98]">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-container-highest rounded-lg border-2 border-outline-variant group-hover:border-primary-fixed flex items-center justify-center transition-colors overflow-hidden">
+<span class="material-symbols-outlined text-primary-fixed" data-icon="coffee">coffee</span>
+</div>
+<div>
+<h4 class="font-body-lg text-on-surface">餐饮美食 - 瑞幸咖啡</h4>
+<p class="font-label-caps text-[11px] text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]" data-icon="schedule">schedule</span> 08:30
+                        </p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-headline-md text-headline-md text-on-surface">- ¥28.00</span>
+</div>
+</div>
+<!-- Transaction Card 2 -->
+<div class="group bg-surface/40 hover:bg-surface/60 backdrop-blur-[40px] rounded-2xl glass-edge p-4 flex items-center justify-between transition-all duration-300 active:scale-[0.98]">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-container-highest rounded-lg border-2 border-outline-variant group-hover:border-primary-fixed flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-primary-fixed" data-icon="shopping_bag">shopping_bag</span>
+</div>
+<div>
+<h4 class="font-body-lg text-on-surface">购物消费 - 7-Eleven</h4>
+<p class="font-label-caps text-[11px] text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]" data-icon="schedule">schedule</span> 12:15
+                        </p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-headline-md text-headline-md text-on-surface">- ¥45.50</span>
+</div>
+</div>
+<!-- Transaction Card 3 (Income) -->
+<div class="group bg-surface/40 hover:bg-surface/60 backdrop-blur-[40px] rounded-2xl glass-edge p-4 flex items-center justify-between transition-all duration-300 active:scale-[0.98]">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-container-highest rounded-lg border-2 border-outline-variant group-hover:border-primary-fixed flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-primary-fixed" data-icon="payments" data-weight="fill">payments</span>
+</div>
+<div>
+<h4 class="font-body-lg text-on-surface">工资收入 - 字节跳动</h4>
+<p class="font-label-caps text-[11px] text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]" data-icon="schedule">schedule</span> 15:00
+                        </p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-headline-md text-headline-md text-primary-fixed">+ ¥24,000.00</span>
+</div>
+</div>
+<!-- Transaction Card 4 -->
+<div class="group bg-surface/40 hover:bg-surface/60 backdrop-blur-[40px] rounded-2xl glass-edge p-4 flex items-center justify-between transition-all duration-300 active:scale-[0.98]">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-container-highest rounded-lg border-2 border-outline-variant group-hover:border-primary-fixed flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-primary-fixed" data-icon="directions_car">directions_car</span>
+</div>
+<div>
+<h4 class="font-body-lg text-on-surface">出行交通 - 滴滴出行</h4>
+<p class="font-label-caps text-[11px] text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]" data-icon="schedule">schedule</span> 18:45
+                        </p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-headline-md text-headline-md text-on-surface">- ¥32.00</span>
+</div>
+</div>
+<!-- Transaction Card 5 -->
+<div class="group bg-surface/40 hover:bg-surface/60 backdrop-blur-[40px] rounded-2xl glass-edge p-4 flex items-center justify-between transition-all duration-300 active:scale-[0.98]">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-container-highest rounded-lg border-2 border-outline-variant group-hover:border-primary-fixed flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-primary-fixed" data-icon="local_mall">local_mall</span>
+</div>
+<div>
+<h4 class="font-body-lg text-on-surface">生活百货 - 盒马鲜生</h4>
+<p class="font-label-caps text-[11px] text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]" data-icon="schedule">schedule</span> 20:10
+                        </p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-headline-md text-headline-md text-on-surface">- ¥156.20</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full z-50 rounded-t-xl bg-surface/80 dark:bg-surface-container-highest/80 backdrop-blur-[24px] border-t border-white/20 shadow-[0_-4px_10px_rgba(0,0,0,0.1)] flex justify-around items-center px-margin-mobile py-2">
+<!-- Vault -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-3 py-1 hover:opacity-80 transition-opacity active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-label-caps text-label-caps mt-1">Vault</span>
+</a>
+<!-- Flow (Active) -->
+<a class="flex flex-col items-center justify-center bg-primary-container dark:bg-on-primary-fixed-variant text-on-primary-container dark:text-primary-fixed rounded-xl px-3 py-1 hover:opacity-80 transition-opacity active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="swap_vert" style="font-variation-settings: 'FILL' 1;">swap_vert</span>
+<span class="font-label-caps text-label-caps mt-1">Flow</span>
+</a>
+<!-- Accounts -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-3 py-1 hover:opacity-80 transition-opacity active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="credit_card">credit_card</span>
+<span class="font-label-caps text-label-caps mt-1">Accounts</span>
+</a>
+<!-- Goals -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-3 py-1 hover:opacity-80 transition-opacity active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="ads_click">ads_click</span>
+<span class="font-label-caps text-label-caps mt-1">Goals</span>
+</a>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-3 py-1 hover:opacity-80 transition-opacity active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-caps text-label-caps mt-1">Profile</span>
+</a>
+</nav>
+<!-- Floating Action Button (Only on main dashboard-like flows) -->
+<button class="fixed bottom-24 right-6 w-14 h-14 bg-primary-container text-on-primary-container rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(0,255,127,0.4)] active:scale-95 transition-all duration-200 border-2 border-white/20 z-40 group">
+<span class="material-symbols-outlined text-[32px] group-hover:rotate-90 transition-transform duration-300" data-icon="add">add</span>
+</button>
+<script>
+        // Simple Interaction Script
+        document.querySelectorAll('section > div').forEach(card => {
+            card.addEventListener('click', function() {
+                // Flash effect for interaction
+                this.style.backgroundColor = 'rgba(0, 255, 127, 0.1)';
+                setTimeout(() => {
+                    this.style.backgroundColor = '';
+                }, 150);
+            });
+        });
+
+        // Expand handle visual feedback
+        const handle = document.querySelector('.mt-4 button');
+        handle.addEventListener('click', () => {
+            alert('展开月度视图 (Switching to Month View)');
+        });
+    </script>
+</body></html>

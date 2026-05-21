@@ -16,45 +16,50 @@ struct TransactionListView: View {
     @State private var monthlyIncome: Decimal = 0
     @State private var monthlyExpense: Decimal = 0
     @State private var monthTransactions: [Transaction] = []
-    @State private var dateFormattedCache: [Transaction.ID: String] = [:]
 
     var body: some View {
-        VStack(spacing: 0) {
-            CalendarStripView(
-                selectedMonth: $selectedMonth,
-                selectedDay: $selectedDay,
-                isExpanded: $isCalendarExpanded,
-                dailyExpense: $dailyExpense,
-                dailyIncome: $dailyIncome,
-                maxDailyExpense: $maxDailyExpense,
-                monthlyIncome: $monthlyIncome,
-                monthlyExpense: $monthlyExpense
-            )
-            Divider()
-                .overlay(Color.designOutlineVariant)
+        ScrollView {
+            VStack(spacing: 0) {
+                CalendarStripView(
+                    selectedMonth: $selectedMonth,
+                    selectedDay: $selectedDay,
+                    isExpanded: $isCalendarExpanded,
+                    dailyExpense: $dailyExpense,
+                    dailyIncome: $dailyIncome,
+                    maxDailyExpense: $maxDailyExpense,
+                    monthlyIncome: $monthlyIncome,
+                    monthlyExpense: $monthlyExpense
+                )
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
 
-            List {
-                if transactions.isEmpty {
-                    Text(selectedDay != nil ? "当天没有交易记录" : "暂无交易记录")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(groupedByDate, id: \.key) { group in
-                        Section(group.key) {
+                LazyVStack(spacing: 12) {
+                    if transactions.isEmpty {
+                        VStack(spacing: 8) {
+                            Image(systemName: "tray")
+                                .font(.system(size: 36))
+                                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
+                            Text(selectedDay != nil ? "当天没有交易记录" : "暂无交易记录")
+                                .font(.designBodyMedium)
+                                .foregroundStyle(Color.designOnSurfaceVariant)
+                        }
+                        .padding(.top, 60)
+                    } else {
+                        ForEach(groupedByDate, id: \.key) { group in
+                            dateSectionHeader(dateKey: group.key, transactions: group.value)
                             ForEach(group.value) { transaction in
                                 NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
                                     TransactionRowView(transaction: transaction)
                                 }
-                            }
-                            .onDelete { indexSet in
-                                deleteTransactions(in: indexSet, from: group.value)
+                                .buttonStyle(.plain)
                             }
                         }
                     }
                 }
+                .padding(16)
             }
-            .listStyle(.insetGrouped)
-            .scrollContentBackground(.hidden)
         }
+        .modifier(ScrollCollapseModifier(isCalendarExpanded: $isCalendarExpanded))
         .designScreen()
         .navigationTitle("流水")
         .toolbar {
@@ -100,15 +105,72 @@ struct TransactionListView: View {
         }
     }
 
-    private var groupedByDate: [(key: String, value: [Transaction])] {
-        let grouped = Dictionary(grouping: transactions) { t in
-            if let cached = dateFormattedCache[t.id] { return cached }
-            let formatted = t.date.formatted(date: .complete, time: .omitted)
-            dateFormattedCache[t.id] = formatted
-            return formatted
+    // MARK: - Date Section Header
+
+    private func dateSectionHeader(dateKey: String, transactions: [Transaction]) -> some View {
+        let total = transactions.reduce(Decimal.zero) { $0 + $1.amount }
+        let currencyCode = transactions.first?.currencyCode ?? "CNY"
+
+        return HStack(spacing: 8) {
+            Circle()
+                .fill(Color.designPrimaryContainer)
+                .frame(width: 6, height: 6)
+
+            Text(LocalizedStringKey(dateKey))
+                .font(.custom("SpaceGrotesk-Medium", fixedSize: 14))
+                .foregroundStyle(Color.designOnSurfaceVariant)
+
+            Text("流水")
+                .font(.designLabel)
+                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
+
+            Spacer()
+
+            Text("合计：")
+                .font(.custom("SpaceGrotesk-Medium", fixedSize: 12))
+                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+                +
+            Text(total >= 0 ? "+\(CurrencyFormatter.formatShort(amount: total, currencyCode: currencyCode))" : "\(CurrencyFormatter.formatShort(amount: total, currencyCode: currencyCode))")
+                .font(.custom("JetBrainsMono-Medium", fixedSize: 12))
+                .foregroundStyle(total >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed)
         }
-        return grouped.sorted { $0.key > $1.key }.map { ($0.key, $0.value.sorted { $0.date > $1.date }) }
+        .padding(.horizontal, 4)
+        .padding(.top, 4)
     }
+
+    // MARK: - Grouping
+
+    private var groupedByDate: [(key: String, value: [Transaction])] {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let yesterday = cal.date(byAdding: .day, value: -1, to: today) ?? today
+
+        var todayTx: [Transaction] = []
+        var yesterdayTx: [Transaction] = []
+        var other: [String: [Transaction]] = [:]
+
+        for t in transactions {
+            let day = cal.startOfDay(for: t.date)
+            if day == today {
+                todayTx.append(t)
+            } else if day == yesterday {
+                yesterdayTx.append(t)
+            } else {
+                let key = t.date.formatted(.dateTime.month(.abbreviated).day(.defaultDigits).locale(Locale(identifier: "zh_CN")))
+                other[key, default: []].append(t)
+            }
+        }
+
+        var result: [(String, [Transaction])] = []
+        if !todayTx.isEmpty { result.append(("今天", todayTx)) }
+        if !yesterdayTx.isEmpty { result.append(("昨天", yesterdayTx)) }
+        for key in other.keys.sorted(by: >) {
+            if let list = other[key] { result.append((key, list)) }
+        }
+        return result
+    }
+
+    // MARK: - Data Loading
 
     private func loadCalendarData() {
         guard let ledger = appContainer.currentLedger else { return }
@@ -154,7 +216,6 @@ struct TransactionListView: View {
         monthlyIncome = totalIncome
         monthlyExpense = totalExpense
         monthTransactions = all
-        dateFormattedCache.removeAll()
 
         applyFilters()
     }
@@ -170,12 +231,26 @@ struct TransactionListView: View {
         }
         transactions = result
     }
+}
 
-    private func deleteTransactions(in indexSet: IndexSet, from group: [Transaction]) {
-        for index in indexSet {
-            let transaction = group[index]
-            try? appContainer.transactionService.deleteTransaction(transaction, context: modelContext)
+// MARK: - Scroll Collapse (iOS 18+)
+
+private struct ScrollCollapseModifier: ViewModifier {
+    @Binding var isCalendarExpanded: Bool
+
+    func body(content: Content) -> some View {
+        if #available(iOS 18.0, *) {
+            content.onScrollGeometryChange(for: CGFloat.self) { geo in
+                geo.contentOffset.y
+            } action: { oldY, newY in
+                if newY < oldY - 10, isCalendarExpanded {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        isCalendarExpanded = false
+                    }
+                }
+            }
+        } else {
+            content
         }
-        loadCalendarData()
     }
 }

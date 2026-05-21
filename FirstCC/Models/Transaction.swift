@@ -25,7 +25,6 @@ final class Transaction {
     var settledAmount: Decimal?
     var tags: [String]
     var photoURLs: [String]?
-    var installmentPlanId: UUID?
 
     var ledger: Ledger?
 
@@ -115,7 +114,6 @@ final class Transaction {
         settledAmount: Decimal? = nil,
         tags: [String] = [],
         photoURLs: [String]? = nil,
-        installmentPlanId: UUID? = nil,
         account: Account? = nil,
         toAccount: Account? = nil,
         category: Category? = nil,
@@ -147,7 +145,6 @@ final class Transaction {
         self.settledAmount = settledAmount
         self.tags = tags
         self.photoURLs = photoURLs
-        self.installmentPlanId = installmentPlanId
         self.account = account
         self.toAccount = toAccount
         self.category = category

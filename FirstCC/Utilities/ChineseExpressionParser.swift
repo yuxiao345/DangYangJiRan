@@ -52,8 +52,10 @@ enum ChineseExpressionParser {
         let cal = Calendar.current
         let today = Date()
         let startOfToday = today.startOfDay
-        guard let tomorrowStart = cal.date(byAdding: .day, value: 1, to: startOfToday) else {
-            return DateMatch(range: nil, matched: nil, remaining: input)
+        let tomorrowStart = offset(.day, 1, from: startOfToday)
+
+        func offset(_ comp: Calendar.Component, _ val: Int, from date: Date) -> Date {
+            cal.date(byAdding: comp, value: val, to: date) ?? date
         }
 
         // Ordered by specificity (longer/more specific patterns first)
@@ -76,14 +78,14 @@ enum ChineseExpressionParser {
             }),
             // "最近X天" / "过去X天"
             ("(最近|过去)(\\d+)天", { match, str in
-                guard let n = Int((str as NSString).substring(with: match.range(at: 2))),
-                      let start = cal.date(byAdding: .day, value: -n, to: startOfToday) else { return nil }
+                guard let n = Int((str as NSString).substring(with: match.range(at: 2))) else { return nil }
+                let start = offset(.day, -n, from: startOfToday)
                 return DateMatch(range: start..<tomorrowStart, matched: match.fullString(in: str), remaining: remove(match, from: str))
             }),
             // "最近X周/星期/礼拜"
             ("(最近|过去)(\\d+)个?(?:周|星期|礼拜)", { match, str in
-                guard let n = Int((str as NSString).substring(with: match.range(at: 2))),
-                      let start = cal.date(byAdding: .day, value: -(n * 7), to: startOfToday) else { return nil }
+                guard let n = Int((str as NSString).substring(with: match.range(at: 2))) else { return nil }
+                let start = offset(.day, -(n * 7), from: startOfToday)
                 return DateMatch(range: start..<tomorrowStart, matched: match.fullString(in: str), remaining: remove(match, from: str))
             }),
             // "最近X个月" / "最近X月"
@@ -112,172 +114,172 @@ enum ChineseExpressionParser {
         let fixedExpressions: [(String, Range<Date>)] = [
             ("今天", startOfToday..<tomorrowStart),
             ("昨天", {
-                let start = cal.date(byAdding: .day, value: -1, to: startOfToday)!
+                let start = offset(.day, -1, from: startOfToday)
                 return start..<startOfToday
             }()),
             ("明天", {
-                let start = cal.date(byAdding: .day, value: 1, to: startOfToday)!
-                let end = cal.date(byAdding: .day, value: 1, to: start)!
+                let start = offset(.day, 1, from: startOfToday)
+                let end = offset(.day, 1, from: start)
                 return start..<end
             }()),
             ("本周", {
                 let start = today.startOfWeek
-                let end = cal.date(byAdding: .day, value: 7, to: start)!
+                let end = offset(.day, 7, from: start)
                 return start..<end
             }()),
             ("这周", {
                 let start = today.startOfWeek
-                let end = cal.date(byAdding: .day, value: 7, to: start)!
+                let end = offset(.day, 7, from: start)
                 return start..<end
             }()),
             ("这个星期", {
                 let start = today.startOfWeek
-                let end = cal.date(byAdding: .day, value: 7, to: start)!
+                let end = offset(.day, 7, from: start)
                 return start..<end
             }()),
             ("这个礼拜", {
                 let start = today.startOfWeek
-                let end = cal.date(byAdding: .day, value: 7, to: start)!
+                let end = offset(.day, 7, from: start)
                 return start..<end
             }()),
             ("上周", {
                 let thisMonday = today.startOfWeek
-                let prevMonday = cal.date(byAdding: .day, value: -7, to: thisMonday)!
+                let prevMonday = offset(.day, -7, from: thisMonday)
                 return prevMonday..<thisMonday
             }()),
             ("上个星期", {
                 let thisMonday = today.startOfWeek
-                let prevMonday = cal.date(byAdding: .day, value: -7, to: thisMonday)!
+                let prevMonday = offset(.day, -7, from: thisMonday)
                 return prevMonday..<thisMonday
             }()),
             ("上个礼拜", {
                 let thisMonday = today.startOfWeek
-                let prevMonday = cal.date(byAdding: .day, value: -7, to: thisMonday)!
+                let prevMonday = offset(.day, -7, from: thisMonday)
                 return prevMonday..<thisMonday
             }()),
             ("本月", {
                 let start = today.startOfMonth
-                let end = cal.date(byAdding: .month, value: 1, to: start)!
+                let end = offset(.month, 1, from: start)
                 return start..<end
             }()),
             ("这个月", {
                 let start = today.startOfMonth
-                let end = cal.date(byAdding: .month, value: 1, to: start)!
+                let end = offset(.month, 1, from: start)
                 return start..<end
             }()),
             ("上个月", {
                 let thisMonth = today.startOfMonth
-                let prevMonth = cal.date(byAdding: .month, value: -1, to: thisMonth)!
+                let prevMonth = offset(.month, -1, from: thisMonth)
                 return prevMonth..<thisMonth
             }()),
             ("上月", {
                 let thisMonth = today.startOfMonth
-                let prevMonth = cal.date(byAdding: .month, value: -1, to: thisMonth)!
+                let prevMonth = offset(.month, -1, from: thisMonth)
                 return prevMonth..<thisMonth
             }()),
             ("下个月", {
                 let thisMonth = today.startOfMonth
-                let nextMonth = cal.date(byAdding: .month, value: 1, to: thisMonth)!
-                let end = cal.date(byAdding: .month, value: 1, to: nextMonth)!
+                let nextMonth = offset(.month, 1, from: thisMonth)
+                let end = offset(.month, 1, from: nextMonth)
                 return nextMonth..<end
             }()),
             ("下月", {
                 let thisMonth = today.startOfMonth
-                let nextMonth = cal.date(byAdding: .month, value: 1, to: thisMonth)!
-                let end = cal.date(byAdding: .month, value: 1, to: nextMonth)!
+                let nextMonth = offset(.month, 1, from: thisMonth)
+                let end = offset(.month, 1, from: nextMonth)
                 return nextMonth..<end
             }()),
             ("今年", {
                 let start = today.startOfYear
-                let end = cal.date(byAdding: .year, value: 1, to: start)!
+                let end = offset(.year, 1, from: start)
                 return start..<end
             }()),
             ("去年", {
                 let thisYear = today.startOfYear
-                let prevYear = cal.date(byAdding: .year, value: -1, to: thisYear)!
+                let prevYear = offset(.year, -1, from: thisYear)
                 return prevYear..<thisYear
             }()),
             ("前年", {
                 let thisYear = today.startOfYear
-                let prevYear = cal.date(byAdding: .year, value: -2, to: thisYear)!
-                let end = cal.date(byAdding: .year, value: 1, to: prevYear)!
+                let prevYear = offset(.year, -2, from: thisYear)
+                let end = offset(.year, 1, from: prevYear)
                 return prevYear..<end
             }()),
             ("明年", {
                 let thisYear = today.startOfYear
-                let nextYear = cal.date(byAdding: .year, value: 1, to: thisYear)!
-                let end = cal.date(byAdding: .year, value: 1, to: nextYear)!
+                let nextYear = offset(.year, 1, from: thisYear)
+                let end = offset(.year, 1, from: nextYear)
                 return nextYear..<end
             }()),
             ("上半年", {
                 let start = today.startOfYear
-                let mid = cal.date(byAdding: .month, value: 6, to: start)!
+                let mid = offset(.month, 6, from: start)
                 return start..<mid
             }()),
             ("下半年", {
                 let start = today.startOfYear
-                let mid = cal.date(byAdding: .month, value: 6, to: start)!
-                let end = cal.date(byAdding: .year, value: 1, to: start)!
+                let mid = offset(.month, 6, from: start)
+                let end = offset(.year, 1, from: start)
                 return mid..<end
             }()),
             ("Q1", {
                 let start = today.startOfYear
-                let end = cal.date(byAdding: .month, value: 3, to: start)!
+                let end = offset(.month, 3, from: start)
                 return start..<end
             }()),
             ("Q2", {
-                let start = cal.date(byAdding: .month, value: 3, to: today.startOfYear)!
-                let end = cal.date(byAdding: .month, value: 3, to: start)!
+                let start = offset(.month, 3, from: today.startOfYear)
+                let end = offset(.month, 3, from: start)
                 return start..<end
             }()),
             ("Q3", {
-                let start = cal.date(byAdding: .month, value: 6, to: today.startOfYear)!
-                let end = cal.date(byAdding: .month, value: 3, to: start)!
+                let start = offset(.month, 6, from: today.startOfYear)
+                let end = offset(.month, 3, from: start)
                 return start..<end
             }()),
             ("Q4", {
-                let start = cal.date(byAdding: .month, value: 9, to: today.startOfYear)!
-                let end = cal.date(byAdding: .year, value: 1, to: today.startOfYear)!
+                let start = offset(.month, 9, from: today.startOfYear)
+                let end = offset(.year, 1, from: today.startOfYear)
                 return start..<end
             }()),
             ("一季度", {
                 let start = today.startOfYear
-                let end = cal.date(byAdding: .month, value: 3, to: start)!
+                let end = offset(.month, 3, from: start)
                 return start..<end
             }()),
             ("二季度", {
-                let start = cal.date(byAdding: .month, value: 3, to: today.startOfYear)!
-                let end = cal.date(byAdding: .month, value: 3, to: start)!
+                let start = offset(.month, 3, from: today.startOfYear)
+                let end = offset(.month, 3, from: start)
                 return start..<end
             }()),
             ("三季度", {
-                let start = cal.date(byAdding: .month, value: 6, to: today.startOfYear)!
-                let end = cal.date(byAdding: .month, value: 3, to: start)!
+                let start = offset(.month, 6, from: today.startOfYear)
+                let end = offset(.month, 3, from: start)
                 return start..<end
             }()),
             ("四季度", {
-                let start = cal.date(byAdding: .month, value: 9, to: today.startOfYear)!
-                let end = cal.date(byAdding: .year, value: 1, to: today.startOfYear)!
+                let start = offset(.month, 9, from: today.startOfYear)
+                let end = offset(.year, 1, from: today.startOfYear)
                 return start..<end
             }()),
             ("第一季度", {
                 let start = today.startOfYear
-                let end = cal.date(byAdding: .month, value: 3, to: start)!
+                let end = offset(.month, 3, from: start)
                 return start..<end
             }()),
             ("第二季度", {
-                let start = cal.date(byAdding: .month, value: 3, to: today.startOfYear)!
-                let end = cal.date(byAdding: .month, value: 3, to: start)!
+                let start = offset(.month, 3, from: today.startOfYear)
+                let end = offset(.month, 3, from: start)
                 return start..<end
             }()),
             ("第三季度", {
-                let start = cal.date(byAdding: .month, value: 6, to: today.startOfYear)!
-                let end = cal.date(byAdding: .month, value: 3, to: start)!
+                let start = offset(.month, 6, from: today.startOfYear)
+                let end = offset(.month, 3, from: start)
                 return start..<end
             }()),
             ("第四季度", {
-                let start = cal.date(byAdding: .month, value: 9, to: today.startOfYear)!
-                let end = cal.date(byAdding: .year, value: 1, to: today.startOfYear)!
+                let start = offset(.month, 9, from: today.startOfYear)
+                let end = offset(.year, 1, from: today.startOfYear)
                 return start..<end
             }()),
         ]
@@ -287,7 +289,9 @@ enum ChineseExpressionParser {
         for (keyword, dateRange) in fixedExpressions {
             if let r = input.range(of: keyword) {
                 let pos = input.distance(from: input.startIndex, to: r.lowerBound)
-                if best == nil || pos < best!.position {
+                if let b = best {
+                    if pos < b.position { best = (keyword, dateRange, pos) }
+                } else {
                     best = (keyword, dateRange, pos)
                 }
             }
@@ -427,20 +431,17 @@ enum ChineseExpressionParser {
         guard var v1 = Decimal(string: num1Str), var v2 = Decimal(string: num2Str) else { return nil }
         let fullMatch = match.fullString(in: input)
         // Check if 万 appears before the delimiter
-        if let wanRange = input.range(of: "万"), wanRange.upperBound <= Range(match.range(at: 2), in: input)!.lowerBound {
-            // Only first number may have 万
-            let delimRange = Range(match.range, in: input)!
-            // Check each number independently
+        if let wanRange = input.range(of: "万"),
+           let num2Range = Range(match.range(at: 2), in: input),
+           wanRange.upperBound <= num2Range.lowerBound {
+            // Only first number may have 万 — handled below
         }
         // Simpler: check if 万 is in the matched string
         if fullMatch.contains("万") {
-            // Check position of 万 relative to numbers
-            let nsStr = input as NSString
-            let delimIndex = nsStr.range(of: fullMatch).location // approximate
-            // Actually, just check if the portion before delimiter contains 万
-            let beforeDelim = String(fullMatch.prefix { $0 != "-" && $0 != "到" && $0 != "至" && $0 != "~" })
+            let beforeDelim = String(fullMatch.prefix { "-到至~".contains($0) == false })
             if beforeDelim.contains("万") { v1 *= 10000 }
-            let afterDelim = String(fullMatch.suffix(from: fullMatch.firstIndex(where: { "-到至~".contains($0) })!))
+            guard let delimIdx = fullMatch.firstIndex(where: { "-到至~".contains($0) }) else { return nil }
+            let afterDelim = String(fullMatch.suffix(from: delimIdx))
             if afterDelim.contains("万") { v2 *= 10000 }
         }
         let remaining = remove(match, from: input)
@@ -481,7 +482,9 @@ enum ChineseExpressionParser {
         for (keyword, type) in typeKeywords {
             if let r = input.range(of: keyword, options: .backwards) {
                 let pos = input.distance(from: input.startIndex, to: r.lowerBound)
-                if best == nil || pos > best!.position {
+                if let b = best {
+                    if pos > b.position { best = (keyword, type, pos) }
+                } else {
                     best = (keyword, type, pos)
                 }
             }

@@ -12,7 +12,7 @@ struct OnboardingView: View {
                     .font(.system(size: 80))
                     .foregroundStyle(Color.designPrimaryContainer)
 
-                Text("荡漾计然")
+                Text("钱伲")
                     .font(.largeTitle)
                     .fontWeight(.bold)
 

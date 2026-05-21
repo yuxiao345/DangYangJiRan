@@ -7,7 +7,6 @@ enum FirstCCSchemaV1: VersionedSchema {
         Ledger.self, User.self, Account.self, Category.self,
         Transaction.self, TransactionTemplate.self, RecurringRule.self,
         SplitGroup.self, SplitEntry.self, BudgetBook.self, BudgetItem.self,
-        InstallmentPlan.self,
         ExchangeRate.self, Member.self, Merchant.self, Project.self, CreditCardStatement.self
     ]
 }
@@ -19,7 +18,6 @@ enum FirstCCSchemaV2: VersionedSchema {
         Ledger.self, User.self, Account.self, Category.self,
         Transaction.self, TransactionTemplate.self, RecurringRule.self,
         SplitGroup.self, SplitEntry.self, BudgetBook.self, BudgetItem.self,
-        InstallmentPlan.self,
         ExchangeRate.self, Member.self, Merchant.self, Project.self, CreditCardStatement.self
     ]
 }
@@ -31,7 +29,6 @@ enum FirstCCSchemaV3: VersionedSchema {
         Ledger.self, User.self, Account.self, Category.self,
         Transaction.self, TransactionTemplate.self, RecurringRule.self,
         SplitGroup.self, SplitEntry.self, BudgetBook.self, BudgetItem.self,
-        InstallmentPlan.self,
         ExchangeRate.self, Member.self, Merchant.self, Project.self, CreditCardStatement.self
     ]
 }
@@ -57,7 +54,6 @@ enum FirstCCSchemaV4: VersionedSchema {
         Ledger.self, User.self, Account.self, Category.self,
         Transaction.self, TransactionTemplate.self, RecurringRule.self,
         SplitGroup.self, SplitEntry.self, BudgetBook.self, BudgetItem.self,
-        InstallmentPlan.self,
         ExchangeRate.self, Member.self, Merchant.self, Project.self, CreditCardStatement.self
     ]
 }
