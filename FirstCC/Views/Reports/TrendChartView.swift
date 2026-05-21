@@ -4,9 +4,6 @@ struct TrendChartView: View {
     let dataPoints: [TrendDataPoint]
     let period: ReportPeriod
 
-    @State private var showIncome = true
-    @State private var showExpense = true
-
     private let maxBlocks = 20
     private let blockGap: CGFloat = 1
     private let labelAreaHeight: CGFloat = 20
@@ -23,12 +20,17 @@ struct TrendChartView: View {
         totalIncome - totalExpense
     }
 
+    private var incomeMax: Double {
+        dataPoints.map { Double(truncating: $0.income as NSNumber) }.max() ?? 1
+    }
+
+    private var expenseMax: Double {
+        dataPoints.map { Double(truncating: $0.expense as NSNumber) }.max() ?? 1
+    }
+
+    /// Y-axis ceiling: max of both scales, so labels cover the full range
     private var barMax: Double {
-        let all = dataPoints.flatMap {
-            [Double(truncating: $0.income as NSNumber),
-             Double(truncating: $0.expense as NSNumber)]
-        }
-        return all.max() ?? 1
+        max(incomeMax, expenseMax)
     }
 
     var body: some View {
@@ -42,74 +44,43 @@ struct TrendChartView: View {
             }
         } else {
             VStack(spacing: 0) {
-                summaryHeader
+                summaryCards
                 pixelChart
             }
             .frame(maxWidth: .infinity)
         }
     }
 
-    // MARK: - Summary Header
+    // MARK: - Summary Cards
 
-    private var summaryHeader: some View {
-        HStack(spacing: 0) {
-            summaryBlock(
-                label: TransactionType.income.displayName,
-                amount: totalIncome,
-                color: .green,
-                isActive: showIncome
-            ) {
-                withAnimation(.easeInOut(duration: 0.2)) { showIncome.toggle() }
-            }
-
-            summaryBlock(
-                label: TransactionType.expense.displayName,
-                amount: totalExpense,
-                color: .red,
-                isActive: showExpense
-            ) {
-                withAnimation(.easeInOut(duration: 0.2)) { showExpense.toggle() }
-            }
-
-            summaryBlock(
-                label: "结余",
-                amount: netBalance,
-                color: netBalance >= 0 ? .green : .red,
-                isActive: true
-            ) {}
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background {
-            RoundedRectangle(cornerRadius: 4)
-                .fill(Color.designOutlineVariant.opacity(0.15))
+    private var summaryCards: some View {
+        HStack(spacing: 8) {
+            summaryCard(label: "收入", amount: totalIncome, color: Color.designAccentGreen)
+            summaryCard(label: "支出", amount: totalExpense, color: Color.designAccentRed)
+            summaryCard(label: "结余", amount: netBalance, color: netBalance >= 0 ? Color.designAccentGreen : Color.designAccentRed)
         }
         .padding(.horizontal, 12)
         .padding(.top, 8)
     }
 
-    private func summaryBlock(
-        label: String,
-        amount: Decimal,
-        color: Color,
-        isActive: Bool,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            VStack(spacing: 4) {
-                HStack(spacing: 3) {
-                    PixelBlock(color: color, size: 6)
-                    Text(label)
-                        .font(.designLabel)
-                        .foregroundStyle(Color.designOnSurfaceVariant)
-                }
-                CurrencyText(amount: amount, currencyCode: "", size: 12, foregroundColor: color)
-                    .fontWeight(.bold)
+    private func summaryCard(label: String, amount: Decimal, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 4) {
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(color)
+                    .frame(width: 6, height: 6)
+                Text(label)
+                    .font(.custom("JetBrainsMono-Medium", fixedSize: 9))
+                    .foregroundStyle(color.opacity(0.8))
             }
-            .frame(maxWidth: .infinity)
+            CurrencyText(amount: amount, currencyCode: "", size: 14, foregroundColor: color, fractionDigits: 0)
+                .fontWeight(.bold)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
-        .buttonStyle(.plain)
-        .opacity(isActive ? 1 : 0.3)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .glassCard(cornerRadius: 12)
     }
 
     // MARK: - Pixel Chart
@@ -151,6 +122,7 @@ struct TrendChartView: View {
             }
         }
         .padding(.horizontal, 12)
+        .padding(.top, 16)
     }
 
     private var legendRow: some View {
@@ -209,19 +181,8 @@ struct TrendChartView: View {
         .frame(width: 32)
     }
 
-    /// Compute a "nice" ceiling, then always bump one step up so bars never touch the top
     private func niceCeiling(_ value: Double) -> Double {
-        guard value > 0 else { return 1 }
-        let mag = pow(10, floor(log10(value)))
-        let norm = value / mag
-        let raw: Double
-        if norm <= 1 { raw = 1 }
-        else if norm <= 2 { raw = 2 }
-        else if norm <= 5 { raw = 5 }
-        else { raw = 10 }
-        // Bump up one nice step
-        let bumped: Double = raw == 1 ? 2 : raw == 2 ? 5 : raw == 5 ? 10 : 20
-        return bumped * mag
+        value * 1.3
     }
 
     private func formatAxis(_ value: Double) -> String {
@@ -241,36 +202,38 @@ struct TrendChartView: View {
         let incomeBlocks = Int((incomeVal / maxValue * Double(maxBlocks)).rounded())
         let expenseBlocks = Int((expenseVal / maxValue * Double(maxBlocks)).rounded())
 
-        let netBlockIdx: Int? = {
-            guard maxValue > 0 else { return nil }
+        // Blue net marker: appears in income column when net>0, expense column when net<0
+        let incomeNetIdx: Int? = {
+            guard maxValue > 0, netVal > 0 else { return nil }
             let raw = Int((netVal / maxValue * Double(maxBlocks)).rounded())
-            return max(0, min(maxBlocks - 1, raw))
+            return min(maxBlocks - 1, raw)
+        }()
+        let expenseNetIdx: Int? = {
+            guard maxValue > 0, netVal < 0 else { return nil }
+            let raw = Int((-netVal / maxValue * Double(maxBlocks)).rounded())
+            return min(maxBlocks - 1, raw)
         }()
 
         return HStack(alignment: .bottom, spacing: blockGap) {
-            if showIncome {
-                VStack(spacing: blockGap) {
-                    ForEach(0..<maxBlocks, id: \.self) { i in
-                        let row = maxBlocks - 1 - i
-                        let isTrend = netBlockIdx == row
-                        PixelBlock(
-                            color: row < incomeBlocks ? (isTrend ? .blue : .green) : blockBg,
-                            size: blockSize
-                        )
-                    }
+            VStack(spacing: blockGap) {
+                ForEach(0..<maxBlocks, id: \.self) { i in
+                    let row = maxBlocks - 1 - i
+                    let isTrend = incomeNetIdx == row
+                    PixelBlock(
+                        color: row < incomeBlocks ? (isTrend ? .blue : .green) : blockBg,
+                        size: blockSize
+                    )
                 }
             }
 
-            if showExpense {
-                VStack(spacing: blockGap) {
-                    ForEach(0..<maxBlocks, id: \.self) { i in
-                        let row = maxBlocks - 1 - i
-                        let isTrend = netBlockIdx == row
-                        PixelBlock(
-                            color: row < expenseBlocks ? (isTrend ? .blue : .red) : blockBg,
-                            size: blockSize
-                        )
-                    }
+            VStack(spacing: blockGap) {
+                ForEach(0..<maxBlocks, id: \.self) { i in
+                    let row = maxBlocks - 1 - i
+                    let isTrend = expenseNetIdx == row
+                    PixelBlock(
+                        color: row < expenseBlocks ? (isTrend ? .blue : .red) : blockBg,
+                        size: blockSize
+                    )
                 }
             }
         }

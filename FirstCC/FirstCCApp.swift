@@ -5,6 +5,7 @@ import CoreText
 @main
 struct FirstCCApp: App {
     @StateObject private var appContainer = AppContainer()
+    @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
 
     init() {
         registerCustomFonts()
@@ -43,11 +44,20 @@ struct FirstCCApp: App {
         }
     }
 
+    private var preferredScheme: ColorScheme? {
+        switch appearanceMode {
+        case .light: .light
+        case .dark: .dark
+        case .system: nil
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(appContainer)
                 .tint(Color.designAccentGreen)
+                .preferredColorScheme(preferredScheme)
                 .onOpenURL { url in
                     Task {
                         await appContainer.handleShareURL(url)

@@ -319,6 +319,13 @@ final class ReportViewModel {
                 )
             }
 
+            if let maxIn = trendData.max(by: { $0.income < $1.income }), maxIn.income > 0 {
+                print("[DEBUG] 最大收入: \(maxIn.label) ¥\(maxIn.income)")
+            }
+            if let maxEx = trendData.max(by: { $0.expense < $1.expense }), maxEx.expense > 0 {
+                print("[DEBUG] 最大支出: \(maxEx.label) ¥\(maxEx.expense)")
+            }
+
         default:
             // Use year-qualified keys when the period spans multiple years to avoid merging
             // e.g. May 2025 and May 2026 must be separate bars
@@ -352,6 +359,13 @@ final class ReportViewModel {
             trendData = monthOrder.map { key in
                 let v = byMonth[key]!
                 return TrendDataPoint(label: key, yearLabel: nil, income: v.income, expense: v.expense)
+            }
+
+            if let maxIn = trendData.max(by: { $0.income < $1.income }), maxIn.income > 0 {
+                print("[DEBUG] 最大收入: \(maxIn.label) ¥\(maxIn.income)")
+            }
+            if let maxEx = trendData.max(by: { $0.expense < $1.expense }), maxEx.expense > 0 {
+                print("[DEBUG] 最大支出: \(maxEx.label) ¥\(maxEx.expense)")
             }
         }
     }

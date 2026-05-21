@@ -6,6 +6,9 @@ struct RootView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
 
+    @AppStorage("appLockEnabled") private var appLockEnabled = false
+    @State private var isLocked = false
+
     var body: some View {
         Group {
             if appContainer.currentLedger != nil {
@@ -16,12 +19,18 @@ struct RootView: View {
         }
         .onAppear {
             appContainer.configureDefaultLedger(modelContext: modelContext)
-            processRecurring()
         }
         .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .active {
+            switch newPhase {
+            case .active:
                 processRecurring()
+            case .background:
+                if appLockEnabled { isLocked = true }
+            default: break
             }
+        }
+        .fullScreenCover(isPresented: $isLocked) {
+            AppLockView()
         }
     }
 

@@ -8,18 +8,32 @@ enum BiometricAuth {
         return context.biometryType
     }
 
+    static var biometryIconName: String {
+        switch biometryType {
+        case .faceID: "faceid"
+        case .touchID: "touchid"
+        default: "lock"
+        }
+    }
+
     static var biometryName: String {
         switch biometryType {
         case .faceID: "Face ID"
         case .touchID: "Touch ID"
-        default: String(localized: "生物识别")
+        default:
+            // Fallback to device passcode on simulator or devices without biometrics
+            isDeviceOwnerAuthAvailable ? String(localized: "密码") : String(localized: "生物识别")
         }
     }
 
-    static var isAvailable: Bool {
+    private static var isDeviceOwnerAuthAvailable: Bool {
         let context = LAContext()
         var error: NSError?
-        return context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error)
+        return context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error)
+    }
+
+    static var isAvailable: Bool {
+        isDeviceOwnerAuthAvailable
     }
 
     static func authenticate(reason: String = String(localized: "解锁以访问账本")) async -> Bool {
@@ -28,7 +42,7 @@ enum BiometricAuth {
         let context = LAContext()
         return await withCheckedContinuation { continuation in
             context.evaluatePolicy(
-                .deviceOwnerAuthenticationWithBiometrics,
+                .deviceOwnerAuthentication,
                 localizedReason: reason
             ) { success, _ in
                 continuation.resume(returning: success)
