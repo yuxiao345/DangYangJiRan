@@ -9,38 +9,30 @@ struct LedgerListView: View {
     @State private var showDeleteAlert = false
     @State private var ledgerToDelete: Ledger?
     @State private var settingsLedger: Ledger?
-    @State private var pendingRestoreLedger: Ledger?
 
     var body: some View {
         List {
             ForEach(ledgers) { ledger in
                 HStack(spacing: 0) {
-                    Button {
-                        switchLedger(ledger)
-                    } label: {
-                        HStack(spacing: 0) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                HStack(spacing: 6) {
-                                    Image(systemName: ledger.iconName)
-                                        .foregroundStyle(Color.designPrimaryContainer)
-                                    Text(ledger.name)
-                                        .font(.designBodyMedium)
-                                }
-                                HStack(spacing: 6) {
-                                    Text(ledger.type.displayName)
-                                        .font(.designBodySmall)
-                                        .foregroundStyle(Color.designOnSurfaceVariant)
-                                    Text("·")
-                                        .foregroundStyle(Color.designOnSurfaceVariant)
-                                    Text(ledger.defaultCurrencyCode)
-                                        .font(.designBodySmall)
-                                        .foregroundStyle(Color.designOnSurfaceVariant)
-                                }
-                            }
-                            Spacer(minLength: 0)
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 6) {
+                            Image(systemName: ledger.iconName)
+                                .foregroundStyle(Color.designPrimaryContainer)
+                            Text(ledger.name)
+                                .font(.designBodyMedium)
+                        }
+                        HStack(spacing: 6) {
+                            Text(ledger.type.displayName)
+                                .font(.designBodySmall)
+                                .foregroundStyle(Color.designOnSurfaceVariant)
+                            Text("·")
+                                .foregroundStyle(Color.designOnSurfaceVariant)
+                            Text(ledger.defaultCurrencyCode)
+                                .font(.designBodySmall)
+                                .foregroundStyle(Color.designOnSurfaceVariant)
                         }
                     }
-                    .buttonStyle(.plain)
+                    Spacer(minLength: 0)
 
                     Button {
                         openSettings(ledger)
@@ -48,8 +40,9 @@ struct LedgerListView: View {
                         Image(systemName: "gearshape")
                             .font(.designBodyMedium)
                             .foregroundStyle(Color.designOnSurfaceVariant)
+                            .frame(width: 44, height: 44)
                     }
-                    .frame(width: 44)
+                    .buttonStyle(.borderless)
 
                     Image(systemName: "checkmark")
                         .foregroundStyle(Color.designPrimaryContainer)
@@ -57,6 +50,8 @@ struct LedgerListView: View {
                         .opacity(ledger.id == appContainer.currentLedger?.id ? 1 : 0)
                         .frame(width: 24)
                 }
+                .contentShape(Rectangle())
+                .onTapGesture { switchLedger(ledger) }
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     if ledgers.count > 1 {
                         Button(role: .destructive) {
@@ -86,13 +81,7 @@ struct LedgerListView: View {
             }
         }
         .onAppear(perform: load)
-        .sheet(item: $settingsLedger, onDismiss: {
-            if let prev = pendingRestoreLedger {
-                appContainer.currentLedger = prev
-                UserDefaults.standard.set(prev.id.uuidString, forKey: "currentLedgerID")
-                pendingRestoreLedger = nil
-            }
-        }) { ledger in
+        .sheet(item: $settingsLedger) { ledger in
             LedgerSettingsView(ledger: ledger)
         }
         .sheet(isPresented: $showCreateSheet) {
@@ -110,8 +99,10 @@ struct LedgerListView: View {
     }
 
     private func openSettings(_ ledger: Ledger) {
-        pendingRestoreLedger = appContainer.currentLedger
-        appContainer.currentLedger = ledger
+        if ledger.id != appContainer.currentLedger?.id {
+            appContainer.currentLedger = ledger
+            UserDefaults.standard.set(ledger.id.uuidString, forKey: "currentLedgerID")
+        }
         settingsLedger = ledger
     }
 

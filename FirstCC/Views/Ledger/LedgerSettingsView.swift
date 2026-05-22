@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import CloudKit
 
 struct LedgerSettingsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -12,6 +13,9 @@ struct LedgerSettingsView: View {
     @State private var currencyCode: String = "CNY"
     @State private var showDeleteAlert = false
     @State private var showCloudShare = false
+    @State private var cloudShare: CKShare?
+    @State private var isCreatingShare = false
+    @State private var shareError: String?
 
     private let currencies = ["CNY", "USD", "EUR", "JPY", "GBP", "HKD", "AUD", "CAD"]
 
@@ -47,10 +51,17 @@ struct LedgerSettingsView: View {
                         }
                     } else {
                         Button {
-                            showCloudShare = true
+                            createShareAndShow()
                         } label: {
-                            Label("启用共享", systemImage: "person.2.badge.plus")
+                            HStack {
+                                Label("启用共享", systemImage: "person.2.badge.plus")
+                                if isCreatingShare {
+                                    Spacer()
+                                    ProgressView()
+                                }
+                            }
                         }
+                        .disabled(isCreatingShare)
                     }
                 } header: {
                     Text("共享管理")
@@ -118,7 +129,11 @@ struct LedgerSettingsView: View {
         }
         .sheet(isPresented: $showCloudShare) {
             if let container = appContainer.cloudKitContainer {
-                CloudSharingView(share: nil, container: container, ledger: ledger, isPresenting: true, syncService: appContainer.syncService as? SyncServiceImpl)
+                Group {
+                    if let share = cloudShare {
+                        CloudSharingView(share: share, container: container, ledger: ledger, isPresenting: true, syncService: appContainer.syncService as? SyncServiceImpl, modelContainer: appContainer.modelContainer)
+                    }
+                }
             }
         }
         .alert("确认删除", isPresented: $showDeleteAlert) {
@@ -127,6 +142,33 @@ struct LedgerSettingsView: View {
         } message: {
             Text("删除账本会同时删除该账本下的所有数据，此操作不可撤销。")
         }
+        .alert("共享失败", isPresented: .init(get: { shareError != nil }, set: { if !$0 { shareError = nil } })) {
+            Button("确定", role: .cancel) { shareError = nil }
+        } message: {
+            Text(shareError ?? "未知错误")
+        }
+        }
+    }
+
+    private func createShareAndShow() {
+        isCreatingShare = true
+        Task {
+            do {
+                guard let syncService = appContainer.syncService as? SyncServiceImpl else {
+                    throw SyncError.invalidShareTarget
+                }
+                let share = try await syncService.createShare(for: ledger)
+                await MainActor.run {
+                    cloudShare = share
+                    isCreatingShare = false
+                    showCloudShare = true
+                }
+            } catch {
+                await MainActor.run {
+                    isCreatingShare = false
+                    shareError = error.localizedDescription
+                }
+            }
         }
     }
 

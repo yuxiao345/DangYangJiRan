@@ -1,5 +1,7 @@
 import SwiftUI
+import SwiftData
 import CloudKit
+import CoreData
 import UIKit
 
 struct CloudSharingView: UIViewControllerRepresentable {
@@ -8,6 +10,7 @@ struct CloudSharingView: UIViewControllerRepresentable {
     let ledger: Ledger
     let isPresenting: Bool
     let syncService: SyncServiceImpl?
+    let modelContainer: ModelContainer?
 
     func makeUIViewController(context: Context) -> UICloudSharingController {
         let controller: UICloudSharingController
@@ -15,7 +18,7 @@ struct CloudSharingView: UIViewControllerRepresentable {
             controller = UICloudSharingController(share: share, container: container)
         } else {
             controller = UICloudSharingController { controller, prepareCompletionHandler in
-                Task {
+                Task { @MainActor in
                     do {
                         let share = try await context.coordinator.createShare()
                         prepareCompletionHandler(share, container, nil)
@@ -34,33 +37,43 @@ struct CloudSharingView: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UICloudSharingController, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(ledger: ledger, container: container, syncService: syncService)
+        Coordinator(ledger: ledger, container: container, syncService: syncService, modelContainer: modelContainer)
     }
 
     final class Coordinator: NSObject, UICloudSharingControllerDelegate {
         let ledger: Ledger
         let container: CKContainer
         let syncService: SyncServiceImpl?
+        let modelContainer: ModelContainer?
 
-        init(ledger: Ledger, container: CKContainer, syncService: SyncServiceImpl?) {
+        init(ledger: Ledger, container: CKContainer, syncService: SyncServiceImpl?, modelContainer: ModelContainer?) {
             self.ledger = ledger
             self.container = container
             self.syncService = syncService
+            self.modelContainer = modelContainer
         }
 
+        @MainActor
         func createShare() async throws -> CKShare {
             if let syncService {
                 return try await syncService.createShare(for: ledger)
             }
-            let zoneID = CKRecordZone.ID(
-                zoneName: "com.apple.coredata.cloudkit.zone",
-                ownerName: CKCurrentUserDefaultName
-            )
-            let recordID = CKRecord.ID(recordName: ledger.id.uuidString, zoneID: zoneID)
-            let share = CKShare(rootRecord: CKRecord(recordType: "Ledger", recordID: recordID))
-            share.publicPermission = .readWrite
+            guard let modelContainer else {
+                throw SyncError.invalidShareTarget
+            }
+            guard let moc = modelContainer.mainContext.coreDataContext,
+                  let coordinator = moc.persistentStoreCoordinator as? NSPersistentCloudKitContainer else {
+                throw SyncError.invalidShareTarget
+            }
 
-            try await container.sharedCloudDatabase.save(share)
+            let fetch = NSFetchRequest<NSManagedObject>(entityName: "Ledger")
+            fetch.predicate = NSPredicate(format: "id == %@", ledger.id as CVarArg)
+            fetch.fetchLimit = 1
+            guard let nsObject = try moc.fetch(fetch).first else {
+                throw SyncError.invalidShareTarget
+            }
+
+            let (_, share, _) = try await coordinator.share([nsObject], to: nil)
             ledger.isShared = true
             return share
         }

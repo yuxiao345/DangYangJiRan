@@ -86,13 +86,50 @@ final class AppContainer: ObservableObject {
         currencyService = CurrencyServiceImpl()
         exchangeRateService = ExchangeRateServiceImpl()
         if let ckContainer = cloudKitContainer {
-            syncService = SyncServiceImpl(container: ckContainer)
+            syncService = SyncServiceImpl(container: ckContainer, modelContainer: modelContainer)
+        }
+
+        // Listen for deferred share acceptance (when persistentContainer becomes available)
+        NotificationCenter.default.addObserver(
+            forName: .shareAccepted,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                self?.refreshAndSwitchToSharedLedger()
+            }
         }
     }
 
     func handleShareURL(_ url: URL) async {
-        // CKShare metadata extraction (Phase 3)
         Logger.info("Received share URL: \(url)")
+        do {
+            try await syncService?.acceptShare(url: url)
+            Logger.info("Successfully accepted share")
+
+            // Wait for initial sync, then refresh to find the shared ledger
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            await refreshAndSwitchToSharedLedger()
+        } catch {
+            Logger.error("Failed to accept share: \(error)")
+        }
+    }
+
+    @MainActor
+    private func refreshAndSwitchToSharedLedger() {
+        let context = modelContainer.mainContext
+        guard let ledgers = try? context.fetch(FetchDescriptor<Ledger>()) else { return }
+
+        // Find a shared ledger we haven't seen before
+        let newSharedLedger = ledgers.first { ledger in
+            ledger.id != currentLedger?.id && ledger.isShared
+        }
+        if let shared = newSharedLedger {
+            currentLedger = shared
+            UserDefaults.standard.set(shared.id.uuidString, forKey: "currentLedgerID")
+            Logger.info("Switched to shared ledger: \(shared.name)")
+        }
     }
 
     func configureDefaultLedger(modelContext: ModelContext) {

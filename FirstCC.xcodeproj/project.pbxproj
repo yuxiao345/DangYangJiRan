@@ -164,6 +164,7 @@
 		F882A518E36393398F41A4D3 /* CurrencyFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 616DDCA24AD507E700D4E02A /* CurrencyFormatter.swift */; };
 		FD2C9721768BC0DECAFBD9EA /* LedgerRole.swift in Sources */ = {isa = PBXBuildFile; fileRef = 123B9066865398E03B8DD922 /* LedgerRole.swift */; };
 		FD91B103255DEB923850049C /* CloudKitConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FD37181CF946710701C84CD /* CloudKitConfig.swift */; };
+		6361D9C2DF114A4888D6B050 /* SwiftDataBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9140DF48EBC4497697CB6590 /* SwiftDataBridge.swift */; };
 		FFD3CC4FA09133AB7E0CFC53 /* AccountDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89DBFB59681FF75B16E21478 /* AccountDetailView.swift */; };
 /* End PBXBuildFile section */
 
@@ -327,6 +328,7 @@
 		F695310E79DF42977ADCC677 /* Transaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transaction.swift; sourceTree = "<group>"; };
 		F6C3C5850CB1904E1775012A /* TemplateServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateServiceProtocol.swift; sourceTree = "<group>"; };
 		FB18074394D7CADFC89B2D67 /* CurrencyServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyServiceProtocol.swift; sourceTree = "<group>"; };
+		9140DF48EBC4497697CB6590 /* SwiftDataBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftDataBridge.swift; sourceTree = "<group>"; };
 		FC0DA520028935CB779F3147 /* SplitEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitEntry.swift; sourceTree = "<group>"; };
 		FD9C98A4532441F197C92D1E /* SplitFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitFormView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -564,6 +566,7 @@
 				01D75752123DF42AB96E4272 /* DateFormatters.swift */,
 				1BD4A1F1B5AEBDDC7F400369 /* Logger.swift */,
 				57D09B8E37F1973C7B325B97 /* PhotoStorage.swift */,
+				9140DF48EBC4497697CB6590 /* SwiftDataBridge.swift */,
 				0CB28F94C2944BCF91F3F91E /* ChineseExpressionParser.swift */,
 				25BD8B7423ECB057766F757C /* BankLogoPresets.swift */,
 			);
@@ -962,6 +965,7 @@
 				7DB8954774354740A7A4811F /* ExportServiceImpl.swift in Sources */,
 				596C1CEAA36D42549B006075 /* ExportView.swift in Sources */,
 				04B2DFDBA99124ACF5FAADD0 /* CurrencyServiceImpl.swift in Sources */,
+				6361D9C2DF114A4888D6B050 /* SwiftDataBridge.swift in Sources */,
 				BDE2DDF9CBABDBC0EAA80CCF /* ExchangeRateServiceImpl.swift in Sources */,
 				261BEF666A3141FFBC1E399A /* Color+Design.swift in Sources */,
 				F6D356DFD6374A3DBDF4CB1B /* GlassModifiers.swift in Sources */,
