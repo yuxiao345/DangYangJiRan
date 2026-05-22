@@ -3,11 +3,11 @@ import SwiftData
 
 @Model
 final class ExchangeRate {
-    var id: UUID
-    var fromCurrencyCode: String
-    var toCurrencyCode: String
-    var rate: Decimal
-    var fetchedAt: Date
+    var id: UUID = UUID()
+    var fromCurrencyCode: String = ""
+    var toCurrencyCode: String = ""
+    var rate: Decimal = 0
+    var fetchedAt: Date = Date()
 
     init(
         id: UUID = UUID(),

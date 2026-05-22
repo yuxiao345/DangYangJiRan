@@ -3,13 +3,14 @@ import SwiftData
 
 @Model
 final class BudgetBook {
-    var id: UUID
-    var name: String
-    var startDate: Date
-    var endDate: Date
-    var isActive: Bool
-    var createdAt: Date
+    var id: UUID = UUID()
+    var name: String = ""
+    var startDate: Date = Date()
+    var endDate: Date = Calendar.current.date(byAdding: .year, value: 1, to: Date()) ?? Date()
+    var isActive: Bool = true
+    var createdAt: Date = Date()
 
+    @Relationship(deleteRule: .cascade, inverse: \BudgetItem.book)
     var items: [BudgetItem]? = []
 
     var ledger: Ledger?

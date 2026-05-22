@@ -3,28 +3,29 @@ import SwiftData
 
 @Model
 final class Transaction {
-    var id: UUID
-    var typeRaw: String
-    var amount: Decimal
-    var currencyCode: String
+    var id: UUID = UUID()
+    var typeRaw: String = TransactionType.expense.rawValue
+    var amount: Decimal = 0
+    var currencyCode: String = "CNY"
     var exchangeRate: Decimal?
     var convertedAmount: Decimal?
     var note: String?
-    var date: Date
-    var createdAt: Date
-    var modifiedAt: Date
-    var isReconciled: Bool
+    var date: Date = Date()
+    var createdAt: Date = Date()
+    var modifiedAt: Date = Date()
+    var isReconciled: Bool = false
     var transferGroupId: UUID?
     var refundGroupId: UUID?
     var refundAmount: Decimal?
-    var reimbursementStatusRaw: String
+    var reimbursementStatusRaw: String = ReimbursementStatus.none.rawValue
     var reimbursedById: UUID?
     var lendingDirectionRaw: String?
-    var lendingStatusRaw: String
+    var lendingStatusRaw: String = LendingStatus.none.rawValue
     var settledByLendingTransactionId: UUID?
     var settledAmount: Decimal?
-    var tags: [String]
+    var tags: [String] = []
     var photoURLs: [String]?
+    var isSplitParent: Bool = false
 
     var ledger: Ledger?
 
@@ -38,6 +39,7 @@ final class Transaction {
 
     var template: TransactionTemplate?
 
+    @Relationship(deleteRule: .nullify, inverse: \SplitGroup.transaction)
     var splitGroup: SplitGroup?
 
     var member: Member?
@@ -46,16 +48,10 @@ final class Transaction {
 
     var project: Project?
 
-    @Relationship(deleteRule: .nullify)
-    var sourceOfTransfer: Transaction? = nil
-
-    var isSplitParent: Bool
-
-    @Relationship(deleteRule: .nullify, inverse: \Transaction.splitChildren)
     var parentTransaction: Transaction?
 
-    @Relationship(deleteRule: .cascade)
-    var splitChildren: [Transaction]?
+    @Relationship(deleteRule: .cascade, inverse: \Transaction.parentTransaction)
+    var splitChildren: [Transaction]? = []
 
     var type: TransactionType {
         get { TransactionType(rawValue: typeRaw) ?? .expense }
@@ -86,12 +82,6 @@ final class Transaction {
     var isSplitChild: Bool { parentTransaction != nil }
 
     var hasSplitChildren: Bool { splitChildren?.isEmpty == false }
-
-    @Relationship(deleteRule: .nullify)
-    var settledByLending: Transaction? = nil
-
-    @Relationship(deleteRule: .nullify)
-    var reimbursedBy: Transaction? = nil
 
     init(
         id: UUID = UUID(),

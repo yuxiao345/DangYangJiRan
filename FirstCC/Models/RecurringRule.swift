@@ -3,14 +3,14 @@ import SwiftData
 
 @Model
 final class RecurringRule {
-    var id: UUID
-    var frequencyRaw: String
-    var interval: Int
-    var startDate: Date
+    var id: UUID = UUID()
+    var frequencyRaw: String = RecurringFrequency.monthly.rawValue
+    var interval: Int = 1
+    var startDate: Date = Date()
     var endDate: Date?
     var lastGeneratedDate: Date?
     var nextGenerateDate: Date?
-    var isActive: Bool
+    var isActive: Bool = true
 
     var template: TransactionTemplate?
 
@@ -33,7 +33,6 @@ final class RecurringRule {
         self.startDate = startDate
         self.endDate = endDate
         self.isActive = isActive
-        // First generation happens on startDate (if it's today or past)
         self.nextGenerateDate = startDate
     }
 

@@ -979,13 +979,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = FirstCC/FirstCC.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = RD2HFXU4DR;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FirstCC/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleIcons = "{\"CFBundleAlternateIcons\": {\"DarkIcon\": {\"CFBundleIconFiles\": [\"icon_dark\"], \"UIPrerenderedIcon\": false}}}";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID用于解锁应用保护您的账本数据";
 				INFOPLIST_KEY_UIAppFonts = "SpaceGrotesk-Light.ttf SpaceGrotesk-Regular.ttf SpaceGrotesk-Medium.ttf SpaceGrotesk-SemiBold.ttf SpaceGrotesk-Bold.ttf JetBrainsMono-Regular.ttf JetBrainsMono-Medium.ttf JetBrainsMono-Bold.ttf";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -993,6 +996,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UIBackgroundModes = remote-notification;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1012,13 +1016,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = FirstCC/FirstCC.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = RD2HFXU4DR;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FirstCC/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleIcons = "{\"CFBundleAlternateIcons\": {\"DarkIcon\": {\"CFBundleIconFiles\": [\"icon_dark\"], \"UIPrerenderedIcon\": false}}}";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID用于解锁应用保护您的账本数据";
 				INFOPLIST_KEY_UIAppFonts = "SpaceGrotesk-Light.ttf SpaceGrotesk-Regular.ttf SpaceGrotesk-Medium.ttf SpaceGrotesk-SemiBold.ttf SpaceGrotesk-Bold.ttf JetBrainsMono-Regular.ttf JetBrainsMono-Medium.ttf JetBrainsMono-Bold.ttf";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -1026,6 +1033,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UIBackgroundModes = remote-notification;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

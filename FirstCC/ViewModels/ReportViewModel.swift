@@ -400,7 +400,7 @@ final class ReportViewModel {
         let acctDescriptor = FetchDescriptor<Account>(
             predicate: #Predicate { $0.ledger?.id == ledgerID }
         )
-        let allAccounts = (try? context.fetch(acctDescriptor)) ?? []
+        guard let allAccounts = try? context.fetch(acctDescriptor) else { return }
         guard let account = allAccounts.first(where: { $0.name == "微信支付" }) else {
             print("Seed: 微信支付 account not found")
             return

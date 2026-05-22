@@ -3,17 +3,17 @@ import SwiftData
 
 @Model
 final class SplitGroup {
-    var id: UUID
-    var totalAmount: Decimal
-    var currencyCode: String
-    var splitTypeRaw: String
+    var id: UUID = UUID()
+    var totalAmount: Decimal = 0
+    var currencyCode: String = "CNY"
+    var splitTypeRaw: String = SplitType.equal.rawValue
     var note: String?
-    var date: Date
-    var createdAt: Date
+    var date: Date = Date()
+    var createdAt: Date = Date()
 
     var ledger: Ledger?
 
-    @Relationship(deleteRule: .cascade)
+    @Relationship(deleteRule: .cascade, inverse: \SplitEntry.splitGroup)
     var entries: [SplitEntry]? = []
 
     var transaction: Transaction?

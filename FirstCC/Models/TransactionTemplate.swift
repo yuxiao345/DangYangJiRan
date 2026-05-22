@@ -3,16 +3,16 @@ import SwiftData
 
 @Model
 final class TransactionTemplate {
-    var id: UUID
-    var name: String
-    var typeRaw: String
-    var amount: Decimal
-    var currencyCode: String
+    var id: UUID = UUID()
+    var name: String = ""
+    var typeRaw: String = TransactionType.expense.rawValue
+    var amount: Decimal = 0
+    var currencyCode: String = "CNY"
     var note: String?
-    var tags: [String]
-    var isRecurring: Bool
-    var sortOrder: Int
-    var createdAt: Date
+    var tags: [String] = []
+    var isRecurring: Bool = false
+    var sortOrder: Int = 0
+    var createdAt: Date = Date()
 
     var ledger: Ledger?
 
@@ -28,10 +28,10 @@ final class TransactionTemplate {
 
     var project: Project?
 
-    @Relationship(deleteRule: .nullify)
+    @Relationship(deleteRule: .nullify, inverse: \Transaction.template)
     var generatedTransactions: [Transaction]? = []
 
-    @Relationship(deleteRule: .cascade)
+    @Relationship(deleteRule: .cascade, inverse: \RecurringRule.template)
     var recurringRule: RecurringRule?
 
     var type: TransactionType {

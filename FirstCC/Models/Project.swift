@@ -3,16 +3,22 @@ import SwiftData
 
 @Model
 final class Project {
-    var id: UUID
-    var name: String
+    var id: UUID = UUID()
+    var name: String = ""
     var desc: String?
     var startDate: Date?
     var endDate: Date?
     var budget: Decimal?
-    var isActive: Bool
-    var sortOrder: Int
+    var isActive: Bool = true
+    var sortOrder: Int = 0
 
     var ledger: Ledger?
+
+    @Relationship(deleteRule: .nullify, inverse: \Transaction.project)
+    var transactions: [Transaction]? = []
+
+    @Relationship(deleteRule: .nullify, inverse: \TransactionTemplate.project)
+    var templateTransactions: [TransactionTemplate]? = []
 
     init(
         id: UUID = UUID(),

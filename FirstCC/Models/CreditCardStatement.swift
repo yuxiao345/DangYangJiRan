@@ -3,17 +3,18 @@ import SwiftData
 
 @Model
 final class CreditCardStatement {
-    var id: UUID
-    var account: Account?
-    var periodYear: Int
-    var periodMonth: Int
+    var id: UUID = UUID()
+    var periodYear: Int = Calendar.current.component(.year, from: Date())
+    var periodMonth: Int = Calendar.current.component(.month, from: Date())
     var statementAmount: Decimal?
     var reconciledAppAmount: Decimal?
-    var isReconciled: Bool
+    var isReconciled: Bool = false
     var reconciledAt: Date?
     var note: String?
     var bankCSVData: Data?
     var bankCSVFileName: String?
+
+    var account: Account?
 
     var ledger: Ledger?
 

@@ -3,13 +3,14 @@ import SwiftData
 
 @Model
 final class BudgetItem {
-    var id: UUID
-    var amount: Decimal
-    var periodRaw: String
-    var alertThreshold: Double
-    var isActive: Bool
+    var id: UUID = UUID()
+    var amount: Decimal = 0
+    var periodRaw: String = BudgetPeriod.monthly.rawValue
+    var alertThreshold: Double = 0.8
+    var isActive: Bool = true
 
     var book: BudgetBook?
+
     var category: Category?
 
     var period: BudgetPeriod {
@@ -17,7 +18,6 @@ final class BudgetItem {
         set { periodRaw = newValue.rawValue }
     }
 
-    /// Number of periods within the book's date range (e.g., 12 months, 4 quarters)
     var periodCount: Double {
         guard let book = book else { return 1 }
         let days = Calendar.current.dateComponents([.day], from: book.startDate, to: book.endDate).day ?? 0
@@ -37,7 +37,6 @@ final class BudgetItem {
         }
     }
 
-    /// Total budget for the entire book duration
     var totalBudget: Decimal {
         Decimal(periodCount) * amount
     }

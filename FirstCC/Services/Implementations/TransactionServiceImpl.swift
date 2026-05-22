@@ -45,7 +45,6 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
         inflow.ledger = ledger
         context.insert(inflow)
 
-        outflow.sourceOfTransfer = inflow
         try context.save()
         NotificationCenter.default.post(name: .transactionDidChange, object: nil)
         return (outflow, inflow)

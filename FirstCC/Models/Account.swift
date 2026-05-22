@@ -3,25 +3,37 @@ import SwiftData
 
 @Model
 final class Account {
-    var id: UUID
-    var name: String
-    var currencyCode: String
-    var typeRaw: String
+    var id: UUID = UUID()
+    var name: String = ""
+    var currencyCode: String = "CNY"
+    var typeRaw: String = AccountType.cash.rawValue
     var iconName: String?
     var colorHex: String?
     var customIconData: Data?
-    var initialBalance: Decimal
+    var initialBalance: Decimal = 0
     var creditLimit: Decimal?
     var billingDay: Int?
     var dueDay: Int?
-    var isArchived: Bool
-    var sortOrder: Int
-    var createdAt: Date
+    var isArchived: Bool = false
+    var sortOrder: Int = 0
+    var createdAt: Date = Date()
 
     var ledger: Ledger?
 
-    @Relationship(deleteRule: .nullify)
+    @Relationship(deleteRule: .nullify, inverse: \Transaction.account)
     var transactions: [Transaction]? = []
+
+    @Relationship(deleteRule: .nullify, inverse: \Transaction.toAccount)
+    var incomingTransactions: [Transaction]? = []
+
+    @Relationship(deleteRule: .nullify, inverse: \TransactionTemplate.account)
+    var templates: [TransactionTemplate]? = []
+
+    @Relationship(deleteRule: .nullify, inverse: \TransactionTemplate.toAccount)
+    var incomingTemplates: [TransactionTemplate]? = []
+
+    @Relationship(deleteRule: .nullify, inverse: \CreditCardStatement.account)
+    var creditCardStatements: [CreditCardStatement]? = []
 
     var type: AccountType {
         get { AccountType(rawValue: typeRaw) ?? .other }

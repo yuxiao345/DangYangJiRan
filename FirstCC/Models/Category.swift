@@ -3,26 +3,30 @@ import SwiftData
 
 @Model
 final class Category {
-    var id: UUID
-    var name: String
-    var iconName: String
-    var colorHex: String
-    var typeRaw: String
-    var isSystem: Bool
-    var isHidden: Bool
-    var sortOrder: Int
+    var id: UUID = UUID()
+    var name: String = ""
+    var iconName: String = "questionmark"
+    var colorHex: String = "#666666"
+    var typeRaw: String = TransactionType.expense.rawValue
+    var isSystem: Bool = false
+    var isHidden: Bool = false
+    var sortOrder: Int = 0
 
     var ledger: Ledger?
 
     var parent: Category?
 
-    @Relationship(deleteRule: .nullify)
+    @Relationship(deleteRule: .cascade, inverse: \Category.parent)
     var children: [Category]? = []
 
-    @Relationship(deleteRule: .nullify)
+    @Relationship(deleteRule: .nullify, inverse: \Transaction.category)
     var transactions: [Transaction]? = []
 
+    @Relationship(deleteRule: .nullify, inverse: \BudgetItem.category)
     var budgetItems: [BudgetItem]? = []
+
+    @Relationship(deleteRule: .nullify, inverse: \TransactionTemplate.category)
+    var templateTransactions: [TransactionTemplate]? = []
 
     var type: TransactionType {
         get { TransactionType(rawValue: typeRaw) ?? .expense }
