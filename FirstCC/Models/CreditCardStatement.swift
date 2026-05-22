@@ -4,8 +4,8 @@ import SwiftData
 @Model
 final class CreditCardStatement {
     var id: UUID = UUID()
-    var periodYear: Int = Calendar.current.component(.year, from: Date())
-    var periodMonth: Int = Calendar.current.component(.month, from: Date())
+    var periodYear: Int = 0
+    var periodMonth: Int = 0
     var statementAmount: Decimal?
     var reconciledAppAmount: Decimal?
     var isReconciled: Bool = false

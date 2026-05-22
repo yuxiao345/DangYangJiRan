@@ -55,7 +55,6 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
         amount: Decimal,
         context: ModelContext
     ) throws -> Transaction {
-        // Refund reverses the sign: expense refund = positive, income refund = negative
         let absAmount = abs(amount)
         let signedAmount: Decimal = original.type == .expense ? absAmount : -absAmount
         let refund = Transaction(
@@ -103,9 +102,11 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
             if let keyword = filters.keyword, !keyword.isEmpty {
                 let tokens = keyword.lowercased().split(separator: " ").map(String.init)
                 guard !tokens.isEmpty else { return true }
+                let lcNote = t.note?.lowercased()
+                let lcTags = t.tags.map { $0.lowercased() }
                 let match = tokens.allSatisfy { token in
-                    if let note = t.note, note.lowercased().contains(token) { return true }
-                    if t.tags.contains(where: { $0.lowercased().contains(token) }) { return true }
+                    if lcNote?.contains(token) == true { return true }
+                    if lcTags.contains(where: { $0.contains(token) }) { return true }
                     if let name = t.merchant?.name, name.lowercased().contains(token) { return true }
                     if let name = t.category?.name, name.lowercased().contains(token) { return true }
                     if let name = t.account?.name, name.lowercased().contains(token) { return true }
@@ -116,26 +117,6 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
                 guard match else { return false }
             }
             return true
-        }
-    }
-
-    private func applyFilters(_ descriptor: inout FetchDescriptor<Transaction>, filters: TransactionFilters?) throws {
-        // SwiftData #Predicate limitation: complex dynamic filters are built via multiple fetch descriptors.
-        // For MVP, we fetch all and filter in memory for complex queries.
-        guard let filters = filters else { return }
-
-        // Simple predicates that #Predicate can handle
-        var predicates: [Predicate<Transaction>] = []
-
-        if let type = filters.type {
-            let typeRaw = type.rawValue
-            predicates.append(#Predicate { $0.typeRaw == typeRaw })
-        }
-
-        // Combine if a single predicate covers it; otherwise fetch all and filter in fetchTransactions
-        if predicates.count == 1 {
-            // Note: SwiftData doesn't easily support dynamic predicate composition.
-            // Fallback: apply the first predicate, rest filtered in memory.
         }
     }
 

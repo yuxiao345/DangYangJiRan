@@ -19,14 +19,14 @@ final class BudgetBook {
         id: UUID = UUID(),
         name: String = "",
         startDate: Date = Date(),
-        endDate: Date = Calendar.current.date(byAdding: .year, value: 1, to: Date()) ?? Date(),
+        endDate: Date? = nil,
         isActive: Bool = true,
         createdAt: Date = Date()
     ) {
         self.id = id
         self.name = name
         self.startDate = startDate
-        self.endDate = endDate
+        self.endDate = endDate ?? (Calendar.current.date(byAdding: .year, value: 1, to: Date()) ?? Date())
         self.isActive = isActive
         self.createdAt = createdAt
     }

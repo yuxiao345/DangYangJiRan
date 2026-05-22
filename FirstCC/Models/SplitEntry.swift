@@ -19,12 +19,14 @@ final class SplitEntry {
         amount: Decimal = 0,
         isPaid: Bool = false,
         paidDate: Date? = nil,
-        member: Member? = nil
+        member: Member? = nil,
+        user: User? = nil
     ) {
         self.id = id
         self.amount = amount
         self.isPaid = isPaid
         self.paidDate = paidDate
         self.member = member
+        self.user = user
     }
 }
