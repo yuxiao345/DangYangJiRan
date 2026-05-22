@@ -14,6 +14,7 @@
 		0413A5782ACA7ADA6B646EA2 /* Merchant.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8C510A32BF279EE9F3A0B52 /* Merchant.swift */; };
 		0484BE1BB3DC3558FA2CCC52 /* AddEditRecurringView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F2204626D762431EE987D3A /* AddEditRecurringView.swift */; };
 		04B2DFDBA99124ACF5FAADD0 /* CurrencyServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57EFB0CAB1BC4F3B58C9EFF /* CurrencyServiceImpl.swift */; };
+		08FD28436A2644A6B913FB78 /* Transaction+Grouping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1067764F58AF43579BF3B574 /* Transaction+Grouping.swift */; };
 		0C632EDC5C511E7EFA7938C3 /* TransactionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 979E204D2E243EDB0A12BEA4 /* TransactionListView.swift */; };
 		0E9292C7F22D51456D1CDEC9 /* CreditCardStatementPeriod.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87BA27190A7360DB8F2A60EC /* CreditCardStatementPeriod.swift */; };
 		105BC98E03DBAAF350FEC455 /* AddEditBudgetBookView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDAEED1A1D8033C2FECF73C8 /* AddEditBudgetBookView.swift */; };
@@ -75,8 +76,6 @@
 		658D3C8C26A342D6855FE548 /* SearchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C94FFA096DE246CEABA8BC8C /* SearchViewModel.swift */; };
 		6BCAD05F34DE19C77351E161 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC9D861E80D1DCA0F1C0F9CB /* User.swift */; };
 		6F8FFA761DA08B251307762E /* View+ConditionalModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1824EA354A3DDDD91C882983 /* View+ConditionalModifier.swift */; };
-		9F88E48A319445199EDDC0B4 /* View+ErrorAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36D3759D43EE47A08A8421BE /* View+ErrorAlert.swift */; };
-		08FD28436A2644A6B913FB78 /* Transaction+Grouping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1067764F58AF43579BF3B574 /* Transaction+Grouping.swift */; };
 		7221F6C6410549F3F2F0442F /* CategoryListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F2EE79BE972F3B0CA2CC7D7 /* CategoryListView.swift */; };
 		73155BDE31ACEFB4B8D29811 /* RecurringRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5ADE49EE78C2B59A32BC95A /* RecurringRule.swift */; };
 		77E2C944A27CD320313C9858 /* Transaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = F695310E79DF42977ADCC677 /* Transaction.swift */; };
@@ -100,6 +99,7 @@
 		986351060B7E5C0436BE71A7 /* CreditCardStatementServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 671AEFA1E42740EFAA207C47 /* CreditCardStatementServiceProtocol.swift */; };
 		9DDFB9E1B80A2E556EDF6639 /* LedgerSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D8132C4EDFBAEEC7935A871 /* LedgerSettingsView.swift */; };
 		9ED1E16F7B46F3CAA63E7BAC /* BankOCRServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1491176FAE7F344BACF32F91 /* BankOCRServiceProtocol.swift */; };
+		9F88E48A319445199EDDC0B4 /* View+ErrorAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36D3759D43EE47A08A8421BE /* View+ErrorAlert.swift */; };
 		9FD605249C139E0F3774CC2B /* JoinLedgerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DEA46D0089C646200D27B77 /* JoinLedgerView.swift */; };
 		A1D107127733190AA6AD0456 /* AddEditTemplateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2FC3138D0335E3DBF2CF209 /* AddEditTemplateView.swift */; };
 		A2CBBC6D41AA4605BB7ABEE4 /* SplitDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DA937631F7E466C9ADBA946 /* SplitDetailView.swift */; };
@@ -118,6 +118,7 @@
 		C1D67EB2243A69FD46E300EC /* ExportServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A3BECB91DEF16E35F62A662 /* ExportServiceProtocol.swift */; };
 		C2A6B9A2D4703D50CFC6C197 /* SplitGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DE8647C366E3068EC48BEF /* SplitGroup.swift */; };
 		C2FB5D6D038756A445E6BC68 /* RefundSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3D3CD96BEEFA305CD0CB6E4 /* RefundSheetView.swift */; };
+		C38E3E4DEA4F4398ADFA40A1 /* NumpadGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 458691A145A84013AA5641B6 /* NumpadGrid.swift */; };
 		C6253E631CFE8A4A4D0230DD /* BankLogoPresets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25BD8B7423ECB057766F757C /* BankLogoPresets.swift */; };
 		C67A66089AB07D1C1D06860F /* icon_dark.png in Resources */ = {isa = PBXBuildFile; fileRef = 97FCEDFC1A08B135CB216CDC /* icon_dark.png */; };
 		C6A28993268E7ACC022E55A2 /* ProjectListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3379D417C4AA0EA0AA2B4366 /* ProjectListView.swift */; };
@@ -137,7 +138,6 @@
 		E0758DC1C611413BFC64F0C8 /* BankOCRServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F4415E7E7403C272F983896 /* BankOCRServiceImpl.swift */; };
 		E33096BE42DA5E77619F8962 /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 869E6C318410086C8418DB7A /* Color+Hex.swift */; };
 		E3F12A09B0014A49B0010002 /* AppLockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3F12A09B0014A49A0010001 /* AppLockView.swift */; };
-		C38E3E4DEA4F4398ADFA40A1 /* NumpadGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 458691A145A84013AA5641B6 /* NumpadGrid.swift */; };
 		E511A28BB2D7064A2331984B /* Project.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8354169E6A63B4B9CB44BCE9 /* Project.swift */; };
 		E620555961FEB232550C5A0F /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30A7BF23BB03561C42D70AE8 /* Constants.swift */; };
 		E68531E992371AE2949D8343 /* BudgetServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 408D9FF9F272EC495C946046 /* BudgetServiceProtocol.swift */; };
@@ -182,6 +182,7 @@
 		0DEA46D0089C646200D27B77 /* JoinLedgerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JoinLedgerView.swift; sourceTree = "<group>"; };
 		0F0D546EEE7347FFA48B9EDD /* SettlementStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettlementStatus.swift; sourceTree = "<group>"; };
 		0FD37181CF946710701C84CD /* CloudKitConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitConfig.swift; sourceTree = "<group>"; };
+		1067764F58AF43579BF3B574 /* Transaction+Grouping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Transaction+Grouping.swift"; sourceTree = "<group>"; };
 		123B6255B17F4B3C9C8C6249 /* Color+Expense.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Expense.swift"; sourceTree = "<group>"; };
 		123B9066865398E03B8DD922 /* LedgerRole.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedgerRole.swift; sourceTree = "<group>"; };
 		13A27CA96743727FDD560642 /* SplitServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitServiceProtocol.swift; sourceTree = "<group>"; };
@@ -190,8 +191,6 @@
 		1491176FAE7F344BACF32F91 /* BankOCRServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankOCRServiceProtocol.swift; sourceTree = "<group>"; };
 		14931D972DEFB352DE8F1463 /* ReconciliationServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReconciliationServiceImpl.swift; sourceTree = "<group>"; };
 		1824EA354A3DDDD91C882983 /* View+ConditionalModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+ConditionalModifier.swift"; sourceTree = "<group>"; };
-		36D3759D43EE47A08A8421BE /* View+ErrorAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+ErrorAlert.swift"; sourceTree = "<group>"; };
-		1067764F58AF43579BF3B574 /* Transaction+Grouping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Transaction+Grouping.swift"; sourceTree = "<group>"; };
 		18ABC6DFCE6F5ED9EC1F849F /* ExchangeRateServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExchangeRateServiceImpl.swift; sourceTree = "<group>"; };
 		19738FF36D10106B947C6A7A /* LedgerServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedgerServiceProtocol.swift; sourceTree = "<group>"; };
 		1B29AB99138D90241E214966 /* SplitType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitType.swift; sourceTree = "<group>"; };
@@ -207,6 +206,7 @@
 		300906B684298E7239BFA874 /* MemberListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberListView.swift; sourceTree = "<group>"; };
 		30A7BF23BB03561C42D70AE8 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		3379D417C4AA0EA0AA2B4366 /* ProjectListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectListView.swift; sourceTree = "<group>"; };
+		36D3759D43EE47A08A8421BE /* View+ErrorAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+ErrorAlert.swift"; sourceTree = "<group>"; };
 		372597A22CA245B898D21D6F /* CategoryPieChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryPieChartView.swift; sourceTree = "<group>"; };
 		38C7BA9D41065C1559BC6594 /* ReimbursementStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReimbursementStatus.swift; sourceTree = "<group>"; };
 		3C22B93B0634A15AD018E806 /* Ledger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Ledger.swift; sourceTree = "<group>"; };
@@ -214,6 +214,7 @@
 		408D9FF9F272EC495C946046 /* BudgetServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetServiceProtocol.swift; sourceTree = "<group>"; };
 		411149EDDF514343B9073596 /* CalendarDayCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarDayCell.swift; sourceTree = "<group>"; };
 		425E66A03DA84695A3F24AF7 /* BudgetBook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetBook.swift; sourceTree = "<group>"; };
+		458691A145A84013AA5641B6 /* NumpadGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumpadGrid.swift; sourceTree = "<group>"; };
 		49364D66AD60B7797AE0209D /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		4B83C5649C3586BDE0BC4BB0 /* AccountType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountType.swift; sourceTree = "<group>"; };
 		4BCF1A0598A529F57FA92893 /* CategoryServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryServiceImpl.swift; sourceTree = "<group>"; };
@@ -305,7 +306,6 @@
 		E2FC3138D0335E3DBF2CF209 /* AddEditTemplateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEditTemplateView.swift; sourceTree = "<group>"; };
 		E32CDB8867F6A3505B4A7910 /* AccountServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountServiceProtocol.swift; sourceTree = "<group>"; };
 		E3F12A09B0014A49A0010001 /* AppLockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLockView.swift; sourceTree = "<group>"; };
-		458691A145A84013AA5641B6 /* NumpadGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumpadGrid.swift; sourceTree = "<group>"; };
 		E41C53D82785F499B10CC4D8 /* PixelProgressBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelProgressBar.swift; sourceTree = "<group>"; };
 		E45CC9E82755427EADB2BA5F /* ReportViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportViewModel.swift; sourceTree = "<group>"; };
 		E63522FC24F70BAA3ED09CB9 /* CategorySeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategorySeeder.swift; sourceTree = "<group>"; };
@@ -987,13 +987,13 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleIcons = "{\"CFBundleAlternateIcons\": {\"DarkIcon\": {\"CFBundleIconFiles\": [\"icon_dark\"], \"UIPrerenderedIcon\": false}}}";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID用于解锁应用保护您的账本数据";
-					INFOPLIST_KEY_UIAppFonts = "SpaceGrotesk-Light.ttf SpaceGrotesk-Regular.ttf SpaceGrotesk-Medium.ttf SpaceGrotesk-SemiBold.ttf SpaceGrotesk-Bold.ttf JetBrainsMono-Regular.ttf JetBrainsMono-Medium.ttf JetBrainsMono-Bold.ttf";
+				INFOPLIST_KEY_UIAppFonts = "SpaceGrotesk-Light.ttf SpaceGrotesk-Regular.ttf SpaceGrotesk-Medium.ttf SpaceGrotesk-SemiBold.ttf SpaceGrotesk-Bold.ttf JetBrainsMono-Regular.ttf JetBrainsMono-Medium.ttf JetBrainsMono-Bold.ttf";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1020,13 +1020,13 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleIcons = "{\"CFBundleAlternateIcons\": {\"DarkIcon\": {\"CFBundleIconFiles\": [\"icon_dark\"], \"UIPrerenderedIcon\": false}}}";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID用于解锁应用保护您的账本数据";
-					INFOPLIST_KEY_UIAppFonts = "SpaceGrotesk-Light.ttf SpaceGrotesk-Regular.ttf SpaceGrotesk-Medium.ttf SpaceGrotesk-SemiBold.ttf SpaceGrotesk-Bold.ttf JetBrainsMono-Regular.ttf JetBrainsMono-Medium.ttf JetBrainsMono-Bold.ttf";
+				INFOPLIST_KEY_UIAppFonts = "SpaceGrotesk-Light.ttf SpaceGrotesk-Regular.ttf SpaceGrotesk-Medium.ttf SpaceGrotesk-SemiBold.ttf SpaceGrotesk-Bold.ttf JetBrainsMono-Regular.ttf JetBrainsMono-Medium.ttf JetBrainsMono-Bold.ttf";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1095,7 +1095,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_KEY_CFBundleIcons = "{\"CFBundleAlternateIcons\": {\"DarkIcon\": {\"CFBundleIconFiles\": [\"icon_dark\"], \"UIPrerenderedIcon\": false}}}";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -1155,7 +1155,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_KEY_CFBundleIcons = "{\"CFBundleAlternateIcons\": {\"DarkIcon\": {\"CFBundleIconFiles\": [\"icon_dark\"], \"UIPrerenderedIcon\": false}}}";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;

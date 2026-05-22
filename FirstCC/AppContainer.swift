@@ -38,8 +38,10 @@ final class AppContainer: ObservableObject {
         let schema = Schema(versionedSchema: FirstCCSchemaV4.self)
 
         let configuration = ModelConfiguration(
+            schema: schema,
             isStoredInMemoryOnly: false,
-            allowsSave: true
+            allowsSave: true,
+            cloudKitDatabase: .automatic
         )
 
         do {
@@ -63,8 +65,8 @@ final class AppContainer: ObservableObject {
             )
         }
 
-        // CloudKit container — nil when entitlements unavailable (free account)
-        cloudKitContainer = nil
+        // CloudKit container — sync engine for multi-device & sharing
+        cloudKitContainer = CKContainer(identifier: CloudKitConfig.containerIdentifier)
 
         ledgerService = LedgerServiceImpl()
         accountService = AccountServiceImpl()
