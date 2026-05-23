@@ -1,9 +1,13 @@
 import SwiftUI
 import SwiftData
 import CloudKit
+import CoreData
 
 @MainActor
 final class AppContainer: ObservableObject {
+    // Static ref so SceneDelegate can access without view hierarchy dependency
+    static weak var shared: AppContainer?
+
     let modelContainer: ModelContainer
 
     // Service instances
@@ -89,6 +93,8 @@ final class AppContainer: ObservableObject {
             syncService = SyncServiceImpl(container: ckContainer, modelContainer: modelContainer)
         }
 
+        Self.shared = self
+
         // Listen for deferred share acceptance (when persistentContainer becomes available)
         NotificationCenter.default.addObserver(
             forName: .shareAccepted,
@@ -103,32 +109,72 @@ final class AppContainer: ObservableObject {
     }
 
     func handleShareURL(_ url: URL) async {
+        DiagnosticLog.log("handleShareURL: \(url)")
         Logger.info("Received share URL: \(url)")
-        do {
-            try await syncService?.acceptShare(url: url)
-            Logger.info("Successfully accepted share")
+    }
 
-            // Wait for initial sync, then refresh to find the shared ledger
-            try? await Task.sleep(nanoseconds: 3_000_000_000)
+    func handleAcceptedShareMetadata(_ metadata: CKShare.Metadata) async {
+        DiagnosticLog.log("handleAcceptedShareMetadata: called")
+        Logger.info("=== SHARE ACCEPT: handleAcceptedShareMetadata called ===")
+        syncStatus = .syncing
+
+        do {
+            try await syncService?.acceptShare(metadata: metadata)
+            DiagnosticLog.log("handleAcceptedShareMetadata: accept OK, importing...")
+            Logger.info("=== SHARE ACCEPT: accept succeeded, importing shared data ===")
+            syncStatus = .synced
+
+            let imported = try await syncService?.importSharedData(into: modelContainer) ?? []
+            if let first = imported.first {
+                DiagnosticLog.log("import: switched to \(first.name)")
+                currentLedger = first
+                UserDefaults.standard.set(first.id.uuidString, forKey: "currentLedgerID")
+                Logger.info("=== IMPORT: switched to \(first.name) ===")
+                return
+            }
+
+            DiagnosticLog.log("import: 0 ledgers returned, falling back")
+            Logger.info("=== IMPORT: 0 ledgers returned, refreshing ===")
             await refreshAndSwitchToSharedLedger()
         } catch {
-            Logger.error("Failed to accept share: \(error)")
+            DiagnosticLog.log("handleAcceptedShareMetadata: FAILED \(error.localizedDescription)")
+            Logger.error("=== SHARE ACCEPT FAILED: \(error) ===")
+            let logContent = DiagnosticLog.read()
+            syncStatus = .error("共享失败: \(error.localizedDescription)\n\n诊断日志:\n\(logContent)")
         }
     }
 
     @MainActor
     private func refreshAndSwitchToSharedLedger() {
         let context = modelContainer.mainContext
-        guard let ledgers = try? context.fetch(FetchDescriptor<Ledger>()) else { return }
+        guard let ledgers = try? context.fetch(FetchDescriptor<Ledger>()) else {
+            Logger.error("=== REFRESH: fetch ledgers failed ===")
+            return
+        }
 
-        // Find a shared ledger we haven't seen before
+        Logger.info("=== REFRESH: found \(ledgers.count) ledger(s) total ===")
+        for l in ledgers {
+            Logger.info("  Ledger: id=\(l.id.uuidString.prefix(8)), name=\(l.name), isShared=\(l.isShared)")
+        }
+
+        // Try finding shared ledger first
         let newSharedLedger = ledgers.first { ledger in
             ledger.id != currentLedger?.id && ledger.isShared
         }
         if let shared = newSharedLedger {
             currentLedger = shared
             UserDefaults.standard.set(shared.id.uuidString, forKey: "currentLedgerID")
-            Logger.info("Switched to shared ledger: \(shared.name)")
+            Logger.info("=== REFRESH: switched to shared ledger \(shared.name) ===")
+            return
+        }
+
+        // Fallback: any new ledger (shared flag might not have synced yet)
+        if let anyNew = ledgers.first(where: { $0.id != currentLedger?.id }) {
+            Logger.info("=== REFRESH: found new ledger (isShared=\(anyNew.isShared)): \(anyNew.name) ===")
+            currentLedger = anyNew
+            UserDefaults.standard.set(anyNew.id.uuidString, forKey: "currentLedgerID")
+        } else {
+            Logger.info("=== REFRESH: no new ledger found ===")
         }
     }
 

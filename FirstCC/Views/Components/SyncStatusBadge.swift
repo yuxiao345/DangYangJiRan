@@ -1,17 +1,31 @@
 import SwiftUI
 import CloudKit
+import UIKit
 
 struct SyncStatusBadge: View {
     @EnvironmentObject private var appContainer: AppContainer
+    @State private var showDetail = false
 
     var body: some View {
         Button {
-            Task { try? await appContainer.syncService?.syncNow() }
+            if case .error = appContainer.syncStatus {
+                showDetail = true
+            } else {
+                Task { try? await appContainer.syncService?.syncNow() }
+            }
         } label: {
             statusIcon
                 .foregroundStyle(statusColor)
         }
         .buttonStyle(.plain)
+        .alert("同步诊断", isPresented: $showDetail) {
+            Button("复制日志") {
+                UIPasteboard.general.string = appContainer.syncStatus.displayName
+            }
+            Button("确定", role: .cancel) {}
+        } message: {
+            Text(appContainer.syncStatus.displayName)
+        }
     }
 
     @ViewBuilder

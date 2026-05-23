@@ -1,9 +1,38 @@
 import SwiftUI
 import SwiftData
 import CoreText
+import UIKit
+
+private struct SceneDelegateAdaptor: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> UIViewController {
+        UIViewController()
+    }
+
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+}
+
+final class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(
+        _ application: UIApplication,
+        configurationForConnecting connectingSceneSession: UISceneSession,
+        options: UIScene.ConnectionOptions
+    ) -> UISceneConfiguration {
+        let configuration = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
+        configuration.delegateClass = SceneDelegate.self
+        return configuration
+    }
+}
+
+private extension View {
+    func attachSceneDelegate() -> some View {
+        background(SceneDelegateAdaptor().frame(width: 0, height: 0))
+    }
+}
+
 
 @main
 struct FirstCCApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var appContainer = AppContainer()
     @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
 
@@ -58,6 +87,7 @@ struct FirstCCApp: App {
                 .environmentObject(appContainer)
                 .tint(Color.designAccentGreen)
                 .preferredColorScheme(preferredScheme)
+                .attachSceneDelegate()
                 .onOpenURL { url in
                     Task {
                         await appContainer.handleShareURL(url)

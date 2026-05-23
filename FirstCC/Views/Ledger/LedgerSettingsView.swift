@@ -45,7 +45,7 @@ struct LedgerSettingsView: View {
 
                     if ledger.isShared {
                         Button {
-                            showCloudShare = true
+                            openExistingShare()
                         } label: {
                             Label("管理共享", systemImage: "square.and.arrow.up")
                         }
@@ -128,12 +128,10 @@ struct LedgerSettingsView: View {
             currencyCode = ledger.defaultCurrencyCode
         }
         .sheet(isPresented: $showCloudShare) {
-            if let container = appContainer.cloudKitContainer {
-                Group {
-                    if let share = cloudShare {
-                        CloudSharingView(share: share, container: container, ledger: ledger, isPresenting: true, syncService: appContainer.syncService as? SyncServiceImpl, modelContainer: appContainer.modelContainer)
-                    }
-                }
+            if let container = appContainer.cloudKitContainer, let share = cloudShare {
+                CloudSharingView(share: share, container: container, ledger: ledger, isPresenting: true, syncService: appContainer.syncService as? SyncServiceImpl, modelContainer: appContainer.modelContainer)
+            } else {
+                ContentUnavailableView("共享未就绪", systemImage: "icloud.slash", description: Text("暂时无法读取共享信息，请稍后重试。"))
             }
         }
         .alert("确认删除", isPresented: $showDeleteAlert) {
@@ -159,6 +157,8 @@ struct LedgerSettingsView: View {
                 }
                 let share = try await syncService.createShare(for: ledger)
                 await MainActor.run {
+                    ledger.isShared = true
+                    try? modelContext.save()
                     cloudShare = share
                     isCreatingShare = false
                     showCloudShare = true
@@ -170,6 +170,14 @@ struct LedgerSettingsView: View {
                 }
             }
         }
+    }
+
+    private func openExistingShare() {
+        guard cloudShare != nil else {
+            shareError = "共享状态已标记，但当前设备还没有可用的共享对象。请重新发起共享或稍后重试。"
+            return
+        }
+        showCloudShare = true
     }
 
     private func save() {
