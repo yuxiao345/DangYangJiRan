@@ -49,6 +49,7 @@ struct LedgerSettingsView: View {
                         } label: {
                             Label("管理共享", systemImage: "square.and.arrow.up")
                         }
+                        .tint(.blue)
                     } else {
                         Button {
                             createShareAndShow()

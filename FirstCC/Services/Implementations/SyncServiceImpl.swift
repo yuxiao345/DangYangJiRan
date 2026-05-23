@@ -116,6 +116,43 @@ final class SyncServiceImpl: SyncServiceProtocol {
         return participants
     }
 
+    @MainActor
+    func syncParticipants(metadata: CKShare.Metadata, for ledger: Ledger) async throws {
+        DiagnosticLog.log("SyncService.syncParticipants: begin share=\(metadata.share.recordID)")
+        let context = modelContainer.mainContext
+        let participants = metadata.share.participants
+
+        let allUsers = try context.fetch(FetchDescriptor<User>())
+        let existingUsers = allUsers.filter { $0.ledger?.id == ledger.id }
+        var existingByRecordID = Dictionary(uniqueKeysWithValues: existingUsers.map { ($0.cloudKitUserRecordID, $0) })
+
+        for participant in participants {
+            let recordID = participant.userIdentity.lookupInfo?.userRecordID?.recordName ?? ""
+            let name = participant.userIdentity.nameComponents?.formatted(.name(style: .abbreviated)) ?? "共享成员"
+            let role: LedgerRole = participant.role == .owner ? .owner : .member
+            DiagnosticLog.log("SyncService.syncParticipants: participant recordID=\(recordID) name=\(name) role=\(role.rawValue) status=\(participant.acceptanceStatus.rawValue)")
+
+            if recordID.isEmpty { continue }
+
+            if let existing = existingByRecordID[recordID] {
+                existing.displayName = name
+                existing.role = role
+                DiagnosticLog.log("SyncService.syncParticipants: updated existing user \(name)")
+            } else {
+                let user = User(displayName: name, cloudKitUserRecordID: recordID, role: role)
+                user.ledger = ledger
+                context.insert(user)
+                existingByRecordID[recordID] = user
+                DiagnosticLog.log("SyncService.syncParticipants: created user \(name)")
+            }
+        }
+
+        if context.hasChanges {
+            try context.save()
+            DiagnosticLog.log("SyncService.syncParticipants: saved users")
+        }
+    }
+
     func removeParticipant(_ participant: CKShare.Participant, from ledger: Ledger) async throws {
         Logger.info("Removing participant from share")
     }

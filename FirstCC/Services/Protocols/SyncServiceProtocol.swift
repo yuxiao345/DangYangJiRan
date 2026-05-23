@@ -9,6 +9,7 @@ protocol SyncServiceProtocol {
     func acceptShare(metadata: CKShare.Metadata) async throws
     func importSharedData(into modelContainer: ModelContainer) async throws -> [Ledger]
     func fetchParticipants(for ledger: Ledger) async throws -> [CKShare.Participant]
+    func syncParticipants(metadata: CKShare.Metadata, for ledger: Ledger) async throws
     func removeParticipant(_ participant: CKShare.Participant, from ledger: Ledger) async throws
     func syncNow() async throws
 }

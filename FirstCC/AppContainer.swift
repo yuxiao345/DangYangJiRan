@@ -180,6 +180,9 @@ final class AppContainer: ObservableObject {
                 UserDefaults.standard.set(first.id.uuidString, forKey: "currentLedgerID")
                 Logger.info("=== IMPORT: switched to \(first.name) ===")
                 syncStatus = .error("已切换到共享账本：\(first.name)")
+
+                try? await syncService?.syncParticipants(metadata: metadata, for: first)
+                DiagnosticLog.log("import: participants synced")
                 return
             }
 
