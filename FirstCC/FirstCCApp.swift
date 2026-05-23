@@ -21,6 +21,31 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         configuration.delegateClass = SceneDelegate.self
         return configuration
     }
+
+    // Older URL-based delivery path (sometimes works when SceneDelegate doesn't)
+    func application(
+        _ application: UIApplication,
+        open url: URL,
+        options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+    ) -> Bool {
+        let count = UserDefaults.standard.integer(forKey: "diag_appDelegateOpenURL") + 1
+        UserDefaults.standard.set(count, forKey: "diag_appDelegateOpenURL")
+        UserDefaults.standard.set(url.absoluteString, forKey: "diag_appDelegateOpenURLLast")
+
+        DiagnosticLog.log("AppDelegate: openURL #\(count) url=\(url)")
+        Logger.info("AppDelegate: openURL #\(count) url=\(url)")
+
+        Task {
+            for i in 1...10 {
+                if let appContainer = AppContainer.shared {
+                    await appContainer.handleShareURL(url)
+                    return
+                }
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+            }
+        }
+        return true
+    }
 }
 
 private extension View {

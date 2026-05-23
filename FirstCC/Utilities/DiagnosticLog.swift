@@ -32,6 +32,16 @@ enum DiagnosticLog {
         }
     }
 
+    static func clear() {
+        guard let url = logFileURL else { return }
+        try? "".write(to: url, atomically: true, encoding: .utf8)
+    }
+
+    static func startSession(_ title: String) {
+        clear()
+        log("===== \(title) =====")
+    }
+
     static func read() -> String {
         guard let url = logFileURL, FileManager.default.fileExists(atPath: url.path) else {
             return "(no diagnostic log)"

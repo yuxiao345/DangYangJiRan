@@ -59,30 +59,11 @@ final class SyncServiceImpl: SyncServiceProtocol {
 
     @MainActor
     func createShare(for ledger: Ledger) async throws -> CKShare {
-        guard let container = persistentContainer else {
-            throw SyncError.shareContainerNotReady
-        }
-
-        let context = container.viewContext
-        let fetch = NSFetchRequest<NSManagedObject>(entityName: "Ledger")
-        fetch.predicate = NSPredicate(format: "id == %@", ledger.id as CVarArg)
-        fetch.fetchLimit = 1
-        guard let nsObject = try context.fetch(fetch).first else {
-            throw SyncError.invalidShareTarget
-        }
-
-        let objectID = nsObject.objectID
-        let storeContainer = container
-
-        return try await Task.detached(priority: .userInitiated) {
-            let bgContext = storeContainer.newBackgroundContext()
-            let bgObject = bgContext.object(with: objectID)
-            bgObject.setValue(true, forKey: "isShared")
-            try bgContext.save()
-            let (_, share, ckContainer) = try await storeContainer.share([bgObject], to: nil)
-            Logger.info("CKShare created: \(share.recordID)")
-            return share
-        }.value
+        DiagnosticLog.log("SyncService.createShare: using CloudKitShareCoordinator")
+        return try await CloudKitShareCoordinator.shared.createShare(
+            ledgerID: ledger.id,
+            name: ledger.name
+        )
     }
 
     @MainActor
@@ -105,8 +86,10 @@ final class SyncServiceImpl: SyncServiceProtocol {
             if hasData {
                 DiagnosticLog.log("importSharedData: data found, importing...")
                 let container = try await coordinator.containerForImport()
+                let sharedStore = try await coordinator.sharedStoreForImport()
                 let imported = try await SharedLedgerImportService.shared.importSharedLedgers(
                     from: container,
+                    sharedStore: sharedStore,
                     into: modelContainer
                 )
                 DiagnosticLog.log("importSharedData: imported \(imported.count) ledger(s)")

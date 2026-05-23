@@ -10,12 +10,20 @@ final class SharedLedgerImportService {
 
     func importSharedLedgers(
         from container: NSPersistentCloudKitContainer,
+        sharedStore: NSPersistentStore,
         into modelContainer: ModelContainer
     ) throws -> [Ledger] {
         let viewContext = container.viewContext
         let fetch = NSFetchRequest<NSManagedObject>(entityName: "Ledger")
+        fetch.affectedStores = [sharedStore]
         let sharedObjects = try viewContext.fetch(fetch)
         DiagnosticLog.log("ImportService: fetched \(sharedObjects.count) ledger(s) from shared store")
+        for (index, object) in sharedObjects.enumerated() {
+            let objectID = object.objectID.uriRepresentation().absoluteString
+            let id = (object.value(forKey: "id") as? UUID)?.uuidString ?? "nil"
+            let name = object.value(forKey: "name") as? String ?? "nil"
+            DiagnosticLog.log("ImportService: [\(index)] objectID=\(objectID) id=\(id) name=\(name)")
+        }
         Logger.info("SharedLedgerImportService fetched \(sharedObjects.count) ledger object(s) from shared Core Data stack")
 
         let modelContext = modelContainer.mainContext

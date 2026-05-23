@@ -169,6 +169,7 @@
 		A1B2C3D4E5F60718293A4B5C /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5B /* SceneDelegate.swift */; };
 		B1C2D3E4F5061728394A5B6C /* CloudKitShareCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728394A5B6B /* CloudKitShareCoordinator.swift */; };
 		C1D2E3F40516273849A5B6C7 /* SharedLedgerImportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F40516273849A5B6C6 /* SharedLedgerImportService.swift */; };
+		D4E5F60718293A4B5C6D7E8F /* SharedPersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F60718293A4B5C6D7E8E /* SharedPersistenceController.swift */; };
 		FFD3CC4FA09133AB7E0CFC53 /* AccountDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89DBFB59681FF75B16E21478 /* AccountDetailView.swift */; };
 /* End PBXBuildFile section */
 
@@ -337,6 +338,7 @@
 		A1B2C3D4E5F60718293A4B5B /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		B1C2D3E4F5061728394A5B6B /* CloudKitShareCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitShareCoordinator.swift; sourceTree = "<group>"; };
 		C1D2E3F40516273849A5B6C6 /* SharedLedgerImportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedLedgerImportService.swift; sourceTree = "<group>"; };
+		D4E5F60718293A4B5C6D7E8E /* SharedPersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedPersistenceController.swift; sourceTree = "<group>"; };
 		FC0DA520028935CB779F3147 /* SplitEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitEntry.swift; sourceTree = "<group>"; };
 		FD9C98A4532441F197C92D1E /* SplitFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitFormView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -674,6 +676,7 @@
 				18ABC6DFCE6F5ED9EC1F849F /* ExchangeRateServiceImpl.swift */,
 				B1C2D3E4F5061728394A5B6B /* CloudKitShareCoordinator.swift */,
 				C1D2E3F40516273849A5B6C6 /* SharedLedgerImportService.swift */,
+				D4E5F60718293A4B5C6D7E8E /* SharedPersistenceController.swift */,
 			);
 			path = Implementations;
 			sourceTree = "<group>";
@@ -982,6 +985,7 @@
 				A1B2C3D4E5F60718293A4B5C /* SceneDelegate.swift in Sources */,
 				B1C2D3E4F5061728394A5B6C /* CloudKitShareCoordinator.swift in Sources */,
 				C1D2E3F40516273849A5B6C7 /* SharedLedgerImportService.swift in Sources */,
+				D4E5F60718293A4B5C6D7E8F /* SharedPersistenceController.swift in Sources */,
 				BDE2DDF9CBABDBC0EAA80CCF /* ExchangeRateServiceImpl.swift in Sources */,
 				261BEF666A3141FFBC1E399A /* Color+Design.swift in Sources */,
 				F6D356DFD6374A3DBDF4CB1B /* GlassModifiers.swift in Sources */,
