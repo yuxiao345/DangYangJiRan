@@ -1,9 +1,9 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 
 struct MerchantListView: View {
     @EnvironmentObject private var appContainer: AppContainer
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @State private var merchants: [Merchant] = []
     @State private var showAddAlert = false
     @State private var newName = ""
@@ -73,7 +73,7 @@ struct MerchantListView: View {
 
     private func addMerchant() {
         guard let ledger = effectiveLedger else { return }
-        let merchant = Merchant(name: newName, sortOrder: merchants.count)
+        let merchant = Merchant(name: newName, sortOrder: merchants.count, context: modelContext)
         try? appContainer.merchantService.createMerchant(merchant, ledger: ledger, context: modelContext)
         loadMerchants()
     }
@@ -86,7 +86,7 @@ struct MerchantListView: View {
 
 struct EditMerchantView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @EnvironmentObject private var appContainer: AppContainer
     let merchant: Merchant
     @State private var name: String

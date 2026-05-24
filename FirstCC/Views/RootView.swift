@@ -1,9 +1,9 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 
 struct RootView: View {
     @EnvironmentObject private var appContainer: AppContainer
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
 
     @AppStorage("appLockEnabled") private var appLockEnabled = false
@@ -18,7 +18,7 @@ struct RootView: View {
             }
         }
         .onAppear {
-            appContainer.configureDefaultLedger(modelContext: modelContext)
+            appContainer.configureDefaultLedger()
         }
         .onChange(of: scenePhase) { _, newPhase in
             switch newPhase {

@@ -1,17 +1,21 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 
-@Model
-final class BudgetItem {
-    var id: UUID = UUID()
-    var amount: Decimal = 0
-    var periodRaw: String = BudgetPeriod.monthly.rawValue
-    var alertThreshold: Double = 0.8
-    var isActive: Bool = true
+@objc(BudgetItem)
+final class BudgetItem: NSManagedObject,  Sendable {
+    @NSManaged var id: UUID
+    @NSManaged var amountInFen: Int64
+    @NSManaged var periodRaw: String
+    @NSManaged var alertThreshold: Double
+    @NSManaged var isActive: Bool
 
-    var book: BudgetBook?
+    @NSManaged var book: BudgetBook?
+    @NSManaged var category: Category?
 
-    var category: Category?
+    var amount: Decimal {
+        get { Decimal(amountInFen) / 100 }
+        set { amountInFen = Int64(truncating: (newValue * 100) as NSDecimalNumber) }
+    }
 
     var period: BudgetPeriod {
         get { BudgetPeriod(rawValue: periodRaw) ?? .monthly }
@@ -38,18 +42,23 @@ final class BudgetItem {
     }
 
     var totalBudget: Decimal {
-        Decimal(periodCount) * amount
+        NSDecimalNumber(value: periodCount).decimalValue * amount
     }
 
-    init(
-        id: UUID = UUID(),
+    override func awakeFromInsert() {
+        super.awakeFromInsert()
+        id = UUID()
+    }
+
+    convenience init(
         amount: Decimal = 0,
         period: BudgetPeriod = .monthly,
         alertThreshold: Double = 0.8,
         isActive: Bool = true,
-        category: Category? = nil
+        category: Category? = nil,
+        context: NSManagedObjectContext
     ) {
-        self.id = id
+        self.init(context: context)
         self.amount = amount
         self.periodRaw = period.rawValue
         self.alertThreshold = alertThreshold
@@ -57,3 +66,5 @@ final class BudgetItem {
         self.category = category
     }
 }
+
+extension BudgetItem: Identifiable {}

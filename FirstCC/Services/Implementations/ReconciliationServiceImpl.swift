@@ -1,12 +1,12 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 
 struct ReconciliationServiceImpl: ReconciliationServiceProtocol {
 
-    func matchItems(_ bankItems: [BankTransactionItem], for account: Account, year: Int, month: Int, context: ModelContext) -> [ReconciliationMatch] {
+    func matchItems(_ bankItems: [BankTransactionItem], for account: Account, year: Int, month: Int, context: NSManagedObjectContext) -> [ReconciliationMatch] {
         let calendar = Calendar.current
         guard let period = CreditCardStatementPeriod(
-            billingDay: account.billingDay ?? 1,
+            billingDay: account.billingDay == 0 ? 1 : Int(account.billingDay),
             year: year,
             month: month
         ) else {
@@ -14,14 +14,9 @@ struct ReconciliationServiceImpl: ReconciliationServiceProtocol {
         }
 
         let accountID = account.id
-        let descriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate {
-                $0.account?.id == accountID &&
-                $0.isReconciled == false &&
-                $0.parentTransaction == nil
-            }
-        )
-        let allTxns = (try? context.fetch(descriptor)) ?? []
+        let request = NSFetchRequest<Transaction>(entityName: "Transaction")
+        request.predicate = NSPredicate(format: "account.id == %@ AND isReconciled == NO AND parentTransaction == nil", accountID as CVarArg)
+        let allTxns = (try? context.fetch(request)) ?? []
         let candidates = allTxns.filter { $0.type == .expense && period.contains($0.date) }
 
         var usedIDs = Set<UUID>()
@@ -103,7 +98,7 @@ struct ReconciliationServiceImpl: ReconciliationServiceProtocol {
         month: Int,
         bankAmount: Decimal,
         ledger: Ledger,
-        context: ModelContext
+        context: NSManagedObjectContext
     ) throws -> CreditCardStatement {
         for match in matches {
             switch match.userAction {
@@ -118,11 +113,11 @@ struct ReconciliationServiceImpl: ReconciliationServiceProtocol {
                         currencyCode: account.currencyCode,
                         note: item.desc,
                         date: date,
-                        isReconciled: true
+                        isReconciled: true,
+                        context: context
                     )
                     txn.account = account
                     txn.ledger = ledger
-                    context.insert(txn)
                 }
             case .pending, .ignored:
                 break
@@ -144,10 +139,9 @@ struct ReconciliationServiceImpl: ReconciliationServiceProtocol {
         }
 
         let accountID = account.id
-        let stmtDescriptor = FetchDescriptor<CreditCardStatement>(
-            predicate: #Predicate { $0.account?.id == accountID && $0.periodYear == year && $0.periodMonth == month }
-        )
-        let existing = try? context.fetch(stmtDescriptor)
+        let stmtRequest = NSFetchRequest<CreditCardStatement>(entityName: "CreditCardStatement")
+        stmtRequest.predicate = NSPredicate(format: "account.id == %@ AND periodYear == %d AND periodMonth == %d", accountID as CVarArg, year, month)
+        let existing = try? context.fetch(stmtRequest)
 
         let statement: CreditCardStatement
         if let existingStmt = existing?.first {
@@ -162,12 +156,12 @@ struct ReconciliationServiceImpl: ReconciliationServiceProtocol {
                 periodYear: year,
                 periodMonth: month,
                 statementAmount: bankAmount,
-                reconciledAppAmount: appTotal
+                reconciledAppAmount: appTotal,
+                context: context
             )
             statement.isReconciled = true
             statement.reconciledAt = Date()
             statement.ledger = ledger
-            context.insert(statement)
         }
 
         try context.save()

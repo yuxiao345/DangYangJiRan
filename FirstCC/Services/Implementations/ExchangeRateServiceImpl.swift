@@ -1,14 +1,14 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 
 struct ExchangeRateServiceImpl: ExchangeRateServiceProtocol {
 
     /// Free, no-key exchange rate API
     private let baseURL = "https://api.frankfurter.app"
 
-    func fetchRate(from: String, to: String) async throws -> ExchangeRate {
+    func fetchRate(from: String, to: String, context: NSManagedObjectContext) async throws -> ExchangeRate {
         guard from != to else {
-            return ExchangeRate(fromCurrencyCode: from, toCurrencyCode: to, rate: 1)
+            return ExchangeRate(fromCurrencyCode: from, toCurrencyCode: to, rate: 1, context: context)
         }
         let url = URL(string: "\(baseURL)/latest?from=\(from)&to=\(to)")!
         let (data, _) = try await URLSession.shared.data(from: url)
@@ -21,12 +21,12 @@ struct ExchangeRateServiceImpl: ExchangeRateServiceProtocol {
         guard let rate = response.rates[to] else {
             throw ExchangeRateError.rateNotFound(from, to)
         }
-        return ExchangeRate(fromCurrencyCode: from, toCurrencyCode: to, rate: rate)
+        return ExchangeRate(fromCurrencyCode: from, toCurrencyCode: to, rate: Double(truncating: rate as NSDecimalNumber), context: context)
     }
 
-    func cachedRate(from: String, to: String) -> ExchangeRate? {
+    func cachedRate(from: String, to: String, context: NSManagedObjectContext) -> ExchangeRate? {
         guard from != to else {
-            return ExchangeRate(fromCurrencyCode: from, toCurrencyCode: to, rate: 1)
+            return ExchangeRate(fromCurrencyCode: from, toCurrencyCode: to, rate: 1, context: context)
         }
         // Caching handled by SwiftData persistence — caller stores fetched rates
         return nil

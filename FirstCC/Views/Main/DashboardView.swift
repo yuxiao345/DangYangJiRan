@@ -1,16 +1,16 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 
 struct DashboardView: View {
     @EnvironmentObject private var appContainer: AppContainer
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @StateObject private var viewModel: DashboardViewModel
     @State private var showAddSheet = false
     @State private var editingTransaction: Transaction?
 
     init() {
         _viewModel = StateObject(wrappedValue: DashboardViewModel(
-            ledger: Ledger(name: ""), accountService: AccountServiceImpl(), transactionService: TransactionServiceImpl()
+            accountService: AccountServiceImpl(), transactionService: TransactionServiceImpl()
         ))
     }
 
@@ -357,9 +357,9 @@ struct DashboardView: View {
     private func refresh() {
         guard let ledger = appContainer.currentLedger else { return }
         let vm = DashboardViewModel(
-            ledger: ledger,
             accountService: appContainer.accountService,
-            transactionService: appContainer.transactionService
+            transactionService: appContainer.transactionService,
+            ledger: ledger
         )
         vm.load(context: modelContext)
         vm.loadBudget(context: modelContext, budgetService: appContainer.budgetService)

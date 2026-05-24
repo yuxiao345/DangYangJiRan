@@ -1,14 +1,14 @@
-import SwiftData
-import CoreData
+@preconcurrency import CoreData
+@preconcurrency import CoreData
 
-extension ModelContext {
+extension NSManagedObjectContext {
     var coreDataContext: NSManagedObjectContext? {
         findNSManagedObjectContext(in: self)
     }
 }
 
 /// Recursively search for NSManagedObjectContext using Swift Mirror reflection.
-/// ModelContext is a pure Swift object (not NSObject), so KVC does not work.
+/// NSManagedObjectContext is a pure Swift object (not NSObject), so KVC does not work.
 private func findNSManagedObjectContext(in object: Any, depth: Int = 0) -> NSManagedObjectContext? {
     guard depth < 5 else { return nil }
 

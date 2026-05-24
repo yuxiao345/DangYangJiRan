@@ -1,9 +1,9 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 
 struct MemberListView: View {
     @EnvironmentObject private var appContainer: AppContainer
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @State private var members: [Member] = []
     @State private var showAddAlert = false
     @State private var newName = ""
@@ -67,7 +67,7 @@ struct MemberListView: View {
 
     private func addMember() {
         guard let ledger = effectiveLedger else { return }
-        let member = Member(name: newName, sortOrder: members.count)
+        let member = Member(name: newName, sortOrder: members.count, context: modelContext)
         try? appContainer.memberService.createMember(member, ledger: ledger, context: modelContext)
         loadMembers()
     }
@@ -80,7 +80,7 @@ struct MemberListView: View {
 
 struct EditMemberView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @EnvironmentObject private var appContainer: AppContainer
     let member: Member
     @State private var name: String

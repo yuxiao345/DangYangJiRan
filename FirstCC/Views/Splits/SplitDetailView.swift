@@ -1,8 +1,8 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 
 struct SplitDetailView: View {
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @EnvironmentObject private var appContainer: AppContainer
 
     let splitGroup: SplitGroup
@@ -86,7 +86,7 @@ struct SplitDetailView: View {
     }
 
     private func loadEntries() {
-        entries = splitGroup.entries ?? []
+        entries = Array(splitGroup.entries ?? Set())
     }
 
     private func toggleEntry(_ entry: SplitEntry) {

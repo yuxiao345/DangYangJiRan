@@ -1,49 +1,45 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 
 @MainActor
 enum PreviewContainer {
-    static let shared: ModelContainer = {
-        let schema = Schema([
-            Ledger.self, User.self, Account.self, Category.self,
-            Transaction.self, TransactionTemplate.self, RecurringRule.self,
-            SplitGroup.self, SplitEntry.self, BudgetBook.self, BudgetItem.self,
-            ExchangeRate.self
-        ])
-
-        let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        let container: ModelContainer
-
-        do {
-            container = try ModelContainer(for: schema, configurations: [config])
-        } catch {
-            fatalError("Preview container failed: \(error)")
+    static let context: NSManagedObjectContext = {
+        guard let modelURL = Bundle.main.url(forResource: "FirstCC", withExtension: "momd"),
+              let model = NSManagedObjectModel(contentsOf: modelURL) else {
+            fatalError("PreviewContainer: Failed to load model")
         }
 
-        // Seed sample data
-        let context = container.mainContext
-        let ledger = Ledger(name: "预览账本", type: .family)
-        context.insert(ledger)
+        let coordinator = NSPersistentStoreCoordinator(managedObjectModel: model)
+        let description = NSPersistentStoreDescription()
+        description.type = NSInMemoryStoreType
+        do {
+            try coordinator.addPersistentStore(ofType: NSInMemoryStoreType, configurationName: nil, at: nil)
+        } catch {
+            fatalError("PreviewContainer: Failed to add in-memory store: \(error)")
+        }
 
-        CategorySeeder.seed(modelContext: context, ledger: ledger)
+        let ctx = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
+        ctx.persistentStoreCoordinator = coordinator
+
+        // Seed sample data
+        let ledger = Ledger(name: "预览账本", type: .family, context: ctx)
+
+        CategorySeeder.seed(modelContext: ctx, ledger: ledger)
 
         // Sample accounts
-        let cash = Account(name: "现金钱包", type: .cash, initialBalance: 5000)
+        let cash = Account(name: "现金钱包", type: .cash, initialBalance: 5000, context: ctx)
         cash.ledger = ledger
-        let debitCard = Account(name: "工资卡", type: .debitCard, initialBalance: 50000)
+        let debitCard = Account(name: "工资卡", type: .debitCard, initialBalance: 50000, context: ctx)
         debitCard.ledger = ledger
-        let creditCard = Account(name: "招商信用卡", type: .creditCard, initialBalance: 0, creditLimit: 30000)
+        let creditCard = Account(name: "招商信用卡", type: .creditCard, initialBalance: 0, creditLimit: 30000, context: ctx)
         creditCard.ledger = ledger
-        let alipay = Account(name: "支付宝", type: .eWallet, initialBalance: 2000)
+        let alipay = Account(name: "支付宝", type: .eWallet, initialBalance: 2000, context: ctx)
         alipay.ledger = ledger
-
-        context.insert(cash)
-        context.insert(debitCard)
-        context.insert(creditCard)
-        context.insert(alipay)
 
         // Sample transactions
         let now = Date()
+        let categories = (try? ctx.fetch(NSFetchRequest<Category>(entityName: "Category"))) ?? []
+
         let sampleTransactions: [(TransactionType, Decimal, Account, String)] = [
             (.income, 15000, debitCard, "本月工资"),
             (.expense, -3500, debitCard, "房租"),
@@ -55,7 +51,6 @@ enum PreviewContainer {
             (.expense, -300, creditCard, "加油"),
         ]
 
-        let categories = (try? context.fetch(FetchDescriptor<Category>())) ?? []
         for (idx, (type, amount, account, note)) in sampleTransactions.enumerated() {
             let tx = Transaction(
                 type: type,
@@ -64,14 +59,14 @@ enum PreviewContainer {
                 account: account,
                 category: type == .income
                     ? categories.first(where: { $0.name == "工资" })
-                    : categories[idx % categories.count]
+                    : categories[idx % categories.count],
+                context: ctx
             )
             tx.note = note
             tx.ledger = ledger
-            context.insert(tx)
         }
 
-        try? context.save()
-        return container
+        try? ctx.save()
+        return ctx
     }()
 }

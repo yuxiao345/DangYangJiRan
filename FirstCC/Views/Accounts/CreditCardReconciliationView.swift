@@ -1,10 +1,10 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 import UniformTypeIdentifiers
 
 struct CreditCardReconciliationView: View {
     @EnvironmentObject private var appContainer: AppContainer
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
 
     let account: Account
     @State private var statements: [CreditCardStatement] = []
@@ -39,7 +39,7 @@ struct CreditCardReconciliationView: View {
         .task { loadStatements() }
     }
 
-    private var yearGroups: [(year: Int, statements: [CreditCardStatement])] {
+    private var yearGroups: [(year: Int64, statements: [CreditCardStatement])] {
         let grouped = Dictionary(grouping: statements) { $0.periodYear }
         return grouped.map { ($0.key, $0.value.sorted { $0.periodMonth > $1.periodMonth }) }
             .sorted { $0.year > $1.year }
@@ -51,7 +51,7 @@ struct CreditCardReconciliationView: View {
                 return saved
             }
             return appContainer.creditCardStatementService.calculateAppAmount(
-                for: account, year: stmt.periodYear, month: stmt.periodMonth, context: modelContext
+                for: account, year: Int(stmt.periodYear), month: Int(stmt.periodMonth), context: modelContext
             )
         }()
         let bankAmount = stmt.statementAmount ?? 0
@@ -115,7 +115,7 @@ struct CreditCardReconciliationView: View {
 
 struct StatementTransactionsView: View {
     @EnvironmentObject private var appContainer: AppContainer
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
     let account: Account
@@ -203,30 +203,26 @@ struct StatementTransactionsView: View {
 
     private func loadTransactions() {
         guard let period = CreditCardStatementPeriod(
-            billingDay: account.billingDay ?? 1,
-            year: statement.periodYear,
-            month: statement.periodMonth
+            billingDay: account.billingDay == 0 ? 1 : Int(account.billingDay),
+            year: Int(statement.periodYear),
+            month: Int(statement.periodMonth)
         ) else {
             transactions = []
             return
         }
 
         let accountID = account.id
-        let descriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate {
-                $0.account?.id == accountID &&
-                $0.parentTransaction == nil
-            },
-            sortBy: [SortDescriptor(\.date, order: .reverse)]
-        )
-        let accountTxns = (try? modelContext.fetch(descriptor)) ?? []
+        let fetch = NSFetchRequest<Transaction>(entityName: "Transaction")
+        fetch.predicate = NSPredicate(format: "account.id == %@ AND parentTransaction == nil", accountID as CVarArg)
+        fetch.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+        let accountTxns = (try? modelContext.fetch(fetch)) ?? []
         transactions = accountTxns.filter { $0.type == .expense && period.contains($0.date) }
     }
 }
 
 struct AddEditStatementView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @EnvironmentObject private var appContainer: AppContainer
 
     let account: Account
@@ -258,8 +254,8 @@ struct AddEditStatementView: View {
         self.editing = editing
         let now = Date()
         let calendar = Calendar.current
-        _selectedYear = State(initialValue: editing?.periodYear ?? calendar.component(.year, from: now))
-        _selectedMonth = State(initialValue: editing?.periodMonth ?? calendar.component(.month, from: now))
+        _selectedYear = State(initialValue: Int(editing?.periodYear ?? Int64(calendar.component(.year, from: now))))
+        _selectedMonth = State(initialValue: Int(editing?.periodMonth ?? Int64(calendar.component(.month, from: now))))
         _bankAmount = State(initialValue: editing?.statementAmount ?? 0)
         _csvData = State(initialValue: editing?.bankCSVData)
         _csvFileName = State(initialValue: editing?.bankCSVFileName ?? "")
@@ -504,11 +500,11 @@ struct AddEditStatementView: View {
                                 amount: match.bankItem.amount ?? 0,
                                 currencyCode: account.currencyCode,
                                 note: match.bankItem.desc,
-                                date: match.bankItem.transDate ?? Date()
+                                date: match.bankItem.transDate ?? Date(),
+                                context: modelContext
                             )
                             newTxn.account = account
                             newTxn.ledger = appContainer.currentLedger
-                            modelContext.insert(newTxn)
                             try? modelContext.save()
                             editingTransaction = newTxn
                         } label: {
@@ -628,7 +624,7 @@ struct AddEditStatementView: View {
         // Compute unmatched App transactions (in period but not matched to any bank item)
         let matchedIDs = Set(matches.compactMap { $0.candidates.first?.id })
         guard let period = CreditCardStatementPeriod(
-            billingDay: account.billingDay ?? 1,
+            billingDay: account.billingDay == 0 ? 1 : Int(account.billingDay),
             year: selectedYear,
             month: selectedMonth
         ) else {
@@ -637,10 +633,9 @@ struct AddEditStatementView: View {
             return
         }
         let accountID = account.id
-        let descriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate { $0.account?.id == accountID && $0.parentTransaction == nil }
-        )
-        let allTxns = (try? modelContext.fetch(descriptor)) ?? []
+        let fetchAll = NSFetchRequest<Transaction>(entityName: "Transaction")
+        fetchAll.predicate = NSPredicate(format: "account.id == %@ AND parentTransaction == nil", accountID as CVarArg)
+        let allTxns = (try? modelContext.fetch(fetchAll)) ?? []
         unmatchedAppTxns = allTxns.filter {
             $0.type == .expense && period.contains($0.date) && !matchedIDs.contains($0.id)
         }.sorted { $0.date > $1.date }
@@ -653,8 +648,8 @@ struct AddEditStatementView: View {
 
         let stmt: CreditCardStatement
         if let existing = editing {
-            existing.periodYear = selectedYear
-            existing.periodMonth = selectedMonth
+            existing.periodYear = Int64(selectedYear)
+            existing.periodMonth = Int64(selectedMonth)
             existing.statementAmount = bankAmount == 0 ? nil : bankAmount
             existing.bankCSVData = csvData
             existing.bankCSVFileName = csvData != nil ? csvFileName : nil
@@ -667,7 +662,8 @@ struct AddEditStatementView: View {
                 periodMonth: selectedMonth,
                 statementAmount: bankAmount == 0 ? nil : bankAmount,
                 bankCSVData: csvData,
-                bankCSVFileName: csvData != nil ? csvFileName : nil
+                bankCSVFileName: csvData != nil ? csvFileName : nil,
+                context: modelContext
             )
             try? appContainer.creditCardStatementService.createStatement(stmt, ledger: ledger, context: modelContext)
         }

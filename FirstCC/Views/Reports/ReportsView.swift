@@ -1,5 +1,5 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 
 enum ReportType: CaseIterable {
     case category
@@ -29,7 +29,7 @@ enum ReportType: CaseIterable {
 
 struct ReportsView: View {
     @EnvironmentObject private var appContainer: AppContainer
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @State private var viewModel = ReportViewModel()
     @State private var selectedReport: ReportType = .category
     @State private var selectedTransaction: Transaction?

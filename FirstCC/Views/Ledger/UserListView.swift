@@ -1,8 +1,8 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 
 struct UserListView: View {
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @EnvironmentObject private var appContainer: AppContainer
 
     let ledger: Ledger?
@@ -39,11 +39,10 @@ struct UserListView: View {
 
     private func loadUsers() {
         guard let ledger = effectiveLedger else { return }
-        let ledgerID = ledger.id
-        let descriptor = FetchDescriptor<User>(
-            predicate: #Predicate { $0.ledger?.id == ledgerID },
-            sortBy: [SortDescriptor(\.joinedAt)]
-        )
-        users = (try? modelContext.fetch(descriptor)) ?? []
+        let ledgerID = ledger.id as CVarArg
+        let request = NSFetchRequest<User>(entityName: "User")
+        request.predicate = NSPredicate(format: "ledger.id == %@", ledgerID)
+        request.sortDescriptors = [NSSortDescriptor(key: "joinedAt", ascending: true)]
+        users = (try? modelContext.fetch(request)) ?? []
     }
 }

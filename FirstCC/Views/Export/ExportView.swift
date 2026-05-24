@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ExportView: View {
     @EnvironmentObject private var appContainer: AppContainer
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @State private var startDate: Date
     @State private var endDate: Date
     @State private var filterType: TransactionType?

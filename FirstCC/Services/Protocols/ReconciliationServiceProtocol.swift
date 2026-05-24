@@ -1,5 +1,5 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 
 /// Wraps a bank transaction item with its matching result against app transactions
 struct ReconciliationMatch: Identifiable {
@@ -19,7 +19,7 @@ struct ReconciliationMatch: Identifiable {
 
 protocol ReconciliationServiceProtocol {
     /// Match bank items against app transactions for a billing period
-    func matchItems(_ bankItems: [BankTransactionItem], for account: Account, year: Int, month: Int, context: ModelContext) -> [ReconciliationMatch]
+    func matchItems(_ bankItems: [BankTransactionItem], for account: Account, year: Int, month: Int, context: NSManagedObjectContext) -> [ReconciliationMatch]
 
     /// Confirm reconciliation: mark matched transactions as reconciled, create statement
     func confirmReconciliation(
@@ -29,6 +29,6 @@ protocol ReconciliationServiceProtocol {
         month: Int,
         bankAmount: Decimal,
         ledger: Ledger,
-        context: ModelContext
+        context: NSManagedObjectContext
     ) throws -> CreditCardStatement
 }

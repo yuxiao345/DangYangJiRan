@@ -1,9 +1,9 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 
 struct TransactionListView: View {
     @EnvironmentObject private var appContainer: AppContainer
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @State private var transactions: [Transaction] = []
     @State private var showAddSheet = false
     @State private var filterType: TransactionType?

@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="26091" systemVersion="24F74" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="Ledger" representedClassName="Ledger" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
+        <attribute name="name" optional="NO" attributeType="String" defaultValueString="" />
+        <attribute name="iconName" optional="NO" attributeType="String" defaultValueString="house" />
+        <attribute name="typeRaw" optional="NO" attributeType="String" defaultValueString="personal" />
+        <attribute name="defaultCurrencyCode" optional="NO" attributeType="String" defaultValueString="CNY" />
+        <attribute name="isShared" optional="NO" attributeType="Boolean" defaultValueString="NO" />
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <attribute name="ownerUserRecordID" optional="YES" attributeType="String" />
+        <relationship name="members" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="User" inverseName="ledger" inverseEntity="User" />
+        <relationship name="accounts" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Account" inverseName="ledger" inverseEntity="Account" />
+        <relationship name="categories" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Category" inverseName="ledger" inverseEntity="Category" />
+        <relationship name="transactions" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Transaction" inverseName="ledger" inverseEntity="Transaction" />
+        <relationship name="templates" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="TransactionTemplate" inverseName="ledger" inverseEntity="TransactionTemplate" />
+        <relationship name="budgetBooks" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="BudgetBook" inverseName="ledger" inverseEntity="BudgetBook" />
+        <relationship name="creditCardStatements" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="CreditCardStatement" inverseName="ledger" inverseEntity="CreditCardStatement" />
+        <relationship name="memberContacts" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Member" inverseName="ledger" inverseEntity="Member" />
+        <relationship name="merchants" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Merchant" inverseName="ledger" inverseEntity="Merchant" />
+        <relationship name="projects" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Project" inverseName="ledger" inverseEntity="Project" />
+        <relationship name="splitGroups" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="SplitGroup" inverseName="ledger" inverseEntity="SplitGroup" />
+    </entity>
+    <entity name="User" representedClassName="User" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
+        <attribute name="displayName" optional="NO" attributeType="String" defaultValueString="" />
+        <attribute name="cloudKitUserRecordID" optional="NO" attributeType="String" defaultValueString="" />
+        <attribute name="roleRaw" optional="NO" attributeType="String" defaultValueString="member" />
+        <attribute name="joinedAt" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <relationship name="ledger" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Ledger" inverseName="members" inverseEntity="Ledger" />
+        <relationship name="transactions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Transaction" inverseName="createdBy" inverseEntity="Transaction" />
+        <relationship name="splitEntries" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="SplitEntry" inverseName="user" inverseEntity="SplitEntry" />
+    </entity>
+    <entity name="Account" representedClassName="Account" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
+        <attribute name="name" optional="NO" attributeType="String" defaultValueString="" />
+        <attribute name="currencyCode" optional="NO" attributeType="String" defaultValueString="CNY" />
+        <attribute name="typeRaw" optional="NO" attributeType="String" defaultValueString="cash" />
+        <attribute name="iconName" optional="YES" attributeType="String" />
+        <attribute name="colorHex" optional="YES" attributeType="String" />
+        <attribute name="customIconData" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" />
+        <attribute name="initialBalanceInFen" optional="NO" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES" />
+        <attribute name="creditLimitInFen" optional="YES" attributeType="Integer 64" usesScalarValueType="YES" />
+        <attribute name="billingDay" optional="YES" attributeType="Integer 64" usesScalarValueType="YES" />
+        <attribute name="dueDay" optional="YES" attributeType="Integer 64" usesScalarValueType="YES" />
+        <attribute name="isArchived" optional="NO" attributeType="Boolean" defaultValueString="NO" />
+        <attribute name="sortOrder" optional="NO" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES" />
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <relationship name="ledger" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Ledger" inverseName="accounts" inverseEntity="Ledger" />
+        <relationship name="transactions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Transaction" inverseName="account" inverseEntity="Transaction" />
+        <relationship name="incomingTransactions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Transaction" inverseName="toAccount" inverseEntity="Transaction" />
+        <relationship name="templates" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="TransactionTemplate" inverseName="account" inverseEntity="TransactionTemplate" />
+        <relationship name="incomingTemplates" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="TransactionTemplate" inverseName="toAccount" inverseEntity="TransactionTemplate" />
+        <relationship name="creditCardStatements" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="CreditCardStatement" inverseName="account" inverseEntity="CreditCardStatement" />
+    </entity>
+    <entity name="Category" representedClassName="Category" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
+        <attribute name="name" optional="NO" attributeType="String" defaultValueString="" />
+        <attribute name="iconName" optional="NO" attributeType="String" defaultValueString="questionmark" />
+        <attribute name="colorHex" optional="NO" attributeType="String" defaultValueString="#666666" />
+        <attribute name="typeRaw" optional="NO" attributeType="String" defaultValueString="expense" />
+        <attribute name="isSystem" optional="NO" attributeType="Boolean" defaultValueString="NO" />
+        <attribute name="isHidden" optional="NO" attributeType="Boolean" defaultValueString="NO" />
+        <attribute name="sortOrder" optional="NO" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES" />
+        <relationship name="ledger" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Ledger" inverseName="categories" inverseEntity="Ledger" />
+        <relationship name="parent" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Category" inverseName="children" inverseEntity="Category" />
+        <relationship name="children" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Category" inverseName="parent" inverseEntity="Category" />
+        <relationship name="transactions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Transaction" inverseName="category" inverseEntity="Transaction" />
+        <relationship name="budgetItems" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="BudgetItem" inverseName="category" inverseEntity="BudgetItem" />
+        <relationship name="templateTransactions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="TransactionTemplate" inverseName="category" inverseEntity="TransactionTemplate" />
+    </entity>
+    <entity name="Transaction" representedClassName="Transaction" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
+        <attribute name="typeRaw" optional="NO" attributeType="String" defaultValueString="expense" />
+        <attribute name="amountInFen" optional="NO" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES" />
+        <attribute name="currencyCode" optional="NO" attributeType="String" defaultValueString="CNY" />
+        <attribute name="exchangeRate" optional="YES" attributeType="Double" usesScalarValueType="YES" />
+        <attribute name="convertedAmountInFen" optional="YES" attributeType="Integer 64" usesScalarValueType="YES" />
+        <attribute name="note" optional="YES" attributeType="String" />
+        <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <attribute name="modifiedAt" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <attribute name="isReconciled" optional="NO" attributeType="Boolean" defaultValueString="NO" />
+        <attribute name="transferGroupId" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
+        <attribute name="refundGroupId" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
+        <attribute name="refundAmountInFen" optional="YES" attributeType="Integer 64" usesScalarValueType="YES" />
+        <attribute name="reimbursementStatusRaw" optional="NO" attributeType="String" defaultValueString="none" />
+        <attribute name="reimbursedById" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
+        <attribute name="lendingDirectionRaw" optional="YES" attributeType="String" />
+        <attribute name="lendingStatusRaw" optional="NO" attributeType="String" defaultValueString="none" />
+        <attribute name="settledByLendingTransactionId" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
+        <attribute name="settledAmountInFen" optional="YES" attributeType="Integer 64" usesScalarValueType="YES" />
+        <attribute name="tagsJSON" optional="NO" attributeType="String" defaultValueString="[]" />
+        <attribute name="photoURLsJSON" optional="YES" attributeType="String" />
+        <attribute name="isSplitParent" optional="NO" attributeType="Boolean" defaultValueString="NO" />
+        <relationship name="ledger" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Ledger" inverseName="transactions" inverseEntity="Ledger" />
+        <relationship name="account" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Account" inverseName="transactions" inverseEntity="Account" />
+        <relationship name="toAccount" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Account" inverseName="incomingTransactions" inverseEntity="Account" />
+        <relationship name="category" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Category" inverseName="transactions" inverseEntity="Category" />
+        <relationship name="createdBy" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="User" inverseName="transactions" inverseEntity="User" />
+        <relationship name="template" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TransactionTemplate" inverseName="generatedTransactions" inverseEntity="TransactionTemplate" />
+        <relationship name="splitGroup" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="SplitGroup" inverseName="transaction" inverseEntity="SplitGroup" />
+        <relationship name="member" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Member" inverseName="transactions" inverseEntity="Member" />
+        <relationship name="merchant" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Merchant" inverseName="transactions" inverseEntity="Merchant" />
+        <relationship name="project" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Project" inverseName="transactions" inverseEntity="Project" />
+        <relationship name="parentTransaction" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Transaction" inverseName="splitChildren" inverseEntity="Transaction" />
+        <relationship name="splitChildren" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Transaction" inverseName="parentTransaction" inverseEntity="Transaction" />
+    </entity>
+    <entity name="TransactionTemplate" representedClassName="TransactionTemplate" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
+        <attribute name="name" optional="NO" attributeType="String" defaultValueString="" />
+        <attribute name="typeRaw" optional="NO" attributeType="String" defaultValueString="expense" />
+        <attribute name="amountInFen" optional="NO" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES" />
+        <attribute name="currencyCode" optional="NO" attributeType="String" defaultValueString="CNY" />
+        <attribute name="note" optional="YES" attributeType="String" />
+        <attribute name="tagsJSON" optional="NO" attributeType="String" defaultValueString="[]" />
+        <attribute name="isRecurring" optional="NO" attributeType="Boolean" defaultValueString="NO" />
+        <attribute name="sortOrder" optional="NO" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES" />
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <relationship name="ledger" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Ledger" inverseName="templates" inverseEntity="Ledger" />
+        <relationship name="account" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Account" inverseName="templates" inverseEntity="Account" />
+        <relationship name="toAccount" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Account" inverseName="incomingTemplates" inverseEntity="Account" />
+        <relationship name="category" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Category" inverseName="templateTransactions" inverseEntity="Category" />
+        <relationship name="member" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Member" inverseName="templateTransactions" inverseEntity="Member" />
+        <relationship name="merchant" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Merchant" inverseName="templateTransactions" inverseEntity="Merchant" />
+        <relationship name="project" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Project" inverseName="templateTransactions" inverseEntity="Project" />
+        <relationship name="generatedTransactions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Transaction" inverseName="template" inverseEntity="Transaction" />
+        <relationship name="recurringRule" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="RecurringRule" inverseName="template" inverseEntity="RecurringRule" />
+    </entity>
+    <entity name="RecurringRule" representedClassName="RecurringRule" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
+        <attribute name="frequencyRaw" optional="NO" attributeType="String" defaultValueString="monthly" />
+        <attribute name="interval" optional="NO" attributeType="Integer 64" defaultValueString="1" usesScalarValueType="YES" />
+        <attribute name="startDate" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <attribute name="endDate" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <attribute name="lastGeneratedDate" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <attribute name="nextGenerateDate" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <attribute name="isActive" optional="NO" attributeType="Boolean" defaultValueString="YES" />
+        <relationship name="template" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TransactionTemplate" inverseName="recurringRule" inverseEntity="TransactionTemplate" />
+    </entity>
+    <entity name="SplitGroup" representedClassName="SplitGroup" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
+        <attribute name="totalAmountInFen" optional="NO" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES" />
+        <attribute name="currencyCode" optional="NO" attributeType="String" defaultValueString="CNY" />
+        <attribute name="splitTypeRaw" optional="NO" attributeType="String" defaultValueString="equal" />
+        <attribute name="note" optional="YES" attributeType="String" />
+        <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <relationship name="ledger" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Ledger" inverseName="splitGroups" inverseEntity="Ledger" />
+        <relationship name="entries" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="SplitEntry" inverseName="splitGroup" inverseEntity="SplitEntry" />
+        <relationship name="transaction" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Transaction" inverseName="splitGroup" inverseEntity="Transaction" />
+    </entity>
+    <entity name="SplitEntry" representedClassName="SplitEntry" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
+        <attribute name="amountInFen" optional="NO" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES" />
+        <attribute name="isPaid" optional="NO" attributeType="Boolean" defaultValueString="NO" />
+        <attribute name="paidDate" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <relationship name="splitGroup" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="SplitGroup" inverseName="entries" inverseEntity="SplitGroup" />
+        <relationship name="member" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Member" inverseName="splitEntries" inverseEntity="Member" />
+        <relationship name="user" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="User" inverseName="splitEntries" inverseEntity="User" />
+    </entity>
+    <entity name="BudgetBook" representedClassName="BudgetBook" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
+        <attribute name="name" optional="NO" attributeType="String" defaultValueString="" />
+        <attribute name="startDate" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <attribute name="endDate" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <attribute name="isActive" optional="NO" attributeType="Boolean" defaultValueString="YES" />
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <relationship name="items" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="BudgetItem" inverseName="book" inverseEntity="BudgetItem" />
+        <relationship name="ledger" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Ledger" inverseName="budgetBooks" inverseEntity="Ledger" />
+    </entity>
+    <entity name="BudgetItem" representedClassName="BudgetItem" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
+        <attribute name="amountInFen" optional="NO" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES" />
+        <attribute name="periodRaw" optional="NO" attributeType="String" defaultValueString="monthly" />
+        <attribute name="alertThreshold" optional="NO" attributeType="Double" defaultValueString="0.8" usesScalarValueType="YES" />
+        <attribute name="isActive" optional="NO" attributeType="Boolean" defaultValueString="YES" />
+        <relationship name="book" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="BudgetBook" inverseName="items" inverseEntity="BudgetBook" />
+        <relationship name="category" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Category" inverseName="budgetItems" inverseEntity="Category" />
+    </entity>
+    <entity name="Member" representedClassName="Member" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
+        <attribute name="name" optional="NO" attributeType="String" defaultValueString="" />
+        <attribute name="avatar" optional="NO" attributeType="String" defaultValueString="person.circle" />
+        <attribute name="isActive" optional="NO" attributeType="Boolean" defaultValueString="YES" />
+        <attribute name="sortOrder" optional="NO" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES" />
+        <relationship name="ledger" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Ledger" inverseName="memberContacts" inverseEntity="Ledger" />
+        <relationship name="transactions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Transaction" inverseName="member" inverseEntity="Transaction" />
+        <relationship name="templateTransactions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="TransactionTemplate" inverseName="member" inverseEntity="TransactionTemplate" />
+        <relationship name="splitEntries" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="SplitEntry" inverseName="member" inverseEntity="SplitEntry" />
+    </entity>
+    <entity name="Merchant" representedClassName="Merchant" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
+        <attribute name="name" optional="NO" attributeType="String" defaultValueString="" />
+        <attribute name="category" optional="YES" attributeType="String" />
+        <attribute name="isActive" optional="NO" attributeType="Boolean" defaultValueString="YES" />
+        <attribute name="sortOrder" optional="NO" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES" />
+        <relationship name="ledger" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Ledger" inverseName="merchants" inverseEntity="Ledger" />
+        <relationship name="transactions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Transaction" inverseName="merchant" inverseEntity="Transaction" />
+        <relationship name="templateTransactions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="TransactionTemplate" inverseName="merchant" inverseEntity="TransactionTemplate" />
+    </entity>
+    <entity name="Project" representedClassName="Project" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
+        <attribute name="name" optional="NO" attributeType="String" defaultValueString="" />
+        <attribute name="desc" optional="YES" attributeType="String" />
+        <attribute name="startDate" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <attribute name="endDate" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <attribute name="budgetInFen" optional="YES" attributeType="Integer 64" usesScalarValueType="YES" />
+        <attribute name="isActive" optional="NO" attributeType="Boolean" defaultValueString="YES" />
+        <attribute name="sortOrder" optional="NO" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES" />
+        <relationship name="ledger" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Ledger" inverseName="projects" inverseEntity="Ledger" />
+        <relationship name="transactions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Transaction" inverseName="project" inverseEntity="Transaction" />
+        <relationship name="templateTransactions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="TransactionTemplate" inverseName="project" inverseEntity="TransactionTemplate" />
+    </entity>
+    <entity name="CreditCardStatement" representedClassName="CreditCardStatement" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
+        <attribute name="periodYear" optional="NO" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES" />
+        <attribute name="periodMonth" optional="NO" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES" />
+        <attribute name="statementAmountInFen" optional="YES" attributeType="Integer 64" usesScalarValueType="YES" />
+        <attribute name="reconciledAppAmountInFen" optional="YES" attributeType="Integer 64" usesScalarValueType="YES" />
+        <attribute name="isReconciled" optional="NO" attributeType="Boolean" defaultValueString="NO" />
+        <attribute name="reconciledAt" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+        <attribute name="note" optional="YES" attributeType="String" />
+        <attribute name="bankCSVData" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" />
+        <attribute name="bankCSVFileName" optional="YES" attributeType="String" />
+        <relationship name="account" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Account" inverseName="creditCardStatements" inverseEntity="Account" />
+        <relationship name="ledger" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Ledger" inverseName="creditCardStatements" inverseEntity="Ledger" />
+    </entity>
+    <entity name="ExchangeRate" representedClassName="ExchangeRate" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO" />
+        <attribute name="fromCurrencyCode" optional="NO" attributeType="String" defaultValueString="" />
+        <attribute name="toCurrencyCode" optional="NO" attributeType="String" defaultValueString="" />
+        <attribute name="rate" optional="NO" attributeType="Double" defaultValueString="0" usesScalarValueType="YES" />
+        <attribute name="fetchedAt" optional="YES" attributeType="Date" usesScalarValueType="NO" />
+    </entity>
+    <configuration name="Private"><memberEntity name="Account" /><memberEntity name="BudgetBook" /><memberEntity name="BudgetItem" /><memberEntity name="Category" /><memberEntity name="CreditCardStatement" /><memberEntity name="ExchangeRate" /><memberEntity name="Ledger" /><memberEntity name="Member" /><memberEntity name="Merchant" /><memberEntity name="Project" /><memberEntity name="RecurringRule" /><memberEntity name="SplitEntry" /><memberEntity name="SplitGroup" /><memberEntity name="Transaction" /><memberEntity name="TransactionTemplate" /><memberEntity name="User" /></configuration><configuration name="Shared"><memberEntity name="Account" /><memberEntity name="BudgetBook" /><memberEntity name="BudgetItem" /><memberEntity name="Category" /><memberEntity name="CreditCardStatement" /><memberEntity name="ExchangeRate" /><memberEntity name="Ledger" /><memberEntity name="Member" /><memberEntity name="Merchant" /><memberEntity name="Project" /><memberEntity name="RecurringRule" /><memberEntity name="SplitEntry" /><memberEntity name="SplitGroup" /><memberEntity name="Transaction" /><memberEntity name="TransactionTemplate" /><memberEntity name="User" /></configuration><elements>
+        <element name="Ledger" positionX="0" positionY="0" width="128" height="163" />
+        <element name="User" positionX="150" positionY="0" width="128" height="103" />
+        <element name="Account" positionX="300" positionY="0" width="128" height="178" />
+        <element name="Category" positionX="450" positionY="0" width="128" height="148" />
+        <element name="Transaction" positionX="600" positionY="0" width="128" height="283" />
+        <element name="TransactionTemplate" positionX="750" positionY="0" width="128" height="178" />
+        <element name="RecurringRule" positionX="0" positionY="200" width="128" height="133" />
+        <element name="SplitGroup" positionX="150" positionY="200" width="128" height="133" />
+        <element name="SplitEntry" positionX="300" positionY="200" width="128" height="103" />
+        <element name="BudgetBook" positionX="450" positionY="200" width="128" height="118" />
+        <element name="BudgetItem" positionX="600" positionY="200" width="128" height="103" />
+        <element name="Member" positionX="750" positionY="200" width="128" height="103" />
+        <element name="Merchant" positionX="0" positionY="400" width="128" height="103" />
+        <element name="Project" positionX="150" positionY="400" width="128" height="133" />
+        <element name="CreditCardStatement" positionX="300" positionY="400" width="128" height="148" />
+        <element name="ExchangeRate" positionX="450" positionY="400" width="128" height="88" />
+    </elements>
+</model>

@@ -1,9 +1,9 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 
 struct AddEditAccountView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @EnvironmentObject private var appContainer: AppContainer
 
     let ledger: Ledger?
@@ -38,8 +38,8 @@ struct AddEditAccountView: View {
         _initialBalance = State(initialValue: account.initialBalance)
         _hasCreditLimit = State(initialValue: account.creditLimit != nil)
         _creditLimit = State(initialValue: account.creditLimit ?? 0)
-        _billingDay = State(initialValue: account.billingDay ?? 1)
-        _dueDay = State(initialValue: account.dueDay ?? 5)
+        _billingDay = State(initialValue: account.billingDay == 0 ? 1 : Int(account.billingDay))
+        _dueDay = State(initialValue: account.dueDay == 0 ? 5 : Int(account.dueDay))
     }
 
     var body: some View {
@@ -159,8 +159,8 @@ struct AddEditAccountView: View {
             existing.customIconData = logoData
             existing.initialBalance = initialBalance
             existing.creditLimit = hasCreditLimit ? creditLimit : nil
-            existing.billingDay = accountType == .creditCard ? billingDay : nil
-            existing.dueDay = accountType == .creditCard ? dueDay : nil
+            existing.billingDay = accountType == .creditCard ? Int64(billingDay) : 0
+            existing.dueDay = accountType == .creditCard ? Int64(dueDay) : 0
             try? appContainer.accountService.updateAccount(existing, context: modelContext)
         } else {
             guard let ledger = effectiveLedger else { return }
@@ -172,7 +172,8 @@ struct AddEditAccountView: View {
                 initialBalance: initialBalance,
                 creditLimit: hasCreditLimit ? creditLimit : nil,
                 billingDay: accountType == .creditCard ? billingDay : nil,
-                dueDay: accountType == .creditCard ? dueDay : nil
+                dueDay: accountType == .creditCard ? dueDay : nil,
+                context: modelContext
             )
             try? appContainer.accountService.createAccount(account, ledger: ledger, context: modelContext)
         }

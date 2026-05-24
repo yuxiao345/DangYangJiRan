@@ -1,8 +1,8 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 
 struct LedgerListView: View {
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @EnvironmentObject private var appContainer: AppContainer
     @State private var ledgers: [Ledger] = []
     @State private var showCreateSheet = false

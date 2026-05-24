@@ -1,9 +1,9 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 
 struct AddEditBudgetBookView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @EnvironmentObject private var appContainer: AppContainer
 
     let editing: BudgetBook?
@@ -60,7 +60,7 @@ struct AddEditBudgetBookView: View {
             b.isActive = isActive
             try? appContainer.budgetService.updateBook(b, context: modelContext)
         } else {
-            let book = BudgetBook(name: name, startDate: startDate, endDate: endDate, isActive: isActive)
+            let book = BudgetBook(name: name, startDate: startDate, endDate: endDate, isActive: isActive, context: modelContext)
             try? appContainer.budgetService.createBook(book, ledger: ledger, context: modelContext)
         }
         dismiss()

@@ -1,5 +1,5 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 
 @MainActor
 @Observable
@@ -37,7 +37,7 @@ final class SearchViewModel {
 
     var hasResults: Bool { !searchResults.isEmpty }
 
-    func scheduleSearch(context: ModelContext) {
+    func scheduleSearch(context: NSManagedObjectContext) {
         searchTask?.cancel()
         searchResults = []
         parsedQuery = nil
@@ -57,7 +57,7 @@ final class SearchViewModel {
         }
     }
 
-    private func performSearch(text: String, context: ModelContext) {
+    private func performSearch(text: String, context: NSManagedObjectContext) {
         let query = ChineseExpressionParser.parse(text)
         parsedQuery = query
         hasSearched = true

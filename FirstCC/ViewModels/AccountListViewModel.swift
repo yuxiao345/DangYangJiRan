@@ -1,5 +1,5 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 
 @MainActor
 final class AccountListViewModel: ObservableObject {
@@ -15,7 +15,7 @@ final class AccountListViewModel: ObservableObject {
         self.service = service
     }
 
-    func load(context: ModelContext) {
+    func load(context: NSManagedObjectContext) {
         let allAccounts = (try? service.fetchAccounts(for: ledger, context: context)) ?? []
         accounts = allAccounts.filter { !$0.isArchived }
         totalBalance = accounts.reduce(0) { $0 + service.calculateBalance(for: $1, context: context) }
@@ -25,7 +25,7 @@ final class AccountListViewModel: ObservableObject {
         accounts.filter { $0.type == type }
     }
 
-    func deleteAccount(_ account: Account, context: ModelContext) {
+    func deleteAccount(_ account: Account, context: NSManagedObjectContext) {
         try? service.archiveAccount(account, context: context)
     }
 }

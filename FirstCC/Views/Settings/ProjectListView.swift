@@ -1,9 +1,9 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 
 struct ProjectListView: View {
     @EnvironmentObject private var appContainer: AppContainer
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @State private var projects: [Project] = []
     @State private var showAddSheet = false
     @State private var editingProject: Project?
@@ -84,7 +84,7 @@ struct ProjectListView: View {
 
 struct AddEditProjectView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @EnvironmentObject private var appContainer: AppContainer
     let editing: Project?
     let ledger: Ledger?
@@ -152,7 +152,7 @@ struct AddEditProjectView: View {
                 name: name, desc: desc.isEmpty ? nil : desc,
                 startDate: startDate, endDate: endDate,
                 budget: budget, isActive: isActive,
-                sortOrder: 0
+                sortOrder: 0, context: modelContext
             )
             try? appContainer.projectService.createProject(project, ledger: ledger, context: modelContext)
         }

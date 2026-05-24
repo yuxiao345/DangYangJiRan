@@ -1,5 +1,5 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 
 @MainActor
 final class DashboardViewModel: ObservableObject {
@@ -17,15 +17,16 @@ final class DashboardViewModel: ObservableObject {
 
     private let accountService: AccountServiceProtocol
     private let transactionService: TransactionServiceProtocol
-    private let ledger: Ledger
+    private var ledger: Ledger?
 
-    init(ledger: Ledger, accountService: AccountServiceProtocol, transactionService: TransactionServiceProtocol) {
+    init(accountService: AccountServiceProtocol, transactionService: TransactionServiceProtocol, ledger: Ledger? = nil) {
         self.ledger = ledger
         self.accountService = accountService
         self.transactionService = transactionService
     }
 
-    func load(context: ModelContext) {
+    func load(context: NSManagedObjectContext) {
+        guard let ledger else { return }
         let calendar = Calendar.current
         let now = Date()
         guard let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) else { return }
@@ -67,7 +68,8 @@ final class DashboardViewModel: ObservableObject {
         }
     }
 
-    func loadBudget(context: ModelContext, budgetService: BudgetServiceProtocol) {
+    func loadBudget(context: NSManagedObjectContext, budgetService: BudgetServiceProtocol) {
+        guard let ledger else { return }
         guard let books = try? budgetService.fetchBooks(for: ledger, context: context),
               let activeBook = books.first(where: { $0.isActive }) ?? books.first else {
             hasBudget = false

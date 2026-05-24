@@ -1,5 +1,5 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 
 struct SplitServiceImpl: SplitServiceProtocol {
     func createSplit(
@@ -12,20 +12,20 @@ struct SplitServiceImpl: SplitServiceProtocol {
         date: Date,
         transaction: Transaction,
         ledger: Ledger,
-        context: ModelContext
+        context: NSManagedObjectContext
     ) throws -> SplitGroup {
         let group = SplitGroup(
             totalAmount: totalAmount,
             currencyCode: currencyCode,
             splitType: splitType,
             note: note,
-            date: date
+            date: date,
+            context: context
         )
         group.ledger = ledger
         group.transaction = transaction
         transaction.splitGroup = group
         transaction.isSplitParent = true
-        context.insert(group)
 
         let entryAmounts: [Decimal]
         switch splitType {
@@ -40,23 +40,23 @@ struct SplitServiceImpl: SplitServiceProtocol {
         for (index, member) in members.enumerated() {
             let entry = SplitEntry(
                 amount: entryAmounts[index],
-                member: member
+                member: member,
+                context: context
             )
             entry.splitGroup = group
-            context.insert(entry)
         }
 
         try saveAndNotify(context: context)
         return group
     }
 
-    func markEntryPaid(_ entry: SplitEntry, context: ModelContext) throws {
+    func markEntryPaid(_ entry: SplitEntry, context: NSManagedObjectContext) throws {
         entry.isPaid = true
         entry.paidDate = Date()
         try saveAndNotify(context: context)
     }
 
-    func settleSplit(_ splitGroup: SplitGroup, context: ModelContext) throws {
+    func settleSplit(_ splitGroup: SplitGroup, context: NSManagedObjectContext) throws {
         for entry in splitGroup.entries ?? [] {
             if !entry.isPaid {
                 entry.isPaid = true
@@ -66,18 +66,17 @@ struct SplitServiceImpl: SplitServiceProtocol {
         try saveAndNotify(context: context)
     }
 
-    private func saveAndNotify(context: ModelContext) throws {
+    private func saveAndNotify(context: NSManagedObjectContext) throws {
         try context.save()
         NotificationCenter.default.post(name: .transactionDidChange, object: nil)
     }
 
-    func fetchSplits(for ledger: Ledger, context: ModelContext) throws -> [SplitGroup] {
+    func fetchSplits(for ledger: Ledger, context: NSManagedObjectContext) throws -> [SplitGroup] {
         let ledgerID = ledger.id
-        let descriptor = FetchDescriptor<SplitGroup>(
-            predicate: #Predicate { $0.ledger?.id == ledgerID },
-            sortBy: [SortDescriptor(\.date, order: .reverse)]
-        )
-        return try context.fetch(descriptor)
+        let request = NSFetchRequest<SplitGroup>(entityName: "SplitGroup")
+        request.predicate = NSPredicate(format: "ledger.id == %@", ledgerID as CVarArg)
+        request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+        return try context.fetch(request)
     }
 }
 

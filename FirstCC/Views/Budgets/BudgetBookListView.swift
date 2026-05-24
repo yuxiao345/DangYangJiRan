@@ -1,10 +1,10 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 
 // MARK: - Book List
 
 struct BudgetBookListView: View {
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @EnvironmentObject private var appContainer: AppContainer
     @State private var books: [BudgetBook] = []
     @State private var showAddSheet = false

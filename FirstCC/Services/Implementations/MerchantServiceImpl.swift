@@ -1,27 +1,25 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 
 struct MerchantServiceImpl: MerchantServiceProtocol {
-    func createMerchant(_ merchant: Merchant, ledger: Ledger, context: ModelContext) throws {
+    func createMerchant(_ merchant: Merchant, ledger: Ledger, context: NSManagedObjectContext) throws {
         merchant.ledger = ledger
-        context.insert(merchant)
         try context.save()
     }
 
-    func fetchMerchants(for ledger: Ledger, context: ModelContext) throws -> [Merchant] {
+    func fetchMerchants(for ledger: Ledger, context: NSManagedObjectContext) throws -> [Merchant] {
         let ledgerID = ledger.id
-        let descriptor = FetchDescriptor<Merchant>(
-            predicate: #Predicate { $0.ledger?.id == ledgerID },
-            sortBy: [SortDescriptor(\.sortOrder), SortDescriptor(\.name)]
-        )
-        return try context.fetch(descriptor)
+        let request = NSFetchRequest<Merchant>(entityName: "Merchant")
+        request.predicate = NSPredicate(format: "ledger.id == %@", ledgerID as CVarArg)
+        request.sortDescriptors = [NSSortDescriptor(key: "sortOrder", ascending: true), NSSortDescriptor(key: "name", ascending: true)]
+        return try context.fetch(request)
     }
 
-    func updateMerchant(_ merchant: Merchant, context: ModelContext) throws {
+    func updateMerchant(_ merchant: Merchant, context: NSManagedObjectContext) throws {
         try context.save()
     }
 
-    func deleteMerchant(_ merchant: Merchant, context: ModelContext) throws {
+    func deleteMerchant(_ merchant: Merchant, context: NSManagedObjectContext) throws {
         context.delete(merchant)
         try context.save()
     }

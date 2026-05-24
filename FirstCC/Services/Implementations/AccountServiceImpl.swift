@@ -1,43 +1,36 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 
 struct AccountServiceImpl: AccountServiceProtocol {
-    func createAccount(_ account: Account, ledger: Ledger, context: ModelContext) throws {
+    func createAccount(_ account: Account, ledger: Ledger, context: NSManagedObjectContext) throws {
         account.ledger = ledger
-        context.insert(account)
         try context.save()
     }
 
-    func fetchAccounts(for ledger: Ledger, context: ModelContext) throws -> [Account] {
+    func fetchAccounts(for ledger: Ledger, context: NSManagedObjectContext) throws -> [Account] {
         let ledgerID = ledger.id
-        let descriptor = FetchDescriptor<Account>(
-            predicate: #Predicate { $0.ledger?.id == ledgerID },
-            sortBy: [SortDescriptor(\.sortOrder), SortDescriptor(\.createdAt)]
-        )
-        return try context.fetch(descriptor)
+        let request = NSFetchRequest<Account>(entityName: "Account")
+        request.predicate = NSPredicate(format: "ledger.id == %@", ledgerID as CVarArg)
+        request.sortDescriptors = [NSSortDescriptor(key: "sortOrder", ascending: true), NSSortDescriptor(key: "createdAt", ascending: true)]
+        return try context.fetch(request)
     }
 
-    func updateAccount(_ account: Account, context: ModelContext) throws {
+    func updateAccount(_ account: Account, context: NSManagedObjectContext) throws {
         try context.save()
     }
 
-    func deleteAccount(_ account: Account, context: ModelContext) throws {
+    func deleteAccount(_ account: Account, context: NSManagedObjectContext) throws {
         context.delete(account)
         try context.save()
     }
 
-    func calculateBalance(for account: Account, context: ModelContext) -> Decimal {
+    func calculateBalance(for account: Account, context: NSManagedObjectContext) -> Decimal {
         let accountID = account.id
         var balance = account.initialBalance
 
-        let incomeDescriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate {
-                ($0.account?.id == accountID || $0.toAccount?.id == accountID) &&
-                $0.isReconciled == false &&
-                $0.parentTransaction == nil
-            }
-        )
-        let transactions = (try? context.fetch(incomeDescriptor)) ?? []
+        let request = NSFetchRequest<Transaction>(entityName: "Transaction")
+        request.predicate = NSPredicate(format: "(account.id == %@ OR toAccount.id == %@) AND isReconciled == NO AND parentTransaction == nil", accountID as CVarArg, accountID as CVarArg)
+        let transactions = (try? context.fetch(request)) ?? []
 
         for t in transactions {
             if t.type == .income {
@@ -58,7 +51,7 @@ struct AccountServiceImpl: AccountServiceProtocol {
         return balance
     }
 
-    func archiveAccount(_ account: Account, context: ModelContext) throws {
+    func archiveAccount(_ account: Account, context: NSManagedObjectContext) throws {
         account.isArchived = true
         try context.save()
     }

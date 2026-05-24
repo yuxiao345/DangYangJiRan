@@ -1,7 +1,7 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 import CloudKit
-import CoreData
+@preconcurrency import CoreData
 import UIKit
 
 struct CloudSharingView: UIViewControllerRepresentable {
@@ -10,7 +10,7 @@ struct CloudSharingView: UIViewControllerRepresentable {
     let ledger: Ledger
     let isPresenting: Bool
     let syncService: SyncServiceImpl?
-    let modelContainer: ModelContainer?
+    let coreDataStack: CoreDataStack?
 
     func makeUIViewController(context: Context) -> UICloudSharingController {
         let controller: UICloudSharingController
@@ -37,20 +37,20 @@ struct CloudSharingView: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UICloudSharingController, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(ledger: ledger, container: container, syncService: syncService, modelContainer: modelContainer)
+        Coordinator(ledger: ledger, container: container, syncService: syncService, coreDataStack: coreDataStack)
     }
 
     final class Coordinator: NSObject, UICloudSharingControllerDelegate {
         let ledger: Ledger
         let container: CKContainer
         let syncService: SyncServiceImpl?
-        let modelContainer: ModelContainer?
+        let coreDataStack: CoreDataStack?
 
-        init(ledger: Ledger, container: CKContainer, syncService: SyncServiceImpl?, modelContainer: ModelContainer?) {
+        init(ledger: Ledger, container: CKContainer, syncService: SyncServiceImpl?, coreDataStack: CoreDataStack?) {
             self.ledger = ledger
             self.container = container
             self.syncService = syncService
-            self.modelContainer = modelContainer
+            self.coreDataStack = coreDataStack
         }
 
         @MainActor
@@ -58,11 +58,12 @@ struct CloudSharingView: UIViewControllerRepresentable {
             if let syncService {
                 return try await syncService.createShare(for: ledger)
             }
-            guard let modelContainer else {
+            guard let coreDataStack else {
                 throw SyncError.invalidShareTarget
             }
-            guard let moc = modelContainer.mainContext.coreDataContext,
-                  let coordinator = moc.persistentStoreCoordinator as? NSPersistentCloudKitContainer else {
+            let container = coreDataStack.container
+            let moc = container.viewContext
+            guard (moc.persistentStoreCoordinator as? NSPersistentCloudKitContainer) != nil else {
                 throw SyncError.invalidShareTarget
             }
 
@@ -73,7 +74,7 @@ struct CloudSharingView: UIViewControllerRepresentable {
                 throw SyncError.invalidShareTarget
             }
 
-            let (_, share, _) = try await coordinator.share([nsObject], to: nil)
+            let (_, share, _) = try await container.share([nsObject], to: nil)
             ledger.isShared = true
             return share
         }

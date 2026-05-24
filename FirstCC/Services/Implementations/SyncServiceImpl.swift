@@ -1,20 +1,18 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 import CloudKit
-import CoreData
 
 final class SyncServiceImpl: SyncServiceProtocol {
     private let ckContainer: CKContainer
-    private let modelContainer: ModelContainer
+    private let coreDataStack: CoreDataStack
     private let database: CKDatabase
     private var eventObserver: NSObjectProtocol?
-    private weak var persistentContainer: NSPersistentCloudKitContainer?
 
     var status: SyncStatus = .synced
 
-    init(container: CKContainer, modelContainer: ModelContainer) {
+    init(container: CKContainer, coreDataStack: CoreDataStack) {
         self.ckContainer = container
-        self.modelContainer = modelContainer
+        self.coreDataStack = coreDataStack
         self.database = container.privateCloudDatabase
         observeEvents()
     }
@@ -74,7 +72,7 @@ final class SyncServiceImpl: SyncServiceProtocol {
     }
 
     @MainActor
-    func importSharedData(into modelContainer: ModelContainer) async throws -> [Ledger] {
+    func importSharedData(into stack: CoreDataStack) async throws -> [Ledger] {
         DiagnosticLog.log("SyncService.importSharedData: polling for shared data...")
 
         let coordinator = CloudKitShareCoordinator.shared
@@ -90,7 +88,7 @@ final class SyncServiceImpl: SyncServiceProtocol {
                 let imported = try await SharedLedgerImportService.shared.importSharedLedgers(
                     from: container,
                     sharedStore: sharedStore,
-                    into: modelContainer
+                    into: stack.viewContext
                 )
                 DiagnosticLog.log("importSharedData: imported \(imported.count) ledger(s)")
                 return imported
@@ -119,10 +117,11 @@ final class SyncServiceImpl: SyncServiceProtocol {
     @MainActor
     func syncParticipants(metadata: CKShare.Metadata, for ledger: Ledger) async throws {
         DiagnosticLog.log("SyncService.syncParticipants: begin share=\(metadata.share.recordID)")
-        let context = modelContainer.mainContext
+        let context = coreDataStack.viewContext
         let participants = metadata.share.participants
 
-        let allUsers = try context.fetch(FetchDescriptor<User>())
+        let fetch = NSFetchRequest<User>(entityName: "User")
+        let allUsers = try context.fetch(fetch)
         let existingUsers = allUsers.filter { $0.ledger?.id == ledger.id }
         var existingByRecordID = Dictionary(uniqueKeysWithValues: existingUsers.map { ($0.cloudKitUserRecordID, $0) })
 
@@ -130,7 +129,7 @@ final class SyncServiceImpl: SyncServiceProtocol {
             let recordID = participant.userIdentity.lookupInfo?.userRecordID?.recordName ?? ""
             let name = participant.userIdentity.nameComponents?.formatted(.name(style: .abbreviated)) ?? "共享成员"
             let role: LedgerRole = participant.role == .owner ? .owner : .member
-            DiagnosticLog.log("SyncService.syncParticipants: participant recordID=\(recordID) name=\(name) role=\(role.rawValue) status=\(participant.acceptanceStatus.rawValue)")
+            DiagnosticLog.log("SyncService.syncParticipants: participant recordID=\(recordID) name=\(name) role=\(role.rawValue)")
 
             if recordID.isEmpty { continue }
 
@@ -139,9 +138,8 @@ final class SyncServiceImpl: SyncServiceProtocol {
                 existing.role = role
                 DiagnosticLog.log("SyncService.syncParticipants: updated existing user \(name)")
             } else {
-                let user = User(displayName: name, cloudKitUserRecordID: recordID, role: role)
+                let user = User(displayName: name, cloudKitUserRecordID: recordID, role: role, context: context)
                 user.ledger = ledger
-                context.insert(user)
                 existingByRecordID[recordID] = user
                 DiagnosticLog.log("SyncService.syncParticipants: created user \(name)")
             }
@@ -164,10 +162,6 @@ final class SyncServiceImpl: SyncServiceProtocol {
             queue: .main
         ) { [weak self] notification in
             guard let self else { return }
-
-            if let container = notification.object as? NSPersistentCloudKitContainer {
-                self.persistentContainer = container
-            }
 
             guard let event = notification.userInfo?["event"] as? NSPersistentCloudKitContainer.Event else {
                 return

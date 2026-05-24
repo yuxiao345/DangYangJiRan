@@ -1,5 +1,5 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 
 enum TemplatePickerSheet: Identifiable {
     case account, toAccount, category, member, merchant, project
@@ -8,7 +8,7 @@ enum TemplatePickerSheet: Identifiable {
 
 struct AddEditTemplateView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @EnvironmentObject private var appContainer: AppContainer
 
     let editing: TransactionTemplate?
@@ -257,7 +257,7 @@ struct AddEditTemplateView: View {
         if let rule = t.recurringRule {
             isRecurring = true
             recurringFrequency = rule.frequency
-            recurringInterval = rule.interval
+            recurringInterval = Int(rule.interval)
             recurringStartDate = rule.startDate
             if let end = rule.endDate {
                 hasEndDate = true
@@ -292,7 +292,8 @@ struct AddEditTemplateView: View {
                 category: selectedCategory,
                 member: selectedMember,
                 merchant: selectedMerchant,
-                project: selectedProject
+                project: selectedProject,
+                context: modelContext
             )
             try? appContainer.templateService.createTemplate(template, ledger: ledger, context: modelContext)
             updateRecurringRule(for: template)

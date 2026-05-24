@@ -1,72 +1,67 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 
 final class BudgetServiceImpl: BudgetServiceProtocol {
 
     // MARK: - BudgetBook
 
-    func createBook(_ book: BudgetBook, ledger: Ledger, context: ModelContext) throws {
+    func createBook(_ book: BudgetBook, ledger: Ledger, context: NSManagedObjectContext) throws {
         book.ledger = ledger
-        context.insert(book)
         try context.save()
     }
 
-    func fetchBooks(for ledger: Ledger, context: ModelContext) throws -> [BudgetBook] {
+    func fetchBooks(for ledger: Ledger, context: NSManagedObjectContext) throws -> [BudgetBook] {
         let lid = ledger.id
-        let predicate = #Predicate<BudgetBook> { book in
-            book.ledger?.id == lid
-        }
-        return try context.fetch(FetchDescriptor<BudgetBook>(predicate: predicate))
+        let request = NSFetchRequest<BudgetBook>(entityName: "BudgetBook")
+        request.predicate = NSPredicate(format: "ledger.id == %@", lid as CVarArg)
+        return try context.fetch(request)
     }
 
-    func updateBook(_ book: BudgetBook, context: ModelContext) throws {
+    func updateBook(_ book: BudgetBook, context: NSManagedObjectContext) throws {
         try context.save()
     }
 
-    func deleteBook(_ book: BudgetBook, context: ModelContext) throws {
+    func deleteBook(_ book: BudgetBook, context: NSManagedObjectContext) throws {
         context.delete(book)
         try context.save()
     }
 
     // MARK: - BudgetItem
 
-    func createItem(_ item: BudgetItem, book: BudgetBook, ledger: Ledger, context: ModelContext) throws {
+    func createItem(_ item: BudgetItem, book: BudgetBook, ledger: Ledger, context: NSManagedObjectContext) throws {
         NSLog("[BudgetSvc] createItem: setting book")
         item.book = book
-        NSLog("[BudgetSvc] createItem: inserting into context")
-        context.insert(item)
         NSLog("[BudgetSvc] createItem: saving context")
         try context.save()
         NSLog("[BudgetSvc] createItem: done")
     }
 
-    func fetchItems(for book: BudgetBook, context: ModelContext) throws -> [BudgetItem] {
+    func fetchItems(for book: BudgetBook, context: NSManagedObjectContext) throws -> [BudgetItem] {
         let bid = book.id
-        let predicate = #Predicate<BudgetItem> { item in
-            item.book?.id == bid
-        }
-        return try context.fetch(FetchDescriptor<BudgetItem>(predicate: predicate))
+        let request = NSFetchRequest<BudgetItem>(entityName: "BudgetItem")
+        request.predicate = NSPredicate(format: "book.id == %@", bid as CVarArg)
+        return try context.fetch(request)
     }
 
-    func updateItem(_ item: BudgetItem, context: ModelContext) throws {
+    func updateItem(_ item: BudgetItem, context: NSManagedObjectContext) throws {
         try context.save()
     }
 
-    func deleteItem(_ item: BudgetItem, context: ModelContext) throws {
+    func deleteItem(_ item: BudgetItem, context: NSManagedObjectContext) throws {
         context.delete(item)
         try context.save()
     }
 
     // MARK: - Calculations
 
-    func currentPeriodSpending(for item: BudgetItem, context: ModelContext) -> Decimal {
+    func currentPeriodSpending(for item: BudgetItem, context: NSManagedObjectContext) -> Decimal {
         guard let book = item.book else { return 0 }
         let now = Date()
         let range = currentPeriodRange(for: item, now: now)
         return spending(in: range, category: item.category, book: book, context: context)
     }
 
-    func cumulativeSpending(for item: BudgetItem, context: ModelContext) -> Decimal {
+    func cumulativeSpending(for item: BudgetItem, context: NSManagedObjectContext) -> Decimal {
         guard let book = item.book else { return 0 }
         return spending(in: book.startDate...Date(), category: item.category, book: book, context: context)
     }
@@ -75,11 +70,11 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
         return book.items?.reduce(into: Decimal(0)) { $0 += $1.totalBudget } ?? 0
     }
 
-    func totalCumulativeSpending(for book: BudgetBook, context: ModelContext) -> Decimal {
+    func totalCumulativeSpending(for book: BudgetBook, context: NSManagedObjectContext) -> Decimal {
         return spending(in: book.startDate...Date(), category: nil, book: book, context: context)
     }
 
-    func totalCurrentPeriodSpending(for book: BudgetBook, context: ModelContext) -> Decimal {
+    func totalCurrentPeriodSpending(for book: BudgetBook, context: NSManagedObjectContext) -> Decimal {
         let now = Date()
         let cal = Calendar.current
         let start = cal.date(from: cal.dateComponents([.year, .month], from: now)) ?? now
@@ -118,17 +113,15 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
         }
     }
 
-    private func spending(in range: ClosedRange<Date>, category: Category?, book: BudgetBook, context: ModelContext) -> Decimal {
+    private func spending(in range: ClosedRange<Date>, category: Category?, book: BudgetBook, context: NSManagedObjectContext) -> Decimal {
         guard let ledgerID = book.ledger?.id else { return 0 }
 
         let lower = range.lowerBound
         let upper = range.upperBound
-        let predicate = #Predicate<Transaction> { t in
-            t.date >= lower && t.date <= upper && t.parentTransaction == nil
-        }
-        var descriptor = FetchDescriptor<Transaction>(predicate: predicate)
-        descriptor.fetchLimit = 10000
-        let transactions = (try? context.fetch(descriptor)) ?? []
+        let request = NSFetchRequest<Transaction>(entityName: "Transaction")
+        request.predicate = NSPredicate(format: "date >= %@ AND date <= %@ AND parentTransaction == nil", lower as CVarArg, upper as CVarArg)
+        request.fetchLimit = 10000
+        let transactions = (try? context.fetch(request)) ?? []
         return transactions
             .filter { t in
                 t.ledger?.id == ledgerID

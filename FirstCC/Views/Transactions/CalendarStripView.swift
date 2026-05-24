@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct CalendarStripView: View {
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @Binding var selectedMonth: Date
     @Binding var selectedDay: Int?
     @Binding var isExpanded: Bool

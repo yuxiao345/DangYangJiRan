@@ -1,8 +1,8 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 
 enum CategorySeeder {
-    static func seed(modelContext: ModelContext, ledger: Ledger) {
+    static func seed(modelContext: NSManagedObjectContext, ledger: Ledger) {
         let expenseCategories: [(name: String, icon: String, color: String, sub: [(String, String, String)])] = [
             ("餐饮", "fork.knife", "#FF6B35", [
                 ("三餐", "sun.max", "#FF8C5A"),
@@ -79,10 +79,10 @@ enum CategorySeeder {
                 colorHex: cat.color,
                 type: .expense,
                 isSystem: true,
-                sortOrder: sortOrder
+                sortOrder: sortOrder,
+                context: modelContext
             )
             category.ledger = ledger
-            modelContext.insert(category)
             sortOrder += 1
 
             for (subIdx, sub) in cat.sub.enumerated() {
@@ -93,10 +93,10 @@ enum CategorySeeder {
                     type: .expense,
                     isSystem: true,
                     sortOrder: subIdx,
-                    parent: category
+                    parent: category,
+                    context: modelContext
                 )
                 subCategory.ledger = ledger
-                modelContext.insert(subCategory)
             }
         }
 
@@ -107,10 +107,10 @@ enum CategorySeeder {
                 colorHex: cat.color,
                 type: .income,
                 isSystem: true,
-                sortOrder: sortOrder
+                sortOrder: sortOrder,
+                context: modelContext
             )
             category.ledger = ledger
-            modelContext.insert(category)
             sortOrder += 1
 
             for (subIdx, sub) in cat.sub.enumerated() {
@@ -121,10 +121,10 @@ enum CategorySeeder {
                     type: .income,
                     isSystem: true,
                     sortOrder: subIdx,
-                    parent: category
+                    parent: category,
+                    context: modelContext
                 )
                 subCategory.ledger = ledger
-                modelContext.insert(subCategory)
             }
         }
     }

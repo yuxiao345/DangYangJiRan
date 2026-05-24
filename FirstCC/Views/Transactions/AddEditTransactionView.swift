@@ -1,5 +1,5 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 import PhotosUI
 
 enum PickerSheetType: Identifiable {
@@ -28,7 +28,7 @@ struct SplitItemDraft: Identifiable {
 
 struct AddEditTransactionView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @EnvironmentObject private var appContainer: AppContainer
 
     let editing: Transaction?
@@ -245,7 +245,7 @@ struct AddEditTransactionView: View {
                         }
 
                         // Pending lending settlement (not in view mode)
-                        if !isViewing, (lendingDirection == .collect || lendingDirection == .repay), !pendingLendingTransactions.isEmpty {
+                        if !isViewing, (lendingDirection == LendingDirection.collect || lendingDirection == LendingDirection.repay), !pendingLendingTransactions.isEmpty {
                             pendingLendingSection
                         }
 
@@ -290,6 +290,40 @@ struct AddEditTransactionView: View {
                         }
                         numpadView
                             .transition(.move(edge: .bottom).combined(with: .opacity))
+                        HStack(spacing: 12) {
+                            Button {
+                                clearAmount()
+                            } label: {
+                                Text("清空")
+                                    .font(.designLabel)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 48)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.designSurfaceContainer.opacity(0.5))
+                                    )
+                                    .foregroundStyle(Color.designOnSurfaceVariant)
+                            }
+                            .buttonStyle(.plain)
+                            Button {
+                                withAnimation { dismissNumpad() }
+                            } label: {
+                                Text("确认")
+                                    .font(.designLabel)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 48)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.designPrimaryContainer.opacity(0.2))
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.designPrimaryContainer.opacity(0.4), lineWidth: 1)
+                                    )
+                                    .foregroundStyle(Color.designPrimaryContainer)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                     if !showNumpad {
                     Button {
@@ -380,7 +414,7 @@ struct AddEditTransactionView: View {
                     .font(.designLabel)
                     .foregroundStyle(Color.designPrimary.opacity(0.8))
                 VStack(spacing: 8) {
-                    ForEach(children) { child in
+                    ForEach(Array(children)) { child in
                         HStack {
                             if let cat = child.category {
                                 Image(systemName: cat.iconName)
@@ -717,12 +751,8 @@ struct AddEditTransactionView: View {
                 .tracking(1.0)
             Button {
                 withAnimation {
-                    if showNumpad {
-                        syncSplitAmountToItem()
-                        selectedSplitItemID = nil
-                        splitAmountString = ""
-                    }
-                    showNumpad.toggle()
+                    if showNumpad { dismissNumpad() }
+                    else { showNumpad = true }
                 }
             } label: {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -781,7 +811,7 @@ struct AddEditTransactionView: View {
         }
     }
 
-    private func toggleButton(label: String, isOn: Binding<Bool>) -> some View {
+    private func toggleButton(label: LocalizedStringKey, isOn: Binding<Bool>) -> some View {
         Button {
             isOn.wrappedValue.toggle()
         } label: {
@@ -896,7 +926,7 @@ struct AddEditTransactionView: View {
     // MARK: - Unified Recent Picker Row (4常用 + 更多)
 
     private func recentPickerRow<T: Identifiable>(
-        title: String,
+        title: LocalizedStringKey,
         items: [T],
         itemIcon: @escaping (T) -> String,
         itemColor: @escaping (T) -> Color,
@@ -1113,14 +1143,20 @@ struct AddEditTransactionView: View {
         }
     }
 
-    private func splitSubMenu<Content: View>(label: String, value: String?, @ViewBuilder content: () -> Content) -> some View {
+    private func splitSubMenu<Content: View>(label: LocalizedStringKey, value: String?, @ViewBuilder content: () -> Content) -> some View {
         Menu {
             content()
         } label: {
             HStack(spacing: 4) {
-                Text(value ?? label)
-                    .font(.designBodySmall)
-                    .foregroundStyle(value != nil ? Color.designOnSurface : Color.designOnSurfaceVariant)
+                if let value {
+                    Text(LocalizedStringKey(value))
+                        .font(.designBodySmall)
+                        .foregroundStyle(Color.designOnSurface)
+                } else {
+                    Text(label)
+                        .font(.designBodySmall)
+                        .foregroundStyle(Color.designOnSurfaceVariant)
+                }
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.system(size: 8))
                     .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
@@ -1217,7 +1253,7 @@ struct AddEditTransactionView: View {
 
     private var pendingLendingSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(lendingDirection == .collect ? "关联待收款" : "关联待付款")
+            Text(lendingDirection == LendingDirection.collect ? LocalizedStringKey("关联待收款") : LocalizedStringKey("关联待付款"))
                 .font(.designLabel)
                 .foregroundStyle(Color.designPrimary.opacity(0.8))
 
@@ -1427,6 +1463,23 @@ struct AddEditTransactionView: View {
             else { amountString.removeLast() }
             syncAmountFromString()
         }
+    }
+
+    private func clearAmount() {
+        if selectedSplitItemID != nil {
+            splitAmountString = "0"
+            syncSplitAmountToItem()
+        } else {
+            amountString = "0"
+            syncAmountFromString()
+        }
+    }
+
+    private func dismissNumpad() {
+        showNumpad = false
+        syncSplitAmountToItem()
+        selectedSplitItemID = nil
+        splitAmountString = ""
     }
 
     private func syncAmountFromString() {
@@ -1707,14 +1760,14 @@ struct AddEditTransactionView: View {
                 let parent = Transaction(
                     type: .expense, amount: signedAmount, note: note.isEmpty ? nil : note,
                     date: date, account: selectedAccount,
-                    isSplitParent: true
+                    isSplitParent: true,
+                    context: modelContext
                 )
                 parent.ledger = ledger
-                if isReimbursable { parent.reimbursementStatus = .pending }
+                if isReimbursable { parent.reimbursementStatus = ReimbursementStatus.pending }
                 if !photoDataList.isEmpty {
                     parent.photoURLs = PhotoStorage.save(photoDataList, transactionId: parent.id)
                 }
-                modelContext.insert(parent)
 
                 applyCurrency(to: parent)
                 createSplitChildren(parent: parent, ledger: ledger)
@@ -1726,17 +1779,18 @@ struct AddEditTransactionView: View {
                     type: type, amount: signedAmount, note: note.isEmpty ? nil : note,
                     date: date, account: selectedAccount, toAccount: selectedToAccount,
                     category: selectedCategory, member: selectedMember,
-                    merchant: selectedMerchant, project: selectedProject
+                    merchant: selectedMerchant, project: selectedProject,
+                    context: modelContext
                 )
                 if type == .expense, isReimbursable {
-                    transaction.reimbursementStatus = .pending
+                    transaction.reimbursementStatus = ReimbursementStatus.pending
                 }
                 if type == .lending {
                     transaction.lendingDirection = lendingDirection
-                    if lendingDirection == .lendOut || lendingDirection == .borrowIn {
-                        transaction.lendingStatus = .pending
+                    if lendingDirection == LendingDirection.lendOut || lendingDirection == LendingDirection.borrowIn {
+                        transaction.lendingStatus = LendingStatus.pending
                     }
-                    if (lendingDirection == .collect || lendingDirection == .repay) && !selectedLendingIDs.isEmpty {
+                    if (lendingDirection == LendingDirection.collect || lendingDirection == LendingDirection.repay) && !selectedLendingIDs.isEmpty {
                         try linkSettledLendingTransactions(to: transaction.id)
                     }
                 }
@@ -1772,10 +1826,10 @@ struct AddEditTransactionView: View {
                 member: item.member,
                 merchant: item.merchant,
                 project: item.project,
-                parentTransaction: parent
+                parentTransaction: parent,
+                context: modelContext
             )
             child.ledger = ledger
-            modelContext.insert(child)
         }
     }
 
@@ -1803,8 +1857,8 @@ struct AddEditTransactionView: View {
         isFetchingRate = true
         Task {
             defer { isFetchingRate = false }
-            if let rate = try? await service.fetchRate(from: selectedCurrencyCode, to: ledgerCurrencyCode) {
-                exchangeRate = rate.rate
+            if let rate = try? await service.fetchRate(from: selectedCurrencyCode, to: ledgerCurrencyCode, context: modelContext) {
+                exchangeRate = Decimal(string: "\(rate.rate)") ?? 0
             }
         }
     }
@@ -1812,7 +1866,7 @@ struct AddEditTransactionView: View {
     private func applyCurrency(to t: Transaction) {
         t.currencyCode = selectedCurrencyCode
         if selectedCurrencyCode != ledgerCurrencyCode, let rate = exchangeRate {
-            t.exchangeRate = rate
+            t.exchangeRate = Double(truncating: rate as NSDecimalNumber)
             t.convertedAmount = t.amount * rate
         }
     }
@@ -1867,7 +1921,7 @@ struct AddEditTransactionView: View {
                 return
             }
             pendingLendingTransactions = all.filter {
-                $0.lendingDirection == .lendOut && $0.lendingStatus == .pending && $0.toAccount?.id == accountID
+                $0.lendingDirection == LendingDirection.lendOut && $0.lendingStatus == LendingStatus.pending && $0.toAccount?.id == accountID
             }
         case .repay:
             guard let toAccountID = selectedToAccount?.id else {
@@ -1875,7 +1929,7 @@ struct AddEditTransactionView: View {
                 return
             }
             pendingLendingTransactions = all.filter {
-                $0.lendingDirection == .borrowIn && $0.lendingStatus == .pending && $0.account?.id == toAccountID
+                $0.lendingDirection == LendingDirection.borrowIn && $0.lendingStatus == LendingStatus.pending && $0.account?.id == toAccountID
             }
         default:
             pendingLendingTransactions = []
@@ -1905,9 +1959,10 @@ struct AddEditTransactionView: View {
 
     private func updateExisting(_ original: Transaction, ledger: Ledger) throws {
         let id = original.id
-        var descriptor = FetchDescriptor<Transaction>(predicate: #Predicate { $0.id == id })
-        descriptor.fetchLimit = 1
-        guard let t = try? modelContext.fetch(descriptor).first else {
+        let fetch = NSFetchRequest<Transaction>(entityName: "Transaction")
+        fetch.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        fetch.fetchLimit = 1
+        guard let t = try? modelContext.fetch(fetch).first else {
             throw NSError(domain: "TransactionEdit", code: 1, userInfo: [NSLocalizedDescriptionKey: "Transaction not found"])
         }
 
@@ -1937,14 +1992,14 @@ struct AddEditTransactionView: View {
         }
 
         if t.type == .expense {
-            t.reimbursementStatus = isReimbursable ? .pending : .none
+            t.reimbursementStatus = isReimbursable ? ReimbursementStatus.pending : ReimbursementStatus.none
         }
         if t.type == .lending {
             t.lendingDirection = lendingDirection
-            if lendingDirection == .lendOut || lendingDirection == .borrowIn {
-                t.lendingStatus = .pending
+            if lendingDirection == LendingDirection.lendOut || lendingDirection == LendingDirection.borrowIn {
+                t.lendingStatus = LendingStatus.pending
             }
-            if (lendingDirection == .collect || lendingDirection == .repay) && !selectedLendingIDs.isEmpty {
+            if (lendingDirection == LendingDirection.collect || lendingDirection == LendingDirection.repay) && !selectedLendingIDs.isEmpty {
                 try linkSettledLendingTransactions(to: t.id)
             }
         }
@@ -1979,15 +2034,16 @@ struct AddEditTransactionView: View {
             return
         }
         let all = (try? appContainer.transactionService.fetchTransactions(for: ledger, context: modelContext, filters: nil)) ?? []
-        pendingExpenses = all.filter { $0.type == .expense && $0.reimbursementStatus == .pending }
+        pendingExpenses = all.filter { $0.type == TransactionType.expense && $0.reimbursementStatus == ReimbursementStatus.pending }
     }
 
     private func linkReimbursedExpenses(to incomeId: UUID) throws {
         for expenseID in selectedExpenseIDs {
-            var descriptor = FetchDescriptor<Transaction>(predicate: #Predicate { $0.id == expenseID })
-            descriptor.fetchLimit = 1
-            guard let expense = try? modelContext.fetch(descriptor).first else { continue }
-            expense.reimbursementStatus = .reimbursed
+            let fetch = NSFetchRequest<Transaction>(entityName: "Transaction")
+            fetch.predicate = NSPredicate(format: "id == %@", expenseID as CVarArg)
+            fetch.fetchLimit = 1
+            guard let expense = try? modelContext.fetch(fetch).first else { continue }
+            expense.reimbursementStatus = ReimbursementStatus.reimbursed
             expense.reimbursedById = incomeId
         }
         try modelContext.save()
@@ -2003,15 +2059,16 @@ struct AddEditTransactionView: View {
 
         for lendingID in sortedIDs {
             guard remaining > 0 else { break }
-            var descriptor = FetchDescriptor<Transaction>(predicate: #Predicate { $0.id == lendingID })
-            descriptor.fetchLimit = 1
-            guard let item = try? modelContext.fetch(descriptor).first else { continue }
+            let fetch = NSFetchRequest<Transaction>(entityName: "Transaction")
+            fetch.predicate = NSPredicate(format: "id == %@", lendingID as CVarArg)
+            fetch.fetchLimit = 1
+            guard let item = try? modelContext.fetch(fetch).first else { continue }
             let debtAmount = abs(item.amount)
             let alreadyPaid = item.settledAmount ?? 0
             let stillOwed = debtAmount - alreadyPaid
             if remaining >= stillOwed {
                 item.settledAmount = debtAmount
-                item.lendingStatus = .settled
+                item.lendingStatus = LendingStatus.settled
                 remaining -= stillOwed
             } else {
                 item.settledAmount = alreadyPaid + remaining
@@ -2061,28 +2118,25 @@ struct AddEditTransactionView: View {
     private func loadLinkedRefunds() {
         guard let t = editing else { return }
         let tid = t.id
-        let descriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate { $0.refundGroupId == tid }
-        )
-        linkedRefunds = (try? modelContext.fetch(descriptor)) ?? []
+        let fetch = NSFetchRequest<Transaction>(entityName: "Transaction")
+        fetch.predicate = NSPredicate(format: "refundGroupId == %@", tid as CVarArg)
+        linkedRefunds = (try? modelContext.fetch(fetch)) ?? []
     }
 
     private func loadSettledExpenses() {
         guard let t = editing else { return }
         let tid = t.id
-        let descriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate { $0.reimbursedById == tid }
-        )
-        settledExpenses = (try? modelContext.fetch(descriptor)) ?? []
+        let fetch = NSFetchRequest<Transaction>(entityName: "Transaction")
+        fetch.predicate = NSPredicate(format: "reimbursedById == %@", tid as CVarArg)
+        settledExpenses = (try? modelContext.fetch(fetch)) ?? []
     }
 
     private func loadSettledLendingTransactions() {
         guard let t = editing else { return }
         let tid = t.id
-        let descriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate { $0.settledByLendingTransactionId == tid }
-        )
-        settledLendingTransactions = (try? modelContext.fetch(descriptor)) ?? []
+        let fetch = NSFetchRequest<Transaction>(entityName: "Transaction")
+        fetch.predicate = NSPredicate(format: "settledByLendingTransactionId == %@", tid as CVarArg)
+        settledLendingTransactions = (try? modelContext.fetch(fetch)) ?? []
     }
 }
 

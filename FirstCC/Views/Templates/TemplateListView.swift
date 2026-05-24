@@ -1,9 +1,9 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 
 struct TemplateListView: View {
     @EnvironmentObject private var appContainer: AppContainer
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @State private var templates: [TransactionTemplate] = []
     @State private var showAddSheet = false
     @State private var editingTemplate: TransactionTemplate?

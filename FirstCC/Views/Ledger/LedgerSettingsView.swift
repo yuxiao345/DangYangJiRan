@@ -1,10 +1,10 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 import CloudKit
 
 struct LedgerSettingsView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @EnvironmentObject private var appContainer: AppContainer
 
     let ledger: Ledger
@@ -130,7 +130,7 @@ struct LedgerSettingsView: View {
         }
         .sheet(isPresented: $showCloudShare) {
             if let container = appContainer.cloudKitContainer, let share = cloudShare {
-                CloudSharingView(share: share, container: container, ledger: ledger, isPresenting: true, syncService: appContainer.syncService as? SyncServiceImpl, modelContainer: appContainer.modelContainer)
+                CloudSharingView(share: share, container: container, ledger: ledger, isPresenting: true, syncService: appContainer.syncService as? SyncServiceImpl, coreDataStack: appContainer.coreDataStack)
             } else {
                 ContentUnavailableView("共享未就绪", systemImage: "icloud.slash", description: Text("暂时无法读取共享信息，请稍后重试。"))
             }

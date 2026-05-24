@@ -1,5 +1,5 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 
 struct SplitEntryRowView: View {
     let entry: SplitEntry

@@ -1,32 +1,30 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 
 struct TemplateServiceImpl: TemplateServiceProtocol {
-    func createTemplate(_ template: TransactionTemplate, ledger: Ledger, context: ModelContext) throws {
+    func createTemplate(_ template: TransactionTemplate, ledger: Ledger, context: NSManagedObjectContext) throws {
         template.ledger = ledger
-        context.insert(template)
         try context.save()
     }
 
-    func fetchTemplates(for ledger: Ledger, context: ModelContext) throws -> [TransactionTemplate] {
+    func fetchTemplates(for ledger: Ledger, context: NSManagedObjectContext) throws -> [TransactionTemplate] {
         let ledgerID = ledger.id
-        let descriptor = FetchDescriptor<TransactionTemplate>(
-            predicate: #Predicate { $0.ledger?.id == ledgerID },
-            sortBy: [SortDescriptor(\.sortOrder), SortDescriptor(\.createdAt)]
-        )
-        return try context.fetch(descriptor)
+        let request = NSFetchRequest<TransactionTemplate>(entityName: "TransactionTemplate")
+        request.predicate = NSPredicate(format: "ledger.id == %@", ledgerID as CVarArg)
+        request.sortDescriptors = [NSSortDescriptor(key: "sortOrder", ascending: true), NSSortDescriptor(key: "createdAt", ascending: true)]
+        return try context.fetch(request)
     }
 
-    func updateTemplate(_ template: TransactionTemplate, context: ModelContext) throws {
+    func updateTemplate(_ template: TransactionTemplate, context: NSManagedObjectContext) throws {
         try context.save()
     }
 
-    func deleteTemplate(_ template: TransactionTemplate, context: ModelContext) throws {
+    func deleteTemplate(_ template: TransactionTemplate, context: NSManagedObjectContext) throws {
         context.delete(template)
         try context.save()
     }
 
-    func createTransaction(from template: TransactionTemplate, date: Date, context: ModelContext) throws -> Transaction {
+    func createTransaction(from template: TransactionTemplate, date: Date, context: NSManagedObjectContext) throws -> Transaction {
         let transaction = Transaction(
             type: template.type,
             amount: template.amount,
@@ -39,11 +37,11 @@ struct TemplateServiceImpl: TemplateServiceProtocol {
             category: template.category,
             member: template.member,
             merchant: template.merchant,
-            project: template.project
+            project: template.project,
+            context: context
         )
         transaction.ledger = template.ledger
         transaction.template = template
-        context.insert(transaction)
         try context.save()
         return transaction
     }

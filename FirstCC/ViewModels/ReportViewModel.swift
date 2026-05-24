@@ -1,5 +1,5 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 
 enum ReportPeriod: Hashable {
     case thisMonth
@@ -123,22 +123,17 @@ final class ReportViewModel {
         ledger: Ledger,
         transactionService: TransactionServiceProtocol,
         categoryService: CategoryServiceProtocol,
-        context: ModelContext
+        context: NSManagedObjectContext
     ) {
         guard let range = selectedPeriod.dateRange else { return }
 
         let ledgerID = ledger.id
         let startDate = range.lowerBound
         let endDate = range.upperBound
-        let descriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate {
-                $0.ledger?.id == ledgerID &&
-                $0.date >= startDate &&
-                $0.date < endDate
-            },
-            sortBy: [SortDescriptor(\.date, order: .reverse)]
-        )
-        let all = (try? context.fetch(descriptor)) ?? []
+        let fetch = NSFetchRequest<Transaction>(entityName: "Transaction")
+        fetch.predicate = NSPredicate(format: "ledger.id == %@ AND date >= %@ AND date < %@", ledgerID as CVarArg, startDate as CVarArg, endDate as CVarArg)
+        fetch.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+        let all = (try? context.fetch(fetch)) ?? []
 
         let transactions = all.filter { t in
             guard t.type == .expense else { return false }
@@ -247,22 +242,17 @@ final class ReportViewModel {
     func loadTrendData(
         ledger: Ledger,
         transactionService: TransactionServiceProtocol,
-        context: ModelContext
+        context: NSManagedObjectContext
     ) {
         guard let range = selectedPeriod.dateRange else { return }
 
         let ledgerID = ledger.id
         let startDate = range.lowerBound
         let endDate = range.upperBound
-        let descriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate {
-                $0.ledger?.id == ledgerID &&
-                $0.date >= startDate &&
-                $0.date < endDate
-            },
-            sortBy: [SortDescriptor(\.date, order: .forward)]
-        )
-        let all = (try? context.fetch(descriptor)) ?? []
+        let fetch = NSFetchRequest<Transaction>(entityName: "Transaction")
+        fetch.predicate = NSPredicate(format: "ledger.id == %@ AND date >= %@ AND date < %@", ledgerID as CVarArg, startDate as CVarArg, endDate as CVarArg)
+        fetch.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
+        let all = (try? context.fetch(fetch)) ?? []
 
         let settlementIDs = Set(all.compactMap(\.reimbursedById))
         let filtered = all.filter { t in
@@ -378,16 +368,15 @@ final class ReportViewModel {
     #if DEBUG
     func seedTestData(
         ledger: Ledger,
-        context: ModelContext
+        context: NSManagedObjectContext
     ) {
         let ledgerID = ledger.id
 
         // Category names
         let catNames: [String] = ["三餐", "停车", "娱乐", "物业", "通讯"]
-        let catDescriptor = FetchDescriptor<Category>(
-            predicate: #Predicate { $0.ledger?.id == ledgerID }
-        )
-        let allCats = (try? context.fetch(catDescriptor)) ?? []
+        let catFetch = NSFetchRequest<Category>(entityName: "Category")
+        catFetch.predicate = NSPredicate(format: "ledger.id == %@", ledgerID as CVarArg)
+        let allCats = (try? context.fetch(catFetch)) ?? []
         let catByName: [String: Category] = Dictionary(uniqueKeysWithValues: allCats.compactMap { c in
             catNames.contains(c.name) ? (c.name, c) : nil
         })
@@ -397,10 +386,9 @@ final class ReportViewModel {
         }
 
         // Get 微信支付 account
-        let acctDescriptor = FetchDescriptor<Account>(
-            predicate: #Predicate { $0.ledger?.id == ledgerID }
-        )
-        guard let allAccounts = try? context.fetch(acctDescriptor) else { return }
+        let acctFetch = NSFetchRequest<Account>(entityName: "Account")
+        acctFetch.predicate = NSPredicate(format: "ledger.id == %@", ledgerID as CVarArg)
+        guard let allAccounts = try? context.fetch(acctFetch) else { return }
         guard let account = allAccounts.first(where: { $0.name == "微信支付" }) else {
             print("Seed: 微信支付 account not found")
             return
@@ -417,34 +405,29 @@ final class ReportViewModel {
         while date < endDate {
             // 3x 餐饮 30 each
             for _ in 0..<3 {
-                let t = Transaction(type: .expense, amount: -30, date: date, account: account, category: catByName["三餐"])
+                let t = Transaction(type: .expense, amount: -30, date: date, account: account, category: catByName["三餐"], context: context)
                 t.ledger = ledger
-                context.insert(t)
                 count += 1
             }
             // 1x 停车 20
-            let p = Transaction(type: .expense, amount: -20, date: date, account: account, category: catByName["停车"])
+            let p = Transaction(type: .expense, amount: -20, date: date, account: account, category: catByName["停车"], context: context)
             p.ledger = ledger
-            context.insert(p)
             count += 1
 
             // Weekly 娱乐 on Sundays
             if cal.component(.weekday, from: date) == 1 {
-                let e = Transaction(type: .expense, amount: -100, date: date, account: account, category: catByName["娱乐"])
+                let e = Transaction(type: .expense, amount: -100, date: date, account: account, category: catByName["娱乐"], context: context)
                 e.ledger = ledger
-                context.insert(e)
                 count += 1
             }
 
             // Monthly on 1st
             if cal.component(.day, from: date) == 1 {
-                let prop = Transaction(type: .expense, amount: -700, date: date, account: account, category: catByName["物业"])
+                let prop = Transaction(type: .expense, amount: -700, date: date, account: account, category: catByName["物业"], context: context)
                 prop.ledger = ledger
-                context.insert(prop)
                 count += 1
-                let tel = Transaction(type: .expense, amount: -199, date: date, account: account, category: catByName["通讯"])
+                let tel = Transaction(type: .expense, amount: -199, date: date, account: account, category: catByName["通讯"], context: context)
                 tel.ledger = ledger
-                context.insert(tel)
                 count += 1
             }
 

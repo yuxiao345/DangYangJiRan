@@ -1,5 +1,5 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 
 enum RecurringPickerSheet: Identifiable {
     case account, toAccount, category, member, merchant, project
@@ -8,7 +8,7 @@ enum RecurringPickerSheet: Identifiable {
 
 struct AddEditRecurringView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @EnvironmentObject private var appContainer: AppContainer
 
     let editingRule: RecurringRule?
@@ -249,7 +249,7 @@ struct AddEditRecurringView: View {
         selectedMerchant = t.merchant
         selectedProject = t.project
         frequency = rule.frequency
-        interval = rule.interval
+        interval = Int(rule.interval)
         startDate = rule.startDate
         if let end = rule.endDate {
             hasEndDate = true
@@ -291,7 +291,8 @@ struct AddEditRecurringView: View {
                 category: selectedCategory,
                 member: selectedMember,
                 merchant: selectedMerchant,
-                project: selectedProject
+                project: selectedProject,
+                context: modelContext
             )
             try? appContainer.templateService.createTemplate(template, ledger: ledger, context: modelContext)
             let end = hasEndDate ? endDate : nil

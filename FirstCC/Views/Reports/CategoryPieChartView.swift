@@ -156,7 +156,7 @@ struct CategoryPieChartView: View {
 
             Divider()
 
-            ForEach(txs.sorted(by: { $0.date > $1.date })) { tx in
+            ForEach(txs.sorted(by: { $0.date > $1.date }), id: \.id) { tx in
                 Button {
                     onSelectTransaction?(tx)
                 } label: {

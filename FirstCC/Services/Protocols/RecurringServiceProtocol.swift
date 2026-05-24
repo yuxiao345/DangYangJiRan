@@ -1,5 +1,5 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 
 protocol RecurringServiceProtocol {
     func setRecurring(
@@ -8,11 +8,11 @@ protocol RecurringServiceProtocol {
         interval: Int,
         startDate: Date,
         endDate: Date?,
-        context: ModelContext
+        context: NSManagedObjectContext
     ) throws -> RecurringRule
-    func disableRecurring(template: TransactionTemplate, context: ModelContext) throws
-    func processDueRecurring(context: ModelContext) throws
+    func disableRecurring(template: TransactionTemplate, context: NSManagedObjectContext) throws
+    func processDueRecurring(context: NSManagedObjectContext) throws
     func nextGenerateDate(for rule: RecurringRule) -> Date?
-    func fetchRules(for ledger: Ledger, context: ModelContext) throws -> [RecurringRule]
-    func fetchActiveRules(for ledger: Ledger, context: ModelContext) throws -> [RecurringRule]
+    func fetchRules(for ledger: Ledger, context: NSManagedObjectContext) throws -> [RecurringRule]
+    func fetchActiveRules(for ledger: Ledger, context: NSManagedObjectContext) throws -> [RecurringRule]
 }

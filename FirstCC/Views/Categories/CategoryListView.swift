@@ -1,9 +1,9 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 
 struct CategoryListView: View {
     @EnvironmentObject private var appContainer: AppContainer
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @State private var incomeCategories: [Category] = []
     @State private var expenseCategories: [Category] = []
     @State private var showAddSheet = false
@@ -48,7 +48,7 @@ struct CategoryListView: View {
 
     private func categoryRow(_ category: Category) -> some View {
         DisclosureGroup {
-            ForEach(category.children ?? []) { child in
+            ForEach(Array(category.children ?? Set()), id: \.id) { child in
                 HStack {
                     Image(systemName: child.iconName)
                         .foregroundStyle(Color(hex: child.colorHex))

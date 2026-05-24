@@ -1,10 +1,9 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 
 struct TransactionServiceImpl: TransactionServiceProtocol {
-    func createTransaction(_ transaction: Transaction, ledger: Ledger, context: ModelContext) throws {
+    func createTransaction(_ transaction: Transaction, ledger: Ledger, context: NSManagedObjectContext) throws {
         transaction.ledger = ledger
-        context.insert(transaction)
         try context.save()
         NotificationCenter.default.post(name: .transactionDidChange, object: nil)
     }
@@ -16,7 +15,7 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
         date: Date,
         note: String?,
         ledger: Ledger,
-        context: ModelContext
+        context: NSManagedObjectContext
     ) throws -> (Transaction, Transaction) {
         let groupID = UUID()
         let absAmount = abs(amount)
@@ -28,10 +27,10 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
             date: date,
             transferGroupId: groupID,
             account: sourceAccount,
-            toAccount: destAccount
+            toAccount: destAccount,
+            context: context
         )
         outflow.ledger = ledger
-        context.insert(outflow)
 
         let inflow = Transaction(
             type: .transfer,
@@ -40,10 +39,10 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
             date: date,
             transferGroupId: groupID,
             account: destAccount,
-            toAccount: sourceAccount
+            toAccount: sourceAccount,
+            context: context
         )
         inflow.ledger = ledger
-        context.insert(inflow)
 
         try context.save()
         NotificationCenter.default.post(name: .transactionDidChange, object: nil)
@@ -53,7 +52,7 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
     func createRefund(
         for original: Transaction,
         amount: Decimal,
-        context: ModelContext
+        context: NSManagedObjectContext
     ) throws -> Transaction {
         let absAmount = abs(amount)
         let signedAmount: Decimal = original.type == .expense ? absAmount : -absAmount
@@ -66,10 +65,10 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
             refundGroupId: original.id,
             refundAmount: amount,
             account: original.account,
-            category: original.category
+            category: original.category,
+            context: context
         )
         refund.ledger = original.ledger
-        context.insert(refund)
         try context.save()
         NotificationCenter.default.post(name: .transactionDidChange, object: nil)
         return refund
@@ -77,15 +76,14 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
 
     func fetchTransactions(
         for ledger: Ledger,
-        context: ModelContext,
+        context: NSManagedObjectContext,
         filters: TransactionFilters? = nil
     ) throws -> [Transaction] {
         let ledgerID = ledger.id
-        let descriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate { $0.ledger?.id == ledgerID && $0.parentTransaction == nil },
-            sortBy: [SortDescriptor(\.date, order: .reverse)]
-        )
-        let all = try context.fetch(descriptor)
+        let request = NSFetchRequest<Transaction>(entityName: "Transaction")
+        request.predicate = NSPredicate(format: "ledger.id == %@ AND parentTransaction == nil", ledgerID as CVarArg)
+        request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+        let all = try context.fetch(request)
 
         guard let filters = filters else { return all }
 
@@ -120,13 +118,13 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
         }
     }
 
-    func updateTransaction(_ transaction: Transaction, context: ModelContext) throws {
+    func updateTransaction(_ transaction: Transaction, context: NSManagedObjectContext) throws {
         transaction.modifiedAt = Date()
         try context.save()
         NotificationCenter.default.post(name: .transactionDidChange, object: nil)
     }
 
-    func deleteTransaction(_ transaction: Transaction, context: ModelContext) throws {
+    func deleteTransaction(_ transaction: Transaction, context: NSManagedObjectContext) throws {
         context.delete(transaction)
         try context.save()
         NotificationCenter.default.post(name: .transactionDidChange, object: nil)

@@ -1,5 +1,5 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 
 struct RecurringServiceImpl: RecurringServiceProtocol {
     func setRecurring(
@@ -8,12 +8,12 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
         interval: Int,
         startDate: Date,
         endDate: Date?,
-        context: ModelContext
+        context: NSManagedObjectContext
     ) throws -> RecurringRule {
         let rule: RecurringRule
         if let existing = template.recurringRule {
             existing.frequency = frequency
-            existing.interval = interval
+            existing.interval = Int64(interval)
             existing.startDate = startDate
             existing.endDate = endDate
             existing.isActive = true
@@ -27,7 +27,8 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
                 frequency: frequency,
                 interval: interval,
                 startDate: startDate,
-                endDate: endDate
+                endDate: endDate,
+                context: context
             )
             rule.template = template
             template.recurringRule = rule
@@ -37,7 +38,7 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
         return rule
     }
 
-    func disableRecurring(template: TransactionTemplate, context: ModelContext) throws {
+    func disableRecurring(template: TransactionTemplate, context: NSManagedObjectContext) throws {
         if let rule = template.recurringRule {
             rule.template = nil
             template.recurringRule = nil
@@ -47,12 +48,11 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
         try context.save()
     }
 
-    func processDueRecurring(context: ModelContext) throws {
+    func processDueRecurring(context: NSManagedObjectContext) throws {
         let now = Date()
-        let descriptor = FetchDescriptor<RecurringRule>(
-            predicate: #Predicate { $0.isActive == true }
-        )
-        let rules = try context.fetch(descriptor)
+        let request = NSFetchRequest<RecurringRule>(entityName: "RecurringRule")
+        request.predicate = NSPredicate(format: "isActive == YES")
+        let rules = try context.fetch(request)
 
         for rule in rules {
             guard let template = rule.template else { continue }
@@ -63,7 +63,7 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
                 let following = RecurringRule.calculateNextDate(
                     from: nextDate,
                     frequency: rule.frequency,
-                    interval: rule.interval
+                    interval: Int(rule.interval)
                 )
                 if following > now {
                     // This is the current period — generate the transaction
@@ -86,11 +86,11 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
                         category: template.category,
                         member: template.member,
                         merchant: template.merchant,
-                        project: template.project
+                        project: template.project,
+                        context: context
                     )
                     transaction.ledger = template.ledger
                     transaction.template = template
-                    context.insert(transaction)
 
                     rule.lastGeneratedDate = nextDate
                     rule.nextGenerateDate = following
@@ -112,13 +112,13 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
         rule.nextGenerateDate
     }
 
-    func fetchRules(for ledger: Ledger, context: ModelContext) throws -> [RecurringRule] {
-        let descriptor = FetchDescriptor<RecurringRule>()
-        let allRules = try context.fetch(descriptor)
+    func fetchRules(for ledger: Ledger, context: NSManagedObjectContext) throws -> [RecurringRule] {
+        let request = NSFetchRequest<RecurringRule>(entityName: "RecurringRule")
+        let allRules = try context.fetch(request)
         return allRules.filter { $0.template?.ledger?.id == ledger.id }
     }
 
-    func fetchActiveRules(for ledger: Ledger, context: ModelContext) throws -> [RecurringRule] {
+    func fetchActiveRules(for ledger: Ledger, context: NSManagedObjectContext) throws -> [RecurringRule] {
         let allRules = try fetchRules(for: ledger, context: context)
         return allRules.filter { $0.isActive }
     }

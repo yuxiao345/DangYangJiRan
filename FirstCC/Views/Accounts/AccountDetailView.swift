@@ -1,9 +1,9 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 
 struct AccountDetailView: View {
     let account: Account
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @EnvironmentObject private var appContainer: AppContainer
     @State private var balance: Decimal = 0
     @State private var transactions: [Transaction] = []
@@ -87,16 +87,16 @@ struct AccountDetailView: View {
                         CurrencyText(amount: limit, currencyCode: account.currencyCode, size: 15, foregroundColor: .designOnSurface)
                     }
                 }
-                if let billingDay = account.billingDay {
+                if account.billingDay != 0 {
                     creditInfoRow(label: "账单日") {
-                        Text("每月\(billingDay)日")
+                        Text("每月\(Int(account.billingDay))日")
                             .font(.designBodyMedium)
                             .foregroundStyle(Color.designOnSurface)
                     }
                 }
-                if let dueDay = account.dueDay {
+                if account.dueDay != 0 {
                     creditInfoRow(label: "还款日") {
-                        Text("每月\(dueDay)日")
+                        Text("每月\(Int(account.dueDay))日")
                             .font(.designBodyMedium)
                             .foregroundStyle(Color.designOnSurface)
                     }
@@ -266,14 +266,18 @@ struct AccountDetailView: View {
         guard let ledger = appContainer.currentLedger else { return }
         let accountID = account.id
 
-        let asSource = FetchDescriptor<Transaction>(
-            predicate: #Predicate { $0.account?.id == accountID && $0.parentTransaction == nil },
-            sortBy: [SortDescriptor(\.date, order: .reverse)]
-        )
-        let asDest = FetchDescriptor<Transaction>(
-            predicate: #Predicate { $0.toAccount?.id == accountID && $0.parentTransaction == nil },
-            sortBy: [SortDescriptor(\.date, order: .reverse)]
-        )
+        let asSource: NSFetchRequest<Transaction> = {
+            let req = NSFetchRequest<Transaction>(entityName: "Transaction")
+            req.predicate = NSPredicate(format: "account.id == %@ AND parentTransaction == nil", accountID as CVarArg)
+            req.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+            return req
+        }()
+        let asDest: NSFetchRequest<Transaction> = {
+            let req = NSFetchRequest<Transaction>(entityName: "Transaction")
+            req.predicate = NSPredicate(format: "toAccount.id == %@ AND parentTransaction == nil", accountID as CVarArg)
+            req.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+            return req
+        }()
         let source = (try? modelContext.fetch(asSource)) ?? []
         let dest = (try? modelContext.fetch(asDest)) ?? []
         transactions = (source + dest).sorted { $0.date > $1.date }

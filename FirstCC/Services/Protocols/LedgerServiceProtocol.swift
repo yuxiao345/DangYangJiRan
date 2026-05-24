@@ -1,10 +1,10 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 
 protocol LedgerServiceProtocol {
-    func createLedger(name: String, type: LedgerType, currencyCode: String, context: ModelContext) throws -> Ledger
-    func fetchLedgers(context: ModelContext) throws -> [Ledger]
-    func updateLedger(_ ledger: Ledger, context: ModelContext) throws
-    func deleteLedger(_ ledger: Ledger, context: ModelContext) throws
+    func createLedger(name: String, type: LedgerType, currencyCode: String, context: NSManagedObjectContext) throws -> Ledger
+    func fetchLedgers(context: NSManagedObjectContext) throws -> [Ledger]
+    func updateLedger(_ ledger: Ledger, context: NSManagedObjectContext) throws
+    func deleteLedger(_ ledger: Ledger, context: NSManagedObjectContext) throws
     func switchToLedger(_ ledger: Ledger)
 }

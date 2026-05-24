@@ -1,9 +1,9 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 
 protocol MemberServiceProtocol {
-    func createMember(_ member: Member, ledger: Ledger, context: ModelContext) throws
-    func fetchMembers(for ledger: Ledger, context: ModelContext) throws -> [Member]
-    func updateMember(_ member: Member, context: ModelContext) throws
-    func deleteMember(_ member: Member, context: ModelContext) throws
+    func createMember(_ member: Member, ledger: Ledger, context: NSManagedObjectContext) throws
+    func fetchMembers(for ledger: Ledger, context: NSManagedObjectContext) throws -> [Member]
+    func updateMember(_ member: Member, context: NSManagedObjectContext) throws
+    func deleteMember(_ member: Member, context: NSManagedObjectContext) throws
 }

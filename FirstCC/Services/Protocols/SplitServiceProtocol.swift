@@ -1,5 +1,5 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 
 protocol SplitServiceProtocol {
     func createSplit(
@@ -12,9 +12,9 @@ protocol SplitServiceProtocol {
         date: Date,
         transaction: Transaction,
         ledger: Ledger,
-        context: ModelContext
+        context: NSManagedObjectContext
     ) throws -> SplitGroup
-    func markEntryPaid(_ entry: SplitEntry, context: ModelContext) throws
-    func settleSplit(_ splitGroup: SplitGroup, context: ModelContext) throws
-    func fetchSplits(for ledger: Ledger, context: ModelContext) throws -> [SplitGroup]
+    func markEntryPaid(_ entry: SplitEntry, context: NSManagedObjectContext) throws
+    func settleSplit(_ splitGroup: SplitGroup, context: NSManagedObjectContext) throws
+    func fetchSplits(for ledger: Ledger, context: NSManagedObjectContext) throws -> [SplitGroup]
 }

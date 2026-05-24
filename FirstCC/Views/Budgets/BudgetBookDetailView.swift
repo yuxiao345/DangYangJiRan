@@ -1,8 +1,8 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 
 struct BudgetBookDetailView: View {
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @EnvironmentObject private var appContainer: AppContainer
     let book: BudgetBook
     @State private var items: [BudgetItem] = []

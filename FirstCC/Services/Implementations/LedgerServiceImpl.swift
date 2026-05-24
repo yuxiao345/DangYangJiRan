@@ -1,24 +1,24 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 
 struct LedgerServiceImpl: LedgerServiceProtocol {
-    func createLedger(name: String, type: LedgerType, currencyCode: String, context: ModelContext) throws -> Ledger {
-        let ledger = Ledger(name: name, type: type, defaultCurrencyCode: currencyCode)
-        context.insert(ledger)
+    func createLedger(name: String, type: LedgerType, currencyCode: String, context: NSManagedObjectContext) throws -> Ledger {
+        let ledger = Ledger(name: name, type: type, defaultCurrencyCode: currencyCode, context: context)
         try context.save()
         return ledger
     }
 
-    func fetchLedgers(context: ModelContext) throws -> [Ledger] {
-        let descriptor = FetchDescriptor<Ledger>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
-        return try context.fetch(descriptor)
+    func fetchLedgers(context: NSManagedObjectContext) throws -> [Ledger] {
+        let request = NSFetchRequest<Ledger>(entityName: "Ledger")
+        request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
+        return try context.fetch(request)
     }
 
-    func updateLedger(_ ledger: Ledger, context: ModelContext) throws {
+    func updateLedger(_ ledger: Ledger, context: NSManagedObjectContext) throws {
         try context.save()
     }
 
-    func deleteLedger(_ ledger: Ledger, context: ModelContext) throws {
+    func deleteLedger(_ ledger: Ledger, context: NSManagedObjectContext) throws {
         context.delete(ledger)
         try context.save()
     }

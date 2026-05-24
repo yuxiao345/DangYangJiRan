@@ -1,9 +1,9 @@
 import SwiftUI
-import SwiftData
+@preconcurrency import CoreData
 
 struct AccountsManagementView: View {
     @EnvironmentObject private var appContainer: AppContainer
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @State private var accounts: [Account] = []
     @State private var balances: [UUID: Decimal] = [:]
     @State private var showAddSheet = false
@@ -139,7 +139,7 @@ struct AccountsManagementView: View {
 
 struct EditAccountView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @EnvironmentObject private var appContainer: AppContainer
 
     let account: Account
@@ -163,8 +163,8 @@ struct EditAccountView: View {
         _customIconData = State(initialValue: account.customIconData)
         _hasCreditLimit = State(initialValue: account.creditLimit != nil)
         _creditLimit = State(initialValue: account.creditLimit ?? 0)
-        _billingDay = State(initialValue: account.billingDay ?? 1)
-        _dueDay = State(initialValue: account.dueDay ?? 5)
+        _billingDay = State(initialValue: account.billingDay == 0 ? 1 : Int(account.billingDay))
+        _dueDay = State(initialValue: account.dueDay == 0 ? 5 : Int(account.dueDay))
     }
 
     var body: some View {
@@ -284,8 +284,8 @@ struct EditAccountView: View {
         account.customIconData = logoData
         if account.type == .creditCard {
             account.creditLimit = hasCreditLimit ? creditLimit : nil
-            account.billingDay = billingDay
-            account.dueDay = dueDay
+            account.billingDay = Int64(billingDay)
+            account.dueDay = Int64(dueDay)
         }
         try? appContainer.accountService.updateAccount(account, context: modelContext)
         dismiss()

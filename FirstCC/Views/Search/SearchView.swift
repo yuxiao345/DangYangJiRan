@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SearchView: View {
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.managedObjectContext) private var modelContext
     @State private var viewModel: SearchViewModel
     @FocusState private var isFocused: Bool
 
@@ -117,7 +117,7 @@ struct SearchView: View {
         List {
             ForEach(groupedResults, id: \.key) { group in
                 Section(group.key) {
-                    ForEach(group.value) { transaction in
+                    ForEach(group.value, id: \.id) { transaction in
                         NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
                             TransactionRowView(transaction: transaction)
                         }

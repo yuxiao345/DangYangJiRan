@@ -1,35 +1,41 @@
 import Foundation
-import SwiftData
+@preconcurrency import CoreData
 
-@Model
-final class RecurringRule {
-    var id: UUID = UUID()
-    var frequencyRaw: String = RecurringFrequency.monthly.rawValue
-    var interval: Int = 1
-    var startDate: Date = Date()
-    var endDate: Date?
-    var lastGeneratedDate: Date?
-    var nextGenerateDate: Date?
-    var isActive: Bool = true
+@objc(RecurringRule)
+final class RecurringRule: NSManagedObject,  Sendable {
+    @NSManaged var id: UUID
+    @NSManaged var frequencyRaw: String
+    @NSManaged var interval: Int64
+    @NSManaged var startDate: Date
+    @NSManaged var endDate: Date?
+    @NSManaged var lastGeneratedDate: Date?
+    @NSManaged var nextGenerateDate: Date?
+    @NSManaged var isActive: Bool
 
-    var template: TransactionTemplate?
+    @NSManaged var template: TransactionTemplate?
 
     var frequency: RecurringFrequency {
         get { RecurringFrequency(rawValue: frequencyRaw) ?? .monthly }
         set { frequencyRaw = newValue.rawValue }
     }
 
-    init(
-        id: UUID = UUID(),
+    override func awakeFromInsert() {
+        super.awakeFromInsert()
+        id = UUID()
+        startDate = Date()
+    }
+
+    convenience init(
         frequency: RecurringFrequency = .monthly,
         interval: Int = 1,
         startDate: Date = Date(),
         endDate: Date? = nil,
-        isActive: Bool = true
+        isActive: Bool = true,
+        context: NSManagedObjectContext
     ) {
-        self.id = id
+        self.init(context: context)
         self.frequencyRaw = frequency.rawValue
-        self.interval = interval
+        self.interval = Int64(interval)
         self.startDate = startDate
         self.endDate = endDate
         self.isActive = isActive
@@ -54,3 +60,5 @@ final class RecurringRule {
         }
     }
 }
+
+extension RecurringRule: Identifiable {}
