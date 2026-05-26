@@ -14,6 +14,7 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
         let lid = ledger.id
         let request = NSFetchRequest<BudgetBook>(entityName: "BudgetBook")
         request.predicate = NSPredicate(format: "ledger.id == %@", lid as CVarArg)
+        request.sortDescriptors = [NSSortDescriptor(key: "sortOrder", ascending: true)]
         return try context.fetch(request)
     }
 
@@ -23,6 +24,13 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
 
     func deleteBook(_ book: BudgetBook, context: NSManagedObjectContext) throws {
         context.delete(book)
+        try context.save()
+    }
+
+    func reorderBooks(_ books: [BudgetBook], context: NSManagedObjectContext) throws {
+        for (i, book) in books.enumerated() {
+            book.sortOrder = Int64(i)
+        }
         try context.save()
     }
 
@@ -84,7 +92,9 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
 
     func totalCurrentPeriodBudget(for book: BudgetBook) -> Decimal {
         guard let items = book.items else { return 0 }
-        return items.reduce(into: Decimal(0)) { $0 += $1.amount }
+        return items.reduce(into: Decimal(0)) { total, item in
+            total += item.amount.normalizedToMonthly(period: item.period)
+        }
     }
 
     // MARK: - Private helpers
@@ -124,11 +134,25 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
         let transactions = (try? context.fetch(request)) ?? []
         return transactions
             .filter { t in
-                t.ledger?.id == ledgerID
-                    && t.typeRaw == TransactionType.expense.rawValue
-                    && (category == nil || t.category?.id == category!.id)
+                guard t.ledger?.id == ledgerID else { return false }
+                guard t.typeRaw == TransactionType.expense.rawValue else { return false }
+                guard t.refundGroupId == nil else { return false }
+                guard !t.isReimbursable else { return false }
+                guard category == nil || t.category?.id == category!.id else { return false }
+                return true
             }
             .reduce(into: Decimal(0)) { $0 += abs($1.amount) }
+    }
+}
+
+private extension Decimal {
+    func normalizedToMonthly(period: BudgetPeriod) -> Decimal {
+        switch period {
+        case .weekly:   return self * 52 / 12
+        case .monthly:  return self
+        case .quarterly: return self / 3
+        case .yearly:   return self / 12
+        }
     }
 }
 

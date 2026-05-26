@@ -15,14 +15,23 @@ struct CategoryServiceImpl: CategoryServiceProtocol {
     func fetchAllCategories(for ledger: Ledger, type: TransactionType? = nil, context: NSManagedObjectContext) throws -> [Category] {
         let ledgerID = ledger.id
         let request = NSFetchRequest<Category>(entityName: "Category")
-        request.sortDescriptors = [NSSortDescriptor(key: "sortOrder", ascending: true)]
         if let type = type {
             let typeRaw = type.rawValue
             request.predicate = NSPredicate(format: "ledger.id == %@ AND typeRaw == %@", ledgerID as CVarArg, typeRaw)
         } else {
             request.predicate = NSPredicate(format: "ledger.id == %@", ledgerID as CVarArg)
         }
-        return try context.fetch(request)
+        let all = try context.fetch(request)
+        // Sort hierarchically: parent categories first, then children grouped under their parent
+        return all.sorted { a, b in
+            let aGroup = a.parent?.sortOrder ?? a.sortOrder
+            let bGroup = b.parent?.sortOrder ?? b.sortOrder
+            if aGroup != bGroup { return aGroup < bGroup }
+            // Within same group: parent before children
+            if a.parent == nil && b.parent != nil { return true }
+            if a.parent != nil && b.parent == nil { return false }
+            return a.sortOrder < b.sortOrder
+        }
     }
 
     func updateCategory(_ category: Category, context: NSManagedObjectContext) throws {

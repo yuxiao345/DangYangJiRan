@@ -8,6 +8,7 @@ struct MemberListView: View {
     @State private var showAddAlert = false
     @State private var newName = ""
     @State private var editingMember: Member?
+    @State private var listVersion = 0
 
     let ledger: Ledger?
     private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }
@@ -43,6 +44,7 @@ struct MemberListView: View {
             }
         }
         .navigationTitle("联系人管理")
+        .id(listVersion)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { showAddAlert = true } label: {
@@ -59,8 +61,11 @@ struct MemberListView: View {
             }
             .disabled(newName.isEmpty)
         }
-        .sheet(item: $editingMember, onDismiss: { loadMembers() }) { member in
+        .sheet(item: $editingMember) { member in
             EditMemberView(member: member)
+        }
+        .onChange(of: editingMember) { _, newValue in
+            if newValue == nil { listVersion += 1; loadMembers() }
         }
         .onAppear(perform: loadMembers)
     }

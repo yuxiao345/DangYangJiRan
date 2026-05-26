@@ -165,6 +165,7 @@
         <attribute name="startDate" optional="YES" attributeType="Date" usesScalarValueType="NO" />
         <attribute name="endDate" optional="YES" attributeType="Date" usesScalarValueType="NO" />
         <attribute name="isActive" optional="NO" attributeType="Boolean" defaultValueString="YES" />
+        <attribute name="sortOrder" optional="NO" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES" />
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO" />
         <relationship name="items" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="BudgetItem" inverseName="book" inverseEntity="BudgetItem" />
         <relationship name="ledger" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Ledger" inverseName="budgetBooks" inverseEntity="Ledger" />

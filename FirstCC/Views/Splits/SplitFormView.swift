@@ -146,7 +146,7 @@ struct SplitFormView: View {
     }
 
     private func loadMembers() {
-        members = (try? appContainer.memberService.fetchMembers(for: ledger, context: modelContext)) ?? []
+        members = (try? appContainer.memberService.fetchMembers(for: ledger, context: modelContext))?.filter { $0.isActive } ?? []
     }
 
     private func createSplit() {

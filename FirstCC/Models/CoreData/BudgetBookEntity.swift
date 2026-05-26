@@ -8,6 +8,7 @@ final class BudgetBook: NSManagedObject,  Sendable {
     @NSManaged var startDate: Date
     @NSManaged var endDate: Date
     @NSManaged var isActive: Bool
+    @NSManaged var sortOrder: Int64
     @NSManaged var createdAt: Date
 
     @NSManaged var items: Set<BudgetItem>?

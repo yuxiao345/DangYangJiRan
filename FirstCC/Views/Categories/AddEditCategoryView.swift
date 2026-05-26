@@ -125,6 +125,10 @@ struct AddEditCategoryView: View {
 
     private func save() {
         guard let ledger = effectiveLedger else { return }
+        if let parent = selectedParent, parent.type != type {
+            errorMessage = "子分类的支出/收入类型必须与父分类「\(parent.name)」一致"
+            return
+        }
         do {
             if let cat = editing {
                 cat.name = name

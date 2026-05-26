@@ -16,6 +16,7 @@ struct AddEditBudgetItemView: View {
     @State private var isActive: Bool = true
     @State private var selectedCategory: Category?
     @State private var categories: [Category] = []
+    @State private var pickerSheet: Category?
 
     init(editing: BudgetItem? = nil, book: BudgetBook) {
         self.editing = editing
@@ -26,19 +27,29 @@ struct AddEditBudgetItemView: View {
         NavigationStack {
             Form {
                 Section("分类") {
-                    Picker("选择分类", selection: $selectedCategory) {
-                        ForEach(categories.filter { $0.type == .expense }) { cat in
-                            Label(LocalizedStringKey(cat.name), systemImage: cat.iconName)
-                                .tag(cat as Category?)
+                    Button {
+                        loadCategories()
+                        pickerSheet = selectedCategory ?? categories.first
+                    } label: {
+                        HStack {
+                            Text("选择分类").foregroundStyle(Color.designOnSurface)
+                            Spacer()
+                            if let cat = selectedCategory {
+                                Text(LocalizedStringKey(cat.name)).foregroundStyle(.secondary)
+                            } else {
+                                Text("选择分类").foregroundStyle(.secondary)
+                            }
                         }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    if let cat = selectedCategory, (cat.children?.count ?? 0) > 0 {
+                        Text("已选择上级分类「\(cat.name)」，可展开选择更具体的子分类")
+                            .font(.caption).foregroundStyle(.orange)
                     }
                 }
                 Section("预算设置") {
-                    HStack {
-                        Text("¥").foregroundStyle(.secondary)
-                        TextField("0.00", value: $amount, format: .number)
-                            .keyboardType(.decimalPad)
-                    }
+                    NumpadAmountField(amount: $amount)
                     Picker("周期", selection: $period) {
                         ForEach(BudgetPeriod.allCases, id: \.self) { p in
                             Text(p.displayName).tag(p)
@@ -101,6 +112,28 @@ struct AddEditBudgetItemView: View {
                     selectedCategory = item.category
                 }
             }
+            .onChange(of: pickerSheet) { _, newValue in
+                if newValue != nil { loadCategories() }
+            }
+            .sheet(item: $pickerSheet) { _ in
+                SearchablePickerView(
+                    title: "选择分类",
+                    items: categories,
+                    itemLabel: { cat in
+                        let cnt = (cat.children?.count ?? 0)
+                        return cnt > 0 ? "\(cat.name) · 含\(cnt)项" : cat.name
+                    },
+                    itemIcon: { $0.iconName },
+                    itemColor: { Color(hex: $0.colorHex) },
+                    recentKey: "recent_budget_category",
+                    indentLevel: { item in
+                        var depth = 0; var p = item.parent; while p != nil { depth += 1; p = p?.parent }
+                        return depth
+                    },
+                    childrenProvider: { Array($0.children ?? []) },
+                    selection: $selectedCategory
+                )
+            }
         }
     }
 
@@ -123,8 +156,13 @@ struct AddEditBudgetItemView: View {
     }
 
     private func loadCategories() {
-        guard let ledger = effectiveLedger else { return }
-        categories = (try? appContainer.categoryService.fetchAllCategories(for: ledger, type: .expense, context: modelContext)) ?? []
+        guard let ledger = effectiveLedger else {
+            NSLog("[BudgetItem] loadCategories: effectiveLedger nil, book.ledger=\(book.ledger?.name ?? "nil"), appContainer.currentLedger=\(appContainer.currentLedger?.name ?? "nil")")
+            return
+        }
+        let fetched = (try? appContainer.categoryService.fetchAllCategories(for: ledger, type: .expense, context: modelContext)) ?? []
+        NSLog("[BudgetItem] loadCategories: ledger=\(ledger.name) id=\(ledger.id), fetched \(fetched.count)")
+        categories = fetched
     }
 
     private func deleteItem() {

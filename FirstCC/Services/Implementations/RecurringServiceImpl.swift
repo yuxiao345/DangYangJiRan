@@ -12,15 +12,23 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
     ) throws -> RecurringRule {
         let rule: RecurringRule
         if let existing = template.recurringRule {
+            let scheduleChanged = existing.frequency != frequency
+                || existing.interval != Int64(interval)
+                || existing.startDate != startDate
+
             existing.frequency = frequency
             existing.interval = Int64(interval)
             existing.startDate = startDate
             existing.endDate = endDate
             existing.isActive = true
-            existing.nextGenerateDate = RecurringRule.calculateNextDate(
-                from: startDate, frequency: frequency, interval: interval
-            )
-            existing.lastGeneratedDate = nil
+
+            if scheduleChanged {
+                if let currentNext = existing.nextGenerateDate {
+                    existing.nextGenerateDate = max(startDate, currentNext)
+                } else {
+                    existing.nextGenerateDate = startDate
+                }
+            }
             rule = existing
         } else {
             rule = RecurringRule(
@@ -48,6 +56,11 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
         try context.save()
     }
 
+    func toggleActive(for rule: RecurringRule, context: NSManagedObjectContext) throws {
+        rule.isActive.toggle()
+        try context.save()
+    }
+
     func processDueRecurring(context: NSManagedObjectContext) throws {
         let now = Date()
         let request = NSFetchRequest<RecurringRule>(entityName: "RecurringRule")
@@ -66,7 +79,10 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
                     interval: Int(rule.interval)
                 )
                 if following > now {
-                    // This is the current period — generate the transaction
+                    if let endDate = rule.endDate, nextDate > endDate {
+                        rule.isActive = false
+                        break
+                    }
                     let signedAmount: Decimal = {
                         switch template.type {
                         case .expense: return -abs(template.amount)

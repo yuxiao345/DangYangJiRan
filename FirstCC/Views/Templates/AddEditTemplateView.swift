@@ -25,13 +25,6 @@ struct AddEditTemplateView: View {
     @State private var selectedMember: Member?
     @State private var selectedMerchant: Merchant?
     @State private var selectedProject: Project?
-    @State private var isRecurring: Bool = false
-    @State private var recurringFrequency: RecurringFrequency = .monthly
-    @State private var recurringInterval: Int = 1
-    @State private var recurringStartDate: Date = Date()
-    @State private var hasEndDate: Bool = false
-    @State private var recurringEndDate: Date = Date().addingTimeInterval(86400 * 365)
-
     @State private var accounts: [Account] = []
     @State private var categories: [Category] = []
     @State private var members: [Member] = []
@@ -57,11 +50,7 @@ struct AddEditTemplateView: View {
                 }
 
                 Section("金额") {
-                    HStack {
-                        Text("¥").foregroundStyle(.secondary)
-                        TextField("0.00", value: $amount, format: .number)
-                            .keyboardType(.decimalPad)
-                    }
+                    NumpadAmountField(amount: $amount)
                 }
 
                 Section("账户") {
@@ -79,6 +68,10 @@ struct AddEditTemplateView: View {
                     Section("分类") {
                         Button { openPicker(.category) } label: {
                             pickerRow(label: "分类", value: selectedCategory?.name)
+                        }
+                        if let cat = selectedCategory, (cat.children?.count ?? 0) > 0 {
+                            Text("已选择上级分类「\(cat.name)」，可展开选择更具体的子分类")
+                                .font(.caption).foregroundStyle(.orange)
                         }
                     }
                 }
@@ -99,30 +92,6 @@ struct AddEditTemplateView: View {
 
                 Section("备注") {
                     TextField("备注", text: $note)
-                }
-
-                Section {
-                    Toggle("周期记账", isOn: $isRecurring)
-                    if isRecurring {
-                        Picker("频率", selection: $recurringFrequency) {
-                            ForEach(RecurringFrequency.allCases, id: \.self) { f in
-                                Text(f.displayName).tag(f)
-                            }
-                        }
-                        Stepper("间隔: \(recurringInterval)", value: $recurringInterval, in: 1...99)
-                            .foregroundStyle(recurringInterval > 1 ? .primary : .secondary)
-                        DatePicker("开始日期", selection: $recurringStartDate, displayedComponents: .date)
-                        Toggle("结束日期", isOn: $hasEndDate)
-                        if hasEndDate {
-                            DatePicker("截止日期", selection: $recurringEndDate, displayedComponents: .date)
-                        }
-                    }
-                } header: {
-                    Text("周期记账")
-                } footer: {
-                    if isRecurring {
-                        Text(frequencyDescription)
-                    }
                 }
             }
             .navigationTitle(editing != nil ? "编辑模板" : "新建模板")
@@ -164,10 +133,18 @@ struct AddEditTemplateView: View {
                     SearchablePickerView(
                         title: "选择分类",
                         items: categories,
-                        itemLabel: { $0.name },
+                        itemLabel: { cat in
+                            let cnt = (cat.children?.count ?? 0)
+                            return cnt > 0 ? "\(cat.name) · 含\(cnt)项" : cat.name
+                        },
                         itemIcon: { $0.iconName },
                         itemColor: { Color(hex: $0.colorHex) },
                         recentKey: "recent_category",
+                        indentLevel: { item in
+                            var depth = 0; var p = item.parent; while p != nil { depth += 1; p = p?.parent }
+                            return depth
+                        },
+                        childrenProvider: { Array($0.children ?? []) },
                         selection: $selectedCategory
                     )
                 case .member:
@@ -202,14 +179,6 @@ struct AddEditTemplateView: View {
         }
     }
 
-    private var frequencyDescription: String {
-        var desc = "每\(recurringInterval > 1 ? "\(recurringInterval)" : "")\(recurringFrequency.displayName)"
-        if hasEndDate {
-            desc += "，至\(recurringEndDate.formatted(date: .abbreviated, time: .omitted))止"
-        }
-        return desc
-    }
-
     private func pickerRow(label: String, value: String?) -> some View {
         HStack {
             Text(label).foregroundStyle(Color.designOnSurface)
@@ -232,9 +201,9 @@ struct AddEditTemplateView: View {
         guard let ledger = effectiveLedger else { return }
         accounts = (try? appContainer.accountService.fetchAccounts(for: ledger, context: modelContext)) ?? []
         loadCategories()
-        members = (try? appContainer.memberService.fetchMembers(for: ledger, context: modelContext)) ?? []
-        merchants = (try? appContainer.merchantService.fetchMerchants(for: ledger, context: modelContext)) ?? []
-        projects = (try? appContainer.projectService.fetchProjects(for: ledger, context: modelContext)) ?? []
+        members = (try? appContainer.memberService.fetchMembers(for: ledger, context: modelContext))?.filter { $0.isActive } ?? []
+        merchants = (try? appContainer.merchantService.fetchMerchants(for: ledger, context: modelContext))?.filter { $0.isActive } ?? []
+        projects = (try? appContainer.projectService.fetchProjects(for: ledger, context: modelContext))?.filter { $0.isActive } ?? []
     }
 
     private func loadCategories() {
@@ -254,16 +223,6 @@ struct AddEditTemplateView: View {
         selectedMember = t.member
         selectedMerchant = t.merchant
         selectedProject = t.project
-        if let rule = t.recurringRule {
-            isRecurring = true
-            recurringFrequency = rule.frequency
-            recurringInterval = Int(rule.interval)
-            recurringStartDate = rule.startDate
-            if let end = rule.endDate {
-                hasEndDate = true
-                recurringEndDate = end
-            }
-        }
     }
 
     private func save() {
@@ -280,7 +239,6 @@ struct AddEditTemplateView: View {
             t.merchant = selectedMerchant
             t.project = selectedProject
             try? appContainer.templateService.updateTemplate(t, context: modelContext)
-            updateRecurringRule(for: t)
         } else {
             let template = TransactionTemplate(
                 name: name,
@@ -296,26 +254,7 @@ struct AddEditTemplateView: View {
                 context: modelContext
             )
             try? appContainer.templateService.createTemplate(template, ledger: ledger, context: modelContext)
-            updateRecurringRule(for: template)
         }
         dismiss()
-    }
-
-    private func updateRecurringRule(for template: TransactionTemplate) {
-        if isRecurring {
-            let endDate = hasEndDate ? recurringEndDate : nil
-            try? appContainer.recurringService.setRecurring(
-                template: template,
-                frequency: recurringFrequency,
-                interval: recurringInterval,
-                startDate: recurringStartDate,
-                endDate: endDate,
-                context: modelContext
-            )
-        } else {
-            if template.isRecurring {
-                try? appContainer.recurringService.disableRecurring(template: template, context: modelContext)
-            }
-        }
     }
 }

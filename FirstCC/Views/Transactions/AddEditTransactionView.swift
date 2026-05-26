@@ -216,6 +216,11 @@ struct AddEditTransactionView: View {
                         // Category grid (not split/transfer/lending)
                         if !isSplit, type != .transfer, type != .lending {
                             categoryGridSection
+                            if let cat = selectedCategory, (cat.children?.count ?? 0) > 0 {
+                                Text("已选择上级分类「\(cat.name)」，可展开选择更具体的子分类")
+                                    .font(.caption).foregroundStyle(.orange)
+                                    .padding(.horizontal)
+                            }
                         }
 
                         // Split detail
@@ -1429,10 +1434,18 @@ struct AddEditTransactionView: View {
 
     private func appendDigit(_ digit: Int) {
         if selectedSplitItemID != nil {
+            if let dotIndex = splitAmountString.firstIndex(of: ".") {
+                let decimals = splitAmountString[dotIndex...].dropFirst()
+                if decimals.count >= 2 { return }
+            }
             if splitAmountString == "0" || splitAmountString == "0.00" { splitAmountString = "\(digit)" }
             else { splitAmountString += "\(digit)" }
             syncSplitAmountToItem()
         } else {
+            if let dotIndex = amountString.firstIndex(of: ".") {
+                let decimals = amountString[dotIndex...].dropFirst()
+                if decimals.count >= 2 { return }
+            }
             if amountString == "0" || amountString == "0.00" { amountString = "\(digit)" }
             else { amountString += "\(digit)" }
             syncAmountFromString()
@@ -1565,10 +1578,18 @@ struct AddEditTransactionView: View {
             SearchablePickerView(
                 title: "选择分类",
                 items: categories,
-                itemLabel: { $0.name },
+                itemLabel: { cat in
+                    let cnt = (cat.children?.count ?? 0)
+                    return cnt > 0 ? "\(cat.name) · 含\(cnt)项" : cat.name
+                },
                 itemIcon: { $0.iconName },
                 itemColor: { Color(hex: $0.colorHex) },
                 recentKey: "recent_category",
+                indentLevel: { item in
+                    var depth = 0; var p = item.parent; while p != nil { depth += 1; p = p?.parent }
+                    return depth
+                },
+                childrenProvider: { Array($0.children ?? []) },
                 selection: $selectedCategory
             )
         case .member:
@@ -1685,9 +1706,9 @@ struct AddEditTransactionView: View {
         guard let ledger = appContainer.currentLedger else { return }
         accounts = (try? appContainer.accountService.fetchAccounts(for: ledger, context: modelContext)) ?? []
         loadCategories()
-        members = (try? appContainer.memberService.fetchMembers(for: ledger, context: modelContext)) ?? []
-        merchants = (try? appContainer.merchantService.fetchMerchants(for: ledger, context: modelContext)) ?? []
-        projects = (try? appContainer.projectService.fetchProjects(for: ledger, context: modelContext)) ?? []
+        members = (try? appContainer.memberService.fetchMembers(for: ledger, context: modelContext))?.filter { $0.isActive } ?? []
+        merchants = (try? appContainer.merchantService.fetchMerchants(for: ledger, context: modelContext))?.filter { $0.isActive } ?? []
+        projects = (try? appContainer.projectService.fetchProjects(for: ledger, context: modelContext))?.filter { $0.isActive } ?? []
         templates = (try? appContainer.templateService.fetchTemplates(for: ledger, context: modelContext)) ?? []
         loadPendingExpenses()
         loadPendingLendingTransactions()

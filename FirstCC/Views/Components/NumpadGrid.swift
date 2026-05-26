@@ -6,15 +6,29 @@ struct NumpadGrid: View {
     let onDelete: () -> Void
 
     var body: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-            ForEach(1...9, id: \.self) { n in
-                numpadButton("\(n)") { onDigit(n) }
+        VStack(spacing: 8) {
+            HStack(spacing: 8) {
+                numpadButton("1") { onDigit(1) }
+                numpadButton("2") { onDigit(2) }
+                numpadButton("3") { onDigit(3) }
             }
-            numpadButton(".") { onDot() }
-            numpadButton("0") { onDigit(0) }
-            numpadButton(action: onDelete) {
-                Image(systemName: "delete.backward")
-                    .font(.system(size: 20))
+            HStack(spacing: 8) {
+                numpadButton("4") { onDigit(4) }
+                numpadButton("5") { onDigit(5) }
+                numpadButton("6") { onDigit(6) }
+            }
+            HStack(spacing: 8) {
+                numpadButton("7") { onDigit(7) }
+                numpadButton("8") { onDigit(8) }
+                numpadButton("9") { onDigit(9) }
+            }
+            HStack(spacing: 8) {
+                numpadButton(".") { onDot() }
+                numpadButton("0") { onDigit(0) }
+                numpadButton(action: onDelete) {
+                    Image(systemName: "delete.backward")
+                        .font(.system(size: 20))
+                }
             }
         }
     }

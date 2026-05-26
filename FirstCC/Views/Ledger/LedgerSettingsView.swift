@@ -99,9 +99,6 @@ struct LedgerSettingsView: View {
                 NavigationLink("周期账管理") {
                     RecurringListView(ledger: ledger)
                 }
-                NavigationLink("待报销") {
-                    PendingReimbursementView(ledger: ledger)
-                }
                 NavigationLink("数据导出") {
                     ExportView()
                 }
@@ -143,6 +140,10 @@ struct LedgerSettingsView: View {
         }
         .alert("共享失败", isPresented: .init(get: { shareError != nil }, set: { if !$0 { shareError = nil } })) {
             Button("确定", role: .cancel) { shareError = nil }
+            Button("重新发起共享") {
+                shareError = nil
+                retryShare()
+            }
         } message: {
             Text(shareError ?? "未知错误")
         }
@@ -175,10 +176,16 @@ struct LedgerSettingsView: View {
 
     private func openExistingShare() {
         guard cloudShare != nil else {
-            shareError = "共享状态已标记，但当前设备还没有可用的共享对象。请重新发起共享或稍后重试。"
+            shareError = "共享未完成。是否重新发起？"
             return
         }
         showCloudShare = true
+    }
+
+    private func retryShare() {
+        ledger.isShared = false
+        try? modelContext.save()
+        createShareAndShow()
     }
 
     private func save() {

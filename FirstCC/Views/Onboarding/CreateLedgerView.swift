@@ -54,6 +54,7 @@ struct CreateLedgerView: View {
                 context: modelContext
             )
             appContainer.categoryService.seedDefaults(ledger: ledger, context: modelContext)
+            MerchantSeeder.seed(modelContext: modelContext, ledger: ledger)
             appContainer.currentLedger = ledger
             UserDefaults.standard.set(ledger.id.uuidString, forKey: "currentLedgerID")
             onDone?(ledger)

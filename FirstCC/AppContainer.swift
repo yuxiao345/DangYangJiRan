@@ -251,6 +251,7 @@ final class AppContainer: ObservableObject {
         let ledger = Ledger(name: "我的账本", type: .personal, context: context)
 
         CategorySeeder.seed(modelContext: context, ledger: ledger)
+        MerchantSeeder.seed(modelContext: context, ledger: ledger)
 
         // Seed default accounts
         let cash = Account(name: "现金", currencyCode: "CNY", type: .cash, iconName: "banknote", colorHex: "#4CAF50", sortOrder: 0, context: context)

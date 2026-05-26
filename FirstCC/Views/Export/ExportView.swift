@@ -40,8 +40,8 @@ struct ExportView: View {
 
     private var dateSection: some View {
         Section("时间范围") {
-            DatePicker("开始日期", selection: $startDate, displayedComponents: .date)
-            DatePicker("结束日期", selection: $endDate, displayedComponents: .date)
+            DatePickerButton(title: "开始日期", date: $startDate)
+            DatePickerButton(title: "结束日期", date: $endDate)
         }
     }
 

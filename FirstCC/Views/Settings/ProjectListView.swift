@@ -7,6 +7,7 @@ struct ProjectListView: View {
     @State private var projects: [Project] = []
     @State private var showAddSheet = false
     @State private var editingProject: Project?
+    @State private var listVersion = 0
 
     let ledger: Ledger?
     private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }
@@ -58,6 +59,7 @@ struct ProjectListView: View {
             }
         }
         .navigationTitle("项目管理")
+        .id(listVersion)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { showAddSheet = true } label: {
@@ -65,9 +67,15 @@ struct ProjectListView: View {
                 }
             }
         }
-        .sheet(isPresented: $showAddSheet, onDismiss: { loadProjects() }) { AddEditProjectView(ledger: effectiveLedger) }
-        .sheet(item: $editingProject, onDismiss: { loadProjects() }) { project in
+        .sheet(isPresented: $showAddSheet) { AddEditProjectView(ledger: effectiveLedger) }
+        .onChange(of: showAddSheet) { _, newValue in
+            if !newValue { listVersion += 1; loadProjects() }
+        }
+        .sheet(item: $editingProject) { project in
             AddEditProjectView(editing: project, ledger: effectiveLedger)
+        }
+        .onChange(of: editingProject) { _, newValue in
+            if newValue == nil { listVersion += 1; loadProjects() }
         }
         .onAppear(perform: loadProjects)
     }
@@ -111,8 +119,8 @@ struct AddEditProjectView: View {
                     Toggle("进行中", isOn: $isActive)
                 }
                 Section("时间") {
-                    DatePicker("开始日期", selection: $startDate, displayedComponents: .date)
-                    DatePicker("结束日期", selection: $endDate, displayedComponents: .date)
+                    DatePickerButton(title: "开始日期", date: $startDate)
+                    DatePickerButton(title: "结束日期", date: $endDate)
                 }
                 Section("预算") {
                     TextField("预算金额", text: $budgetText)

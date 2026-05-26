@@ -106,14 +106,14 @@ struct AddEditAccountView: View {
                 }
 
                 Section("余额") {
-                    CurrencyTextField(label: "初始余额", value: $initialBalance)
+                    NumpadAmountField(amount: $initialBalance)
                 }
 
                 if accountType == .creditCard {
                     Section("信用卡设置") {
                         Toggle("设置信用额度", isOn: $hasCreditLimit)
                         if hasCreditLimit {
-                            CurrencyTextField(label: "额度", value: $creditLimit)
+                            NumpadAmountField(amount: $creditLimit)
                         }
                         Picker("账单日", selection: $billingDay) {
                             ForEach(1...28, id: \.self) { day in
@@ -200,22 +200,5 @@ struct AddEditAccountView: View {
         case "INR": return "印度卢比"
         default: return code
         }
-    }
-}
-
-struct CurrencyTextField: View {
-    let label: String
-    @Binding var value: Decimal
-    @State private var text: String = ""
-
-    var body: some View {
-        TextField(label, text: $text)
-            .keyboardType(.decimalPad)
-            .onAppear {
-                text = value == 0 ? "" : value.description
-            }
-            .onChange(of: text) { _, newValue in
-                value = Decimal(string: newValue) ?? 0
-            }
     }
 }

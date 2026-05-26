@@ -63,11 +63,6 @@ struct TemplateListView: View {
                 HStack(spacing: 4) {
                     Text(LocalizedStringKey(t.name))
                         .font(.designBodyMedium)
-                    if t.isRecurring {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                            .font(.designBodySmall)
-                            .foregroundStyle(Color.designPrimaryContainer)
-                    }
                 }
                 if let note = t.note, !note.isEmpty {
                     Text(note)

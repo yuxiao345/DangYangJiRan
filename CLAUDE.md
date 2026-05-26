@@ -6,13 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Build (use -jobs 4 + wholemodule to avoid intermittent SwiftData @Model Identifiable issues)
-xcodebuild -project FirstCC.xcodeproj -scheme 荡漾计然 -destination "platform=iOS Simulator,name=iPhone 17" -derivedDataPath /tmp/firstcc-build -jobs 4 SWIFT_COMPILATION_MODE=wholemodule
+xcodebuild -project FirstCC.xcodeproj -scheme 钱伲 -destination "platform=iOS Simulator,name=iPhone 17" -derivedDataPath /tmp/firstcc-build -jobs 4 SWIFT_COMPILATION_MODE=wholemodule
 
 # Install to booted simulator
-xcrun simctl install booted /tmp/FirstCC-build/Build/Products/Debug-iphonesimulator/荡漾计然.app
+xcrun simctl install booted /tmp/firstcc-build/Build/Products/Debug-iphonesimulator/钱伲.app
 
 # Launch
-xcrun simctl launch booted com.firstcc.app
+xcrun simctl launch booted com.qianey.app
 
 # Reinstall + relaunch in one
 xcrun simctl install booted /tmp/FirstCC-build/Build/Products/Debug-iphonesimulator/荡漾计然.app && xcrun simctl launch booted com.firstcc.app

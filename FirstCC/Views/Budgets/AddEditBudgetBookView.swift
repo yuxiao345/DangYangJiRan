@@ -28,8 +28,8 @@ struct AddEditBudgetBookView: View {
                     Toggle("启用", isOn: $isActive)
                 }
                 Section("预算周期") {
-                    DatePicker("开始日期", selection: $startDate, displayedComponents: .date)
-                    DatePicker("结束日期", selection: $endDate, displayedComponents: .date)
+                    DatePickerButton(title: "开始日期", date: $startDate)
+                    DatePickerButton(title: "结束日期", date: $endDate)
                 }
             }
             .navigationTitle(editing != nil ? "编辑预算计划" : "新建预算计划")

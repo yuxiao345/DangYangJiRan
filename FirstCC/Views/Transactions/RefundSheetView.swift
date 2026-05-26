@@ -177,16 +177,7 @@ struct RefundSheetView: View {
                     .overlay(Color.designOnSurfaceVariant.opacity(0.1))
                     .padding(.horizontal, 20)
 
-                // Date picker
-                HStack {
-                    Text("退款日期")
-                        .font(.designBodyMedium)
-                        .foregroundStyle(Color.designOnSurfaceVariant)
-                    Spacer()
-                    DatePicker("", selection: $date, displayedComponents: .date)
-                        .labelsHidden()
-                        .font(.designBodyMedium)
-                }
+                DatePickerButton(title: "退款日期", date: $date)
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
 

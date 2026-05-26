@@ -18,6 +18,23 @@
         }
       }
     },
+    "一次性奖金": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一次性奖金"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One-time Bonus"
+          }
+        }
+      }
+    },
     "三餐": {
       "extractionState": "manual",
       "localizations": {
@@ -65,6 +82,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Personal"
+          }
+        }
+      }
+    },
+    "书本教材": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "书本教材"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Books & Materials"
           }
         }
       }
@@ -120,6 +154,40 @@
         }
       }
     },
+    "交通保险": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "交通保险"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vehicle Insurance"
+          }
+        }
+      }
+    },
+    "交通出行": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "交通出行"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transportation"
+          }
+        }
+      }
+    },
     "京东": {
       "extractionState": "manual",
       "localizations": {
@@ -154,6 +222,23 @@
         }
       }
     },
+    "人情往来": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "人情往来"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Social Relations"
+          }
+        }
+      }
+    },
     "人民币 (CNY)": {
       "extractionState": "manual",
       "localizations": {
@@ -167,6 +252,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "CNY (Renminbi)"
+          }
+        }
+      }
+    },
+    "休闲娱乐": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "休闲娱乐"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entertainment"
+          }
+        }
+      }
+    },
+    "住房居家": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "住房居家"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Housing & Living"
+          }
+        }
+      }
+    },
+    "住院手术": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "住院手术"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hospitalization"
           }
         }
       }
@@ -188,6 +324,23 @@
         }
       }
     },
+    "保健预防": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保健预防"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preventive Care"
+          }
+        }
+      }
+    },
     "保存": {
       "extractionState": "manual",
       "localizations": {
@@ -195,6 +348,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "保存"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        }
+      }
+    },
+    "保存账单": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存账单"
           }
         },
         "en": {
@@ -324,6 +494,40 @@
         }
       }
     },
+    "借贷状态": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "借贷状态"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lending Status"
+          }
+        }
+      }
+    },
+    "借贷结算": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "借贷结算"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lending Settlement"
+          }
+        }
+      }
+    },
     "停车": {
       "extractionState": "manual",
       "localizations": {
@@ -337,6 +541,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Parking"
+          }
+        }
+      }
+    },
+    "充电加油": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "充电加油"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fuel & Charging"
           }
         }
       }
@@ -375,6 +596,23 @@
         }
       }
     },
+    "公共交通": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "公共交通"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Public Transit"
+          }
+        }
+      }
+    },
     "公积金": {
       "extractionState": "manual",
       "localizations": {
@@ -392,6 +630,74 @@
         }
       }
     },
+    "共享单车": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共享单车"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bike Sharing"
+          }
+        }
+      }
+    },
+    "关联待付款": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关联待付款"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link Payables"
+          }
+        }
+      }
+    },
+    "关联待报销": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关联待报销"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link Reimbursements"
+          }
+        }
+      }
+    },
+    "关联待收款": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关联待收款"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link Receivables"
+          }
+        }
+      }
+    },
     "其他": {
       "extractionState": "manual",
       "localizations": {
@@ -405,6 +711,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Other"
+          }
+        }
+      }
+    },
+    "其他支出": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "其他支出"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other Expenses"
           }
         }
       }
@@ -439,6 +762,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Side Job"
+          }
+        }
+      }
+    },
+    "兼职收入": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "兼职收入"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Part-time Income"
           }
         }
       }
@@ -507,6 +847,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Create"
+          }
+        }
+      }
+    },
+    "创建成员分摊": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "创建成员分摊"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create Member Split"
           }
         }
       }
@@ -596,6 +953,40 @@
         }
       }
     },
+    "利息支出": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "利息支出"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interest"
+          }
+        }
+      }
+    },
+    "副业所得": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "副业所得"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Side Business"
+          }
+        }
+      }
+    },
     "加入已有账本": {
       "extractionState": "manual",
       "localizations": {
@@ -660,6 +1051,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "Medical"
+          }
+        }
+      }
+    },
+    "医疗保险": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "医疗保险"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Health Insurance"
+          }
+        }
+      }
+    },
+    "医疗健康": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "医疗健康"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Health & Medical"
+          }
+        }
+      }
+    },
+    "医疗药品": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "医疗药品"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medications"
           }
         }
       }
@@ -745,6 +1187,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cancel"
+          }
+        }
+      }
+    },
+    "变卖资产": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "变卖资产"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asset Sales"
+          }
+        }
+      }
+    },
+    "可报销": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可报销"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reimbursable"
           }
         }
       }
@@ -847,6 +1323,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Manage Merchants"
+          }
+        }
+      }
+    },
+    "商铺": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "商铺"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Commercial Property"
           }
         }
       }
@@ -1072,6 +1565,23 @@
         }
       }
     },
+    "孝敬家长": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "孝敬家长"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parent Support"
+          }
+        }
+      }
+    },
     "学费": {
       "extractionState": "manual",
       "localizations": {
@@ -1123,6 +1633,57 @@
         }
       }
     },
+    "宠植养护": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "宠植养护"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pets & Plants"
+          }
+        }
+      }
+    },
+    "宠植医疗": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "宠植医疗"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pet/Plant Medical"
+          }
+        }
+      }
+    },
+    "宠植洗护": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "宠植洗护"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pet/Plant Grooming"
+          }
+        }
+      }
+    },
     "宠物": {
       "extractionState": "manual",
       "localizations": {
@@ -1136,6 +1697,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pet"
+          }
+        }
+      }
+    },
+    "宠物用品": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "宠物用品"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pet Supplies"
+          }
+        }
+      }
+    },
+    "宠物食品": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "宠物食品"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pet Food"
+          }
+        }
+      }
+    },
+    "家居百货": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "家居百货"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Home Goods"
           }
         }
       }
@@ -1170,6 +1782,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Family Finance at a Glance"
+          }
+        }
+      }
+    },
+    "家政服务": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "家政服务"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Housekeeping"
+          }
+        }
+      }
+    },
+    "宽带": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "宽带"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Broadband"
           }
         }
       }
@@ -1225,6 +1871,23 @@
         }
       }
     },
+    "展开": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "展开"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expand"
+          }
+        }
+      }
+    },
     "工资卡": {
       "extractionState": "manual",
       "localizations": {
@@ -1238,6 +1901,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Salary Card"
+          }
+        }
+      }
+    },
+    "工资薪金": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "工资薪金"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salary & Wages"
           }
         }
       }
@@ -1361,6 +2041,23 @@
         }
       }
     },
+    "已选合计": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已选合计"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selected Total"
+          }
+        }
+      }
+    },
     "币种": {
       "extractionState": "manual",
       "localizations": {
@@ -1374,6 +2071,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Currency"
+          }
+        }
+      }
+    },
+    "年终奖": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "年终奖"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Year-end Bonus"
           }
         }
       }
@@ -1429,6 +2143,23 @@
         }
       }
     },
+    "影视服务": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "影视服务"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Streaming"
+          }
+        }
+      }
+    },
     "待报销": {
       "extractionState": "manual",
       "localizations": {
@@ -1459,6 +2190,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "WeChat Pay"
+          }
+        }
+      }
+    },
+    "快递邮寄": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快递邮寄"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Courier & Post"
           }
         }
       }
@@ -1510,6 +2258,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Restore"
+          }
+        }
+      }
+    },
+    "慈善捐助": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "慈善捐助"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Donations"
           }
         }
       }
@@ -1616,6 +2381,23 @@
         }
       }
     },
+    "房屋": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "房屋"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "House"
+          }
+        }
+      }
+    },
     "房租": {
       "extractionState": "manual",
       "localizations": {
@@ -1629,6 +2411,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rent"
+          }
+        }
+      }
+    },
+    "房租房贷": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "房租房贷"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rent & Mortgage"
+          }
+        }
+      }
+    },
+    "手机": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手机"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mobile"
           }
         }
       }
@@ -1667,6 +2483,23 @@
         }
       }
     },
+    "打车租车": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打车租车"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taxi & Rental"
+          }
+        }
+      }
+    },
     "投资": {
       "extractionState": "manual",
       "localizations": {
@@ -1680,6 +2513,74 @@
           "stringUnit": {
             "state": "translated",
             "value": "Investment"
+          }
+        }
+      }
+    },
+    "投资亏损": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "投资亏损"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Investment Loss"
+          }
+        }
+      }
+    },
+    "投资收益": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "投资收益"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Investment Returns"
+          }
+        }
+      }
+    },
+    "护肤化妆": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "护肤化妆"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skincare & Cosmetics"
+          }
+        }
+      }
+    },
+    "报名考试": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "报名考试"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exam Fees"
           }
         }
       }
@@ -1718,6 +2619,74 @@
         }
       }
     },
+    "报销状态": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "报销状态"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reimbursement Status"
+          }
+        }
+      }
+    },
+    "报销结算": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "报销结算"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reimbursement Settlement"
+          }
+        }
+      }
+    },
+    "拆分明细": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拆分明细"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Split Details"
+          }
+        }
+      }
+    },
+    "拆分记账": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拆分记账"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Split Transaction"
+          }
+        }
+      }
+    },
     "拥有者": {
       "extractionState": "manual",
       "localizations": {
@@ -1735,6 +2704,23 @@
         }
       }
     },
+    "按揭还款": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按揭还款"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loan Repayment"
+          }
+        }
+      }
+    },
     "按比例": {
       "extractionState": "manual",
       "localizations": {
@@ -1748,6 +2734,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Percentage Split"
+          }
+        }
+      }
+    },
+    "换算金额": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "换算金额"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Converted Amount"
           }
         }
       }
@@ -1871,6 +2874,23 @@
         }
       }
     },
+    "收起": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "收起"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collapse"
+          }
+        }
+      }
+    },
     "教育": {
       "extractionState": "manual",
       "localizations": {
@@ -1884,6 +2904,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "Education"
+          }
+        }
+      }
+    },
+    "教育学习": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "教育学习"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Education"
+          }
+        }
+      }
+    },
+    "教育服务订阅": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "教育服务订阅"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edu Subscriptions"
+          }
+        }
+      }
+    },
+    "数据产品": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "数据产品"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Digital Products"
           }
         }
       }
@@ -1986,6 +3057,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Direction"
+          }
+        }
+      }
+    },
+    "旅游": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "旅游"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Travel"
           }
         }
       }
@@ -2143,6 +3231,23 @@
         }
       }
     },
+    "日用消耗": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "日用消耗"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daily Consumables"
+          }
+        }
+      }
+    },
     "时间": {
       "extractionState": "manual",
       "localizations": {
@@ -2296,6 +3401,23 @@
         }
       }
     },
+    "更多": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更多"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More"
+          }
+        }
+      }
+    },
     "更多信息": {
       "extractionState": "manual",
       "localizations": {
@@ -2309,6 +3431,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "More Info"
+          }
+        }
+      }
+    },
+    "更新账单": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新账单"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update"
           }
         }
       }
@@ -2360,6 +3499,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Clothing"
+          }
+        }
+      }
+    },
+    "服饰鞋包": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服饰鞋包"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clothing & Bags"
+          }
+        }
+      }
+    },
+    "未分类": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未分类"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uncategorized"
           }
         }
       }
@@ -2551,6 +3724,23 @@
         }
       }
     },
+    "水果": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "水果"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fruits"
+          }
+        }
+      }
+    },
     "水电": {
       "extractionState": "manual",
       "localizations": {
@@ -2568,6 +3758,57 @@
         }
       }
     },
+    "水电燃气": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "水电燃气"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utilities"
+          }
+        }
+      }
+    },
+    "汇率": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "汇率"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exchange Rate"
+          }
+        }
+      }
+    },
+    "汽车": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "汽车"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Car"
+          }
+        }
+      }
+    },
     "流水": {
       "extractionState": "manual",
       "localizations": {
@@ -2581,6 +3822,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Transactions"
+          }
+        }
+      }
+    },
+    "消费税收": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "消费税收"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taxes"
           }
         }
       }
@@ -2653,6 +3911,23 @@
         }
       }
     },
+    "添加子项": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加子项"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Item"
+          }
+        }
+      }
+    },
     "添加成员": {
       "extractionState": "manual",
       "localizations": {
@@ -2666,6 +3941,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Add Member"
+          }
+        }
+      }
+    },
+    "清空": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清空"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear"
           }
         }
       }
@@ -2704,6 +3996,23 @@
         }
       }
     },
+    "游戏服务订阅": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "游戏服务订阅"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gaming"
+          }
+        }
+      }
+    },
     "滴滴": {
       "extractionState": "manual",
       "localizations": {
@@ -2734,6 +4043,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tap to Change Icon"
+          }
+        }
+      }
+    },
+    "烟酒": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "烟酒"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tobacco & Alcohol"
           }
         }
       }
@@ -2806,6 +4132,40 @@
         }
       }
     },
+    "物业管理": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "物业管理"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Property Mgmt"
+          }
+        }
+      }
+    },
+    "物品设备": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "物品设备"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medical Devices"
+          }
+        }
+      }
+    },
     "现金": {
       "extractionState": "manual",
       "localizations": {
@@ -2819,6 +4179,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cash"
+          }
+        }
+      }
+    },
+    "理财": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "理财"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wealth Mgmt"
           }
         }
       }
@@ -2891,6 +4268,23 @@
         }
       }
     },
+    "电影音乐": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "电影音乐"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Movies & Music"
+          }
+        }
+      }
+    },
     "看病": {
       "extractionState": "manual",
       "localizations": {
@@ -2904,6 +4298,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Doctor Visit"
+          }
+        }
+      }
+    },
+    "确认": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm"
           }
         }
       }
@@ -2976,6 +4387,40 @@
         }
       }
     },
+    "礼金收入": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "礼金收入"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gift Income"
+          }
+        }
+      }
+    },
+    "社交红包": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "社交红包"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Red Packets"
+          }
+        }
+      }
+    },
     "管理员": {
       "extractionState": "manual",
       "localizations": {
@@ -2989,6 +4434,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Admin"
+          }
+        }
+      }
+    },
+    "米面粮油": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "米面粮油"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Groceries"
           }
         }
       }
@@ -3078,6 +4540,23 @@
         }
       }
     },
+    "维修装修": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "维修装修"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repairs & Reno"
+          }
+        }
+      }
+    },
     "编辑": {
       "extractionState": "manual",
       "localizations": {
@@ -3142,6 +4621,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Edit Merchant"
+          }
+        }
+      }
+    },
+    "编辑子项金额": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "编辑子项金额"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit Item Amount"
           }
         }
       }
@@ -3231,6 +4727,23 @@
         }
       }
     },
+    "置业投资": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "置业投资"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Property Investment"
+          }
+        }
+      }
+    },
     "美元 (USD)": {
       "extractionState": "manual",
       "localizations": {
@@ -3265,6 +4778,40 @@
         }
       }
     },
+    "美容美发": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "美容美发"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beauty & Hair"
+          }
+        }
+      }
+    },
+    "聚会活动": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "聚会活动"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Social Events"
+          }
+        }
+      }
+    },
     "聚餐": {
       "extractionState": "manual",
       "localizations": {
@@ -3295,6 +4842,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dividends"
+          }
+        }
+      }
+    },
+    "股票": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "股票"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stocks"
           }
         }
       }
@@ -3363,6 +4927,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Medicine"
+          }
+        }
+      }
+    },
+    "获取汇率": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "获取汇率"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get Rate"
+          }
+        }
+      }
+    },
+    "补贴": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "补贴"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allowances"
           }
         }
       }
@@ -3622,6 +5220,23 @@
         }
       }
     },
+    "购物消费": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "购物消费"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shopping"
+          }
+        }
+      }
+    },
     "贷款": {
       "extractionState": "manual",
       "localizations": {
@@ -3635,6 +5250,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "Loan"
+          }
+        }
+      }
+    },
+    "赔偿罚款": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "赔偿罚款"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Penalties"
+          }
+        }
+      }
+    },
+    "跨币种换算": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跨币种换算"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Multi-Currency"
+          }
+        }
+      }
+    },
+    "车位": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "车位"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parking Space"
           }
         }
       }
@@ -3707,6 +5373,23 @@
         }
       }
     },
+    "软件授权": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "软件授权"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Software Licenses"
+          }
+        }
+      }
+    },
     "输入邀请码或粘贴分享链接": {
       "extractionState": "manual",
       "localizations": {
@@ -3720,6 +5403,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Enter invitation code or paste share link"
+          }
+        }
+      }
+    },
+    "过路过桥": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "过路过桥"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tolls"
+          }
+        }
+      }
+    },
+    "运动健身": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "运动健身"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fitness"
           }
         }
       }
@@ -3754,6 +5471,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Active"
+          }
+        }
+      }
+    },
+    "违章罚款": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "违章罚款"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Traffic Fines"
           }
         }
       }
@@ -3826,6 +5560,23 @@
         }
       }
     },
+    "退款返利": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "退款返利"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refunds & Rebates"
+          }
+        }
+      }
+    },
     "退款金额": {
       "extractionState": "manual",
       "localizations": {
@@ -3856,6 +5607,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Refund amount exceeds original"
+          }
+        }
+      }
+    },
+    "送礼请客": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "送礼请客"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gifts & Treats"
           }
         }
       }
@@ -3979,6 +5747,23 @@
         }
       }
     },
+    "通讯网络": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通讯网络"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Communication"
+          }
+        }
+      }
+    },
     "配偶": {
       "extractionState": "manual",
       "localizations": {
@@ -4013,6 +5798,40 @@
         }
       }
     },
+    "金融保险": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金融保险"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finance & Insurance"
+          }
+        }
+      }
+    },
+    "金银首饰": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金银首饰"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jewelry"
+          }
+        }
+      }
+    },
     "金额": {
       "extractionState": "manual",
       "localizations": {
@@ -4026,6 +5845,74 @@
           "stringUnit": {
             "state": "translated",
             "value": "Amount"
+          }
+        }
+      }
+    },
+    "金额录入": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "金额录入"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter Amount"
+          }
+        }
+      }
+    },
+    "银行手续": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "银行手续"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bank Fees"
+          }
+        }
+      }
+    },
+    "门诊挂号": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "门诊挂号"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clinic Visits"
+          }
+        }
+      }
+    },
+    "附件": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "附件"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attachment"
           }
         }
       }
@@ -4200,6 +6087,23 @@
         }
       }
     },
+    "飞机火车": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "飞机火车"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flights & Trains"
+          }
+        }
+      }
+    },
     "餐饮": {
       "extractionState": "manual",
       "localizations": {
@@ -4217,6 +6121,74 @@
         }
       }
     },
+    "餐饮饮食": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "餐饮饮食"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Food & Dining"
+          }
+        }
+      }
+    },
+    "饮料": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "饮料"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beverages"
+          }
+        }
+      }
+    },
+    "黄金白银": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "黄金白银"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gold & Silver"
+          }
+        }
+      }
+    },
+    "黑洞": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "黑洞"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Black Hole"
+          }
+        }
+      }
+    },
     "默认货币": {
       "extractionState": "manual",
       "localizations": {
@@ -4230,482 +6202,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Default Currency"
-          }
-        }
-      }
-    },
-    "清空": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "清空"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Clear"
-          }
-        }
-      }
-    },
-    "确认": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "确认"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Confirm"
-          }
-        }
-      }
-    },
-    "更新账单": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "更新账单"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Update"
-          }
-        }
-      }
-    },
-    "保存账单": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "保存账单"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Save"
-          }
-        }
-      }
-    },
-    "编辑子项金额": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "编辑子项金额"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Edit Item Amount"
-          }
-        }
-      }
-    },
-    "拆分明细": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "拆分明细"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Split Details"
-          }
-        }
-      }
-    },
-    "未分类": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "未分类"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Uncategorized"
-          }
-        }
-      }
-    },
-    "创建成员分摊": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "创建成员分摊"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Create Member Split"
-          }
-        }
-      }
-    },
-    "报销状态": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "报销状态"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reimbursement Status"
-          }
-        }
-      }
-    },
-    "报销结算": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "报销结算"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reimbursement Settlement"
-          }
-        }
-      }
-    },
-    "借贷状态": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "借贷状态"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lending Status"
-          }
-        }
-      }
-    },
-    "借贷结算": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "借贷结算"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lending Settlement"
-          }
-        }
-      }
-    },
-    "展开": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "展开"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Expand"
-          }
-        }
-      }
-    },
-    "收起": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "收起"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Collapse"
-          }
-        }
-      }
-    },
-    "更多": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "更多"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "More"
-          }
-        }
-      }
-    },
-    "金额录入": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "金额录入"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enter Amount"
-          }
-        }
-      }
-    },
-    "拆分记账": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "拆分记账"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Split Transaction"
-          }
-        }
-      }
-    },
-    "可报销": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "可报销"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reimbursable"
-          }
-        }
-      }
-    },
-    "添加子项": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添加子项"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add Item"
-          }
-        }
-      }
-    },
-    "获取汇率": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "获取汇率"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Get Rate"
-          }
-        }
-      }
-    },
-    "换算金额": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "换算金额"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Converted Amount"
-          }
-        }
-      }
-    },
-    "跨币种换算": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "跨币种换算"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Multi-Currency"
-          }
-        }
-      }
-    },
-    "汇率": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "汇率"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Exchange Rate"
-          }
-        }
-      }
-    },
-    "关联待收款": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "关联待收款"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Link Receivables"
-          }
-        }
-      }
-    },
-    "关联待付款": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "关联待付款"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Link Payables"
-          }
-        }
-      }
-    },
-    "关联待报销": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "关联待报销"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Link Reimbursements"
-          }
-        }
-      }
-    },
-    "已选合计": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已选合计"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Selected Total"
-          }
-        }
-      }
-    },
-    "附件": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "附件"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Attachment"
           }
         }
       }

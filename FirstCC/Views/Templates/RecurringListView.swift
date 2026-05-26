@@ -7,6 +7,7 @@ struct RecurringListView: View {
     @State private var rules: [RecurringRule] = []
     @State private var showAddSheet = false
     @State private var editingRule: RecurringRule?
+    @State private var listVersion = 0
 
     let ledger: Ledger?
     private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }
@@ -39,6 +40,7 @@ struct RecurringListView: View {
             }
         }
         .navigationTitle("周期账管理")
+        .id(listVersion)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { showAddSheet = true } label: {
@@ -46,11 +48,17 @@ struct RecurringListView: View {
                 }
             }
         }
-        .sheet(isPresented: $showAddSheet, onDismiss: { loadRules() }) {
+        .sheet(isPresented: $showAddSheet) {
             AddEditRecurringView(ledger: effectiveLedger)
         }
-        .sheet(item: $editingRule, onDismiss: { loadRules() }) { rule in
+        .onChange(of: showAddSheet) { _, newValue in
+            if !newValue { listVersion += 1; loadRules() }
+        }
+        .sheet(item: $editingRule) { rule in
             AddEditRecurringView(editing: rule, ledger: effectiveLedger)
+        }
+        .onChange(of: editingRule) { _, newValue in
+            if newValue == nil { listVersion += 1; loadRules() }
         }
         .task { loadRules() }
     }
@@ -79,10 +87,16 @@ struct RecurringListView: View {
                         .font(.designBodySmall)
                         .foregroundStyle(Color.designPrimaryContainer)
                 }
-                Text(frequencyDescription(rule))
-                    .font(.designBodySmall)
-                    .foregroundStyle(.secondary)
-                if let next = rule.nextGenerateDate {
+                HStack(spacing: 4) {
+                    Text(frequencyDescription(rule))
+                    if !rule.isActive {
+                        Text("· 已暂停")
+                            .foregroundStyle(.orange)
+                    }
+                }
+                .font(.designBodySmall)
+                .foregroundStyle(.secondary)
+                if rule.isActive, let next = rule.nextGenerateDate {
                     Text("下次生成: \(next.formatted(date: .abbreviated, time: .omitted))")
                         .font(.designBodySmall)
                         .foregroundStyle(.secondary)
@@ -118,10 +132,9 @@ struct RecurringListView: View {
         .onTapGesture { editingRule = rule }
         .swipeActions(edge: .trailing) {
             Button {
-                if let t = rule.template {
-                    try? appContainer.recurringService.disableRecurring(template: t, context: modelContext)
-                    loadRules()
-                }
+                try? appContainer.recurringService.toggleActive(for: rule, context: modelContext)
+                listVersion += 1
+                loadRules()
             } label: {
                 Label(rule.isActive ? "暂停" : "恢复", systemImage: rule.isActive ? "pause" : "play")
             }
@@ -130,6 +143,7 @@ struct RecurringListView: View {
             Button(role: .destructive) {
                 if let t = rule.template {
                     try? appContainer.templateService.deleteTemplate(t, context: modelContext)
+                    listVersion += 1
                     loadRules()
                 }
             } label: {

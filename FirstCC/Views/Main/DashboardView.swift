@@ -111,22 +111,25 @@ struct DashboardView: View {
                     .tracking(-0.6)
             }
 
-            if let pct = viewModel.balanceChangePercent {
+            if let change = viewModel.balanceChange {
                 HStack(spacing: 4) {
-                    Image(systemName: pct >= 0 ? "arrow.up.right" : "arrow.down.right")
+                    Image(systemName: change >= 0 ? "arrow.up.right" : "arrow.down.right")
                         .font(.system(size: 10).weight(.bold))
-                    Text(String(format: "%@%.1f%%", pct >= 0 ? "+" : "", Double(truncating: pct as NSNumber)))
-                        .font(.designLabel)
+                    CurrencyText(amount: change, currencyCode: ledgerCurrency, showSign: true, size: 13, foregroundColor: change >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed)
+                    if let pct = viewModel.balanceChangePercent {
+                        Text(String(format: "(%@%.1f%%)", pct >= 0 ? "+" : "", Double(truncating: pct as NSNumber)))
+                            .font(.designBodyCaption)
+                    }
                     Text("较上月")
                         .font(.designBodyCaption)
                         .foregroundStyle(Color.designOnSurfaceVariant)
                 }
-                .foregroundStyle(pct >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed)
+                .foregroundStyle(change >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 4)
                 .background {
                     Capsule()
-                        .fill((pct >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed).opacity(0.12))
+                        .fill((change >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed).opacity(0.12))
                 }
             }
         }
@@ -169,17 +172,8 @@ struct DashboardView: View {
             CurrencyText(amount: abs(amount), currencyCode: ledgerCurrency, showSign: false, size: 22, foregroundColor: color, fractionDigits: 0)
 
             let maxRef = max(viewModel.monthlyIncome, viewModel.monthlyExpense)
-            let frac = maxRef > 0 ? Double(truncating: (amount / maxRef) as NSNumber) : 0
-            GeometryReader { geo in
-                Capsule()
-                    .fill(Color.designOnSurfaceVariant.opacity(0.12))
-                    .overlay(alignment: .leading) {
-                        Capsule()
-                            .fill(color.opacity(0.5))
-                            .frame(width: max(4, geo.size.width * frac))
-                    }
-            }
-            .frame(height: 3)
+            let frac = maxRef > 0 ? Double(truncating: (abs(amount) / maxRef) as NSNumber) : 0
+            PixelProgressBar(progress: frac, tint: color.opacity(0.6), totalBlocks: 20)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
@@ -191,35 +185,45 @@ struct DashboardView: View {
     @ViewBuilder
     private var budgetCard: some View {
         if viewModel.hasBudget {
-            VStack(spacing: 12) {
-                HStack {
-                    Text("本月预算")
-                        .font(.designBodyMedium.weight(.bold))
-                        .foregroundStyle(Color.designOnSurface)
-                    Spacer()
-                    Text("已用 \(String(format: "%.0f%%", viewModel.budgetFraction * 100))")
-                        .font(.designMonoDataSmall)
-                        .foregroundStyle(Color.designOnSurfaceVariant)
+            NavigationLink {
+                if let book = viewModel.activeBudgetBook {
+                    BudgetBookDetailView(book: book)
                 }
+            } label: {
+                VStack(spacing: 12) {
+                    HStack {
+                        Text("本月预算")
+                            .font(.designBodyMedium.weight(.bold))
+                            .foregroundStyle(Color.designOnSurface)
+                        Spacer()
+                        Text("已用 \(String(format: "%.0f%%", viewModel.budgetFraction * 100))")
+                            .font(.designMonoDataSmall)
+                            .foregroundStyle(Color.designOnSurfaceVariant)
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(Color.designOnSurfaceVariant)
+                    }
 
-                PixelProgressBar(
-                    progress: viewModel.budgetFraction,
-                    tint: viewModel.budgetFraction > 0.8 ? Color.designAccentRed : Color.designPrimaryFixedDim,
-                    totalBlocks: 24
-                )
+                    PixelProgressBar(
+                        progress: viewModel.budgetFraction,
+                        tint: budgetProgressColor(viewModel.budgetFraction),
+                        totalBlocks: 20
+                    )
 
-                HStack {
-                    Text("已支出 \(formatBudgetAmount(viewModel.budgetSpent))")
-                        .font(.designBodyCaption)
-                        .foregroundStyle(Color.designOnSurfaceVariant)
-                    Spacer()
-                    Text("预算 \(formatBudgetAmount(viewModel.budgetLimit))")
-                        .font(.designBodyCaption)
-                        .foregroundStyle(Color.designOnSurfaceVariant)
+                    HStack {
+                        Text("已支出 \(formatBudgetAmount(viewModel.budgetSpent))")
+                            .font(.designBodyCaption)
+                            .foregroundStyle(Color.designOnSurfaceVariant)
+                        Spacer()
+                        Text("预算 \(formatBudgetAmount(viewModel.budgetLimit))")
+                            .font(.designBodyCaption)
+                            .foregroundStyle(Color.designOnSurfaceVariant)
+                    }
                 }
+                .padding(16)
+                .glassCard(cornerRadius: 16)
             }
-            .padding(16)
-            .glassCard(cornerRadius: 16)
+            .buttonStyle(.plain)
         } else {
             NavigationLink {
                 BudgetBookListView(ledger: appContainer.currentLedger)
@@ -354,6 +358,15 @@ struct DashboardView: View {
         return "\(symbol)\(raw)"
     }
 
+    private func budgetProgressColor(_ progress: Double) -> Color {
+        if progress > 1.0 { return .designAccentRed }
+        switch progress {
+        case ..<0.5: return .designPrimaryFixedDim
+        case ..<0.8: return .yellow
+        default: return .orange
+        }
+    }
+
     private func refresh() {
         guard let ledger = appContainer.currentLedger else { return }
         let vm = DashboardViewModel(
@@ -370,9 +383,11 @@ struct DashboardView: View {
         viewModel.accountBalances = vm.accountBalances
         viewModel.totalBalance = vm.totalBalance
         viewModel.previousMonthBalance = vm.previousMonthBalance
+        viewModel.balanceChange = vm.balanceChange
         viewModel.balanceChangePercent = vm.balanceChangePercent
         viewModel.budgetSpent = vm.budgetSpent
         viewModel.budgetLimit = vm.budgetLimit
         viewModel.hasBudget = vm.hasBudget
+        viewModel.activeBudgetBook = vm.activeBudgetBook
     }
 }

@@ -10,10 +10,12 @@ final class DashboardViewModel: ObservableObject {
     @Published var accountBalances: [UUID: Decimal] = [:]
     @Published var totalBalance: Decimal = 0
     @Published var previousMonthBalance: Decimal = 0
+    @Published var balanceChange: Decimal? = nil
     @Published var balanceChangePercent: Decimal? = nil
     @Published var budgetSpent: Decimal = 0
     @Published var budgetLimit: Decimal = 0
     @Published var hasBudget: Bool = false
+    @Published var activeBudgetBook: BudgetBook?
 
     private let accountService: AccountServiceProtocol
     private let transactionService: TransactionServiceProtocol
@@ -57,13 +59,16 @@ final class DashboardViewModel: ObservableObject {
 
         recentTransactions = Array(allTransactions.sorted(by: { $0.date > $1.date }).prefix(20))
 
-        // Previous month balance = current balance - this month's net
-        let net = monthlyIncome - monthlyExpense
+        // Previous month balance = current balance - this month's net (all types, unfiltered)
+        let net = allTransactions.reduce(0) { $0 + $1.amount }
         previousMonthBalance = totalBalance - net
         if previousMonthBalance != 0 {
-            let change = (totalBalance - previousMonthBalance) / previousMonthBalance * 100
-            balanceChangePercent = change
+            let change = totalBalance - previousMonthBalance
+            balanceChange = change
+            let magnitude = abs(change / previousMonthBalance) * 100
+            balanceChangePercent = change >= 0 ? magnitude : -magnitude
         } else {
+            balanceChange = nil
             balanceChangePercent = nil
         }
     }
@@ -71,11 +76,12 @@ final class DashboardViewModel: ObservableObject {
     func loadBudget(context: NSManagedObjectContext, budgetService: BudgetServiceProtocol) {
         guard let ledger else { return }
         guard let books = try? budgetService.fetchBooks(for: ledger, context: context),
-              let activeBook = books.first(where: { $0.isActive }) ?? books.first else {
+              let activeBook = books.first(where: { $0.isActive }) else {
             hasBudget = false
             return
         }
         hasBudget = true
+        activeBudgetBook = activeBook
         budgetSpent = budgetService.totalCurrentPeriodSpending(for: activeBook, context: context)
         budgetLimit = budgetService.totalCurrentPeriodBudget(for: activeBook)
     }

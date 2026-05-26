@@ -9,10 +9,34 @@ struct SearchablePickerView<Item: Identifiable & Hashable>: View {
     let itemIcon: (Item) -> String
     let itemColor: (Item) -> Color
     let recentKey: String
+    let indentLevel: ((Item) -> Int)?
+    let childrenProvider: ((Item) -> [Item])?
     @Binding var selection: Item?
 
     @State private var searchText = ""
     @State private var recentIDs: [String] = []
+
+    init(
+        title: String,
+        items: [Item],
+        itemLabel: @escaping (Item) -> String,
+        itemIcon: @escaping (Item) -> String,
+        itemColor: @escaping (Item) -> Color = { _ in .blue },
+        recentKey: String,
+        indentLevel: ((Item) -> Int)? = nil,
+        childrenProvider: ((Item) -> [Item])? = nil,
+        selection: Binding<Item?>
+    ) {
+        self.title = title
+        self.items = items
+        self.itemLabel = itemLabel
+        self.itemIcon = itemIcon
+        self.itemColor = itemColor
+        self.recentKey = recentKey
+        self.indentLevel = indentLevel
+        self.childrenProvider = childrenProvider
+        self._selection = selection
+    }
 
     var body: some View {
         NavigationStack {
@@ -53,26 +77,39 @@ struct SearchablePickerView<Item: Identifiable & Hashable>: View {
     }
 
     private var filteredItems: [Item] {
-        let filtered = searchText.isEmpty
-            ? items
-            : items.filter { itemLabel($0).localizedCaseInsensitiveContains(searchText) }
-        let recentIDSet = Set(recentItems.map { $0.id })
-        return filtered.filter { !recentIDSet.contains($0.id) }
+        if searchText.isEmpty {
+            return items
+        }
+        var matched = items.filter { itemLabel($0).localizedCaseInsensitiveContains(searchText) }
+        if let provider = childrenProvider {
+            var seen = Set(matched.map { $0.id })
+            for item in matched {
+                for child in provider(item) where !seen.contains(child.id) {
+                    seen.insert(child.id)
+                    matched.append(child)
+                }
+            }
+        }
+        return matched
     }
 
     @ViewBuilder
     private func itemRow(_ item: Item) -> some View {
+        let level = min(indentLevel?(item) ?? 0, 2)
         HStack {
             Image(systemName: itemIcon(item))
                 .foregroundStyle(itemColor(item))
                 .frame(width: 28)
             Text(itemLabel(item))
+                .font(level > 0 ? .designBodyMedium : nil)
+                .foregroundStyle(level > 0 ? Color.designOnSurfaceVariant : .primary)
             Spacer()
             if item.id == selection?.id {
                 Image(systemName: "checkmark")
                     .foregroundStyle(Color.designPrimaryContainer)
             }
         }
+        .padding(.leading, CGFloat(level) * 24)
         .contentShape(Rectangle())
         .onTapGesture {
             selection = item
@@ -91,26 +128,5 @@ struct SearchablePickerView<Item: Identifiable & Hashable>: View {
         ids.insert(id, at: 0)
         recentIDs = Array(ids.prefix(8))
         UserDefaults.standard.set(recentIDs, forKey: recentKey)
-    }
-}
-
-extension SearchablePickerView {
-    init(
-        title: String,
-        items: [Item],
-        itemLabel: @escaping (Item) -> String,
-        itemIcon: @escaping (Item) -> String,
-        recentKey: String,
-        selection: Binding<Item?>
-    ) {
-        self.init(
-            title: title,
-            items: items,
-            itemLabel: itemLabel,
-            itemIcon: itemIcon,
-            itemColor: { _ in .blue },
-            recentKey: recentKey,
-            selection: selection
-        )
     }
 }

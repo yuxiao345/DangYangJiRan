@@ -189,7 +189,7 @@ struct EditAccountView: View {
                 }
 
                 Section("余额") {
-                    CurrencyTextField(label: "初始余额", value: $initialBalance)
+                    NumpadAmountField(amount: $initialBalance)
                 }
 
                 Section("Logo") {

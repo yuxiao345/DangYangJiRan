@@ -56,11 +56,7 @@ struct AddEditRecurringView: View {
                 }
 
                 Section("金额") {
-                    HStack {
-                        Text("¥").foregroundStyle(.secondary)
-                        TextField("0.00", value: $amount, format: .number)
-                            .keyboardType(.decimalPad)
-                    }
+                    NumpadAmountField(amount: $amount)
                 }
 
                 Section("账户") {
@@ -79,6 +75,10 @@ struct AddEditRecurringView: View {
                         Button { openPicker(.category) } label: {
                             pickerRow(label: "分类", value: selectedCategory?.name)
                         }
+                        if let cat = selectedCategory, (cat.children?.count ?? 0) > 0 {
+                            Text("已选择上级分类「\(cat.name)」，可展开选择更具体的子分类")
+                                .font(.caption).foregroundStyle(.orange)
+                        }
                     }
                 }
 
@@ -90,10 +90,10 @@ struct AddEditRecurringView: View {
                     }
                     Stepper("间隔: \(interval)", value: $interval, in: 1...99)
                         .foregroundStyle(interval > 1 ? .primary : .secondary)
-                    DatePicker("开始日期", selection: $startDate, displayedComponents: .date)
+                    DatePickerButton(title: "开始日期", date: $startDate)
                     Toggle("结束日期", isOn: $hasEndDate)
                     if hasEndDate {
-                        DatePicker("截止日期", selection: $endDate, displayedComponents: .date)
+                        DatePickerButton(title: "截止日期", date: $endDate)
                     }
                 } header: {
                     Text("周期")
@@ -158,10 +158,18 @@ struct AddEditRecurringView: View {
                     SearchablePickerView(
                         title: "选择分类",
                         items: categories,
-                        itemLabel: { $0.name },
+                        itemLabel: { cat in
+                            let cnt = (cat.children?.count ?? 0)
+                            return cnt > 0 ? "\(cat.name) · 含\(cnt)项" : cat.name
+                        },
                         itemIcon: { $0.iconName },
                         itemColor: { Color(hex: $0.colorHex) },
                         recentKey: "recent_category",
+                        indentLevel: { item in
+                            var depth = 0; var p = item.parent; while p != nil { depth += 1; p = p?.parent }
+                            return depth
+                        },
+                        childrenProvider: { Array($0.children ?? []) },
                         selection: $selectedCategory
                     )
                 case .member:
@@ -197,7 +205,8 @@ struct AddEditRecurringView: View {
     }
 
     private var frequencyDescription: String {
-        var desc = "每\(interval > 1 ? "\(interval)" : "")\(frequency.displayName)"
+        let base = frequency.displayName
+        var desc = interval > 1 ? "每\(interval)\(base.dropFirst())" : base
         if hasEndDate {
             desc += "，至\(endDate.formatted(date: .abbreviated, time: .omitted))止"
         }
@@ -226,9 +235,9 @@ struct AddEditRecurringView: View {
         guard let ledger = effectiveLedger else { return }
         accounts = (try? appContainer.accountService.fetchAccounts(for: ledger, context: modelContext)) ?? []
         loadCategories()
-        members = (try? appContainer.memberService.fetchMembers(for: ledger, context: modelContext)) ?? []
-        merchants = (try? appContainer.merchantService.fetchMerchants(for: ledger, context: modelContext)) ?? []
-        projects = (try? appContainer.projectService.fetchProjects(for: ledger, context: modelContext)) ?? []
+        members = (try? appContainer.memberService.fetchMembers(for: ledger, context: modelContext))?.filter { $0.isActive } ?? []
+        merchants = (try? appContainer.merchantService.fetchMerchants(for: ledger, context: modelContext))?.filter { $0.isActive } ?? []
+        projects = (try? appContainer.projectService.fetchProjects(for: ledger, context: modelContext))?.filter { $0.isActive } ?? []
     }
 
     private func loadCategories() {
@@ -280,6 +289,7 @@ struct AddEditRecurringView: View {
                 endDate: end,
                 context: modelContext
             )
+            try? appContainer.recurringService.processDueRecurring(context: modelContext)
         } else {
             let template = TransactionTemplate(
                 name: name,
@@ -304,6 +314,7 @@ struct AddEditRecurringView: View {
                 endDate: end,
                 context: modelContext
             )
+            try? appContainer.recurringService.processDueRecurring(context: modelContext)
         }
         dismiss()
     }

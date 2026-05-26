@@ -9,6 +9,7 @@ struct BudgetBookListView: View {
     @State private var books: [BudgetBook] = []
     @State private var showAddSheet = false
     @State private var editingBook: BudgetBook?
+    @State private var listVersion = 0
 
     let ledger: Ledger?
     private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }
@@ -28,32 +29,48 @@ struct BudgetBookListView: View {
                     bookRow(book)
                 }
                 .swipeActions(edge: .leading) {
-            Button { editingBook = book } label: {
-                Label("编辑", systemImage: "pencil")
+                    Button { editingBook = book } label: {
+                        Label("编辑", systemImage: "pencil")
+                    }
+                    .tint(.blue)
+                }
+                .swipeActions(edge: .trailing) {
+                    Button(role: .destructive) {
+                        try? appContainer.budgetService.deleteBook(book, context: modelContext)
+                        reloadBooks()
+                    } label: { Label("删除", systemImage: "trash") }
+                }
             }
-            .tint(.blue)
-        }
-        .swipeActions(edge: .trailing) {
-            Button(role: .destructive) {
-                try? appContainer.budgetService.deleteBook(book, context: modelContext)
-                loadBooks()
-            } label: { Label("删除", systemImage: "trash") }
-        }
+            .onMove { from, to in
+                var mutable = books
+                mutable.move(fromOffsets: from, toOffset: to)
+                try? appContainer.budgetService.reorderBooks(mutable, context: modelContext)
+                reloadBooks()
             }
         }
         .navigationTitle("预算管理")
+        .id(listVersion)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { showAddSheet = true } label: {
                     Image(systemName: "plus")
                 }
             }
+            ToolbarItem(placement: .navigationBarLeading) {
+                EditButton()
+            }
         }
-        .sheet(isPresented: $showAddSheet, onDismiss: { loadBooks() }) {
+        .sheet(isPresented: $showAddSheet) {
             AddEditBudgetBookView(ledger: effectiveLedger)
         }
-        .sheet(item: $editingBook, onDismiss: { loadBooks() }) { book in
+        .onChange(of: showAddSheet) { _, newValue in
+            if !newValue { reloadBooks() }
+        }
+        .sheet(item: $editingBook) { book in
             AddEditBudgetBookView(editing: book, ledger: effectiveLedger)
+        }
+        .onChange(of: editingBook) { _, newValue in
+            if newValue == nil { reloadBooks() }
         }
         .onAppear(perform: loadBooks)
     }
@@ -66,29 +83,30 @@ struct BudgetBookListView: View {
                 Text(book.name)
                     .font(.designBodyMedium)
                 Spacer()
-                if !book.isActive {
-                    Text("草稿").font(.designBodySmall).foregroundStyle(.secondary)
-                }
+                Text(book.isActive ? "启用" : "草稿")
+                    .font(.designBodySmall)
+                    .foregroundStyle(book.isActive ? .green : .secondary)
             }
             Text("\(book.startDate.formatted(date: .abbreviated, time: .omitted)) — \(book.endDate.formatted(date: .abbreviated, time: .omitted))")
                 .font(.designBodySmall)
                 .foregroundStyle(.secondary)
-            let totalBudget = appContainer.budgetService.totalBudget(for: book)
-            if totalBudget > 0 {
-                HStack {
-                    Text("总预算:")
-                        .font(.designBodySmall)
+            HStack {
+                let itemCount = book.items?.count ?? 0
+                Text("\(itemCount)个预算项")
+                    .font(.designBodySmall)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                let totalBudget = appContainer.budgetService.totalBudget(for: book)
+                if totalBudget > 0 {
                     CurrencyText(amount: totalBudget, currencyCode: book.ledger?.defaultCurrencyCode ?? "CNY", size: 12, foregroundColor: .blue)
-                    Spacer()
-                    let itemCount = book.items?.count ?? 0
-                    if itemCount > 0 {
-                        Text("\(itemCount)项")
-                            .font(.designBodySmall)
-                            .foregroundStyle(.secondary)
-                    }
                 }
             }
         }
+    }
+
+    private func reloadBooks() {
+        listVersion += 1
+        loadBooks()
     }
 
     private func loadBooks() {

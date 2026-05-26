@@ -8,6 +8,7 @@ struct MerchantListView: View {
     @State private var showAddAlert = false
     @State private var newName = ""
     @State private var editingMerchant: Merchant?
+    @State private var listVersion = 0
 
     let ledger: Ledger?
     private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }
@@ -50,6 +51,7 @@ struct MerchantListView: View {
             }
         }
         .navigationTitle("商家管理")
+        .id(listVersion)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { showAddAlert = true } label: {
@@ -65,8 +67,11 @@ struct MerchantListView: View {
                 newName = ""
             }.disabled(newName.isEmpty)
         }
-        .sheet(item: $editingMerchant, onDismiss: { loadMerchants() }) { merchant in
+        .sheet(item: $editingMerchant) { merchant in
             EditMerchantView(merchant: merchant)
+        }
+        .onChange(of: editingMerchant) { _, newValue in
+            if newValue == nil { listVersion += 1; loadMerchants() }
         }
         .onAppear(perform: loadMerchants)
     }

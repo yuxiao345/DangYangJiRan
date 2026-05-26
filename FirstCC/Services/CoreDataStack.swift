@@ -134,7 +134,6 @@ final class CoreDataStack: ObservableObject {
             DiagnosticLog.log("CoreDataStack: reusing existing ledger for share")
             ledger = existing
             ledger.name = name
-            ledger.isShared = true
         } else {
             DiagnosticLog.log("CoreDataStack: creating new ledger for share")
             ledger = Ledger(context: context)
@@ -143,27 +142,38 @@ final class CoreDataStack: ObservableObject {
             ledger.iconName = "house"
             ledger.typeRaw = "personal"
             ledger.defaultCurrencyCode = "CNY"
-            ledger.isShared = true
         }
 
         try context.save()
         DiagnosticLog.log("CoreDataStack: saved, calling share()")
 
-        return try await withCheckedThrowingContinuation { continuation in
-            container.share([ledger], to: nil) { _, share, _, error in
-                if let error {
-                    let nsError = error as NSError
-                    DiagnosticLog.log("CoreDataStack: share failed domain=\(nsError.domain) code=\(nsError.code)")
-                    continuation.resume(throwing: error)
-                } else if let share {
-                    DiagnosticLog.log("CoreDataStack: share created recordID=\(share.recordID)")
-                    continuation.resume(returning: share)
-                } else {
-                    DiagnosticLog.log("CoreDataStack: share returned nil")
-                    continuation.resume(throwing: NSError(domain: "CoreDataStack", code: -1,
-                        userInfo: [NSLocalizedDescriptionKey: "share() returned nil"]))
+        return try await withThrowingTaskGroup(of: CKShare.self) { group in
+            group.addTask {
+                try await withCheckedThrowingContinuation { continuation in
+                    self.container.share([ledger], to: nil) { _, share, _, error in
+                        if let error {
+                            let nsError = error as NSError
+                            DiagnosticLog.log("CoreDataStack: share failed domain=\(nsError.domain) code=\(nsError.code)")
+                            continuation.resume(throwing: error)
+                        } else if let share {
+                            DiagnosticLog.log("CoreDataStack: share created recordID=\(share.recordID)")
+                            continuation.resume(returning: share)
+                        } else {
+                            DiagnosticLog.log("CoreDataStack: share returned nil")
+                            continuation.resume(throwing: NSError(domain: "CoreDataStack", code: -1,
+                                userInfo: [NSLocalizedDescriptionKey: "share() returned nil"]))
+                        }
+                    }
                 }
             }
+            group.addTask {
+                try await Task.sleep(for: .seconds(30))
+                throw NSError(domain: "CoreDataStack", code: -2,
+                    userInfo: [NSLocalizedDescriptionKey: "共享操作超时，请检查iCloud设置和网络连接后重试"])
+            }
+            let result = try await group.next()!
+            group.cancelAll()
+            return result
         }
     }
 
