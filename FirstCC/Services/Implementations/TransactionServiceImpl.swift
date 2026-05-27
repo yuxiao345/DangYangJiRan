@@ -108,6 +108,7 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
                     if let name = t.merchant?.name, name.lowercased().contains(token) { return true }
                     if let name = t.category?.name, name.lowercased().contains(token) { return true }
                     if let name = t.account?.name, name.lowercased().contains(token) { return true }
+                    if let name = t.toAccount?.name, name.lowercased().contains(token) { return true }
                     if let name = t.member?.name, name.lowercased().contains(token) { return true }
                     if let name = t.project?.name, name.lowercased().contains(token) { return true }
                     return false

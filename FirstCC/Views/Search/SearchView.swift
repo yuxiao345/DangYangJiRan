@@ -118,9 +118,13 @@ struct SearchView: View {
             ForEach(groupedResults, id: \.key) { group in
                 Section(group.key) {
                     ForEach(group.value, id: \.id) { transaction in
-                        NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
-                            TransactionRowView(transaction: transaction)
-                        }
+                        TransactionRowView(transaction: transaction)
+                            .background {
+                                NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
+                                    EmptyView()
+                                }
+                                .opacity(0)
+                            }
                     }
                 }
             }

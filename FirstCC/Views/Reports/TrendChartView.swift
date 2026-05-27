@@ -199,8 +199,8 @@ struct TrendChartView: View {
         let incomeVal = Double(truncating: point.income as NSNumber)
         let expenseVal = Double(truncating: point.expense as NSNumber)
         let netVal = incomeVal - expenseVal
-        let incomeBlocks = Int((incomeVal / maxValue * Double(maxBlocks)).rounded())
-        let expenseBlocks = Int((expenseVal / maxValue * Double(maxBlocks)).rounded())
+        let incomeBlocks = incomeVal > 0 ? max(1, Int((incomeVal / maxValue * Double(maxBlocks)).rounded(.up))) : 0
+        let expenseBlocks = expenseVal > 0 ? max(1, Int((expenseVal / maxValue * Double(maxBlocks)).rounded(.up))) : 0
 
         // Blue net marker: appears in income column when net>0, expense column when net<0
         let incomeNetIdx: Int? = {
@@ -250,16 +250,22 @@ struct TrendChartView: View {
         if period == .last3Years {
             VStack(spacing: 0) {
                 Text(point.yearLabel ?? " ")
-                    .font(.system(size: 7).monospacedDigit())
+                    .font(.system(size: 7))
                     .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
                 Text(shortLabel(for: point))
-                    .font(.system(size: 7).monospacedDigit())
+                    .font(.system(size: 7))
                     .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
             }
         } else {
             Text(point.label)
-                .font(.designMonoDataSmall)
+                .font(.system(size: 8))
                 .foregroundStyle(Color.designOnSurfaceVariant)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
         }
     }
 

@@ -54,7 +54,7 @@ struct DashboardView: View {
                         LazyVStack(spacing: 12) {
                             ForEach(viewModel.recentTransactions) { transaction in
                                 NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
-                                    transactionCard(transaction)
+                                    TransactionRowView(transaction: transaction)
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -67,9 +67,6 @@ struct DashboardView: View {
             .designScreen()
             .navigationTitle(appContainer.currentLedger?.name ?? "小金库")
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    SyncStatusBadge()
-                }
                 ToolbarItem(placement: .primaryAction) {
                     Button { showAddSheet = true } label: {
                         Image(systemName: "plus")
@@ -250,96 +247,6 @@ struct DashboardView: View {
             }
             .buttonStyle(.plain)
         }
-    }
-
-    // MARK: - Transaction Card
-
-    private func transactionCard(_ transaction: Transaction) -> some View {
-        HStack(spacing: 10) {
-            RoundedRectangle(cornerRadius: 6)
-                .fill(Color.designSurfaceContainer)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color.designOutlineVariant.opacity(0.3), lineWidth: 1)
-                }
-                .frame(width: 38, height: 38)
-                .overlay {
-                    Image(systemName: transactionIcon(transaction))
-                        .font(.system(size: 16))
-                        .foregroundStyle(transactionIconColor(transaction))
-                }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(LocalizedStringKey(transactionTitle(transaction)))
-                    .font(.designBodyMedium.weight(.medium))
-                    .foregroundStyle(Color.designOnSurface)
-                    .lineLimit(1)
-                Text(transactionSubtitle(transaction))
-                    .font(.designBodyCaption)
-                    .foregroundStyle(Color.designOnSurfaceVariant)
-                    .lineLimit(1)
-            }
-
-            Spacer()
-
-            transactionAmountView(transaction)
-        }
-        .padding(12)
-        .glassCard(cornerRadius: 12)
-    }
-
-    private func transactionIcon(_ tx: Transaction) -> String {
-        if let d = tx.lendingDirection { return d.systemIcon }
-        return tx.category?.iconName ?? tx.type.systemIcon
-    }
-
-    private func transactionIconColor(_ tx: Transaction) -> Color {
-        if tx.isLending { return .orange }
-        switch tx.type {
-        case .income: return Color.designPrimaryFixedDim
-        case .expense: return Color.designAccentRed
-        default: return Color.designOnSurfaceVariant
-        }
-    }
-
-    private func transactionTitle(_ tx: Transaction) -> String {
-        if let d = tx.lendingDirection { return d.displayName }
-        if tx.type == .transfer { return tx.type.displayName }
-        return tx.merchant?.name ?? tx.category?.name ?? tx.type.displayName
-    }
-
-    private func transactionSubtitle(_ tx: Transaction) -> String {
-        if tx.isLending || tx.type == .transfer {
-            let from = tx.account?.name ?? "—"
-            let to = tx.toAccount?.name ?? "—"
-            return "\(from) → \(to)"
-        }
-        let cat = tx.category?.name ?? tx.type.displayName
-        return "\(cat) · \(relativeDateString(tx.date))"
-    }
-
-    private func relativeDateString(_ date: Date) -> String {
-        let calendar = Calendar.current
-        let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: Date())).day ?? 0
-        switch days {
-        case 0: return "今天"
-        case 1: return "昨天"
-        default: return "\(days)天前"
-        }
-    }
-
-    @ViewBuilder
-    private func transactionAmountView(_ tx: Transaction) -> some View {
-        let color: Color = {
-            switch tx.type {
-            case .income: return Color.designPrimaryFixedDim
-            case .expense: return Color.designAccentRed
-            case .transfer: return .blue
-            case .lending: return tx.amount >= 0 ? Color.designPrimaryFixedDim : .orange
-            case .adjustment: return tx.amount >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed
-            }
-        }()
-        CurrencyText(amount: tx.amount, currencyCode: tx.currencyCode, showSign: true, size: 15, foregroundColor: color)
     }
 
     // MARK: - Helpers

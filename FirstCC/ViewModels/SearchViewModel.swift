@@ -23,7 +23,7 @@ final class SearchViewModel {
     var totalCount: Int { searchResults.count }
 
     var totalAmount: Decimal {
-        searchResults.reduce(0) { $0 + abs($1.amount) }
+        searchResults.reduce(0) { $0 + $1.amount }
     }
 
     var activeFilters: [String] {

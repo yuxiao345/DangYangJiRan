@@ -64,30 +64,16 @@ struct TransactionRowView: View {
 
             Spacer()
 
-            VStack(alignment: .trailing, spacing: 2) {
-                amountView
-                if let badge = categoryBadge {
-                    Text(badge)
-                        .font(.custom("SpaceGrotesk-Bold", fixedSize: 10))
-                        .foregroundStyle(Color.designOnSurfaceVariant)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.designSurfaceContainer)
-                        .clipShape(Capsule())
-                }
-            }
+            amountView
         }
         .padding(.vertical, 6)
         .padding(.trailing, 14)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.designGlassBorderHighlight, lineWidth: 1)
-        )
+        .glassCard(cornerRadius: 16)
     }
 
     // MARK: - Computed properties
+
+    private static let shortDateFormat = Date.FormatStyle.dateTime.month(.abbreviated).day(.twoDigits)
 
     private var iconName: String {
         if let d = transaction.lendingDirection { return d.systemIcon }
@@ -143,14 +129,11 @@ struct TransactionRowView: View {
         if transaction.isLending || transaction.type == .transfer {
             let from = transaction.account?.name ?? "—"
             let to = transaction.toAccount?.name ?? "—"
-            return "\(NSLocalizedString(from, comment: "")) → \(NSLocalizedString(to, comment: ""))"
+            let dateStr = transaction.date.formatted(Self.shortDateFormat)
+            return "\(NSLocalizedString(from, comment: "")) → \(NSLocalizedString(to, comment: "")) · \(dateStr)"
         }
-        return transaction.note
-    }
-
-    private var categoryBadge: String? {
-        if transaction.isLending || transaction.type == .transfer { return nil }
-        return transaction.member?.name ?? transaction.merchant?.name
+        let parts = [transaction.merchant?.name, transaction.member?.name, transaction.date.formatted(Self.shortDateFormat)].compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
     @ViewBuilder

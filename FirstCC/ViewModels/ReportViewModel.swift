@@ -270,7 +270,7 @@ final class ReportViewModel {
             let monthDF = DateFormatter()
             monthDF.dateFormat = "M月"
             let yearDF = DateFormatter()
-            yearDF.dateFormat = "yyyy年"
+            yearDF.dateFormat = "yy年"
 
             var byYearMonth: [String: (yearLabel: String?, monthLabel: String, income: Decimal, expense: Decimal)] = [:]
             var order: [String] = []
@@ -329,7 +329,7 @@ final class ReportViewModel {
             let monthDF = DateFormatter()
             monthDF.dateFormat = "M月"
             let yearDF = DateFormatter()
-            yearDF.dateFormat = "yyyy年"
+            yearDF.dateFormat = "yy年"
 
             var byMonth: [String: (income: Decimal, expense: Decimal)] = [:]
             var monthOrder: [String] = []

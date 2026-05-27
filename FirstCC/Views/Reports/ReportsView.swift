@@ -95,16 +95,6 @@ struct ReportsView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
 
-                #if DEBUG
-                Button("生成测试数据") {
-                    guard let ledger = appContainer.currentLedger else { return }
-                    viewModel.seedTestData(ledger: ledger, context: modelContext)
-                }
-                .font(.custom("JetBrainsMono-Medium", fixedSize: 10))
-                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
-                .padding(.bottom, 4)
-                #endif
-
                 switch selectedReport {
                 case .category:
                     categoryReport

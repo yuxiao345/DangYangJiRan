@@ -46,9 +46,9 @@ struct AccountDetailView: View {
                 Text(CurrencyFormatter.currencySymbol(for: account.currencyCode))
                     .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
                     .foregroundStyle(Color.designPrimaryFixedDim)
-                Text(CurrencyFormatter.formatDecimal(amount: balance, fractionDigits: 2, showAbs: true))
+                Text(CurrencyFormatter.formatDecimal(amount: balance, fractionDigits: 2, showAbs: false))
                     .font(.designDisplayMobile)
-                    .foregroundStyle(Color.designOnSurface)
+                    .foregroundStyle(balance >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed)
                     .tracking(-0.6)
             }
 
@@ -163,93 +163,9 @@ struct AccountDetailView: View {
                     .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
 
                 ForEach(group.value) { t in
-                    transactionRow(t)
+                    TransactionRowView(transaction: t)
                 }
             }
-        }
-    }
-
-    private func transactionRow(_ t: Transaction) -> some View {
-        HStack(spacing: 12) {
-            iconView(for: t)
-                .frame(width: 36, height: 36)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.designSurfaceContainer.opacity(0.6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.designOutlineVariant.opacity(0.3), lineWidth: 1)
-                        )
-                )
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(LocalizedStringKey(titleText(for: t)))
-                    .font(.designBodyMedium)
-                    .foregroundStyle(Color.designOnSurface)
-                if let sub = subtitleText(for: t) {
-                    Text(LocalizedStringKey(sub))
-                        .font(.designBodySmall)
-                        .foregroundStyle(Color.designOnSurfaceVariant)
-                        .lineLimit(1)
-                }
-            }
-
-            Spacer()
-
-            CurrencyText(
-                amount: t.amount,
-                currencyCode: t.currencyCode,
-                showSign: true,
-                size: 15,
-                foregroundColor: amountColor(for: t)
-            )
-        }
-        .padding(12)
-        .glassCard(cornerRadius: 12)
-    }
-
-    // MARK: - Transaction helpers
-
-    private func iconView(for t: Transaction) -> some View {
-        let name = t.category?.iconName ?? t.type.systemIcon
-        return Image(systemName: name)
-            .font(.system(size: 16, weight: .medium))
-            .foregroundStyle(iconColor(for: t))
-    }
-
-    private func iconColor(for t: Transaction) -> Color {
-        if t.isLending { return .orange }
-        switch t.type {
-        case .income: return .designPrimaryFixedDim
-        case .expense: return .designAccentRed
-        case .transfer: return .blue
-        case .lending: return .orange
-        case .adjustment: return .designAccentPurple
-        }
-    }
-
-    private func titleText(for t: Transaction) -> String {
-        if let d = t.lendingDirection { return d.displayName }
-        if t.type == .transfer { return t.type.displayName }
-        return t.category?.name ?? t.type.displayName
-    }
-
-    private func subtitleText(for t: Transaction) -> String? {
-        if t.isLending || t.type == .transfer {
-            let from = t.account?.name ?? "—"
-            let to = t.toAccount?.name ?? "—"
-            return "\(from) → \(to)"
-        }
-        return t.note
-    }
-
-    private func amountColor(for t: Transaction) -> Color {
-        switch t.type {
-        case .income: return .designPrimaryFixedDim
-        case .expense: return .designAccentRed
-        case .transfer: return .blue
-        case .lending: return t.amount >= 0 ? .designPrimaryFixedDim : .orange
-        case .adjustment: return t.amount >= 0 ? .designPrimaryFixedDim : .designAccentRed
         }
     }
 

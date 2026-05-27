@@ -87,7 +87,7 @@ struct TransactionListView: View {
                     Button(TransactionType.income.displayName) { filterType = .income }
                     Button(TransactionType.transfer.displayName) { filterType = .transfer }
                     Button(TransactionType.lending.displayName) { filterType = .lending }
-                    Button(TransactionType.adjustment.displayName) { filterType = .adjustment }
+
                 } label: {
                     Image(systemName: "line.3.horizontal.decrease.circle")
                 }
