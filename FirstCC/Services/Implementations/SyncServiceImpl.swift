@@ -58,10 +58,17 @@ final class SyncServiceImpl: SyncServiceProtocol {
     @MainActor
     func createShare(for ledger: Ledger) async throws -> CKShare {
         DiagnosticLog.log("SyncService.createShare: using CloudKitShareCoordinator")
-        return try await CloudKitShareCoordinator.shared.createShare(
+        // 必须在 share() 之前设置 ownerUserRecordID，这样共享数据库才有正确值
+        if ledger.ownerUserRecordID == nil || ledger.ownerUserRecordID?.isEmpty == true {
+            ledger.ownerUserRecordID = try? await ckContainer.userRecordID().recordName
+            try? coreDataStack.viewContext.save()
+        }
+        let share = try await CloudKitShareCoordinator.shared.createShare(
             ledgerID: ledger.id,
             name: ledger.name
         )
+        ledger.shareRecordName = share.recordID.recordName
+        return share
     }
 
     @MainActor
@@ -116,22 +123,125 @@ final class SyncServiceImpl: SyncServiceProtocol {
 
     @MainActor
     func syncParticipants(metadata: CKShare.Metadata, for ledger: Ledger) async throws {
-        DiagnosticLog.log("SyncService.syncParticipants: begin share=\(metadata.share.recordID)")
-        let context = coreDataStack.viewContext
-        let participants = metadata.share.participants
+        DiagnosticLog.log("SyncService.syncParticipants(metadata): begin share=\(metadata.share.recordID)")
+        try await syncParticipantsFromShare(metadata.share, ledger: ledger)
+    }
 
+    @MainActor
+    func syncParticipants(share: CKShare, for ledger: Ledger) async throws {
+        DiagnosticLog.log("SyncService.syncParticipants(share): begin share=\(share.recordID)")
+        try await syncParticipantsFromShare(share, ledger: ledger)
+    }
+
+    @MainActor
+    private func syncParticipantsFromShare(_ share: CKShare, ledger: Ledger) async throws {
+        let context = coreDataStack.viewContext
+        let participants = share.participants.filter { $0.acceptanceStatus == .accepted }
+
+        DiagnosticLog.log("syncParticipantsFromShare: total participants in CKShare = \(share.participants.count), accepted = \(participants.count)")
+        for (i, p) in participants.enumerated() {
+            let lookupInfo = p.userIdentity.lookupInfo
+            DiagnosticLog.log("syncParticipantsFromShare: participant[\(i)] role=\(p.role.rawValue) acceptance=\(p.acceptanceStatus.rawValue) recordID=\(lookupInfo?.userRecordID?.recordName ?? "nil") email=\(lookupInfo?.emailAddress ?? "nil") phone=\(lookupInfo?.phoneNumber ?? "nil")")
+        }
+
+        // 清空该账本所有现有 User，从 CKShare 参与者重新创建，避免重复
         let fetch = NSFetchRequest<User>(entityName: "User")
         let allUsers = try context.fetch(fetch)
-        let existingUsers = allUsers.filter { $0.ledger?.id == ledger.id }
-        var existingByRecordID = Dictionary(uniqueKeysWithValues: existingUsers.map { ($0.cloudKitUserRecordID, $0) })
+        for user in allUsers where user.ledger?.id == ledger.id {
+            context.delete(user)
+        }
+        var existingByRecordID: [String: User] = [:]
+
+        let myRecordID = try? await ckContainer.userRecordID().recordName
 
         for participant in participants {
-            let recordID = participant.userIdentity.lookupInfo?.userRecordID?.recordName ?? ""
-            let name = participant.userIdentity.nameComponents?.formatted(.name(style: .abbreviated)) ?? "共享成员"
-            let role: LedgerRole = participant.role == .owner ? .owner : .member
-            DiagnosticLog.log("SyncService.syncParticipants: participant recordID=\(recordID) name=\(name) role=\(role.rawValue)")
-
+            let lookupInfo = participant.userIdentity.lookupInfo
+            // Prefer userRecordID; fall back to email or phone for pending participants
+            var recordID = lookupInfo?.userRecordID?.recordName ?? ""
+            if recordID.isEmpty {
+                recordID = lookupInfo?.emailAddress ?? lookupInfo?.phoneNumber ?? ""
+            }
+            // Owner with no identity info — try multiple sources for a meaningful recordID
+            if recordID.isEmpty && participant.role == .owner {
+                recordID = ledger.ownerUserRecordID
+                    ?? share.creatorUserRecordID?.recordName
+                    ?? "owner-\(ledger.id.uuidString.prefix(8))"
+            }
             if recordID.isEmpty { continue }
+
+            var name = participant.userIdentity.nameComponents?.formatted(.name(style: .medium))
+                ?? lookupInfo?.emailAddress
+                ?? lookupInfo?.phoneNumber
+                ?? ""
+
+            // Owner with no resolved name — try CloudKit identity lookup
+            if name.isEmpty && participant.role == .owner && !recordID.hasPrefix("owner-") {
+                do {
+                    // 先请求 userDiscoverability 权限（Apple 文档要求）
+                    let permissionStatus = try await withCheckedThrowingContinuation { (cont: CheckedContinuation<CKContainer.ApplicationPermissionStatus, Error>) in
+                        ckContainer.status(forApplicationPermission: .userDiscoverability) { status, error in
+                            if let error { cont.resume(throwing: error) }
+                            else { cont.resume(returning: status) }
+                        }
+                    }
+                    if permissionStatus != .granted {
+                        let granted = try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Bool, Error>) in
+                            ckContainer.requestApplicationPermission(.userDiscoverability) { status, error in
+                                if let error { cont.resume(throwing: error) }
+                                else { cont.resume(returning: status == .granted) }
+                            }
+                        }
+                        if !granted {
+                            DiagnosticLog.log("SyncService: userDiscoverability permission denied")
+                            throw CKError(.permissionFailure)
+                        }
+                    }
+                    // 使用与 recordID 同一个 container 进行查找
+                    let identity = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CKUserIdentity, Error>) in
+                        ckContainer.discoverUserIdentity(withUserRecordID: CKRecord.ID(recordName: recordID)) { identity, error in
+                            if let identity {
+                                continuation.resume(returning: identity)
+                            } else {
+                                continuation.resume(throwing: error ?? CKError(.internalError))
+                            }
+                        }
+                    }
+                    name = identity.lookupInfo?.emailAddress
+                        ?? {
+                            if let nc = identity.nameComponents {
+                                return PersonNameComponentsFormatter().string(from: nc)
+                            }
+                            return nil
+                        }()
+                        ?? ""
+                } catch let error as CKError {
+                    DiagnosticLog.log("SyncService: discoverUserIdentity CKError code=\(error.code.rawValue)")
+                } catch {
+                    DiagnosticLog.log("SyncService: discoverUserIdentity error \(error.localizedDescription)")
+                }
+            }
+
+            // 当前用户在自己设备上看到自己时，显示「我」
+            let currentEmail = share.currentUserParticipant?.userIdentity.lookupInfo?.emailAddress
+            let isMe = participant === share.currentUserParticipant
+                || recordID == myRecordID
+                || (lookupInfo?.emailAddress != nil && lookupInfo?.emailAddress == currentEmail)
+                || (participant.role == .owner && share.currentUserParticipant?.role == .owner)
+
+            if name.isEmpty {
+                if isMe {
+                    name = "我"
+                } else if participant.role == .owner {
+                    name = "创建者"
+                } else {
+                    name = "共享成员"
+                }
+            } else if isMe {
+                name = "我"
+            }
+
+            let role: LedgerRole = participant.role == .owner ? .owner : .member
+            DiagnosticLog.log("SyncService.syncParticipants: participant recordID=\(recordID) name=\(name) role=\(role.rawValue) acceptance=\(participant.acceptanceStatus.rawValue)")
 
             if let existing = existingByRecordID[recordID] {
                 existing.displayName = name
@@ -148,6 +258,65 @@ final class SyncServiceImpl: SyncServiceProtocol {
         if context.hasChanges {
             try context.save()
             DiagnosticLog.log("SyncService.syncParticipants: saved users")
+        }
+    }
+
+    func discoverShare(for ledger: Ledger) async throws -> CKShare? {
+        // 方式1：通过 shareRecordName
+        if let recordName = ledger.shareRecordName {
+            let recordID = CKRecord.ID(recordName: recordName)
+            do {
+                let records = try await ckContainer.sharedCloudDatabase.records(for: [recordID])
+                if let share = records[recordID] as? CKShare { return share }
+            } catch {}
+        }
+
+        // 方式2：通过 Core Data fetchShares
+        do {
+            let shares = try coreDataStack.container.fetchShares(matching: [ledger.objectID])
+            if let share = shares[ledger.objectID] { return share }
+        } catch {}
+
+        // 方式3：直接查询 shared database 中的 CKShare 记录
+        do {
+            let results = try await ckContainer.sharedCloudDatabase.records(
+                matching: CKQuery(recordType: "cloudkit.share", predicate: NSPredicate(value: true))
+            )
+            for (_, result) in results.matchResults {
+                if let share = try? result.get() as? CKShare { return share }
+            }
+        } catch {}
+
+        return nil
+    }
+
+    func validateShare(for ledger: Ledger) async throws -> Bool {
+        guard ledger.isShared, let recordName = ledger.shareRecordName else {
+            return true // 非共享账本，不需要校验
+        }
+        DiagnosticLog.log("SyncService.validateShare: checking recordName=\(recordName)")
+        let recordID = CKRecord.ID(recordName: recordName)
+        do {
+            let records = try await ckContainer.sharedCloudDatabase.records(for: [recordID])
+            guard let share = records[recordID] as? CKShare else {
+                DiagnosticLog.log("SyncService.validateShare: share not found, may be deleted")
+                return false
+            }
+            // 检查当前用户是否仍在参与者中
+            let currentUserID = try await ckContainer.userRecordID().recordName
+            let isParticipant = share.participants.contains { p in
+                p.userIdentity.lookupInfo?.userRecordID?.recordName == currentUserID
+                && p.acceptanceStatus == .accepted
+            }
+            DiagnosticLog.log("SyncService.validateShare: valid=\(isParticipant)")
+            return isParticipant
+        } catch let error as CKError where error.code == .unknownItem {
+            DiagnosticLog.log("SyncService.validateShare: CKShare deleted (unknownItem)")
+            return false
+        } catch {
+            // 网络错误等不确定因素，保守返回 true 避免误伤
+            DiagnosticLog.log("SyncService.validateShare: network/error, assuming valid: \(error)")
+            return true
         }
     }
 

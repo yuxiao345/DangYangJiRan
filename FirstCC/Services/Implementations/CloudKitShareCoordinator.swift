@@ -59,6 +59,10 @@ final class CloudKitShareCoordinator {
     func sharedStoreForImport() async throws -> NSPersistentStore {
         DiagnosticLog.log("CloudKitCoordinator.sharedStoreForImport: begin")
         let s = try await getStack()
-        return s.sharedStore
+        guard let store = s.sharedStore else {
+            throw NSError(domain: "CloudKitShareCoordinator", code: -3,
+                userInfo: [NSLocalizedDescriptionKey: "Shared store not ready"])
+        }
+        return store
     }
 }

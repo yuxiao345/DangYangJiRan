@@ -11,6 +11,7 @@ struct CloudSharingView: UIViewControllerRepresentable {
     let isPresenting: Bool
     let syncService: SyncServiceImpl?
     let coreDataStack: CoreDataStack?
+    var onStopSharing: (() -> Void)?
 
     func makeUIViewController(context: Context) -> UICloudSharingController {
         let controller: UICloudSharingController
@@ -37,7 +38,7 @@ struct CloudSharingView: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UICloudSharingController, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(ledger: ledger, container: container, syncService: syncService, coreDataStack: coreDataStack)
+        Coordinator(ledger: ledger, container: container, syncService: syncService, coreDataStack: coreDataStack, onStopSharing: onStopSharing)
     }
 
     final class Coordinator: NSObject, UICloudSharingControllerDelegate {
@@ -45,12 +46,14 @@ struct CloudSharingView: UIViewControllerRepresentable {
         let container: CKContainer
         let syncService: SyncServiceImpl?
         let coreDataStack: CoreDataStack?
+        let onStopSharing: (() -> Void)?
 
-        init(ledger: Ledger, container: CKContainer, syncService: SyncServiceImpl?, coreDataStack: CoreDataStack?) {
+        init(ledger: Ledger, container: CKContainer, syncService: SyncServiceImpl?, coreDataStack: CoreDataStack?, onStopSharing: (() -> Void)?) {
             self.ledger = ledger
             self.container = container
             self.syncService = syncService
             self.coreDataStack = coreDataStack
+            self.onStopSharing = onStopSharing
         }
 
         @MainActor
@@ -76,15 +79,23 @@ struct CloudSharingView: UIViewControllerRepresentable {
 
             let (_, share, _) = try await container.share([nsObject], to: nil)
             ledger.isShared = true
+            ledger.shareRecordName = share.recordID.recordName
             return share
         }
 
         func cloudSharingControllerDidStopSharing(_ csc: UICloudSharingController) {
             ledger.isShared = false
+            onStopSharing?()
         }
 
         func cloudSharingControllerDidSaveShare(_ csc: UICloudSharingController) {
             ledger.isShared = true
+            // Re-sync participants after owner adds/removes people
+            if let share = csc.share, let syncService {
+                Task {
+                    try? await syncService.syncParticipants(share: share, for: ledger)
+                }
+            }
         }
 
         func cloudSharingController(_ csc: UICloudSharingController, failedToSaveShareWithError error: Error) {

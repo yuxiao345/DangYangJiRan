@@ -9,6 +9,7 @@
         <attribute name="isShared" optional="NO" attributeType="Boolean" defaultValueString="NO" />
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO" />
         <attribute name="ownerUserRecordID" optional="YES" attributeType="String" />
+        <attribute name="shareRecordName" optional="YES" attributeType="String" />
         <relationship name="members" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="User" inverseName="ledger" inverseEntity="User" />
         <relationship name="accounts" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Account" inverseName="ledger" inverseEntity="Account" />
         <relationship name="categories" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Category" inverseName="ledger" inverseEntity="Category" />

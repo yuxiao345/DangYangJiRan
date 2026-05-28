@@ -16,6 +16,9 @@ struct NumpadAmountField: View {
     var body: some View {
         VStack(spacing: 8) {
             Button {
+                if !showNumpad {
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
                 withAnimation(.easeInOut(duration: 0.2)) {
                     if showNumpad { syncToBinding() }
                     showNumpad.toggle()

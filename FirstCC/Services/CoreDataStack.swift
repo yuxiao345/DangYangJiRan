@@ -12,8 +12,8 @@ final class CoreDataStack: ObservableObject {
     var privateStore: NSPersistentStore {
         container.persistentStoreCoordinator.persistentStores.first { $0.url == privateURL }!
     }
-    var sharedStore: NSPersistentStore {
-        container.persistentStoreCoordinator.persistentStores.first { $0.url == sharedURL }!
+    var sharedStore: NSPersistentStore? {
+        container.persistentStoreCoordinator.persistentStores.first { $0.url == sharedURL }
     }
 
     private let privateURL: URL
@@ -178,6 +178,10 @@ final class CoreDataStack: ObservableObject {
     }
 
     func acceptShareInvitations(from metadata: CKShare.Metadata) async throws {
+        guard let sharedStore = sharedStore else {
+            throw NSError(domain: "CoreDataStack", code: -3,
+                userInfo: [NSLocalizedDescriptionKey: "Shared store not loaded yet, retry later"])
+        }
         DiagnosticLog.log("CoreDataStack: acceptShareInvitations begin")
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             container.acceptShareInvitations(from: [metadata], into: sharedStore) { acceptedShares, error in
@@ -193,11 +197,44 @@ final class CoreDataStack: ObservableObject {
     }
 
     func fetchSharedLedgerCount() throws -> Int {
+        guard let sharedStore = sharedStore else { return 0 }
         let context = container.viewContext
         let fetch = NSFetchRequest<Ledger>(entityName: "Ledger")
         fetch.affectedStores = [sharedStore]
         let count = try context.count(for: fetch)
         DiagnosticLog.log("CoreDataStack: shared ledger count=\(count)")
         return count
+    }
+
+    /// Destroy and recreate the shared store — used when a participant exits a share
+    /// to prevent stale data from contaminating future share acceptances.
+    func resetSharedStore() async throws {
+        let coordinator = container.persistentStoreCoordinator
+        if let old = sharedStore {
+            try coordinator.remove(old)
+            DiagnosticLog.log("CoreDataStack: removed shared store from coordinator")
+        }
+        // Delete SQLite + WAL + SHM files
+        let fm = FileManager.default
+        for ext in ["", "-wal", "-shm"] {
+            let url = URL(fileURLWithPath: sharedURL.path + ext)
+            if fm.fileExists(atPath: url.path) {
+                try fm.removeItem(at: url)
+                DiagnosticLog.log("CoreDataStack: deleted \(url.lastPathComponent)")
+            }
+        }
+        // Re-add a fresh shared store
+        let desc = NSPersistentStoreDescription(url: sharedURL)
+        desc.configuration = "Shared"
+        let options = NSPersistentCloudKitContainerOptions(containerIdentifier: CloudKitConfig.containerIdentifier)
+        options.databaseScope = .shared
+        desc.cloudKitContainerOptions = options
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            coordinator.addPersistentStore(with: desc) { _, error in
+                if let error { cont.resume(throwing: error) }
+                else { cont.resume() }
+            }
+        }
+        DiagnosticLog.log("CoreDataStack: shared store recreated")
     }
 }

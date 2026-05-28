@@ -24,6 +24,7 @@ struct RootView: View {
             switch newPhase {
             case .active:
                 processRecurring()
+                appContainer.validateCurrentLedgerShare()
             case .background:
                 if appLockEnabled { isLocked = true }
             default: break

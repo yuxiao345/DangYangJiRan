@@ -9,6 +9,9 @@ protocol SyncServiceProtocol {
     func importSharedData(into stack: CoreDataStack) async throws -> [Ledger]
     func fetchParticipants(for ledger: Ledger) async throws -> [CKShare.Participant]
     func syncParticipants(metadata: CKShare.Metadata, for ledger: Ledger) async throws
+    func syncParticipants(share: CKShare, for ledger: Ledger) async throws
     func removeParticipant(_ participant: CKShare.Participant, from ledger: Ledger) async throws
     func syncNow() async throws
+    func validateShare(for ledger: Ledger) async throws -> Bool
+    func discoverShare(for ledger: Ledger) async throws -> CKShare?
 }

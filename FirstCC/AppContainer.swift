@@ -35,6 +35,13 @@ final class AppContainer: ObservableObject {
     @Published var currentLedger: Ledger?
     @Published var syncStatus: SyncStatus = .synced
     @Published var isAuthenticated: Bool = false
+    @Published var currentUserRecordID: String?
+
+    /// Whether the current user is the owner of the given ledger
+    func isOwner(of ledger: Ledger) -> Bool {
+        guard let rid = currentUserRecordID, let ownerRID = ledger.ownerUserRecordID else { return false }
+        return rid == ownerRID
+    }
 
     init() {
         // CoreDataStack
@@ -95,6 +102,9 @@ final class AppContainer: ObservableObject {
     func loadStores() async throws {
         try await coreDataStack.loadStores()
 
+        // Fetch current iCloud user identity for permission checks
+        await fetchCurrentUserIdentity()
+
         // Wait for CloudKit to import existing data before deciding
         // whether to create a default ledger. Without this, every
         // reinstall creates a duplicate "我的账本" because CloudKit
@@ -107,6 +117,18 @@ final class AppContainer: ObservableObject {
         }
 
         configureDefaultLedger()
+        validateCurrentLedgerShare()
+    }
+
+    private func fetchCurrentUserIdentity() async {
+        guard let container = cloudKitContainer else { return }
+        do {
+            let recordID = try await container.userRecordID()
+            currentUserRecordID = recordID.recordName
+            DiagnosticLog.log("AppContainer: currentUserRecordID=\(recordID.recordName.prefix(8))")
+        } catch {
+            DiagnosticLog.log("AppContainer: fetchUserRecordID failed \(error.localizedDescription)")
+        }
     }
 
     // MARK: - Share URL Handling
@@ -177,16 +199,33 @@ final class AppContainer: ObservableObject {
                 DiagnosticLog.log("import: switched to \(first.name)")
                 currentLedger = first
                 UserDefaults.standard.set(first.id.uuidString, forKey: "currentLedgerID")
+                first.shareRecordName = metadata.share.recordID.recordName
+                try? viewContext.save()
                 syncStatus = .error("已切换到共享账本：\(first.name)")
 
-                try? await syncService?.syncParticipants(metadata: metadata, for: first)
-                DiagnosticLog.log("import: participants synced")
+                do {
+                    try await syncService?.syncParticipants(metadata: metadata, for: first)
+                    DiagnosticLog.log("import: participants synced")
+                } catch {
+                    DiagnosticLog.log("import: syncParticipants FAILED \(error.localizedDescription)")
+                    syncStatus = .error("成员同步失败：\(error.localizedDescription)")
+                }
                 return
             }
 
             DiagnosticLog.log("import: 0 ledgers returned, falling back")
             syncStatus = .error("导入 0 个账本，正在刷新本地账本列表")
             await refreshAndSwitchToSharedLedger()
+            // Attempt participant sync on fallback path too
+            if let ledger = currentLedger, ledger.isShared {
+                ledger.shareRecordName = metadata.share.recordID.recordName
+                try? viewContext.save()
+                do {
+                    try await syncService?.syncParticipants(metadata: metadata, for: ledger)
+                } catch {
+                    DiagnosticLog.log("fallback: syncParticipants FAILED \(error.localizedDescription)")
+                }
+            }
         } catch {
             DiagnosticLog.log("handleAcceptedShareMetadata: FAILED \(error.localizedDescription)")
             syncStatus = .error("共享失败：\(error.localizedDescription)")
@@ -311,12 +350,48 @@ final class AppContainer: ObservableObject {
             try? context.save()
         }
     }
+
+    // MARK: - Share Validation
+
+    func validateCurrentLedgerShare() {
+        guard let ledger = currentLedger, let svc = syncService else { return }
+
+        Task {
+            do {
+                // 主动发现 CKShare，不依赖 isShared 当前值
+                if let share = try await svc.discoverShare(for: ledger) {
+                    await MainActor.run {
+                        var changed = false
+                        if !ledger.isShared { ledger.isShared = true; changed = true }
+                        if ledger.shareRecordName == nil { ledger.shareRecordName = share.recordID.recordName; changed = true }
+                        if share.currentUserParticipant?.role == .owner,
+                           ledger.ownerUserRecordID != currentUserRecordID {
+                            ledger.ownerUserRecordID = currentUserRecordID
+                            changed = true
+                        }
+                        if changed { try? viewContext.save() }
+                    }
+                } else if ledger.isShared {
+                    // 之前标记为共享但 CKShare 不存在 → 已失效
+                    await MainActor.run {
+                        ledger.isShared = false
+                        ledger.shareRecordName = nil
+                        try? viewContext.save()
+                        syncStatus = .shareInvalid
+                    }
+                }
+            } catch {
+                DiagnosticLog.log("AppContainer: share validation error: \(error)")
+            }
+        }
+    }
 }
 
 enum SyncStatus {
     case synced
     case syncing
     case offline
+    case shareInvalid
     case error(String)
 
     var displayName: String {
@@ -324,6 +399,7 @@ enum SyncStatus {
         case .synced: return NSLocalizedString("已同步", comment: "")
         case .syncing: return NSLocalizedString("同步中...", comment: "")
         case .offline: return NSLocalizedString("离线", comment: "")
+        case .shareInvalid: return NSLocalizedString("共享已失效", comment: "")
         case .error(let msg): return msg
         }
     }

@@ -11,6 +11,7 @@ final class Ledger: NSManagedObject,  Sendable {
     @NSManaged var isShared: Bool
     @NSManaged var createdAt: Date
     @NSManaged var ownerUserRecordID: String?
+    @NSManaged var shareRecordName: String?
 
     @NSManaged var members: Set<User>?
     @NSManaged var accounts: Set<Account>?
@@ -42,6 +43,7 @@ final class Ledger: NSManagedObject,  Sendable {
         defaultCurrencyCode: String = "CNY",
         isShared: Bool = false,
         ownerUserRecordID: String? = nil,
+        shareRecordName: String? = nil,
         context: NSManagedObjectContext
     ) {
         self.init(context: context)
@@ -51,6 +53,7 @@ final class Ledger: NSManagedObject,  Sendable {
         self.defaultCurrencyCode = defaultCurrencyCode
         self.isShared = isShared
         self.ownerUserRecordID = ownerUserRecordID
+        self.shareRecordName = shareRecordName
     }
 }
 

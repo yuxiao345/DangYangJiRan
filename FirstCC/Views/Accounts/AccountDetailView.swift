@@ -2,7 +2,7 @@ import SwiftUI
 @preconcurrency import CoreData
 
 struct AccountDetailView: View {
-    let account: Account
+    @ObservedObject var account: Account
     @Environment(\.managedObjectContext) private var modelContext
     @EnvironmentObject private var appContainer: AppContainer
     @State private var balance: Decimal = 0

@@ -41,6 +41,9 @@ struct SyncStatusBadge: View {
         case .offline:
             Image(systemName: "wifi.slash")
                 .font(.designBodySmall)
+        case .shareInvalid:
+            Image(systemName: "person.slash")
+                .font(.designBodySmall)
         case .error:
             Image(systemName: "ant.circle.fill")
                 .font(.designBodySmall)
@@ -86,6 +89,7 @@ struct SyncStatusBadge: View {
         switch appContainer.syncStatus {
         case .offline: .orange
         case .error: .red
+        case .shareInvalid: .orange
         default: .secondary
         }
     }

@@ -42,7 +42,8 @@
 		3AFF31E756FE989CD7E558C3 /* TransactionServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A17CF9388F2D9B8235012F5 /* TransactionServiceProtocol.swift */; };
 		3D78916C16CB0897606B4FD7 /* CurrencyServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB18074394D7CADFC89B2D67 /* CurrencyServiceProtocol.swift */; };
 		3F68ED16CD2448D29AF611FF /* SyncServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 948C7C0635F94E2580295008 /* SyncServiceImpl.swift */; };
-		41CFA25D85BF13D28B660A3C /* SplitServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13A27CA96743727FDD560642 /* SplitServiceProtocol.swift */; };
+
+		FA5AE7A3C7B3480B8CD17A18 /* LedgerDeepCopyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CCBBC471DD34C89B04A236A /* LedgerDeepCopyService.swift */; };		41CFA25D85BF13D28B660A3C /* SplitServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13A27CA96743727FDD560642 /* SplitServiceProtocol.swift */; };
 		467EDDBA2B914CF7815A9C1E /* SplitEntryRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80FC7913E4694EFDA9325D70 /* SplitEntryRowView.swift */; };
 		47925836F662AA48D8B66332 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002EF7F08431743F01C363C7 /* SettingsView.swift */; };
 		4A6292A9A7FC47FA87694573 /* UserListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67B31C4EA8264017B8FAEC09 /* UserListView.swift */; };
@@ -275,7 +276,8 @@
 		90B25DB36154D0B02CA574E9 /* BudgetServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetServiceImpl.swift; sourceTree = "<group>"; };
 		942E11744D3E866B2C87DA3F /* SearchablePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchablePickerView.swift; sourceTree = "<group>"; };
 		948C7C0635F94E2580295008 /* SyncServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncServiceImpl.swift; sourceTree = "<group>"; };
-		979E204D2E243EDB0A12BEA4 /* TransactionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionListView.swift; sourceTree = "<group>"; };
+
+		9CCBBC471DD34C89B04A236A /* LedgerDeepCopyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LedgerDeepCopyService.swift"; sourceTree = "<group>"; };		979E204D2E243EDB0A12BEA4 /* TransactionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionListView.swift; sourceTree = "<group>"; };
 		97FCEDFC1A08B135CB216CDC /* icon_dark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon_dark.png; sourceTree = "<group>"; };
 		9C21B584CD4840E630796829 /* CreditCardReconciliationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditCardReconciliationView.swift; sourceTree = "<group>"; };
 		9EC70245AAD246858EB68CFC /* SyncStatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncStatusBadge.swift; sourceTree = "<group>"; };
@@ -663,6 +665,7 @@
 				1C9129B1EACD775E7DEFFE6F /* TransactionServiceImpl.swift */,
 				D630BB06AF584365B63460B4 /* SplitServiceImpl.swift */,
 				948C7C0635F94E2580295008 /* SyncServiceImpl.swift */,
+				9CCBBC471DD34C89B04A236A /* LedgerDeepCopyService.swift */,
 				2F3A5FF037084473AC0DA0A2 /* ExportServiceImpl.swift */,
 				C57EFB0CAB1BC4F3B58C9EFF /* CurrencyServiceImpl.swift */,
 				18ABC6DFCE6F5ED9EC1F849F /* ExchangeRateServiceImpl.swift */,
@@ -983,6 +986,7 @@
 				A2CBBC6D41AA4605BB7ABEE4 /* SplitDetailView.swift in Sources */,
 				467EDDBA2B914CF7815A9C1E /* SplitEntryRowView.swift in Sources */,
 				3F68ED16CD2448D29AF611FF /* SyncServiceImpl.swift in Sources */,
+				FA5AE7A3C7B3480B8CD17A18 /* LedgerDeepCopyService.swift in Sources */,
 				1BEC78BD35674490949F5EC3 /* SyncStatusBadge.swift in Sources */,
 				329DDCD20C1541EC92381F35 /* CloudSharingView.swift in Sources */,
 				4A6292A9A7FC47FA87694573 /* UserListView.swift in Sources */,
@@ -1110,6 +1114,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				"INFOPLIST_KEY_CFBundleDisplayName" = "荡漾计然";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;

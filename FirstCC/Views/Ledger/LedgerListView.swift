@@ -17,9 +17,14 @@ struct LedgerListView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 6) {
                             Image(systemName: ledger.iconName)
-                                .foregroundStyle(Color.designPrimaryContainer)
+                                .foregroundStyle(ledger.isShared ? Color.designPrimaryFixed : Color.designPrimaryContainer)
                             Text(ledger.name)
                                 .font(.designBodyMedium)
+                            if ledger.isShared {
+                                Image(systemName: "person.2.fill")
+                                    .font(.caption2)
+                                    .foregroundStyle(Color.designPrimaryFixed)
+                            }
                         }
                         HStack(spacing: 6) {
                             Text(ledger.type.displayName)
@@ -53,7 +58,7 @@ struct LedgerListView: View {
                 .contentShape(Rectangle())
                 .onTapGesture { switchLedger(ledger) }
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    if ledgers.count > 1 {
+                    if ledgers.count > 1 && (!ledger.isShared || appContainer.isOwner(of: ledger)) {
                         Button(role: .destructive) {
                             ledgerToDelete = ledger
                             showDeleteAlert = true
@@ -94,7 +99,11 @@ struct LedgerListView: View {
             Button("取消", role: .cancel) {}
             Button("删除", role: .destructive) { confirmDelete() }
         } message: {
-            Text("删除账本会同时删除该账本下的所有数据，此操作不可撤销。")
+            if let ledger = ledgerToDelete, ledger.isShared {
+                Text("这是共享账本。删除后其他成员将无法访问，数据将保留在你的本地。")
+            } else {
+                Text("删除账本会同时删除该账本下的所有数据，此操作不可撤销。")
+            }
         }
     }
 
