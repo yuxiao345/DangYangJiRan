@@ -160,8 +160,8 @@ final class AppContainer: ObservableObject {
         }
     }
 
-    private func resolveShareMetadata(from url: URL, container: CKContainer) async throws -> CKShare.Metadata {
-        if #available(iOS 26.0, *) {
+    private func resolveShareMetadata(from url: URL, container: CKContainer, preferLegacy: Bool = false) async throws -> CKShare.Metadata {
+        if #available(iOS 26.0, *), !preferLegacy {
             // Modern path: request share access + fetch metadata
             try await container.requestShareAccess(for: [url])
             let results = try await container.shareMetadatas(for: [url])
@@ -526,32 +526,69 @@ final class AppContainer: ObservableObject {
     ///
     /// This method detects that state and completes the acceptance.
     private func recoverShareAcceptance() async {
-        // Only relevant if shared store exists (auto-discovered)
-        guard coreDataStack.sharedStore != nil else { return }
+        let hasSharedStore = coreDataStack.sharedStore != nil
+        DiagnosticLog.log("AppContainer: recoverShareAcceptance begin sharedStore=\(hasSharedStore)")
+        guard hasSharedStore else { return }
 
-        // Find shared ledgers with a known share record
-        let fetch = NSFetchRequest<Ledger>(entityName: "Ledger")
-        fetch.predicate = NSPredicate(format: "isShared == YES AND shareRecordName != nil")
-        guard let ledgers = try? viewContext.fetch(fetch), !ledgers.isEmpty else { return }
+        // Fetch ALL ledgers to diagnose what's in the stores
+        let allFetch = NSFetchRequest<Ledger>(entityName: "Ledger")
+        let allLedgers = (try? viewContext.fetch(allFetch)) ?? []
+        DiagnosticLog.log("AppContainer: recovery — total ledgers=\(allLedgers.count)")
+        for l in allLedgers {
+            DiagnosticLog.log("AppContainer: recovery ledger name=\(l.name) isShared=\(l.isShared) shrRN=\(l.shareRecordName?.prefix(8) ?? "nil")")
+        }
+
+        // Also check shared store specifically
+        if let sharedStore = coreDataStack.sharedStore {
+            let sharedFetch = NSFetchRequest<Ledger>(entityName: "Ledger")
+            sharedFetch.affectedStores = [sharedStore]
+            let sharedCount = (try? viewContext.count(for: sharedFetch)) ?? -1
+            DiagnosticLog.log("AppContainer: recovery — ledgers in shared store=\(sharedCount)")
+        }
+
+        // Find shared ledgers — isShared OR has shareRecordName
+        var candidates: [Ledger] = []
+        for l in allLedgers {
+            if l.isShared || l.shareRecordName != nil {
+                candidates.append(l)
+            }
+        }
+        DiagnosticLog.log("AppContainer: recovery — candidates=\(candidates.count)")
 
         // Filter to ledgers not yet recovered (per-shareRecordName tracking)
-        let pending = ledgers.filter { ledger in
-            guard let rn = ledger.shareRecordName else { return false }
-            return !UserDefaults.standard.bool(forKey: "shareRecovered_\(rn)")
+        let pending = candidates.filter { ledger in
+            let key = ledger.shareRecordName ?? ledger.id.uuidString
+            return !UserDefaults.standard.bool(forKey: "shareRecovered_\(key)")
         }
-        guard !pending.isEmpty else { return }
+        guard !pending.isEmpty else {
+            DiagnosticLog.log("AppContainer: recovery — all candidates already recovered")
+            return
+        }
 
-        DiagnosticLog.log("AppContainer: share recovery — \(pending.count)/\(ledgers.count) pending")
+        DiagnosticLog.log("AppContainer: share recovery — \(pending.count)/\(candidates.count) pending")
         UserDefaults.standard.set(pending.count, forKey: "diag_recoveryLedgerCount")
 
         guard let svc = syncService, let container = cloudKitContainer else { return }
 
         for ledger in pending {
-            guard let recordName = ledger.shareRecordName else { continue }
-            let perLedgerKey = "shareRecovered_\(recordName)"
-            DiagnosticLog.log("AppContainer: recovering share for [\(ledger.name)] recordName=\(recordName.prefix(8))…")
+            let perLedgerKey = "shareRecovered_\(ledger.shareRecordName ?? ledger.id.uuidString)"
+            DiagnosticLog.log("AppContainer: recovering share for [\(ledger.name)] recordName=\(ledger.shareRecordName?.prefix(8) ?? "nil")…")
 
             do {
+                // Try to get shareRecordName from the shared store if missing locally
+                if ledger.shareRecordName == nil, let sharedStore = coreDataStack.sharedStore {
+                    if let shares = try? coreDataStack.container.fetchShares(matching: [ledger.objectID]),
+                       let (_, share) = shares.first {
+                        ledger.shareRecordName = share.recordID.recordName
+                        try? viewContext.save()
+                        DiagnosticLog.log("AppContainer: recovery — set shareRecordName=\(share.recordID.recordName.prefix(8))")
+                    }
+                }
+
+                guard let recordName = ledger.shareRecordName else {
+                    DiagnosticLog.log("AppContainer: recovery — NO shareRecordName, cannot recover")
+                    continue
+                }
                 guard let share = try await svc.discoverShare(for: ledger) else {
                     DiagnosticLog.log("AppContainer: recovery — CKShare not found, skipping")
                     continue
@@ -561,7 +598,7 @@ final class AppContainer: ObservableObject {
                     continue
                 }
 
-                let metadata = try await resolveShareMetadata(from: shareURL, container: container)
+                let metadata = try await resolveShareMetadata(from: shareURL, container: container, preferLegacy: true)
                 try await coreDataStack.acceptShareInvitations(from: metadata)
                 DiagnosticLog.log("AppContainer: recovery — accepted, waiting for import…")
 
