@@ -160,8 +160,8 @@ final class AppContainer: ObservableObject {
         }
     }
 
-    private func resolveShareMetadata(from url: URL, container: CKContainer, preferLegacy: Bool = false) async throws -> CKShare.Metadata {
-        if #available(iOS 26.0, *), !preferLegacy {
+    private func resolveShareMetadata(from url: URL, container: CKContainer) async throws -> CKShare.Metadata {
+        if #available(iOS 26.0, *) {
             // Modern path: request share access + fetch metadata
             try await container.requestShareAccess(for: [url])
             let results = try await container.shareMetadatas(for: [url])
@@ -598,7 +598,7 @@ final class AppContainer: ObservableObject {
                     continue
                 }
 
-                let metadata = try await resolveShareMetadata(from: shareURL, container: container, preferLegacy: true)
+                let metadata = try await resolveShareMetadata(from: shareURL, container: container)
                 try await coreDataStack.acceptShareInvitations(from: metadata)
                 DiagnosticLog.log("AppContainer: recovery — accepted, waiting for import…")
 
