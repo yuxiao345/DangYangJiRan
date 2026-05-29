@@ -9,7 +9,6 @@ final class Account: NSManagedObject,  Sendable {
     @NSManaged var typeRaw: String
     @NSManaged var iconName: String?
     @NSManaged var colorHex: String?
-    @NSManaged var customIconData: Data?
     @NSManaged var initialBalanceInFen: Int64
     @NSManaged var creditLimitInFen: Int64  // optional in model
     @NSManaged var billingDay: Int64  // optional, 0 = nil
@@ -62,7 +61,6 @@ final class Account: NSManagedObject,  Sendable {
         type: AccountType = .cash,
         iconName: String? = nil,
         colorHex: String? = nil,
-        customIconData: Data? = nil,
         initialBalance: Decimal = 0,
         creditLimit: Decimal? = nil,
         billingDay: Int? = nil,
@@ -77,7 +75,6 @@ final class Account: NSManagedObject,  Sendable {
         self.typeRaw = type.rawValue
         self.iconName = iconName ?? type.systemIcon
         self.colorHex = colorHex
-        self.customIconData = customIconData
         self.initialBalance = initialBalance
         self.creditLimit = creditLimit
         self.billingDayValue = billingDay

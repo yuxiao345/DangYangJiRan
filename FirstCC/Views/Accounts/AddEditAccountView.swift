@@ -86,17 +86,6 @@ struct AddEditAccountView: View {
                                     Text(logo.name)
                                         .foregroundStyle(.secondary)
                                 }
-                            } else if editing?.customIconData != nil {
-                                HStack(spacing: 8) {
-                                    if let data = editing?.customIconData, let img = UIImage(data: data) {
-                                        Image(uiImage: img)
-                                            .resizable()
-                                            .frame(width: 28, height: 28)
-                                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                                    }
-                                    Text("已设置")
-                                        .foregroundStyle(.secondary)
-                                }
                             } else {
                                 Text("不选择（使用类型图标）")
                                     .foregroundStyle(.secondary)
@@ -146,17 +135,9 @@ struct AddEditAccountView: View {
     }
 
     private func save() {
-        let logoData: Data? = {
-            if let logoID = selectedLogoID {
-                return BankLogoPresets.all.first(where: { $0.id == logoID })?.logoData
-            }
-            return editing?.customIconData
-        }()
-
         if let existing = editing {
             existing.name = name
             existing.currencyCode = currencyCode
-            existing.customIconData = logoData
             existing.initialBalance = initialBalance
             existing.creditLimit = hasCreditLimit ? creditLimit : nil
             existing.billingDay = accountType == .creditCard ? Int64(billingDay) : 0
@@ -168,7 +149,6 @@ struct AddEditAccountView: View {
                 name: name,
                 currencyCode: currencyCode,
                 type: accountType,
-                customIconData: logoData,
                 initialBalance: initialBalance,
                 creditLimit: hasCreditLimit ? creditLimit : nil,
                 billingDay: accountType == .creditCard ? billingDay : nil,

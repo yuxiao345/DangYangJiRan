@@ -81,6 +81,7 @@
 		90CC01F2DAC7455D7D6EC0DD /* BudgetPeriod.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BE7B99FB94F739CEE01D408 /* BudgetPeriod.swift */; };
 		94184FBC111B603A6D7FA21F /* CategoryServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BCF1A0598A529F57FA92893 /* CategoryServiceImpl.swift */; };
 		945B502C362ED0FCACF5E6F8 /* PhotoStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D09B8E37F1973C7B325B97 /* PhotoStorage.swift */; };
+		DC1F3B6E420E5FBB26B684D5 /* CSVStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8E979140E64CD5A924B3FB5 /* CSVStorage.swift */; };
 		96A9BBF3F09D559493202F3F /* RecurringServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACF33BE7C1C33F5B95307988 /* RecurringServiceImpl.swift */; };
 		973206DC22C7E422FC588F40 /* RecurringListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA61EF5A31711AAB71EBB9 /* RecurringListView.swift */; };
 		983508D08B644FDE87DF33CA /* TrendChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02DDC5F77A2F4F6B8F12D87F /* TrendChartView.swift */; };
@@ -235,6 +236,7 @@
 		50A8DC88431F6E95C688521D /* CurrencyText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyText.swift; sourceTree = "<group>"; };
 		5640103E5835D55C3875566E /* TransactionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionDetailView.swift; sourceTree = "<group>"; };
 		57D09B8E37F1973C7B325B97 /* PhotoStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoStorage.swift; sourceTree = "<group>"; };
+		D8E979140E64CD5A924B3FB5 /* CSVStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVStorage.swift; sourceTree = "<group>"; };
 		5C33C5AB9EB98872A155251A /* LedgerServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedgerServiceImpl.swift; sourceTree = "<group>"; };
 		5C9AD40C4F443580539DBE2B /* CategoryServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryServiceProtocol.swift; sourceTree = "<group>"; };
 		5CC5D3E3DEFB031A8EFA5869 /* LedgerListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedgerListView.swift; sourceTree = "<group>"; };
@@ -572,6 +574,7 @@
 				1BD4A1F1B5AEBDDC7F400369 /* Logger.swift */,
 			78E03226D9E2C5452E1F5F3C /* DiagnosticLog.swift */,
 				57D09B8E37F1973C7B325B97 /* PhotoStorage.swift */,
+				D8E979140E64CD5A924B3FB5 /* CSVStorage.swift */,
 				9140DF48EBC4497697CB6590 /* SwiftDataBridge.swift */,
 				0CB28F94C2944BCF91F3F91E /* ChineseExpressionParser.swift */,
 				25BD8B7423ECB057766F757C /* BankLogoPresets.swift */,
@@ -903,6 +906,7 @@
 				B7A42A252BC1A2076CE28411 /* Logger.swift in Sources */,
 			A01E8519E514A3B21C8C581A /* DiagnosticLog.swift in Sources */,
 				945B502C362ED0FCACF5E6F8 /* PhotoStorage.swift in Sources */,
+				DC1F3B6E420E5FBB26B684D5 /* CSVStorage.swift in Sources */,
 				512D26F8E750CDF09C49D945 /* RootView.swift in Sources */,
 				C8B3B5204629C63D2C14A146 /* MemberListView.swift in Sources */,
 				17B543C80095054EE83DB87E /* MerchantListView.swift in Sources */,

@@ -113,19 +113,9 @@ struct AccountsManagementView: View {
     }
 
     private func accountIcon(_ account: Account) -> some View {
-        Group {
-            if let data = account.customIconData, let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 32, height: 32)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-            } else {
-                Image(systemName: account.iconName ?? "creditcard")
-                    .frame(width: 32)
-                    .foregroundStyle(account.colorHex.map { Color(hex: $0) } ?? .blue)
-            }
-        }
+        Image(systemName: account.iconName ?? "creditcard")
+            .frame(width: 32)
+            .foregroundStyle(account.colorHex.map { Color(hex: $0) } ?? .blue)
     }
 
     private func loadAccounts() {
@@ -149,7 +139,6 @@ struct EditAccountView: View {
     @State private var initialBalance: Decimal
     @State private var selectedLogoID: String? = nil
     @State private var showLogoPicker = false
-    @State private var customIconData: Data?
     @State private var hasCreditLimit: Bool
     @State private var creditLimit: Decimal
     @State private var billingDay: Int
@@ -160,7 +149,6 @@ struct EditAccountView: View {
         _name = State(initialValue: account.name)
         _currencyCode = State(initialValue: account.currencyCode)
         _initialBalance = State(initialValue: account.initialBalance)
-        _customIconData = State(initialValue: account.customIconData)
         _hasCreditLimit = State(initialValue: account.creditLimit != nil)
         _creditLimit = State(initialValue: account.creditLimit ?? 0)
         _billingDay = State(initialValue: account.billingDay == 0 ? 1 : Int(account.billingDay))
@@ -207,17 +195,6 @@ struct EditAccountView: View {
                                         .frame(width: 28, height: 28)
                                         .clipShape(RoundedRectangle(cornerRadius: 6))
                                     Text(logo.name)
-                                        .foregroundStyle(.secondary)
-                                }
-                            } else if customIconData != nil {
-                                HStack(spacing: 8) {
-                                    if let data = customIconData, let img = UIImage(data: data) {
-                                        Image(uiImage: img)
-                                            .resizable()
-                                            .frame(width: 28, height: 28)
-                                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                                    }
-                                    Text("已设置")
                                         .foregroundStyle(.secondary)
                                 }
                             } else {
@@ -272,16 +249,9 @@ struct EditAccountView: View {
     }
 
     private func save() {
-        let logoData: Data? = {
-            if let logoID = selectedLogoID {
-                return BankLogoPresets.all.first(where: { $0.id == logoID })?.logoData
-            }
-            return customIconData
-        }()
         account.name = name
         account.currencyCode = currencyCode
         account.initialBalance = initialBalance
-        account.customIconData = logoData
         if account.type == .creditCard {
             account.creditLimit = hasCreditLimit ? creditLimit : nil
             account.billingDay = Int64(billingDay)

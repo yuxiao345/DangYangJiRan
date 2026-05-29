@@ -73,6 +73,13 @@ final class CoreDataStack: ObservableObject {
                 let nsErr = err as NSError
                 if nsErr.domain == CKError.errorDomain {
                     errorDetail = " ck=\(nsErr.code)"
+                    // Partial failures include per-record errors — log details to pinpoint problem fields
+                    if nsErr.code == 2, let partials = nsErr.userInfo[CKPartialErrorsByItemIDKey] as? [AnyHashable: Error] {
+                        let details = partials.values.map { $0.localizedDescription }.joined(separator: "; ")
+                        if !details.isEmpty {
+                            DiagnosticLog.log("CloudKit partial details: \(details)")
+                        }
+                    }
                 } else {
                     errorDetail = " err=\(nsErr.domain).\(nsErr.code)"
                 }
@@ -129,6 +136,18 @@ final class CoreDataStack: ObservableObject {
             }
         }
         DiagnosticLog.log("CoreDataStack: loadStores complete")
+
+#if DEBUG
+        // Sync CoreData model → CloudKit development schema.
+        // Needed when schema was initialized from a prior model version (e.g. SwiftData)
+        // and new fields haven't been pushed to CloudKit.
+        do {
+            try await container.initializeCloudKitSchema()
+            DiagnosticLog.log("CoreDataStack: initializeCloudKitSchema OK")
+        } catch {
+            DiagnosticLog.log("CoreDataStack: initializeCloudKitSchema note: \(error.localizedDescription)")
+        }
+#endif
     }
 
     func newBackgroundContext() -> NSManagedObjectContext {

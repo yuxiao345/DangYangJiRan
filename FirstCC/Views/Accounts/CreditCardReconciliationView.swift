@@ -257,8 +257,8 @@ struct AddEditStatementView: View {
         _selectedYear = State(initialValue: Int(editing?.periodYear ?? Int64(calendar.component(.year, from: now))))
         _selectedMonth = State(initialValue: Int(editing?.periodMonth ?? Int64(calendar.component(.month, from: now))))
         _bankAmount = State(initialValue: editing?.statementAmount ?? 0)
-        _csvData = State(initialValue: editing?.bankCSVData)
-        _csvFileName = State(initialValue: editing?.bankCSVFileName ?? "")
+        _csvData = State(initialValue: nil)
+        _csvFileName = State(initialValue: editing?.bankCSVFileName?.components(separatedBy: "/").last ?? "")
     }
 
     var body: some View {
@@ -651,8 +651,13 @@ struct AddEditStatementView: View {
             existing.periodYear = Int64(selectedYear)
             existing.periodMonth = Int64(selectedMonth)
             existing.statementAmount = bankAmount == 0 ? nil : bankAmount
-            existing.bankCSVData = csvData
-            existing.bankCSVFileName = csvData != nil ? csvFileName : nil
+            // Persist CSV data to local file, store only path in CoreData
+            if let data = csvData {
+                existing.bankCSVFileName = CSVStorage.save(data, statementId: existing.id)
+            } else {
+                if let oldPath = existing.bankCSVFileName { CSVStorage.delete(path: oldPath) }
+                existing.bankCSVFileName = nil
+            }
             try? appContainer.creditCardStatementService.updateStatement(existing, context: modelContext)
             stmt = existing
         } else {
@@ -661,10 +666,13 @@ struct AddEditStatementView: View {
                 periodYear: selectedYear,
                 periodMonth: selectedMonth,
                 statementAmount: bankAmount == 0 ? nil : bankAmount,
-                bankCSVData: csvData,
-                bankCSVFileName: csvData != nil ? csvFileName : nil,
+                bankCSVFileName: nil,
                 context: modelContext
             )
+            // Save CSV after we have an ID
+            if let data = csvData {
+                stmt.bankCSVFileName = CSVStorage.save(data, statementId: stmt.id)
+            }
             try? appContainer.creditCardStatementService.createStatement(stmt, ledger: ledger, context: modelContext)
         }
 
@@ -673,10 +681,11 @@ struct AddEditStatementView: View {
 
     private func loadEditingCSV() {
         guard let existing = editing,
-              let data = existing.bankCSVData,
+              let path = existing.bankCSVFileName,
+              let data = CSVStorage.load(path: path),
               bankItems.isEmpty else { return }
         csvData = data
-        csvFileName = existing.bankCSVFileName ?? ""
+        csvFileName = path.components(separatedBy: "/").last ?? ""
         parseAndMatch()
     }
 

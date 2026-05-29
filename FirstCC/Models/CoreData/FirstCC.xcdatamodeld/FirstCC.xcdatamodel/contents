@@ -39,7 +39,6 @@
         <attribute name="typeRaw" optional="NO" attributeType="String" defaultValueString="cash" />
         <attribute name="iconName" optional="YES" attributeType="String" />
         <attribute name="colorHex" optional="YES" attributeType="String" />
-        <attribute name="customIconData" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" />
         <attribute name="initialBalanceInFen" optional="NO" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES" />
         <attribute name="creditLimitInFen" optional="YES" attributeType="Integer 64" usesScalarValueType="YES" />
         <attribute name="billingDay" optional="YES" attributeType="Integer 64" usesScalarValueType="YES" />
@@ -223,7 +222,6 @@
         <attribute name="isReconciled" optional="NO" attributeType="Boolean" defaultValueString="NO" />
         <attribute name="reconciledAt" optional="YES" attributeType="Date" usesScalarValueType="NO" />
         <attribute name="note" optional="YES" attributeType="String" />
-        <attribute name="bankCSVData" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES" />
         <attribute name="bankCSVFileName" optional="YES" attributeType="String" />
         <relationship name="account" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Account" inverseName="creditCardStatements" inverseEntity="Account" />
         <relationship name="ledger" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Ledger" inverseName="creditCardStatements" inverseEntity="Ledger" />

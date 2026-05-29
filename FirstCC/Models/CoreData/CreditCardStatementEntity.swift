@@ -11,7 +11,6 @@ final class CreditCardStatement: NSManagedObject,  Sendable {
     @NSManaged var isReconciled: Bool
     @NSManaged var reconciledAt: Date?
     @NSManaged var note: String?
-    @NSManaged var bankCSVData: Data?
     @NSManaged var bankCSVFileName: String?
 
     @NSManaged var account: Account?
@@ -41,7 +40,6 @@ final class CreditCardStatement: NSManagedObject,  Sendable {
         isReconciled: Bool = false,
         reconciledAt: Date? = nil,
         note: String? = nil,
-        bankCSVData: Data? = nil,
         bankCSVFileName: String? = nil,
         context: NSManagedObjectContext
     ) {
@@ -54,7 +52,6 @@ final class CreditCardStatement: NSManagedObject,  Sendable {
         self.isReconciled = isReconciled
         self.reconciledAt = reconciledAt
         self.note = note
-        self.bankCSVData = bankCSVData
         self.bankCSVFileName = bankCSVFileName
     }
 }

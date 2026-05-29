@@ -61,18 +61,9 @@ struct AccountRowView: View {
     // MARK: - Icon
 
     private var iconView: some View {
-        Group {
-            if let data = account.customIconData, let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFit()
-                    .padding(7)
-            } else {
-                Image(systemName: account.iconName ?? account.type.systemIcon)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(accentColor)
-            }
-        }
+        Image(systemName: account.iconName ?? account.type.systemIcon)
+            .font(.system(size: 14, weight: .medium))
+            .foregroundStyle(accentColor)
     }
 
     // MARK: - Badge

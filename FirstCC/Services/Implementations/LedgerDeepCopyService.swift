@@ -147,7 +147,6 @@ enum LedgerDeepCopyService {
         let n = Account(context: ctx)
         n.id = src.id; n.name = src.name; n.currencyCode = src.currencyCode
         n.typeRaw = src.typeRaw; n.iconName = src.iconName; n.colorHex = src.colorHex
-        n.customIconData = src.customIconData
         n.initialBalanceInFen = src.initialBalanceInFen
         n.creditLimitInFen = src.creditLimitInFen
         n.billingDay = src.billingDay; n.dueDay = src.dueDay
@@ -266,7 +265,7 @@ enum LedgerDeepCopyService {
         n.statementAmountInFen = src.statementAmountInFen
         n.reconciledAppAmountInFen = src.reconciledAppAmountInFen
         n.isReconciled = src.isReconciled; n.reconciledAt = src.reconciledAt
-        n.note = src.note; n.bankCSVData = src.bankCSVData; n.bankCSVFileName = src.bankCSVFileName
+        n.note = src.note; n.bankCSVFileName = src.bankCSVFileName
         map[n.id] = n
         return n
     }
