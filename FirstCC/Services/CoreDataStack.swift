@@ -19,6 +19,10 @@ final class CoreDataStack: ObservableObject {
     private let privateURL: URL
     private let sharedURL: URL
 
+    /// Timestamp of the most recent successful CloudKit import event.
+    /// Used by `waitForImportSettled` to detect when initial sync is complete.
+    private(set) var lastImportEventTime: Date = Date()
+
     init() {
         guard let modelURL = Bundle.main.url(forResource: "FirstCC", withExtension: "momd") else {
             fatalError("CoreDataStack: FirstCC.momd not found")
@@ -57,14 +61,29 @@ final class CoreDataStack: ObservableObject {
             forName: NSPersistentCloudKitContainer.eventChangedNotification,
             object: container,
             queue: .main
-        ) { notification in
+        ) { [weak self] notification in
+            guard let self else { return }
             guard let event = notification.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey]
                     as? NSPersistentCloudKitContainer.Event else { return }
             let storeLabel = event.storeIdentifier.split(separator: "/").last.map(String.init) ?? event.storeIdentifier
+            let typeName = eventTypeName(event.type.rawValue)
             let success = event.succeeded ? "OK" : "FAIL"
-            let errorInfo: String
-            if let err = event.error { errorInfo = " err=\(err.localizedDescription)" } else { errorInfo = "" }
-            DiagnosticLog.log("CloudKit[\(storeLabel)] \(event.type.rawValue): \(success)\(errorInfo)")
+            let errorDetail: String
+            if let err = event.error {
+                let nsErr = err as NSError
+                if nsErr.domain == CKError.errorDomain {
+                    errorDetail = " ck=\(nsErr.code)"
+                } else {
+                    errorDetail = " err=\(nsErr.domain).\(nsErr.code)"
+                }
+            } else {
+                errorDetail = ""
+            }
+            DiagnosticLog.log("CloudKit[\(storeLabel)] \(typeName): \(success)\(errorDetail)")
+            // Track successful import events to detect when initial sync settles
+            if event.type.rawValue == 1 && event.succeeded {
+                self.lastImportEventTime = Date()
+            }
         }
 
         DiagnosticLog.log("CoreDataStack: init complete (stores not loaded yet)")
@@ -119,6 +138,29 @@ final class CoreDataStack: ObservableObject {
         return ctx
     }
 
+    /// Wait for CloudKit import activity to settle.
+    /// After `acceptShareInvitations`, related objects may arrive in multiple import batches.
+    /// This method polls `lastImportEventTime` until no successful import has occurred
+    /// for `quietPeriod` seconds, signalling the initial sync wave is complete.
+    func waitForImportSettled(quietPeriod: TimeInterval = 5.0, maxWait: TimeInterval = 60.0) async {
+        let start = Date()
+        DiagnosticLog.log("CoreDataStack: waiting for import to settle (quietPeriod=\(quietPeriod)s, maxWait=\(maxWait)s)")
+        while true {
+            let elapsed = Date().timeIntervalSince(start)
+            let sinceLastImport = Date().timeIntervalSince(lastImportEventTime)
+            if sinceLastImport >= quietPeriod {
+                DiagnosticLog.log("CoreDataStack: import settled after \(String(format: "%.1f", elapsed))s")
+                return
+            }
+            if elapsed >= maxWait {
+                DiagnosticLog.log("CoreDataStack: import settle timeout after \(String(format: "%.1f", elapsed))s, last import \(String(format: "%.1f", sinceLastImport))s ago")
+                return
+            }
+            DiagnosticLog.log("CoreDataStack: waiting for import settle... last import \(String(format: "%.1f", sinceLastImport))s ago")
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+        }
+    }
+
     // MARK: - CloudKit Sharing
 
     func createShareForLedger(id: UUID, name: String) async throws -> CKShare {
@@ -145,12 +187,51 @@ final class CoreDataStack: ObservableObject {
         }
 
         try context.save()
-        DiagnosticLog.log("CoreDataStack: saved, calling share()")
+        DiagnosticLog.log("CoreDataStack: saved, gathering related objects for share")
+
+        // Apple requires all related objects to be explicitly included in the share array.
+        // Any child object not listed here stays in the private zone and will cause
+        // "objects assigned to multiple zones" errors when its parent moves to the share zone.
+        var objects: [NSManagedObject] = [ledger]
+        if let accounts = ledger.accounts {
+            for a in accounts {
+                objects.append(a)
+                if let stmts = a.creditCardStatements { objects.append(contentsOf: stmts) }
+            }
+        }
+        if let categories = ledger.categories {
+            objects.append(contentsOf: flattenCategories(categories))
+        }
+        if let contacts = ledger.memberContacts { objects.append(contentsOf: contacts) }
+        if let merchants = ledger.merchants { objects.append(contentsOf: merchants) }
+        if let projects = ledger.projects { objects.append(contentsOf: projects) }
+        if let budgets = ledger.budgetBooks {
+            for b in budgets {
+                objects.append(b)
+                if let items = b.items { objects.append(contentsOf: items) }
+            }
+        }
+        if let templates = ledger.templates {
+            for t in templates {
+                objects.append(t)
+                if let rule = t.recurringRule { objects.append(rule) }
+            }
+        }
+        if let transactions = ledger.transactions {
+            for t in transactions {
+                objects.append(t)
+                if let sg = t.splitGroup {
+                    objects.append(sg)
+                    if let entries = sg.entries { objects.append(contentsOf: entries) }
+                }
+            }
+        }
+        DiagnosticLog.log("CoreDataStack: sharing \(objects.count) objects total")
 
         return try await withThrowingTaskGroup(of: CKShare.self) { group in
             group.addTask {
                 try await withCheckedThrowingContinuation { continuation in
-                    self.container.share([ledger], to: nil) { _, share, _, error in
+                    self.container.share(objects, to: nil) { _, share, _, error in
                         if let error {
                             let nsError = error as NSError
                             DiagnosticLog.log("CoreDataStack: share failed domain=\(nsError.domain) code=\(nsError.code)")
@@ -206,8 +287,27 @@ final class CoreDataStack: ObservableObject {
         return count
     }
 
-    /// Destroy and recreate the shared store — used when a participant exits a share
-    /// to prevent stale data from contaminating future share acceptances.
+    /// Purge a specific shared zone after participant exits a share.
+    /// Uses Apple's recommended `purgeObjectsAndRecordsInZone` API — safe to call
+    /// after `cloudSharingControllerDidStopSharing` when CloudKit has finished
+    /// processing the participant removal.
+    func purgeSharedZone(zoneID: CKRecordZone.ID) {
+        guard let store = sharedStore else {
+            DiagnosticLog.log("CoreDataStack: purgeSharedZone skipped — no shared store")
+            return
+        }
+        DiagnosticLog.log("CoreDataStack: purgeSharedZone begin zoneID=\(zoneID.zoneName)")
+        container.purgeObjectsAndRecordsInZone(with: zoneID, in: store) { zoneID, error in
+            if let error {
+                DiagnosticLog.log("CoreDataStack: purgeSharedZone FAILED \(error.localizedDescription)")
+            } else {
+                DiagnosticLog.log("CoreDataStack: purgeSharedZone OK zoneID=\(zoneID?.zoneName ?? "nil")")
+            }
+        }
+    }
+
+    /// Destroy and recreate the shared store — safety net for stale share zones
+    /// that survived normal purge, called at join time before accepting a new share.
     func resetSharedStore() async throws {
         let coordinator = container.persistentStoreCoordinator
         if let old = sharedStore {
@@ -236,5 +336,27 @@ final class CoreDataStack: ObservableObject {
             }
         }
         DiagnosticLog.log("CoreDataStack: shared store recreated")
+    }
+}
+
+/// Flatten a category hierarchy (parent + children) into a flat array for CKShare
+func flattenCategories(_ categories: Set<Category>) -> [Category] {
+    var result: [Category] = []
+    for c in categories {
+        result.append(c)
+        if let children = c.children {
+            result.append(contentsOf: flattenCategories(children))
+        }
+    }
+    return result
+}
+
+/// Map NSPersistentCloudKitContainer.EventType rawValue to a readable name
+private func eventTypeName(_ raw: Int) -> String {
+    switch raw {
+    case 0: return "setup"
+    case 1: return "import"
+    case 2: return "export"
+    default: return "type\(raw)"
     }
 }

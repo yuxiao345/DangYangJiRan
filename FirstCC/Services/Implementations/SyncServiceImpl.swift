@@ -85,11 +85,14 @@ final class SyncServiceImpl: SyncServiceProtocol {
         let coordinator = CloudKitShareCoordinator.shared
 
         for attempt in 1...30 {
-            let hasData = try await coordinator.pollForLedgers()
-            DiagnosticLog.log("importSharedData poll [\(attempt)]: hasData=\(hasData)")
+            let count = (try? await coordinator.pollForLedgersOnlyCount()) ?? -1
+            let hasData = count > 0
+            DiagnosticLog.log("importSharedData poll [\(attempt)]: count=\(count) hasData=\(hasData)")
 
             if hasData {
-                DiagnosticLog.log("importSharedData: data found, importing...")
+                DiagnosticLog.log("importSharedData: data found on attempt \(attempt), waiting for import to settle...")
+                await stack.waitForImportSettled()
+                DiagnosticLog.log("importSharedData: import settled, importing...")
                 let container = try await coordinator.containerForImport()
                 let sharedStore = try await coordinator.sharedStoreForImport()
                 let imported = try await SharedLedgerImportService.shared.importSharedLedgers(
@@ -104,7 +107,7 @@ final class SyncServiceImpl: SyncServiceProtocol {
             try? await Task.sleep(nanoseconds: 2_000_000_000)
         }
 
-        DiagnosticLog.log("importSharedData: TIMEOUT after 60s")
+        DiagnosticLog.log("importSharedData: TIMEOUT after 60s (30 attempts)")
         throw SyncError.shareContainerNotReady
     }
 

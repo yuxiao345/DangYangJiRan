@@ -12,65 +12,57 @@ final class SharedLedgerImportService {
         sharedStore: NSPersistentStore,
         into viewContext: NSManagedObjectContext
     ) throws -> [Ledger] {
-        let fetch = NSFetchRequest<NSManagedObject>(entityName: "Ledger")
+        // Dump full inventory of shared store using COUNT queries.
+        // COUNT does NOT load objects or fire relationship faults — it's a safe
+        // SQL-level operation that won't cache empty results prematurely.
+        dumpSharedStoreInventory(container: container, sharedStore: sharedStore)
+
+        let fetch = NSFetchRequest<Ledger>(entityName: "Ledger")
         fetch.affectedStores = [sharedStore]
-        let sharedObjects = try container.viewContext.fetch(fetch)
-        DiagnosticLog.log("ImportService: fetched \(sharedObjects.count) ledger(s) from shared store")
-        for (index, object) in sharedObjects.enumerated() {
-            let id = (object.value(forKey: "id") as? UUID)?.uuidString ?? "nil"
-            let name = object.value(forKey: "name") as? String ?? "nil"
-            DiagnosticLog.log("ImportService: [\(index)] id=\(id) name=\(name)")
-        }
+        let sharedLedgers = try container.viewContext.fetch(fetch)
+        DiagnosticLog.log("ImportService: fetched \(sharedLedgers.count) ledger(s) from shared store")
 
-        let existingFetch = NSFetchRequest<Ledger>(entityName: "Ledger")
-        let existingLedgers = try viewContext.fetch(existingFetch)
-        var existingByID = Dictionary(uniqueKeysWithValues: existingLedgers.map { ($0.id, $0) })
-        var imported: [Ledger] = []
-
-        for object in sharedObjects {
-            guard let id = object.value(forKey: "id") as? UUID else {
-                DiagnosticLog.log("ImportService: object missing UUID, skip")
-                continue
+        for ledger in sharedLedgers {
+            DiagnosticLog.log("ImportService: ledger id=\(ledger.id.uuidString.prefix(8)) name=\(ledger.name)")
+            var changed = false
+            if !ledger.isShared {
+                ledger.isShared = true
+                changed = true
             }
-
-            let name = object.value(forKey: "name") as? String ?? "共享账本"
-            let iconName = object.value(forKey: "iconName") as? String ?? "person.2"
-            let typeRaw = object.value(forKey: "typeRaw") as? String ?? LedgerType.personal.rawValue
-            let currencyCode = object.value(forKey: "defaultCurrencyCode") as? String ?? "CNY"
-            let ownerUserRecordID = object.value(forKey: "ownerUserRecordID") as? String
-            let type = LedgerType(rawValue: typeRaw) ?? .personal
-
-            let ledger: Ledger
-            if let existing = existingByID[id] {
-                DiagnosticLog.log("ImportService: updating existing \(name)")
-                existing.name = name
-                existing.iconName = iconName
-                existing.typeRaw = typeRaw
-                existing.defaultCurrencyCode = currencyCode
-                existing.isShared = true
-                existing.ownerUserRecordID = ownerUserRecordID
-                ledger = existing
-            } else {
-                DiagnosticLog.log("ImportService: creating new \(name)")
-                ledger = Ledger(
-                    name: name,
-                    iconName: iconName,
-                    type: type,
-                    defaultCurrencyCode: currencyCode,
-                    isShared: true,
-                    ownerUserRecordID: ownerUserRecordID,
-                    context: viewContext
-                )
-                existingByID[id] = ledger
+            if changed {
+                DiagnosticLog.log("ImportService: updated \(ledger.name)")
             }
-            imported.append(ledger)
         }
 
-        if viewContext.hasChanges {
-            try viewContext.save()
-            DiagnosticLog.log("ImportService: saved \(imported.count) ledger(s)")
+        if container.viewContext.hasChanges {
+            try container.viewContext.save()
+            DiagnosticLog.log("ImportService: saved")
         }
 
-        return imported
+        return sharedLedgers
+    }
+
+    /// Count every entity type in the shared store using COUNT queries.
+    /// Unlike accessing relationship properties, COUNT never fires a CoreData fault
+    /// and therefore never caches an empty result before CloudKit has finished syncing.
+    private func dumpSharedStoreInventory(
+        container: NSPersistentCloudKitContainer,
+        sharedStore: NSPersistentStore
+    ) {
+        let model = container.managedObjectModel
+
+        DiagnosticLog.log("ImportService: --- shared store inventory (COUNT, no faults) ---")
+        let context = container.viewContext
+
+        for entity in model.entities {
+            guard let name = entity.name else { continue }
+            let fetch = NSFetchRequest<NSFetchRequestResult>(entityName: name)
+            fetch.affectedStores = [sharedStore]
+            let count = (try? context.count(for: fetch)) ?? -1
+            if count > 0 {
+                DiagnosticLog.log("ImportService:   \(name) = \(count)")
+            }
+        }
+        DiagnosticLog.log("ImportService: --- end inventory ---")
     }
 }

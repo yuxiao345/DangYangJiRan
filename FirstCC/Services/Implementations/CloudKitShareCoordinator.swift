@@ -49,6 +49,12 @@ final class CloudKitShareCoordinator {
     }
 
     @MainActor
+    func pollForLedgersOnlyCount() async throws -> Int {
+        let s = try await getStack()
+        return try s.fetchSharedLedgerCount()
+    }
+
+    @MainActor
     func containerForImport() async throws -> NSPersistentCloudKitContainer {
         DiagnosticLog.log("CloudKitCoordinator.containerForImport: begin")
         let s = try await getStack()

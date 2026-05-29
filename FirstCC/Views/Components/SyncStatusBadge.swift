@@ -68,6 +68,11 @@ struct SyncStatusBadge: View {
         let onOpenResolved = UserDefaults.standard.bool(forKey: "diag_onOpenURLResolved")
         let onOpenError = UserDefaults.standard.string(forKey: "diag_onOpenURLError") ?? ""
 
+        let acceptOK = UserDefaults.standard.bool(forKey: "diag_acceptInvitationOK")
+        let importCount = UserDefaults.standard.integer(forKey: "diag_importLedgerCount")
+        let acceptError = UserDefaults.standard.string(forKey: "diag_shareAcceptError") ?? ""
+        let acceptStartTime = UserDefaults.standard.double(forKey: "diag_acceptFlowStartTime")
+
         var udDiag = "--- UserDefaults 追踪 ---\n"
         udDiag += "willConnect 次数: \(willConnectFired)\n"
         udDiag += "willConnect 有metadata: \(willConnectHasMetadata ? "是" : "否")\n"
@@ -81,8 +86,16 @@ struct SyncStatusBadge: View {
         if sceneFailed { udDiag += "10次重试全失败: 是\n" }
         if onOpenResolved { udDiag += "onOpenURL解析成功: 是\n" }
         if !onOpenError.isEmpty { udDiag += "onOpenURL错误: \(onOpenError)\n" }
+        udDiag += "--- 接受流程 ---\n"
+        udDiag += "acceptInvitation结果: \(acceptOK ? "成功" : (acceptError.isEmpty ? "未触发" : "失败"))\n"
+        if !acceptError.isEmpty { udDiag += "accept错误: \(acceptError)\n" }
+        udDiag += "导入账本数: \(importCount)\n"
+        if acceptStartTime > 0 {
+            let elapsed = Int(Date().timeIntervalSince1970 - acceptStartTime)
+            udDiag += "距接受开始: \(elapsed)秒\n"
+        }
 
-        return "[共享调试版本 v4]\n\n状态:\n\(status)\n\n\(udDiag)\n诊断日志:\n\(log)"
+        return "[共享调试版本 v5]\n\n状态:\n\(status)\n\n\(udDiag)\n诊断日志:\n\(log)"
     }
 
     private var statusColor: Color {

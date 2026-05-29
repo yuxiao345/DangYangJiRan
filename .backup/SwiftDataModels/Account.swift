@@ -1,0 +1,73 @@
+import Foundation
+import SwiftData
+
+@Model
+final class Account {
+    var id: UUID = UUID()
+    var name: String = ""
+    var currencyCode: String = "CNY"
+    var typeRaw: String = AccountType.cash.rawValue
+    var iconName: String?
+    var colorHex: String?
+    var customIconData: Data?
+    var initialBalance: Decimal = 0
+    var creditLimit: Decimal?
+    var billingDay: Int?
+    var dueDay: Int?
+    var isArchived: Bool = false
+    var sortOrder: Int = 0
+    var createdAt: Date = Date()
+
+    var ledger: Ledger?
+
+    @Relationship(deleteRule: .nullify, inverse: \Transaction.account)
+    var transactions: [Transaction]? = []
+
+    @Relationship(deleteRule: .nullify, inverse: \Transaction.toAccount)
+    var incomingTransactions: [Transaction]? = []
+
+    @Relationship(deleteRule: .nullify, inverse: \TransactionTemplate.account)
+    var templates: [TransactionTemplate]? = []
+
+    @Relationship(deleteRule: .nullify, inverse: \TransactionTemplate.toAccount)
+    var incomingTemplates: [TransactionTemplate]? = []
+
+    @Relationship(deleteRule: .nullify, inverse: \CreditCardStatement.account)
+    var creditCardStatements: [CreditCardStatement]? = []
+
+    var type: AccountType {
+        get { AccountType(rawValue: typeRaw) ?? .other }
+        set { typeRaw = newValue.rawValue }
+    }
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        currencyCode: String = "CNY",
+        type: AccountType = .cash,
+        iconName: String? = nil,
+        colorHex: String? = nil,
+        customIconData: Data? = nil,
+        initialBalance: Decimal = 0,
+        creditLimit: Decimal? = nil,
+        billingDay: Int? = nil,
+        dueDay: Int? = nil,
+        isArchived: Bool = false,
+        sortOrder: Int = 0
+    ) {
+        self.id = id
+        self.name = name
+        self.currencyCode = currencyCode
+        self.typeRaw = type.rawValue
+        self.iconName = iconName ?? type.systemIcon
+        self.colorHex = colorHex
+        self.customIconData = customIconData
+        self.initialBalance = initialBalance
+        self.creditLimit = creditLimit
+        self.billingDay = billingDay
+        self.dueDay = dueDay
+        self.isArchived = isArchived
+        self.sortOrder = sortOrder
+        self.createdAt = Date()
+    }
+}

@@ -116,7 +116,8 @@ struct LedgerListView: View {
     }
 
     private func load() {
-        ledgers = (try? appContainer.ledgerService.fetchLedgers(context: modelContext)) ?? []
+        let all = (try? appContainer.ledgerService.fetchLedgers(context: modelContext)) ?? []
+        ledgers = all.filter { !appContainer.exitedSharedLedgerIDs.contains($0.id) }
     }
 
     private func switchLedger(_ ledger: Ledger) {
@@ -129,7 +130,12 @@ struct LedgerListView: View {
     private func confirmDelete() {
         guard let ledger = ledgerToDelete, ledgers.count > 1 else { return }
         let wasCurrent = ledger.id == appContainer.currentLedger?.id
-        try? appContainer.ledgerService.deleteLedger(ledger, context: modelContext)
+        do {
+            try appContainer.ledgerService.deleteLedger(ledger, context: modelContext)
+            DiagnosticLog.log("LedgerListView: deleted \(ledger.name) OK")
+        } catch {
+            DiagnosticLog.log("LedgerListView: delete FAILED \(error.localizedDescription)")
+        }
         if wasCurrent, let next = (try? appContainer.ledgerService.fetchLedgers(context: modelContext))?.first {
             appContainer.currentLedger = next
             UserDefaults.standard.set(next.id.uuidString, forKey: "currentLedgerID")

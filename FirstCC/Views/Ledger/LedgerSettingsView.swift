@@ -16,11 +16,11 @@ struct LedgerSettingsView: View {
     @State private var showExitShareAlert = false
     @State private var showCloudShare = false
     @State private var cloudShare: CKShare?
-    @State private var isCreatingShare = false
     @State private var isExiting = false
     @State private var clonedLedgerID: UUID?
     @State private var shareError: String?
     @State private var shareDetected: Bool? = nil  // nil=检测中, true=共享存在, false=无共享
+    @State private var shareZoneIDForPurge: CKRecordZone.ID?
 
     private var isOwner: Bool {
         // 优先用 CKShare.currentUserParticipant 判断（基于当前 iCloud 账户，最可靠）
@@ -85,15 +85,17 @@ struct LedgerSettingsView: View {
                             .disabled(isExiting)
                         }
                     } else {
-                        Button {
-                            createShareAndShow()
-                        } label: {
-                            HStack {
-                                Label("启用共享", systemImage: "person.2.badge.plus")
-                                if isCreatingShare { Spacer(); ProgressView() }
-                            }
+                        let transferable = LedgerTransferable(
+                            ledgerID: ledger.id,
+                            ledgerName: name.isEmpty ? ledger.name : name,
+                            coreDataStack: appContainer.coreDataStack
+                        )
+                        ShareLink(
+                            item: transferable,
+                            preview: SharePreview(ledger.name)
+                        ) {
+                            Label("启用共享", systemImage: "person.2.badge.plus")
                         }
-                        .disabled(isCreatingShare)
                     }
                 } header: {
                     Text("共享管理")
@@ -162,13 +164,16 @@ struct LedgerSettingsView: View {
             currencyCode = ledger.defaultCurrencyCode
         }
         .task { await detectShare() }
+        .onReceive(NotificationCenter.default.publisher(for: .ledgerShareCreated)) { notification in
+            if let createdID = notification.userInfo?["ledgerID"] as? UUID, createdID == ledger.id {
+                Task { await detectShare() }
+            }
+        }
         .sheet(isPresented: $showCloudShare) {
             if let container = appContainer.cloudKitContainer, let share = cloudShare {
                 CloudSharingView(
                     share: share, container: container, ledger: ledger,
-                    isPresenting: true,
                     syncService: appContainer.syncService as? SyncServiceImpl,
-                    coreDataStack: appContainer.coreDataStack,
                     onStopSharing: {
                         Task { await handleStopSharing() }
                     }
@@ -201,10 +206,6 @@ struct LedgerSettingsView: View {
         }
         .alert("共享失败", isPresented: .init(get: { shareError != nil }, set: { if !$0 { shareError = nil } })) {
             Button("确定", role: .cancel) { shareError = nil }
-            Button("重新发起共享") {
-                shareError = nil
-                retryShare()
-            }
         } message: {
             Text(shareError ?? "未知错误")
         }
@@ -283,32 +284,6 @@ struct LedgerSettingsView: View {
         }
     }
 
-    private func createShareAndShow() {
-        isCreatingShare = true
-        Task {
-            do {
-                guard let syncService = appContainer.syncService as? SyncServiceImpl else {
-                    throw SyncError.invalidShareTarget
-                }
-                let share = try await syncService.createShare(for: ledger)
-                await MainActor.run {
-                    ledger.isShared = true
-                    try? modelContext.save()
-                    cloudShare = share
-                    isCreatingShare = false
-                    showCloudShare = true
-                }
-                // Sync owner as participant
-                try? await syncService.syncParticipants(share: share, for: ledger)
-            } catch {
-                await MainActor.run {
-                    isCreatingShare = false
-                    shareError = error.localizedDescription
-                }
-            }
-        }
-    }
-
     private func openExistingShare() {
         // Always re-detect to get the latest CKShare state
         Task {
@@ -323,12 +298,6 @@ struct LedgerSettingsView: View {
         }
     }
 
-    private func retryShare() {
-        ledger.isShared = false
-        try? modelContext.save()
-        createShareAndShow()
-    }
-
     private func save() {
         ledger.name = name
         ledger.type = type
@@ -338,7 +307,12 @@ struct LedgerSettingsView: View {
     }
 
     private func confirmDelete() {
-        try? appContainer.ledgerService.deleteLedger(ledger, context: modelContext)
+        do {
+            try appContainer.ledgerService.deleteLedger(ledger, context: modelContext)
+            DiagnosticLog.log("LedgerSettingsView: deleted \(ledger.name) OK")
+        } catch {
+            DiagnosticLog.log("LedgerSettingsView: delete FAILED \(error.localizedDescription)")
+        }
         if ledger.id == appContainer.currentLedger?.id {
             if let next = (try? appContainer.ledgerService.fetchLedgers(context: modelContext))?.first {
                 appContainer.currentLedger = next
@@ -359,6 +333,7 @@ struct LedgerSettingsView: View {
                 await detectShare()
                 await MainActor.run {
                     clonedLedgerID = clone.id
+                    shareZoneIDForPurge = cloudShare?.recordID.zoneID
                     isExiting = false
                     showCloudShare = true
                 }
@@ -387,19 +362,28 @@ struct LedgerSettingsView: View {
             ledger.isShared = false
             try? modelContext.save()
             appContainer.syncStatus = .synced
+            dismiss()
         } else if let cloneID = clonedLedgerID {
+            // Record the original shared ledger as exited so it won't appear in the list
+            appContainer.exitedSharedLedgerIDs.insert(ledger.id)
             let fetch = NSFetchRequest<Ledger>(entityName: "Ledger")
             fetch.predicate = NSPredicate(format: "id == %@", cloneID as CVarArg)
             fetch.fetchLimit = 1
             if let clone = try? modelContext.fetch(fetch).first {
                 appContainer.currentLedger = clone
                 UserDefaults.standard.set(clone.id.uuidString, forKey: "currentLedgerID")
-                // Destroy shared store to prevent stale data from contaminating future rejoins
-                try? await appContainer.coreDataStack.resetSharedStore()
+                dismiss()
+                // Purge the shared zone now that participant removal is complete.
+                // This is Apple's recommended approach — safe because CloudKit has
+                // already processed the participant removal server-side.
+                if let zoneID = shareZoneIDForPurge {
+                    appContainer.coreDataStack.purgeSharedZone(zoneID: zoneID)
+                }
                 appContainer.syncStatus = .synced
             }
+        } else {
+            dismiss()
         }
-        dismiss()
     }
 
     private func currencyName(_ code: String) -> String {

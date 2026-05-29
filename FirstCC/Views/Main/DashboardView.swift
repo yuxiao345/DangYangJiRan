@@ -68,6 +68,9 @@ struct DashboardView: View {
             .navigationTitle(appContainer.currentLedger?.name ?? "小金库")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
+                    SyncStatusBadge()
+                }
+                ToolbarItem(placement: .primaryAction) {
                     Button { showAddSheet = true } label: {
                         Image(systemName: "plus")
                     }

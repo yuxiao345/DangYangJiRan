@@ -145,7 +145,30 @@
       "Bash(/usr/libexec/PlistBuddy -c \"Print :CFBundleIdentifier\" FirstCC/Resources/Info.plist)",
       "Bash(/usr/libexec/PlistBuddy -c \"Print :CKSharingSupported\" FirstCC/Resources/Info.plist)",
       "Bash(echo \"iPad Pro: $?\")",
-      "Bash(echo \"iPhone Air: $?\")"
+      "Bash(echo \"iPhone Air: $?\")",
+      "Read(//Users/macmini/.openclaw/workspace/scripts/**)",
+      "Bash(/Users/macmini/.openclaw/workspace/scripts/cc-working.sh)",
+      "Bash(/Users/macmini/.openclaw/workspace/scripts/cc-waiting.sh)",
+      "Bash(ps *)",
+      "Bash(uuidgen)",
+      "WebFetch(domain:stackoverflow.com)",
+      "Bash(node -e \"console.log\\('node ok'\\)\")",
+      "Bash(pip3 list *)",
+      "Bash(rsvg-convert -w 1024 -h 1024 /tmp/qianey-icon.svg -o /Users/macmini/Documents/AI/10-FirstCC/FirstCC/Resources/Assets.xcassets/AppIcon.appiconset/icon_1024.png)",
+      "Bash(rsvg-convert -w 1024 -h 1024 /tmp/qianey-icon.svg -o /tmp/qianey-icon-rgb.png)",
+      "Bash(file /Users/macmini/Documents/AI/10-FirstCC/FirstCC/Resources/Assets.xcassets/AppIcon.appiconset/*.png)",
+      "Bash(rsvg-convert -w 1024 -h 1024 /tmp/qianey-icon-dark.svg -o /tmp/qianey-dark-rgb.png)",
+      "Bash(gem list *)",
+      "Bash(gem install *)",
+      "Bash(read f *)",
+      "Bash([ ! -f \"/Users/macmini/Documents/AI/10-FirstCC/FirstCC/$f\" ])",
+      "Bash(awk '$1 == 1 {print $2, \"appears\", $1, \"time\"}')",
+      "Bash(awk '$1 == 1 {print $2}')",
+      "Bash(kill %2)",
+      "WebFetch(domain:www.kodeco.com)",
+      "Bash(/usr/libexec/PlistBuddy -c \"Print\" /Users/macmini/Documents/AI/10-FirstCC/FirstCC/Resources/Info.plist)",
+      "Bash(/usr/libexec/PlistBuddy -c \"Print :MinimumOSVersion\" /Users/macmini/Documents/AI/10-FirstCC/FirstCC.xcodeproj/../FirstCC/Resources/Info.plist)",
+      "Bash(xcrun swift *)"
     ]
   },
   "hooks": {
@@ -157,6 +180,39 @@
             "type": "command",
             "command": "cd /Users/macmini/Documents/AI/10-FirstCC && xcodebuild -project FirstCC.xcodeproj -scheme 荡漾计然 -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath /tmp/firstcc-build -jobs 4 SWIFT_COMPILATION_MODE=wholemodule 2>&1 | tail -10",
             "timeout": 120
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/macmini/.openclaw/workspace/scripts/cc-working.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/macmini/.openclaw/workspace/scripts/cc-waiting.sh"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/macmini/.openclaw/workspace/scripts/cc-waiting.sh"
           }
         ]
       }

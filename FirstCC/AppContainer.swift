@@ -116,6 +116,14 @@ final class AppContainer: ObservableObject {
             try? await Task.sleep(nanoseconds: UInt64(waitSec) * 1_000_000_000)
         }
 
+        // Recover share acceptance for devices that auto-discovered a shared
+        // store via metadata sync but never formally accepted the CKShare.
+        // Per Apple docs, each iCloud account only needs to accept once —
+        // the shared store should auto-discover on sibling devices. In practice,
+        // auto-discovery creates the store but data may not sync bidirectionally
+        // without a formal acceptShareInvitations call.
+        await recoverShareAcceptance()
+
         configureDefaultLedger()
         validateCurrentLedgerShare()
     }
@@ -153,47 +161,68 @@ final class AppContainer: ObservableObject {
     }
 
     private func resolveShareMetadata(from url: URL, container: CKContainer) async throws -> CKShare.Metadata {
-        try await withCheckedThrowingContinuation { continuation in
-            var resumed = false
-            let op = CKFetchShareMetadataOperation(shareURLs: [url])
-            op.perShareMetadataBlock = { _, metadata, error in
-                if !resumed {
-                    if let metadata {
-                        resumed = true
-                        continuation.resume(returning: metadata)
-                    } else if let error {
-                        resumed = true
-                        continuation.resume(throwing: error)
+        if #available(iOS 26.0, *) {
+            // Modern path: request share access + fetch metadata
+            try await container.requestShareAccess(for: [url])
+            let results = try await container.shareMetadatas(for: [url])
+            guard let metadata = try results[url]?.get() else {
+                throw SyncError.invalidShareURL
+            }
+            DiagnosticLog.log("resolveShareMetadata: iOS 26 path OK")
+            return metadata
+        } else {
+            // Legacy path for iOS 18–25
+            return try await withCheckedThrowingContinuation { continuation in
+                var resumed = false
+                let op = CKFetchShareMetadataOperation(shareURLs: [url])
+                op.perShareMetadataBlock = { _, metadata, error in
+                    if !resumed {
+                        if let metadata {
+                            resumed = true
+                            continuation.resume(returning: metadata)
+                        } else if let error {
+                            resumed = true
+                            continuation.resume(throwing: error)
+                        }
                     }
                 }
-            }
-            op.fetchShareMetadataCompletionBlock = { error in
-                if !resumed {
-                    resumed = true
-                    if let error {
-                        continuation.resume(throwing: error)
-                    } else {
-                        continuation.resume(throwing: SyncError.shareContainerNotReady)
+                op.fetchShareMetadataCompletionBlock = { error in
+                    if !resumed {
+                        resumed = true
+                        if let error {
+                            continuation.resume(throwing: error)
+                        } else {
+                            continuation.resume(throwing: SyncError.shareContainerNotReady)
+                        }
                     }
                 }
+                container.add(op)
             }
-            container.add(op)
         }
     }
 
     func handleAcceptedShareMetadata(_ metadata: CKShare.Metadata) async {
         DiagnosticLog.startSession("share accept \(Date())")
         DiagnosticLog.log("handleAcceptedShareMetadata: called")
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "diag_acceptFlowStartTime")
         syncStatus = .error("接收开始")
 
         do {
+            // New join — clear stale tracker from any previous exit
+            exitedSharedLedgerIDs.removeAll()
+
+            // Clean up clone ledgers from previous exit operations
+            cleanupCloneLedgers()
+
             syncStatus = .error("正在接受共享邀请")
             try await syncService?.acceptShare(metadata: metadata)
             DiagnosticLog.log("handleAcceptedShareMetadata: accept OK, importing...")
+            UserDefaults.standard.set(true, forKey: "diag_acceptInvitationOK")
 
             syncStatus = .error("共享邀请已接受，正在导入账本")
             let imported = try await syncService?.importSharedData(into: coreDataStack) ?? []
             syncStatus = .error("导入结果：\(imported.count) 个账本")
+            UserDefaults.standard.set(imported.count, forKey: "diag_importLedgerCount")
 
             if let first = imported.first {
                 DiagnosticLog.log("import: switched to \(first.name)")
@@ -228,8 +257,108 @@ final class AppContainer: ObservableObject {
             }
         } catch {
             DiagnosticLog.log("handleAcceptedShareMetadata: FAILED \(error.localizedDescription)")
+            UserDefaults.standard.set(error.localizedDescription, forKey: "diag_shareAcceptError")
             syncStatus = .error("共享失败：\(error.localizedDescription)")
         }
+    }
+
+    /// Ledger IDs from shared store that the user has exited.
+    /// Persisted so stale shared ledgers stay hidden across app restarts.
+    var exitedSharedLedgerIDs: Set<UUID> {
+        get {
+            guard let data = UserDefaults.standard.data(forKey: "exitedSharedLedgerIDs") else { return [] }
+            let strings = (try? JSONDecoder().decode([String].self, from: data)) ?? []
+            return Set(strings.compactMap(UUID.init))
+        }
+        set {
+            let strings = newValue.map(\.uuidString)
+            if let data = try? JSONEncoder().encode(strings) {
+                UserDefaults.standard.set(data, forKey: "exitedSharedLedgerIDs")
+            }
+        }
+    }
+
+    /// Delete all clone ledgers (from previous exit operations) in private store.
+    /// Clones have "(副本)" in their name and isShared == false.
+    /// Also cleans up orphaned child objects that survived failed cascade deletes.
+    private func cleanupCloneLedgers() {
+        let fetch = NSFetchRequest<Ledger>(entityName: "Ledger")
+        fetch.predicate = NSPredicate(format: "isShared == NO")
+        guard let ledgers = try? viewContext.fetch(fetch) else { return }
+
+        let clones = ledgers.filter { $0.name.contains("(副本)") }
+        let orphanCount = cleanupOrphanedObjects()
+
+        if !clones.isEmpty || orphanCount > 0 {
+            DiagnosticLog.log("AppContainer: clones=\(clones.count) orphans=\(orphanCount)")
+        }
+
+        for clone in clones {
+            do {
+                try ledgerService.deleteLedger(clone, context: viewContext)
+                DiagnosticLog.log("AppContainer: deleted clone \(clone.name)")
+            } catch {
+                DiagnosticLog.log("AppContainer: failed to delete clone \(clone.name): \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// Delete orphaned objects in private store that have no parent ledger.
+    /// These are remnants of failed cascade deletes from previous exit operations.
+    /// Returns total count of deleted objects.
+    private func cleanupOrphanedObjects() -> Int {
+        let entityNames = ["Account", "Category", "Transaction", "TransactionTemplate",
+                           "BudgetBook", "CreditCardStatement", "Member", "Merchant",
+                           "Project", "SplitGroup", "User"]
+        var total = 0
+
+        for name in entityNames {
+            let fetch = NSFetchRequest<NSManagedObject>(entityName: name)
+            fetch.predicate = NSPredicate(format: "ledger == nil")
+            guard let orphans = try? viewContext.fetch(fetch), !orphans.isEmpty else { continue }
+
+            DiagnosticLog.log("AppContainer: orphan cleanup \(name)=\(orphans.count)")
+            for obj in orphans {
+                // Manually delete children of orphans too
+                if let splitGroup = obj as? SplitGroup {
+                    if let entries = splitGroup.entries {
+                        for e in entries { viewContext.delete(e) }
+                    }
+                } else if let budgetBook = obj as? BudgetBook {
+                    if let items = budgetBook.items {
+                        for i in items { viewContext.delete(i) }
+                    }
+                } else if let category = obj as? Category {
+                    if let children = category.children {
+                        for c in children { viewContext.delete(c) }
+                    }
+                } else if let transaction = obj as? Transaction {
+                    if let children = transaction.splitChildren {
+                        for c in children { viewContext.delete(c) }
+                    }
+                } else if let template = obj as? TransactionTemplate {
+                    if let rule = template.recurringRule {
+                        viewContext.delete(rule)
+                    }
+                } else if let account = obj as? Account {
+                    if let statements = account.creditCardStatements {
+                        for s in statements { viewContext.delete(s) }
+                    }
+                }
+                viewContext.delete(obj)
+                total += 1
+            }
+        }
+
+        if total > 0 {
+            do {
+                try viewContext.save()
+                DiagnosticLog.log("AppContainer: orphan cleanup saved \(total) objects")
+            } catch {
+                DiagnosticLog.log("AppContainer: orphan cleanup save FAILED \(error.localizedDescription)")
+            }
+        }
+        return total
     }
 
     // MARK: - Ledger Management
@@ -382,6 +511,81 @@ final class AppContainer: ObservableObject {
                 }
             } catch {
                 DiagnosticLog.log("AppContainer: share validation error: \(error)")
+            }
+        }
+    }
+
+    /// Accept CKShare on devices where the shared store was auto-discovered
+    /// via metadata sync but `acceptShareInvitations` was never called.
+    ///
+    /// Apple's design (per "Accepting Share Invitations in a SwiftUI App"):
+    /// once a share is accepted on one device, CKShare metadata syncs through
+    /// the private database to all sibling devices with the same iCloud account.
+    /// The container auto-creates the shared store, but without a formal
+    /// `acceptShareInvitations` call, data may not sync bidirectionally.
+    ///
+    /// This method detects that state and completes the acceptance.
+    private func recoverShareAcceptance() async {
+        // Only relevant if shared store exists (auto-discovered)
+        guard coreDataStack.sharedStore != nil else { return }
+
+        // Find shared ledgers with a known share record
+        let fetch = NSFetchRequest<Ledger>(entityName: "Ledger")
+        fetch.predicate = NSPredicate(format: "isShared == YES AND shareRecordName != nil")
+        guard let ledgers = try? viewContext.fetch(fetch), !ledgers.isEmpty else { return }
+
+        // Filter to ledgers not yet recovered (per-shareRecordName tracking)
+        let pending = ledgers.filter { ledger in
+            guard let rn = ledger.shareRecordName else { return false }
+            return !UserDefaults.standard.bool(forKey: "shareRecovered_\(rn)")
+        }
+        guard !pending.isEmpty else { return }
+
+        DiagnosticLog.log("AppContainer: share recovery — \(pending.count)/\(ledgers.count) pending")
+        UserDefaults.standard.set(pending.count, forKey: "diag_recoveryLedgerCount")
+
+        guard let svc = syncService, let container = cloudKitContainer else { return }
+
+        for ledger in pending {
+            guard let recordName = ledger.shareRecordName else { continue }
+            let perLedgerKey = "shareRecovered_\(recordName)"
+            DiagnosticLog.log("AppContainer: recovering share for [\(ledger.name)] recordName=\(recordName.prefix(8))…")
+
+            do {
+                guard let share = try await svc.discoverShare(for: ledger) else {
+                    DiagnosticLog.log("AppContainer: recovery — CKShare not found, skipping")
+                    continue
+                }
+                guard let shareURL = share.url else {
+                    DiagnosticLog.log("AppContainer: recovery — CKShare has no URL, skipping")
+                    continue
+                }
+
+                let metadata = try await resolveShareMetadata(from: shareURL, container: container)
+                try await coreDataStack.acceptShareInvitations(from: metadata)
+                DiagnosticLog.log("AppContainer: recovery — accepted, waiting for import…")
+
+                await coreDataStack.waitForImportSettled()
+
+                let imported = try await svc.importSharedData(into: coreDataStack)
+                DiagnosticLog.log("AppContainer: recovery — imported \(imported.count) ledgers")
+
+                for l in imported {
+                    try? await svc.syncParticipants(metadata: metadata, for: l)
+                }
+
+                // Mark this specific share as recovered
+                UserDefaults.standard.set(true, forKey: perLedgerKey)
+                DiagnosticLog.log("AppContainer: share recovery OK for [\(ledger.name)]")
+
+                // Switch to the first successfully recovered ledger if none is active
+                if currentLedger == nil, let first = imported.first {
+                    currentLedger = first
+                    UserDefaults.standard.set(first.id.uuidString, forKey: "currentLedgerID")
+                }
+            } catch {
+                DiagnosticLog.log("AppContainer: recovery FAIL for [\(ledger.name)]: \(error.localizedDescription)")
+                UserDefaults.standard.set(error.localizedDescription, forKey: "diag_recoveryError")
             }
         }
     }
