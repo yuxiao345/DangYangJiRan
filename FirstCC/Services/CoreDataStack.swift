@@ -68,25 +68,56 @@ final class CoreDataStack: ObservableObject {
             let storeLabel = event.storeIdentifier.split(separator: "/").last.map(String.init) ?? event.storeIdentifier
             let typeName = eventTypeName(event.type.rawValue)
             let success = event.succeeded ? "OK" : "FAIL"
-            let errorDetail: String
             if let err = event.error {
                 let nsErr = err as NSError
+                // Log full error: domain, code, localizedDescription, and debugDescription
+                DiagnosticLog.log("CloudKit[\(storeLabel)] \(typeName): \(success) domain=\(nsErr.domain) code=\(nsErr.code)")
+                DiagnosticLog.log("CloudKit[\(storeLabel)]   localizedDescription: \(nsErr.localizedDescription)")
+                // Mirror the error to find hidden properties (e.g. CKError partials may be in children)
+                let mirror = Mirror(reflecting: err)
+                let mirrorChildren = mirror.children.map { "\($0.label ?? "_"):\($0.value)" }.joined(separator: " | ")
+                DiagnosticLog.log("CloudKit[\(storeLabel)]   Mirror: \(mirror.subjectType) children=[\(mirrorChildren)]")
+                // String(reflecting:) sometimes reveals nested errors
+                DiagnosticLog.log("CloudKit[\(storeLabel)]   String(reflecting): \(String(reflecting: err))")
                 if nsErr.domain == CKError.errorDomain {
-                    errorDetail = " ck=\(nsErr.code)"
-                    // Partial failures include per-record errors — log details to pinpoint problem fields
-                    if nsErr.code == 2, let partials = nsErr.userInfo[CKPartialErrorsByItemIDKey] as? [AnyHashable: Error] {
-                        let details = partials.values.map { $0.localizedDescription }.joined(separator: "; ")
-                        if !details.isEmpty {
-                            DiagnosticLog.log("CloudKit partial details: \(details)")
+                    let userInfoKeys = nsErr.userInfo.keys.sorted()
+                    DiagnosticLog.log("CloudKit[\(storeLabel)]   userInfo keys: \(userInfoKeys)")
+                    if let partials = nsErr.userInfo[CKPartialErrorsByItemIDKey] as? [AnyHashable: Error] {
+                        for (key, perr) in partials {
+                            let pns = perr as NSError
+                            let serverMsg = pns.userInfo["ServerErrorDescription"] as? String
+                                ?? pns.userInfo[NSLocalizedDescriptionKey] as? String
+                                ?? "—"
+                            DiagnosticLog.log("CloudKit[\(storeLabel)]   partial: record=\(key) code=\(pns.code) msg=\(serverMsg)")
                         }
                     }
+                    if let detailedErrors = nsErr.userInfo[NSDetailedErrorsKey] as? [Error] {
+                        for (i, derr) in detailedErrors.enumerated() {
+                            let dns = derr as NSError
+                            DiagnosticLog.log("CloudKit[\(storeLabel)]   detailed[\(i)]: domain=\(dns.domain) code=\(dns.code) desc=\(dns.localizedDescription)")
+                        }
+                    }
+                    // Try to get underlying error from the Error protocol side (not just NSError.userInfo)
+                    if let underlying = nsErr.userInfo[NSUnderlyingErrorKey] as? Error {
+                        let uns = underlying as NSError
+                        DiagnosticLog.log("CloudKit[\(storeLabel)]   underlying(NSError): domain=\(uns.domain) code=\(uns.code) desc=\(uns.localizedDescription)")
+                    }
+                    // Also dump NSError.userInfo values directly
+                    for key in nsErr.userInfo.keys.sorted() {
+                        let val = nsErr.userInfo[key]
+                        DiagnosticLog.log("CloudKit[\(storeLabel)]   userInfo[\(key)] = \(String(describing: val))")
+                    }
                 } else {
-                    errorDetail = " err=\(nsErr.domain).\(nsErr.code)"
+                    let nonCKKeys = nsErr.userInfo.keys.sorted()
+                    DiagnosticLog.log("CloudKit[\(storeLabel)]   userInfo keys: \(nonCKKeys)")
+                    if let underlying = nsErr.userInfo[NSUnderlyingErrorKey] as? Error {
+                        let uns = underlying as NSError
+                        DiagnosticLog.log("CloudKit[\(storeLabel)]   underlying: domain=\(uns.domain) code=\(uns.code) desc=\(uns.localizedDescription)")
+                    }
                 }
             } else {
-                errorDetail = ""
+                DiagnosticLog.log("CloudKit[\(storeLabel)] \(typeName): \(success) (no error object)")
             }
-            DiagnosticLog.log("CloudKit[\(storeLabel)] \(typeName): \(success)\(errorDetail)")
             // Track successful import events to detect when initial sync settles
             if event.type.rawValue == 1 && event.succeeded {
                 self.lastImportEventTime = Date()
@@ -137,17 +168,23 @@ final class CoreDataStack: ObservableObject {
         }
         DiagnosticLog.log("CoreDataStack: loadStores complete")
 
-#if DEBUG
-        // Sync CoreData model → CloudKit development schema.
-        // Needed when schema was initialized from a prior model version (e.g. SwiftData)
-        // and new fields haven't been pushed to CloudKit.
-        do {
-            try await container.initializeCloudKitSchema()
-            DiagnosticLog.log("CoreDataStack: initializeCloudKitSchema OK")
-        } catch {
-            DiagnosticLog.log("CoreDataStack: initializeCloudKitSchema note: \(error.localizedDescription)")
-        }
-#endif
+//#if DEBUG
+//        // Sync CoreData model → CloudKit development schema.
+//        // Needed when schema was initialized from a prior model version (e.g. SwiftData)
+//        // and new fields haven't been pushed to CloudKit.
+//        for attempt in 1...3 {
+//            do {
+//                try await container.initializeCloudKitSchema()
+//                DiagnosticLog.log("CoreDataStack: initializeCloudKitSchema OK (attempt \(attempt))")
+//                break
+//            } catch {
+//                DiagnosticLog.log("CoreDataStack: initializeCloudKitSchema attempt \(attempt)/3 FAIL: \(error.localizedDescription)")
+//                if attempt < 3 {
+//                    try? await Task.sleep(nanoseconds: 3_000_000_000)
+//                }
+//            }
+//        }
+//#endif
     }
 
     func newBackgroundContext() -> NSManagedObjectContext {
@@ -206,51 +243,24 @@ final class CoreDataStack: ObservableObject {
         }
 
         try context.save()
-        DiagnosticLog.log("CoreDataStack: saved, gathering related objects for share")
+        DiagnosticLog.log("CoreDataStack: saved, calling share()")
 
-        // Apple requires all related objects to be explicitly included in the share array.
-        // Any child object not listed here stays in the private zone and will cause
-        // "objects assigned to multiple zones" errors when its parent moves to the share zone.
-        var objects: [NSManagedObject] = [ledger]
-        if let accounts = ledger.accounts {
-            for a in accounts {
-                objects.append(a)
-                if let stmts = a.creditCardStatements { objects.append(contentsOf: stmts) }
-            }
+        // The shared store must be loaded for CKShare creation to work.
+        if sharedStore == nil {
+            throw NSError(domain: "CoreDataStack", code: -4,
+                userInfo: [NSLocalizedDescriptionKey: "共享存储未就绪（iCloud同步可能还在初始化），请稍后重试"])
         }
-        if let categories = ledger.categories {
-            objects.append(contentsOf: flattenCategories(categories))
-        }
-        if let contacts = ledger.memberContacts { objects.append(contentsOf: contacts) }
-        if let merchants = ledger.merchants { objects.append(contentsOf: merchants) }
-        if let projects = ledger.projects { objects.append(contentsOf: projects) }
-        if let budgets = ledger.budgetBooks {
-            for b in budgets {
-                objects.append(b)
-                if let items = b.items { objects.append(contentsOf: items) }
-            }
-        }
-        if let templates = ledger.templates {
-            for t in templates {
-                objects.append(t)
-                if let rule = t.recurringRule { objects.append(rule) }
-            }
-        }
-        if let transactions = ledger.transactions {
-            for t in transactions {
-                objects.append(t)
-                if let sg = t.splitGroup {
-                    objects.append(sg)
-                    if let entries = sg.entries { objects.append(contentsOf: entries) }
-                }
-            }
-        }
-        DiagnosticLog.log("CoreDataStack: sharing \(objects.count) objects total")
 
+        // Standard approach: share only the root object.
+        // NSPersistentCloudKitContainer automatically cascades to all related objects.
+        // 30‑second timeout protects against the known container.share() hang (FB16908476).
         return try await withThrowingTaskGroup(of: CKShare.self) { group in
             group.addTask {
                 try await withCheckedThrowingContinuation { continuation in
-                    self.container.share(objects, to: nil) { _, share, _, error in
+                    var resumed = false
+                    self.container.share([ledger], to: nil) { _, share, _, error in
+                        guard !resumed else { return }
+                        resumed = true
                         if let error {
                             let nsError = error as NSError
                             DiagnosticLog.log("CoreDataStack: share failed domain=\(nsError.domain) code=\(nsError.code)")

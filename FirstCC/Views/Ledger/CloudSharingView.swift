@@ -4,8 +4,7 @@ import CloudKit
 import UIKit
 
 /// Wraps UICloudSharingController for managing an existing CKShare.
-/// Only uses UICloudSharingController(share:container:) — the non-deprecated init.
-/// New share creation now goes through CKShareTransferRepresentation + ShareLink.
+/// Share creation: Button → createShareAndShow() → this view.
 struct CloudSharingView: UIViewControllerRepresentable {
     let share: CKShare
     let container: CKContainer

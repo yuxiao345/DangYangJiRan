@@ -3,8 +3,6 @@ import Foundation
 enum Constants {
     static let appName = "钱伲"
     static let bundleIdentifier = "com.qianey.app"
-    static let cloudKitContainerIdentifier = "iCloud.com.qianey"
-
     static let defaultCurrency = "CNY"
     static let defaultLocale = "zh_CN"
 

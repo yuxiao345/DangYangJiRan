@@ -230,6 +230,8 @@ final class AppContainer: ObservableObject {
                 UserDefaults.standard.set(first.id.uuidString, forKey: "currentLedgerID")
                 first.shareRecordName = metadata.share.recordID.recordName
                 try? viewContext.save()
+                // Mark as recovered so relaunch won't re-accept (which fails with "CREATE operation not permitted")
+                UserDefaults.standard.set(true, forKey: shareRecoveryKey(for: metadata.share.recordID.recordName))
                 syncStatus = .error("已切换到共享账本：\(first.name)")
 
                 do {
@@ -249,6 +251,7 @@ final class AppContainer: ObservableObject {
             if let ledger = currentLedger, ledger.isShared {
                 ledger.shareRecordName = metadata.share.recordID.recordName
                 try? viewContext.save()
+                UserDefaults.standard.set(true, forKey: shareRecoveryKey(for: metadata.share.recordID.recordName))
                 do {
                     try await syncService?.syncParticipants(metadata: metadata, for: ledger)
                 } catch {
@@ -525,6 +528,8 @@ final class AppContainer: ObservableObject {
     /// `acceptShareInvitations` call, data may not sync bidirectionally.
     ///
     /// This method detects that state and completes the acceptance.
+    private func shareRecoveryKey(for recordName: String) -> String { "shareRecovered_\(recordName)" }
+
     private func recoverShareAcceptance() async {
         let hasSharedStore = coreDataStack.sharedStore != nil
         DiagnosticLog.log("AppContainer: recoverShareAcceptance begin sharedStore=\(hasSharedStore)")
@@ -547,9 +552,12 @@ final class AppContainer: ObservableObject {
         }
 
         // Find shared ledgers — isShared OR has shareRecordName
+        // Skip ledgers owned by the current user: the creator doesn't need
+        // to accept their own share; calling acceptShareInvitations for
+        // a self-created share always fails.
         var candidates: [Ledger] = []
         for l in allLedgers {
-            if l.isShared || l.shareRecordName != nil {
+            if (l.isShared || l.shareRecordName != nil) && !isOwner(of: l) {
                 candidates.append(l)
             }
         }
@@ -557,8 +565,7 @@ final class AppContainer: ObservableObject {
 
         // Filter to ledgers not yet recovered (per-shareRecordName tracking)
         let pending = candidates.filter { ledger in
-            let key = ledger.shareRecordName ?? ledger.id.uuidString
-            return !UserDefaults.standard.bool(forKey: "shareRecovered_\(key)")
+            !UserDefaults.standard.bool(forKey: shareRecoveryKey(for: ledger.shareRecordName ?? ledger.id.uuidString))
         }
         guard !pending.isEmpty else {
             DiagnosticLog.log("AppContainer: recovery — all candidates already recovered")
@@ -571,7 +578,7 @@ final class AppContainer: ObservableObject {
         guard let svc = syncService, let container = cloudKitContainer else { return }
 
         for ledger in pending {
-            let perLedgerKey = "shareRecovered_\(ledger.shareRecordName ?? ledger.id.uuidString)"
+            let perLedgerKey = shareRecoveryKey(for: ledger.shareRecordName ?? ledger.id.uuidString)
             DiagnosticLog.log("AppContainer: recovering share for [\(ledger.name)] recordName=\(ledger.shareRecordName?.prefix(8) ?? "nil")…")
 
             do {

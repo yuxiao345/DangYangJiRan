@@ -18,6 +18,7 @@ struct LedgerSettingsView: View {
     @State private var cloudShare: CKShare?
     @State private var isExiting = false
     @State private var clonedLedgerID: UUID?
+    @State private var isCreatingShare = false
     @State private var shareError: String?
     @State private var shareDetected: Bool? = nil  // nil=检测中, true=共享存在, false=无共享
     @State private var shareZoneIDForPurge: CKRecordZone.ID?
@@ -85,17 +86,15 @@ struct LedgerSettingsView: View {
                             .disabled(isExiting)
                         }
                     } else {
-                        let transferable = LedgerTransferable(
-                            ledgerID: ledger.id,
-                            ledgerName: name.isEmpty ? ledger.name : name,
-                            coreDataStack: appContainer.coreDataStack
-                        )
-                        ShareLink(
-                            item: transferable,
-                            preview: SharePreview(ledger.name)
-                        ) {
-                            Label("启用共享", systemImage: "person.2.badge.plus")
+                        Button {
+                            createShareAndShow()
+                        } label: {
+                            HStack {
+                                Label("启用共享", systemImage: "person.2.badge.plus")
+                                if isCreatingShare { Spacer(); ProgressView() }
+                            }
                         }
+                        .disabled(isCreatingShare)
                     }
                 } header: {
                     Text("共享管理")
@@ -164,11 +163,6 @@ struct LedgerSettingsView: View {
             currencyCode = ledger.defaultCurrencyCode
         }
         .task { await detectShare() }
-        .onReceive(NotificationCenter.default.publisher(for: .ledgerShareCreated)) { notification in
-            if let createdID = notification.userInfo?["ledgerID"] as? UUID, createdID == ledger.id {
-                Task { await detectShare() }
-            }
-        }
         .sheet(isPresented: $showCloudShare) {
             if let container = appContainer.cloudKitContainer, let share = cloudShare {
                 CloudSharingView(
@@ -209,6 +203,40 @@ struct LedgerSettingsView: View {
         } message: {
             Text(shareError ?? "未知错误")
         }
+        }
+    }
+
+    private func createShareAndShow() {
+        isCreatingShare = true
+        Task {
+            do {
+                guard let syncService = appContainer.syncService as? SyncServiceImpl else {
+                    throw SyncError.invalidShareTarget
+                }
+                let share = try await syncService.createShare(for: ledger)
+                await MainActor.run {
+                    ledger.isShared = true
+                    ledger.shareRecordName = share.recordID.recordName
+                    do {
+                        try modelContext.save()
+                    } catch {
+                        DiagnosticLog.log("LedgerSettings: save after share failed: \(error.localizedDescription)")
+                    }
+                    cloudShare = share
+                    isCreatingShare = false
+                    showCloudShare = true
+                }
+                do {
+                    try await syncService.syncParticipants(share: share, for: ledger)
+                } catch {
+                    DiagnosticLog.log("LedgerSettings: syncParticipants failed: \(error.localizedDescription)")
+                }
+            } catch {
+                await MainActor.run {
+                    isCreatingShare = false
+                    shareError = error.localizedDescription
+                }
+            }
         }
     }
 
