@@ -2,6 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Development Principles
+
+1. **查文档再写代码。** 对实现方法不确定时，先查 Apple 官方文档和开发者论坛，不要自己猜测。
+2. **追根因再修。** 标准 API 不达预期时，先去官方文档和论坛查清为什么，不要急于引入 workaround。上次 CKShare 过度工程化就是教训。
+3. **动代码前先确认。** 任何代码修改必须先解释方案并等用户明确同意。参见 [[feedback_ask_before_code]]。
+4. **iOS 26 优先。** 技术方案使用 Apple 最新推荐 API（iOS 26+），优先兼容 iOS 26.5 正式版。参见 [[feedback_latest_apple_api]]。
+5. **不过度工程化。** 标准 API 能用就用最简单的方式。复杂 workaround 只在彻底排除环境问题后才考虑。参见 [[feedback_no_overengineering]]。
+
 ## Build & Run
 
 ```bash
