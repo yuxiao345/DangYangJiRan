@@ -31,4 +31,20 @@ extension Array where Element == Transaction {
         }
         return result
     }
+
+    /// Keep only one side of each transfer (outflow, amount < 0). Other types pass through unchanged.
+    func deduplicatingTransfers() -> [Transaction] {
+        var seen = Set<UUID>()
+        return filter { t in
+            if t.type == .transfer, let gid = t.transferGroupId {
+                if seen.contains(gid) { return false }
+                if t.amount < 0 {
+                    seen.insert(gid)
+                    return true
+                }
+                return false
+            }
+            return true
+        }
+    }
 }

@@ -294,15 +294,7 @@ struct TransactionsMacView: View {
         var filters = TransactionFilters()
         filters.dateRange = start..<end
         let all = (try? appContainer.transactionService.fetchTransactions(for: ledger, context: modelContext, filters: filters)) ?? []
-        var seen = Set<UUID>()
-        var result = all.filter { t in
-            if t.type == .transfer, let gid = t.transferGroupId {
-                if seen.contains(gid) { return false }
-                if t.amount < 0 { seen.insert(gid); return true }
-                return false
-            }
-            return true
-        }
+        var result = all.deduplicatingTransfers()
         if let type = filterType { result = result.filter { $0.type == type } }
         transactions = result
     }

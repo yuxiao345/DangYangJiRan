@@ -92,6 +92,14 @@ struct CurrencyFormatter {
         return "\(sign)\(symbol)0"
     }
 
+    /// Adaptive: uses formatDecimal for amounts under 10k (precision), formatShort for 10k+ (compact).
+    static func formatAdaptive(amount: Decimal, currencyCode: String = "") -> String {
+        if amount.absoluteValue >= 10000 {
+            return formatShort(amount: amount, currencyCode: currencyCode)
+        }
+        return formatDecimal(amount: amount, currencyCode: currencyCode)
+    }
+
     static func formatDecimal(
         amount: Decimal,
         currencyCode: String? = nil,

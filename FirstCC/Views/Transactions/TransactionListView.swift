@@ -136,9 +136,9 @@ struct TransactionListView: View {
                     .font(.custom("SpaceGrotesk-Medium", fixedSize: 12))
                     .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
                     +
-                Text(total >= 0 ? "+\(CurrencyFormatter.formatDecimal(amount: total, currencyCode: currencyCode))" : "-\(CurrencyFormatter.formatDecimal(amount: total, currencyCode: currencyCode, showAbs: true))")
+                Text(total > 0 ? "+\(CurrencyFormatter.formatDecimal(amount: total, currencyCode: currencyCode))" : total < 0 ? "-\(CurrencyFormatter.formatDecimal(amount: total, currencyCode: currencyCode, showAbs: true))" : CurrencyFormatter.formatDecimal(amount: total, currencyCode: currencyCode))
                     .font(.custom("JetBrainsMono-Medium", fixedSize: 12))
-                    .foregroundStyle(total >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed)
+                    .foregroundStyle(total > 0 ? Color.designPrimaryFixedDim : total < 0 ? Color.designAccentRed : Color.designOnSurfaceVariant)
             }
         }
         .padding(.horizontal, 4)
@@ -198,21 +198,7 @@ struct TransactionListView: View {
         maxDailyExpense = expenseByDay.values.max() ?? 0
         monthlyIncome = totalIncome
         monthlyExpense = totalExpense
-        // Deduplicate transfers: each transferGroupId has two records.
-        // Keep the outflow side (amount < 0). Only mark seen when we keep — otherwise
-        // the inflow arriving first would insert the gid, get skipped, then block the outflow.
-        var seenTransferGroups = Set<UUID>()
-        monthTransactions = all.filter { t in
-            if t.type == .transfer, let gid = t.transferGroupId {
-                if seenTransferGroups.contains(gid) { return false }
-                if t.amount < 0 {
-                    seenTransferGroups.insert(gid)
-                    return true
-                }
-                return false
-            }
-            return true
-        }
+        monthTransactions = all.deduplicatingTransfers()
 
         applyFilters()
     }

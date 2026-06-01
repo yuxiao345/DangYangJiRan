@@ -163,7 +163,12 @@ struct AccountDetailView: View {
                     .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
 
                 ForEach(group.value) { t in
-                    TransactionRowView(transaction: t)
+                    NavigationLink {
+                        TransactionDetailView(transaction: t)
+                    } label: {
+                        TransactionRowView(transaction: t)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }

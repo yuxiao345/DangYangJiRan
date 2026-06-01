@@ -126,6 +126,14 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
     }
 
     func deleteTransaction(_ transaction: Transaction, context: NSManagedObjectContext) throws {
+        // For transfers, delete the paired record (same transferGroupId) so no orphan remains
+        if transaction.type == .transfer, let gid = transaction.transferGroupId {
+            let req = NSFetchRequest<Transaction>(entityName: "Transaction")
+            req.predicate = NSPredicate(format: "transferGroupId == %@ AND id != %@", gid as CVarArg, transaction.id as CVarArg)
+            if let counterpart = (try? context.fetch(req))?.first {
+                context.delete(counterpart)
+            }
+        }
         context.delete(transaction)
         try context.save()
         NotificationCenter.default.post(name: .transactionDidChange, object: nil)
