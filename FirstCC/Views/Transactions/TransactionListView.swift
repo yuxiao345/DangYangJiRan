@@ -64,20 +64,20 @@ struct TransactionListView: View {
         .navigationTitle("流水")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                HStack(spacing: 16) {
-                    if let ledger = appContainer.currentLedger {
-                        NavigationLink {
-                            SearchView(viewModel: SearchViewModel(
-                                ledger: ledger,
-                                transactionService: appContainer.transactionService
-                            ))
-                        } label: {
-                            Image(systemName: "magnifyingglass")
-                        }
+                if let ledger = appContainer.currentLedger {
+                    NavigationLink {
+                        SearchView(viewModel: SearchViewModel(
+                            ledger: ledger,
+                            transactionService: appContainer.transactionService
+                        ))
+                    } label: {
+                        Image(systemName: "magnifyingglass")
                     }
-                    Button { showAddSheet = true } label: {
-                        Image(systemName: "plus")
-                    }
+                }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button { showAddSheet = true } label: {
+                    Image(systemName: "plus")
                 }
             }
             ToolbarItem(placement: .navigationBarLeading) {
@@ -89,7 +89,11 @@ struct TransactionListView: View {
                     Button(TransactionType.lending.displayName) { filterType = .lending }
 
                 } label: {
-                    Image(systemName: "line.3.horizontal.decrease.circle")
+                    HStack(spacing: 4) {
+                        Image(systemName: filterType != nil ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                        Text(filterType?.displayName ?? "全部")
+                            .font(.designBodySmall)
+                    }
                 }
             }
         }
@@ -108,7 +112,8 @@ struct TransactionListView: View {
     // MARK: - Date Section Header
 
     private func dateSectionHeader(dateKey: String, transactions: [Transaction]) -> some View {
-        let total = transactions.reduce(Decimal.zero) { $0 + $1.amount }
+        let nonTransfer = transactions.filter { $0.type != .transfer }
+        let total = nonTransfer.reduce(Decimal.zero) { $0 + $1.amount }
         let currencyCode = transactions.first?.currencyCode ?? "CNY"
 
         return HStack(spacing: 8) {
@@ -126,13 +131,15 @@ struct TransactionListView: View {
 
             Spacer()
 
-            Text("合计：")
-                .font(.custom("SpaceGrotesk-Medium", fixedSize: 12))
-                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
-                +
-            Text(total >= 0 ? "+\(CurrencyFormatter.formatShort(amount: total, currencyCode: currencyCode))" : "\(CurrencyFormatter.formatShort(amount: total, currencyCode: currencyCode))")
-                .font(.custom("JetBrainsMono-Medium", fixedSize: 12))
-                .foregroundStyle(total >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed)
+            if !nonTransfer.isEmpty {
+                Text("合计：")
+                    .font(.custom("SpaceGrotesk-Medium", fixedSize: 12))
+                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+                    +
+                Text(total >= 0 ? "+\(CurrencyFormatter.formatDecimal(amount: total, currencyCode: currencyCode))" : "-\(CurrencyFormatter.formatDecimal(amount: total, currencyCode: currencyCode, showAbs: true))")
+                    .font(.custom("JetBrainsMono-Medium", fixedSize: 12))
+                    .foregroundStyle(total >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed)
+            }
         }
         .padding(.horizontal, 4)
         .padding(.top, 4)
@@ -191,7 +198,21 @@ struct TransactionListView: View {
         maxDailyExpense = expenseByDay.values.max() ?? 0
         monthlyIncome = totalIncome
         monthlyExpense = totalExpense
-        monthTransactions = all
+        // Deduplicate transfers: each transferGroupId has two records.
+        // Keep the outflow side (amount < 0). Only mark seen when we keep — otherwise
+        // the inflow arriving first would insert the gid, get skipped, then block the outflow.
+        var seenTransferGroups = Set<UUID>()
+        monthTransactions = all.filter { t in
+            if t.type == .transfer, let gid = t.transferGroupId {
+                if seenTransferGroups.contains(gid) { return false }
+                if t.amount < 0 {
+                    seenTransferGroups.insert(gid)
+                    return true
+                }
+                return false
+            }
+            return true
+        }
 
         applyFilters()
     }

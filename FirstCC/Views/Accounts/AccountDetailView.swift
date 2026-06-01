@@ -180,23 +180,11 @@ struct AccountDetailView: View {
     private func load() {
         balance = appContainer.accountService.calculateBalance(for: account, context: modelContext)
         guard let ledger = appContainer.currentLedger else { return }
-        let accountID = account.id
 
-        let asSource: NSFetchRequest<Transaction> = {
-            let req = NSFetchRequest<Transaction>(entityName: "Transaction")
-            req.predicate = NSPredicate(format: "account.id == %@ AND parentTransaction == nil", accountID as CVarArg)
-            req.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
-            return req
-        }()
-        let asDest: NSFetchRequest<Transaction> = {
-            let req = NSFetchRequest<Transaction>(entityName: "Transaction")
-            req.predicate = NSPredicate(format: "toAccount.id == %@ AND parentTransaction == nil", accountID as CVarArg)
-            req.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
-            return req
-        }()
-        let source = (try? modelContext.fetch(asSource)) ?? []
-        let dest = (try? modelContext.fetch(asDest)) ?? []
-        transactions = (source + dest).sorted { $0.date > $1.date }
+        let req = NSFetchRequest<Transaction>(entityName: "Transaction")
+        req.predicate = NSPredicate(format: "account.id == %@ AND parentTransaction == nil", account.id as CVarArg)
+        req.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+        transactions = (try? modelContext.fetch(req)) ?? []
     }
 
 }

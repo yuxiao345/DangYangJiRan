@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 @preconcurrency import CoreData
 
@@ -57,7 +58,21 @@ final class DashboardViewModel: ObservableObject {
         monthlyIncome = normalTransactions.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
         monthlyExpense = normalTransactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
 
-        recentTransactions = Array(allTransactions.sorted(by: { $0.date > $1.date }).prefix(20))
+        // Deduplicate transfers: keep only outflow side per transferGroupId.
+        // Only mark seen when we keep — otherwise inflow arriving first would block outflow.
+        var seenTransferGroups = Set<UUID>()
+        let dedupedTransactions = allTransactions.filter { t in
+            if t.type == .transfer, let gid = t.transferGroupId {
+                if seenTransferGroups.contains(gid) { return false }
+                if t.amount < 0 {
+                    seenTransferGroups.insert(gid)
+                    return true
+                }
+                return false
+            }
+            return true
+        }
+        recentTransactions = Array(dedupedTransactions.sorted(by: { $0.date > $1.date }).prefix(20))
 
         // Previous month balance = current balance - this month's net (all types, unfiltered)
         let net = allTransactions.reduce(0) { $0 + $1.amount }

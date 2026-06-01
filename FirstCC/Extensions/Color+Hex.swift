@@ -27,6 +27,7 @@ extension Color {
         )
     }
 
+    #if os(iOS)
     func toHex() -> String {
         let uiColor = UIColor(self)
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
@@ -36,4 +37,5 @@ extension Color {
             Int(r * 255), Int(g * 255), Int(b * 255)
         )
     }
+    #endif
 }

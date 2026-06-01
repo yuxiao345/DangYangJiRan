@@ -94,6 +94,7 @@ struct CurrencyFormatter {
 
     static func formatDecimal(
         amount: Decimal,
+        currencyCode: String? = nil,
         fractionDigits: Int = 2,
         showAbs: Bool = false
     ) -> String {
@@ -101,7 +102,10 @@ struct CurrencyFormatter {
         let formatter = decimalCustomFormatter
         formatter.minimumFractionDigits = fractionDigits
         formatter.maximumFractionDigits = fractionDigits
-        return formatter.string(from: value as NSDecimalNumber) ?? "\(value)"
+        let numberStr = formatter.string(from: value as NSDecimalNumber) ?? "\(value)"
+        guard let code = currencyCode else { return numberStr }
+        let symbol = simpleCurrencySymbol(for: code.isEmpty ? "CNY" : code)
+        return "\(symbol)\(numberStr)"
     }
 
     private static func simpleCurrencySymbol(for code: String) -> String {

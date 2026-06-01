@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 @preconcurrency import CoreData
 import CloudKit
@@ -18,7 +19,9 @@ final class AppContainer: ObservableObject {
     let recurringService: RecurringServiceProtocol
     let creditCardStatementService: CreditCardStatementServiceProtocol
     let reconciliationService: ReconciliationServiceProtocol
+    #if os(iOS)
     let bankOCRService: BankOCRServiceProtocol
+    #endif
     let memberService: MemberServiceProtocol
     let merchantService: MerchantServiceProtocol
     let projectService: ProjectServiceProtocol
@@ -64,9 +67,13 @@ final class AppContainer: ObservableObject {
         budgetService = BudgetServiceImpl()
         creditCardStatementService = CreditCardStatementServiceImpl()
         reconciliationService = ReconciliationServiceImpl()
+        #if os(iOS)
         bankOCRService = BankOCRServiceImpl()
+        #endif
         splitService = SplitServiceImpl()
+        #if os(iOS)
         exportService = ExportServiceImpl()
+        #endif
         currencyService = CurrencyServiceImpl()
         exchangeRateService = ExchangeRateServiceImpl()
         if let ckContainer = cloudKitContainer {

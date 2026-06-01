@@ -29,23 +29,11 @@ struct AccountServiceImpl: AccountServiceProtocol {
         var balance = account.initialBalance
 
         let request = NSFetchRequest<Transaction>(entityName: "Transaction")
-        request.predicate = NSPredicate(format: "(account.id == %@ OR toAccount.id == %@) AND isReconciled == NO AND parentTransaction == nil", accountID as CVarArg, accountID as CVarArg)
+        request.predicate = NSPredicate(format: "account.id == %@ AND isReconciled == NO AND parentTransaction == nil", accountID as CVarArg)
         let transactions = (try? context.fetch(request)) ?? []
 
         for t in transactions {
-            if t.type == .income {
-                balance += t.amount
-            } else if t.type == .expense {
-                balance += t.amount
-            } else if t.type == .transfer || t.type == .lending {
-                if t.account?.id == accountID {
-                    balance -= abs(t.amount)
-                } else if t.toAccount?.id == accountID {
-                    balance += abs(t.amount)
-                }
-            } else if t.type == .adjustment {
-                balance += t.amount
-            }
+            balance += t.amount
         }
 
         return balance

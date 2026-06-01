@@ -121,16 +121,18 @@ struct TransactionRowView: View {
 
     private var titleText: String {
         if let d = transaction.lendingDirection { return d.displayName }
-        if transaction.type == .transfer { return transaction.type.displayName }
+        if transaction.type == .transfer {
+            let to = transaction.toAccount?.name ?? "—"
+            return "转账至\(NSLocalizedString(to, comment: ""))"
+        }
         return transaction.category?.name ?? transaction.type.displayName
     }
 
     private var subtitleText: String? {
         if transaction.isLending || transaction.type == .transfer {
             let from = transaction.account?.name ?? "—"
-            let to = transaction.toAccount?.name ?? "—"
             let dateStr = transaction.date.formatted(Self.shortDateFormat)
-            return "\(NSLocalizedString(from, comment: "")) → \(NSLocalizedString(to, comment: "")) · \(dateStr)"
+            return "\(NSLocalizedString(from, comment: "")) · \(dateStr)"
         }
         let parts = [transaction.merchant?.name, transaction.member?.name, transaction.date.formatted(Self.shortDateFormat)].compactMap { $0 }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
