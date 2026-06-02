@@ -118,6 +118,22 @@ struct AddEditTransactionView: View {
 
     private var isViewing: Bool { displayMode && !isEditing }
 
+    /// Whether the viewed transfer is an inflow record (account = destination, toAccount = source)
+    private var isViewingTransferInflow: Bool {
+        isViewing && type == .transfer && (editing?.amount ?? 0) >= 0
+    }
+
+    private var accountLabel: String {
+        if type == .transfer || type == .lending {
+            return isViewingTransferInflow ? "转入账户" : "转出账户"
+        }
+        return "账户"
+    }
+
+    private var toAccountLabel: String {
+        return isViewingTransferInflow ? "转出账户" : "转入账户"
+    }
+
     var body: some View {
         baseContent
             .designScreen()
@@ -844,7 +860,7 @@ struct AddEditTransactionView: View {
 
     private var accountGridSection: some View {
         recentPickerRow(
-            title: (type == .transfer || type == .lending) ? "转出账户" : "账户",
+            title: LocalizedStringKey(accountLabel),
             items: accounts,
             itemIcon: { $0.iconName ?? "creditcard" },
             itemColor: { Color(hex: $0.colorHex ?? "#007AFF") },
@@ -857,7 +873,7 @@ struct AddEditTransactionView: View {
 
     private var toAccountGridSection: some View {
         recentPickerRow(
-            title: "转入账户",
+            title: LocalizedStringKey(toAccountLabel),
             items: accounts.filter { $0.id != selectedAccount?.id },
             itemIcon: { $0.iconName ?? "creditcard" },
             itemColor: { Color(hex: $0.colorHex ?? "#007AFF") },
@@ -1556,7 +1572,7 @@ struct AddEditTransactionView: View {
         switch sheet {
         case .account:
             SearchablePickerView(
-                title: type == .transfer ? "转出账户" : "选择账户",
+                title: accountLabel,
                 items: accounts,
                 itemLabel: { $0.name },
                 itemIcon: { $0.iconName ?? "creditcard" },
@@ -1566,7 +1582,7 @@ struct AddEditTransactionView: View {
             )
         case .toAccount:
             SearchablePickerView(
-                title: "转入账户",
+                title: toAccountLabel,
                 items: accounts.filter { $0.id != selectedAccount?.id },
                 itemLabel: { $0.name },
                 itemIcon: { $0.iconName ?? "creditcard" },

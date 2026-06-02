@@ -27,30 +27,32 @@ enum MacNavItem: String, CaseIterable, Identifiable {
 
 struct MainSplitView: View {
     @EnvironmentObject private var appContainer: AppContainer
-    @State private var selection: MacNavItem? = .dashboard
+    @State private var selection: MacNavItem = .dashboard
 
     var body: some View {
         NavigationSplitView {
             List {
                 ForEach(MacNavItem.allCases) { item in
-                    NavigationLink(
-                        tag: item,
-                        selection: $selection
-                    ) {
-                        detailView(for: item)
-                    } label: {
-                        Label(item.rawValue, systemImage: item.icon)
-                    }
+                    Label(item.rawValue, systemImage: item.icon)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                        .padding(.vertical, 2)
+                        .background(selection == item ? Color.accentColor.opacity(0.15) : Color.clear)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .onTapGesture {
+                            selection = item
+                        }
                 }
             }
             .listStyle(.sidebar)
             .navigationTitle(appContainer.currentLedger?.name ?? "小金库")
             .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 240)
         } detail: {
-            if let selection {
-                detailView(for: selection)
-            } else {
-                DashboardMacView()
+            detailView(for: selection)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .macMenuNavigate)) { notif in
+            if let item = notif.object as? MacNavItem {
+                selection = item
             }
         }
     }
@@ -86,6 +88,7 @@ struct DashboardMacView: View {
             .padding(32)
             .frame(maxWidth: .infinity)
         }
+        .navigationTitle("总览")
         .designScreen()
         .onAppear { refresh() }
         .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in refresh() }
@@ -180,6 +183,7 @@ struct AccountsMacView: View {
             }
             .padding(32)
         }
+        .navigationTitle("账户")
         .designScreen()
         .onAppear(perform: load)
     }
@@ -217,53 +221,170 @@ struct TransactionsMacView: View {
     @State private var transactions: [Transaction] = []
     @State private var filterType: TransactionType?
     @State private var selectedMonth: Date = Date().startOfMonth
+    @State private var selectedDate: Date?
 
     var body: some View {
-        VStack(spacing: 0) {
-            filterBar
+        HStack(spacing: 0) {
+            calendarPanel
             Divider()
-            ScrollView {
-                LazyVStack(spacing: 12) {
-                    if transactions.isEmpty {
-                        Text("暂无交易记录").foregroundStyle(Color.designOnSurfaceVariant).padding(.top, 60)
-                    } else {
-                        ForEach(groupedByDate, id: \.key) { group in
-                            dateHeader(group.key, transactions: group.value)
-                            ForEach(group.value) { t in
-                                TransactionRowView(transaction: t)
-                            }
-                        }
-                    }
-                }
-                .padding(24)
+            transactionList
+        }
+        .navigationTitle(selectedMonth.monthDisplay)
+        .toolbar {
+            ToolbarItemGroup(placement: .navigation) {
+                Button { shiftMonth(-1) } label: { Image(systemName: "chevron.left") }
+                Button { shiftMonth(1) } label: { Image(systemName: "chevron.right") }
             }
-            .designScreen()
+            ToolbarItem(placement: .principal) {
+                Picker("类型", selection: $filterType) {
+                    Text("全部").tag(nil as TransactionType?)
+                    Text(TransactionType.expense.displayName).tag(TransactionType.expense as TransactionType?)
+                    Text(TransactionType.income.displayName).tag(TransactionType.income as TransactionType?)
+                    Text(TransactionType.transfer.displayName).tag(TransactionType.transfer as TransactionType?)
+                    Text(TransactionType.lending.displayName).tag(TransactionType.lending as TransactionType?)
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 360)
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                if selectedDate != nil {
+                    Button("显示整月") { selectedDate = nil }
+                }
+            }
         }
         .onAppear(perform: load)
         .onChange(of: filterType) { _, _ in load() }
-        .onChange(of: selectedMonth) { _, _ in load() }
+        .onChange(of: selectedMonth) { _, _ in
+            selectedDate = nil
+            load()
+        }
+        .onChange(of: selectedDate) { _, _ in load() }
         .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in load() }
     }
 
-    private var filterBar: some View {
-        HStack(spacing: 16) {
-            HStack(spacing: 8) {
-                Button { shiftMonth(-1) } label: { Image(systemName: "chevron.left") }.buttonStyle(.borderless)
-                Text(selectedMonth.monthDisplay).font(.headline)
-                Button { shiftMonth(1) } label: { Image(systemName: "chevron.right") }.buttonStyle(.borderless)
-            }
-            Spacer()
-            Picker("类型", selection: $filterType) {
-                Text("全部").tag(nil as TransactionType?)
-                Text(TransactionType.expense.displayName).tag(TransactionType.expense as TransactionType?)
-                Text(TransactionType.income.displayName).tag(TransactionType.income as TransactionType?)
-                Text(TransactionType.transfer.displayName).tag(TransactionType.transfer as TransactionType?)
-                Text(TransactionType.lending.displayName).tag(TransactionType.lending as TransactionType?)
-            }
-            .pickerStyle(.segmented)
-            .frame(maxWidth: 400)
+    // MARK: - Calendar Panel
+
+    private let weekdaySymbols = ["一", "二", "三", "四", "五", "六", "日"]
+    private let cal = Calendar.current
+    private let cellSize: CGFloat = 28
+
+    private var calendarDays: [CalendarDay] {
+        let start = cal.date(from: cal.dateComponents([.year, .month], from: selectedMonth))!
+        let range = cal.range(of: .day, in: .month, for: start)!
+        let firstWeekday = cal.component(.weekday, from: start)
+        let offset = (firstWeekday + 5) % 7
+
+        var days: [CalendarDay] = []
+        for _ in 0..<offset { days.append(CalendarDay(day: 0, date: nil, isToday: false, hasTransactions: false)) }
+        for day in range {
+            let date = cal.date(byAdding: .day, value: day - 1, to: start)!
+            days.append(CalendarDay(
+                day: day,
+                date: date,
+                isToday: cal.isDateInToday(date),
+                hasTransactions: transactionDays.contains(day)
+            ))
         }
-        .padding(.horizontal, 24).padding(.vertical, 12)
+        return days
+    }
+
+    @State private var transactionDays: Set<Int> = []
+
+    private struct CalendarDay: Identifiable {
+        let id = UUID()
+        let day: Int
+        let date: Date?
+        let isToday: Bool
+        let hasTransactions: Bool
+    }
+
+    private var calendarPanel: some View {
+        VStack(spacing: 0) {
+            let cols = Array(repeating: GridItem(.fixed(cellSize), spacing: 2), count: 7)
+            LazyVGrid(columns: cols, spacing: 2) {
+                ForEach(weekdaySymbols, id: \.self) { sym in
+                    Text(sym)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+                        .frame(width: cellSize, height: 20)
+                }
+                ForEach(calendarDays) { d in
+                    Button {
+                        if d.date != nil {
+                            if let cur = selectedDate, cal.isDate(d.date!, inSameDayAs: cur) {
+                                selectedDate = nil
+                            } else {
+                                selectedDate = d.date
+                            }
+                        }
+                    } label: {
+                        ZStack {
+                            if let date = d.date, let sd = selectedDate,
+                               cal.isDate(date, inSameDayAs: sd) {
+                                Circle()
+                                    .fill(Color.designAccentGreen)
+                                    .frame(width: cellSize - 2, height: cellSize - 2)
+                            }
+                            if d.isToday && (selectedDate == nil || !cal.isDate(d.date!, inSameDayAs: selectedDate!)) {
+                                Circle()
+                                    .stroke(Color.designAccentGreen, lineWidth: 1.5)
+                                    .frame(width: cellSize - 2, height: cellSize - 2)
+                            }
+                            VStack(spacing: 1) {
+                                Text(d.day > 0 ? "\(d.day)" : "")
+                                    .font(.system(size: 13, weight: d.isToday ? .semibold : .regular))
+                                    .foregroundStyle(
+                                        d.date != nil && selectedDate != nil && cal.isDate(d.date!, inSameDayAs: selectedDate!)
+                                            ? Color.white
+                                            : d.day > 0 ? Color.designOnSurface : Color.clear
+                                    )
+                                if d.hasTransactions && d.day > 0 {
+                                    Circle()
+                                        .fill(Color.designAccentGreen.opacity(0.5))
+                                        .frame(width: 3, height: 3)
+                                }
+                            }
+                        }
+                        .frame(width: cellSize, height: cellSize)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(d.day == 0)
+                }
+            }
+            .padding(12)
+            Spacer()
+        }
+        .frame(width: 230)
+        .background(Color.designSurfaceVariant.opacity(0.2))
+    }
+
+    // MARK: - Transaction List
+
+    private var transactionList: some View {
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                if transactions.isEmpty {
+                    VStack(spacing: 8) {
+                        Image(systemName: "tray")
+                            .font(.system(size: 36))
+                            .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
+                        Text(selectedDate != nil ? "当天没有交易记录" : "本月暂无交易记录")
+                            .foregroundStyle(Color.designOnSurfaceVariant)
+                    }
+                    .padding(.top, 60)
+                } else {
+                    ForEach(groupedByDate, id: \.key) { group in
+                        dateHeader(group.key, transactions: group.value)
+                        ForEach(group.value) { t in
+                            TransactionRowView(transaction: t)
+                        }
+                    }
+                }
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity)
+        }
+        .designScreen()
     }
 
     private func dateHeader(_ key: String, transactions: [Transaction]) -> some View {
@@ -295,7 +416,11 @@ struct TransactionsMacView: View {
         filters.dateRange = start..<end
         let all = (try? appContainer.transactionService.fetchTransactions(for: ledger, context: modelContext, filters: filters)) ?? []
         var result = all.deduplicatingTransfers()
+        transactionDays = Set(result.filter { $0.type != .transfer }.map { cal.component(.day, from: $0.date) })
         if let type = filterType { result = result.filter { $0.type == type } }
+        if let date = selectedDate {
+            result = result.filter { Calendar.current.isDate($0.date, inSameDayAs: date) }
+        }
         transactions = result
     }
 
@@ -315,6 +440,7 @@ struct ReportsMacView: View {
             Text("报表功能即将上线").font(.title3).foregroundStyle(Color.designOnSurfaceVariant)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .navigationTitle("报表")
         .designScreen()
     }
 }
@@ -346,6 +472,7 @@ struct SettingsMacView: View {
             }
             .padding(32).frame(maxWidth: 600)
         }
+        .navigationTitle("设置")
         .designScreen()
     }
 }

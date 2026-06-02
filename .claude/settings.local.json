@@ -168,7 +168,17 @@
       "WebFetch(domain:www.kodeco.com)",
       "Bash(/usr/libexec/PlistBuddy -c \"Print\" /Users/macmini/Documents/AI/10-FirstCC/FirstCC/Resources/Info.plist)",
       "Bash(/usr/libexec/PlistBuddy -c \"Print :MinimumOSVersion\" /Users/macmini/Documents/AI/10-FirstCC/FirstCC.xcodeproj/../FirstCC/Resources/Info.plist)",
-      "Bash(xcrun swift *)"
+      "Bash(xcrun swift *)",
+      "Bash(unzip -p \"/Users/macmini/Library/Developer/Xcode/Archives/2026-05-29/钱伲 2026-5-29, 15.31.xcarchive/Products/Applications/钱伲.app/embedded.mobileprovision\")",
+      "Bash(security cms *)",
+      "Bash(xcrun cktool *)",
+      "Bash(kill %1 %2)",
+      "WebFetch(domain:origin-devforums.apple.com)",
+      "Bash(echo -n \"d6fd0a044de701efce63826b666098c45f193e5d16f0f8dcbcd5f886cadf1683\")",
+      "Bash(chmod 600 ~/.lametric_key)",
+      "Bash(bash *)",
+      "Bash(pkill -f Qianeymac)",
+      "Bash(pkill -9 -f Qianeymac)"
     ]
   },
   "hooks": {

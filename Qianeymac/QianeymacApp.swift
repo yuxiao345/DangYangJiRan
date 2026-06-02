@@ -7,6 +7,10 @@ enum AppearanceMode: String, CaseIterable {
     case dark = "dark"
 }
 
+extension Notification.Name {
+    static let macMenuNavigate = Notification.Name("macMenuNavigate")
+}
+
 @main
 struct QianeymacApp: App {
     @StateObject private var appContainer = AppContainer()
@@ -34,8 +38,27 @@ struct QianeymacApp: App {
                     }
             }
         }
-        .windowResizability(.contentSize)
-        .defaultSize(width: 900, height: 600)
+        .windowResizability(.contentMinSize)
+        .defaultSize(width: 1200, height: 780)
+        .commands {
+            SidebarCommands()
+            CommandMenu("导航") {
+                Button("总览") { postNavigate(.dashboard) }
+                    .keyboardShortcut("1")
+                Button("账户") { postNavigate(.accounts) }
+                    .keyboardShortcut("2")
+                Button("流水") { postNavigate(.transactions) }
+                    .keyboardShortcut("3")
+                Button("报表") { postNavigate(.reports) }
+                    .keyboardShortcut("4")
+                Button("设置") { postNavigate(.settings) }
+                    .keyboardShortcut("5")
+            }
+        }
+    }
+
+    private func postNavigate(_ item: MacNavItem) {
+        NotificationCenter.default.post(name: .macMenuNavigate, object: item)
     }
 
     private var preferredScheme: ColorScheme? {
