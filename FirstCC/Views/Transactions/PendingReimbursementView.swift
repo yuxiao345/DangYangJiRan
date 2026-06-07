@@ -3,7 +3,7 @@ import SwiftUI
 
 struct PendingReimbursementView: View {
     @Environment(\.managedObjectContext) private var modelContext
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
     @State private var expenses: [Transaction] = []
     @State private var selectedIDs: Set<UUID> = []
     @State private var showSettleSheet = false

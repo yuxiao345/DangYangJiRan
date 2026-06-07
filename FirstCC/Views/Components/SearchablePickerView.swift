@@ -96,15 +96,16 @@ struct SearchablePickerView<Item: Identifiable & Hashable>: View {
     @ViewBuilder
     private func itemRow(_ item: Item) -> some View {
         let level = min(indentLevel?(item) ?? 0, 2)
+        let isSelected = item.id == selection?.id
         HStack {
             Image(systemName: itemIcon(item))
-                .foregroundStyle(itemColor(item))
+                .foregroundStyle(isSelected ? Color.designPrimaryContainer : itemColor(item))
                 .frame(width: 28)
             Text(itemLabel(item))
                 .font(level > 0 ? .designBodyMedium : nil)
-                .foregroundStyle(level > 0 ? Color.designOnSurfaceVariant : .primary)
+                .foregroundStyle(isSelected ? Color.designPrimaryContainer : (level > 0 ? Color.designOnSurfaceVariant : .primary))
             Spacer()
-            if item.id == selection?.id {
+            if isSelected {
                 Image(systemName: "checkmark")
                     .foregroundStyle(Color.designPrimaryContainer)
             }
@@ -112,8 +113,12 @@ struct SearchablePickerView<Item: Identifiable & Hashable>: View {
         .padding(.leading, CGFloat(level) * 24)
         .contentShape(Rectangle())
         .onTapGesture {
-            selection = item
-            saveRecent(item)
+            if isSelected {
+                selection = nil
+            } else {
+                selection = item
+                saveRecent(item)
+            }
             dismiss()
         }
     }

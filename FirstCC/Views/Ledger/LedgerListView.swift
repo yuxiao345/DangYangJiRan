@@ -3,7 +3,7 @@ import SwiftUI
 
 struct LedgerListView: View {
     @Environment(\.managedObjectContext) private var modelContext
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
     @State private var ledgers: [Ledger] = []
     @State private var showCreateSheet = false
     @State private var showDeleteAlert = false

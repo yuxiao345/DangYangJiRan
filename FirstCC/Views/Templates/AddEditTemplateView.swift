@@ -9,7 +9,7 @@ enum TemplatePickerSheet: Identifiable {
 struct AddEditTemplateView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.managedObjectContext) private var modelContext
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
 
     let editing: TransactionTemplate?
     let ledger: Ledger?
@@ -31,6 +31,7 @@ struct AddEditTemplateView: View {
     @State private var merchants: [Merchant] = []
     @State private var projects: [Project] = []
     @State private var pickerSheet: TemplatePickerSheet?
+    @State private var errorMessage: String?
 
     init(editing: TransactionTemplate? = nil, ledger: Ledger? = nil) {
         self.editing = editing
@@ -96,6 +97,7 @@ struct AddEditTemplateView: View {
             }
             .navigationTitle(editing != nil ? "编辑模板" : "新建模板")
             .navigationBarTitleDisplayMode(.inline)
+            .errorAlert("保存失败", message: $errorMessage)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
@@ -227,6 +229,11 @@ struct AddEditTemplateView: View {
 
     private func save() {
         guard let ledger = effectiveLedger else { return }
+        if let dup = try? appContainer.templateService.findByName(name, ledger: ledger, context: modelContext),
+           dup.id != editing?.id {
+            errorMessage = "同名模板「\(name)」已存在"
+            return
+        }
         if let t = editing {
             t.name = name
             t.type = type

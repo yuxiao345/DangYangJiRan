@@ -2,7 +2,7 @@ import SwiftUI
 @preconcurrency import CoreData
 
 struct ProjectListView: View {
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
     @State private var projects: [Project] = []
     @State private var showAddSheet = false
@@ -93,7 +93,7 @@ struct ProjectListView: View {
 struct AddEditProjectView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.managedObjectContext) private var modelContext
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
     let editing: Project?
     let ledger: Ledger?
     private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }

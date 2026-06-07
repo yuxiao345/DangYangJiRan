@@ -13,7 +13,7 @@ extension Notification.Name {
 
 @main
 struct QianeymacApp: App {
-    @StateObject private var appContainer = AppContainer()
+    @State private var appContainer = AppContainer()
     @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
     @State private var storesLoaded = false
 
@@ -22,7 +22,7 @@ struct QianeymacApp: App {
             if storesLoaded {
                 MainSplitView()
                     .environment(\.managedObjectContext, appContainer.viewContext)
-                    .environmentObject(appContainer)
+                    .environment(appContainer)
                     .tint(Color.designAccentGreen)
                     .preferredColorScheme(preferredScheme)
             } else {

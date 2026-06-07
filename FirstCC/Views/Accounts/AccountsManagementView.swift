@@ -2,7 +2,7 @@ import SwiftUI
 @preconcurrency import CoreData
 
 struct AccountsManagementView: View {
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
     @State private var accounts: [Account] = []
     @State private var balances: [UUID: Decimal] = [:]
@@ -130,7 +130,7 @@ struct AccountsManagementView: View {
 struct EditAccountView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.managedObjectContext) private var modelContext
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
 
     let account: Account
 

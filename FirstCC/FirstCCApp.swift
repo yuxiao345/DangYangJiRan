@@ -57,7 +57,7 @@ private extension View {
 @main
 struct FirstCCApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @StateObject private var appContainer = AppContainer()
+    @State private var appContainer = AppContainer()
     @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
     @State private var storesLoaded = false
 
@@ -108,7 +108,7 @@ struct FirstCCApp: App {
             if storesLoaded {
                 RootView()
                     .environment(\.managedObjectContext, appContainer.viewContext)
-                    .environmentObject(appContainer)
+                    .environment(appContainer)
                     .tint(Color.designAccentGreen)
                     .preferredColorScheme(preferredScheme)
                     .attachSceneDelegate()

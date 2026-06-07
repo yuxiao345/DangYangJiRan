@@ -1,22 +1,22 @@
-import Combine
 import Foundation
 @preconcurrency import CoreData
 
+@Observable
 @MainActor
-final class DashboardViewModel: ObservableObject {
-    @Published var monthlyIncome: Decimal = 0
-    @Published var monthlyExpense: Decimal = 0
-    @Published var recentTransactions: [Transaction] = []
-    @Published var accounts: [Account] = []
-    @Published var accountBalances: [UUID: Decimal] = [:]
-    @Published var totalBalance: Decimal = 0
-    @Published var previousMonthBalance: Decimal = 0
-    @Published var balanceChange: Decimal? = nil
-    @Published var balanceChangePercent: Decimal? = nil
-    @Published var budgetSpent: Decimal = 0
-    @Published var budgetLimit: Decimal = 0
-    @Published var hasBudget: Bool = false
-    @Published var activeBudgetBook: BudgetBook?
+final class DashboardViewModel {
+    var monthlyIncome: Decimal = 0
+    var monthlyExpense: Decimal = 0
+    var recentTransactions: [Transaction] = []
+    var accounts: [Account] = []
+    var accountBalances: [UUID: Decimal] = [:]
+    var totalBalance: Decimal = 0
+    var previousMonthBalance: Decimal = 0
+    var balanceChange: Decimal? = nil
+    var balanceChangePercent: Decimal? = nil
+    var budgetSpent: Decimal = 0
+    var budgetLimit: Decimal = 0
+    var hasBudget: Bool = false
+    var activeBudgetBook: BudgetBook?
 
     private let accountService: AccountServiceProtocol
     private let transactionService: TransactionServiceProtocol

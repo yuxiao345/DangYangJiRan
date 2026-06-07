@@ -4,7 +4,7 @@ import PDFKit
 import UniformTypeIdentifiers
 
 struct OCRTestView: View {
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
 
     /// If provided, CSV results can be sent to reconciliation
     let account: Account?

@@ -134,6 +134,25 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
                 context.delete(counterpart)
             }
         }
+
+        // 借贷关联清理
+        if transaction.type == .lending {
+            if transaction.lendingDirection == .collect || transaction.lendingDirection == .repay {
+                // 删除收款/还款时，重置被结算的原始借贷为待结算
+                let req = NSFetchRequest<Transaction>(entityName: "Transaction")
+                req.predicate = NSPredicate(format: "settledByLendingTransactionId == %@", transaction.id as CVarArg)
+                if let settled = try? context.fetch(req) {
+                    for item in settled {
+                        item.settledByLendingTransactionId = nil
+                        item.settledAmount = nil
+                        item.lendingStatus = .pending
+                    }
+                }
+            }
+            // 删除借出/借入时，settledByLendingTransactionId 指向的收款交易不受影响
+            // （收款交易没有反向引用，直接删除即可）
+        }
+
         context.delete(transaction)
         try context.save()
         NotificationCenter.default.post(name: .transactionDidChange, object: nil)

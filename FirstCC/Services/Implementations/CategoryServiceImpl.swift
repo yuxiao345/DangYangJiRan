@@ -7,6 +7,13 @@ struct CategoryServiceImpl: CategoryServiceProtocol {
         try context.save()
     }
 
+    func findByName(_ name: String, ledger: Ledger, context: NSManagedObjectContext) throws -> Category? {
+        let request = NSFetchRequest<Category>(entityName: "Category")
+        request.predicate = NSPredicate(format: "ledger.id == %@ AND name == %@", ledger.id as CVarArg, name)
+        request.fetchLimit = 1
+        return try context.fetch(request).first
+    }
+
     func fetchCategories(for ledger: Ledger, type: TransactionType? = nil, context: NSManagedObjectContext) throws -> [Category] {
         let all = try fetchAllCategories(for: ledger, type: type, context: context)
         return all.filter { !$0.isHidden }

@@ -2,7 +2,7 @@ import SwiftUI
 @preconcurrency import CoreData
 
 struct RootView: View {
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
 

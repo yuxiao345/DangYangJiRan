@@ -3,7 +3,7 @@ import CloudKit
 import UIKit
 
 struct SyncStatusBadge: View {
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
     @State private var showDetail = false
 
     var body: some View {

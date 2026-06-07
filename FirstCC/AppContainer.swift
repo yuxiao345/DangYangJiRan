@@ -1,10 +1,10 @@
-import Combine
 import SwiftUI
 @preconcurrency import CoreData
 import CloudKit
 
+@Observable
 @MainActor
-final class AppContainer: ObservableObject {
+final class AppContainer {
     static weak var shared: AppContainer?
 
     let coreDataStack: CoreDataStack
@@ -35,10 +35,10 @@ final class AppContainer: ObservableObject {
     var cloudKitContainer: CKContainer?
 
     // App state
-    @Published var currentLedger: Ledger?
-    @Published var syncStatus: SyncStatus = .synced
-    @Published var isAuthenticated: Bool = false
-    @Published var currentUserRecordID: String?
+    var currentLedger: Ledger?
+    var syncStatus: SyncStatus = .synced
+    var isAuthenticated: Bool = false
+    var currentUserRecordID: String?
 
     /// Whether the current user is the owner of the given ledger
     func isOwner(of ledger: Ledger) -> Bool {
@@ -444,13 +444,6 @@ final class AppContainer: ObservableObject {
         let memberNames = ["自己", "配偶", "孩子"]
         for (i, name) in memberNames.enumerated() {
             let m = Member(name: name, avatar: ["person.circle", "heart.circle", "figure.child.circle"][i], sortOrder: i, context: context)
-            m.ledger = ledger
-        }
-
-        // Seed default merchants
-        let merchantNames = ["美团", "淘宝", "京东", "滴滴", "星巴克"]
-        for (i, name) in merchantNames.enumerated() {
-            let m = Merchant(name: name, sortOrder: i, context: context)
             m.ledger = ledger
         }
 

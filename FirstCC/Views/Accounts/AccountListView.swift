@@ -2,7 +2,7 @@ import SwiftUI
 @preconcurrency import CoreData
 
 struct AccountListView: View {
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
     @State private var showAddSheet = false
     @State private var accounts: [Account] = []
@@ -40,7 +40,7 @@ struct AccountListView: View {
     private var totalAssetsCard: some View {
         let total = balances.values.reduce(Decimal.zero, +)
         return VStack(alignment: .leading, spacing: 8) {
-            Text("总资产")
+            Text("净资产")
                 .font(.designLabel)
                 .foregroundStyle(Color.designOnSurfaceVariant)
                 .tracking(1.2)

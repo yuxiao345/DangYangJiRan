@@ -10,6 +10,13 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
         try context.save()
     }
 
+    func findBookByName(_ name: String, ledger: Ledger, context: NSManagedObjectContext) throws -> BudgetBook? {
+        let request = NSFetchRequest<BudgetBook>(entityName: "BudgetBook")
+        request.predicate = NSPredicate(format: "ledger.id == %@ AND name == %@", ledger.id as CVarArg, name)
+        request.fetchLimit = 1
+        return try context.fetch(request).first
+    }
+
     func fetchBooks(for ledger: Ledger, context: NSManagedObjectContext) throws -> [BudgetBook] {
         let lid = ledger.id
         let request = NSFetchRequest<BudgetBook>(entityName: "BudgetBook")

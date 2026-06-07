@@ -4,7 +4,7 @@ import SwiftUI
 struct AddEditCategoryView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.managedObjectContext) private var modelContext
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
 
     let editing: Category?
     let ledger: Ledger?
@@ -33,6 +33,10 @@ struct AddEditCategoryView: View {
         "tshirt", "desktopcomputer", "basket", "creditcard", "banknote"
     ]
 
+    private var suggestedIcons: [String] {
+        IconSuggestionEngine.suggestIcons(for: name)
+    }
+
     private let colorOptions = [
         "#FF6B35", "#607D8B", "#E91E63", "#795548", "#673AB7",
         "#2196F3", "#4CAF50", "#00BCD4", "#FF9800", "#9E9E9E",
@@ -53,6 +57,24 @@ struct AddEditCategoryView: View {
                 }
 
                 Section("图标") {
+                    if !suggestedIcons.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("推荐").font(.caption).foregroundStyle(.secondary)
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 10) {
+                                    ForEach(suggestedIcons, id: \.self) { icon in
+                                        Image(systemName: icon)
+                                            .font(.title3)
+                                            .frame(width: 44, height: 44)
+                                            .background(icon == iconName ? Color.blue.opacity(0.2) : Color.gray.opacity(0.08))
+                                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                                            .onTapGesture { iconName = icon }
+                                    }
+                                }
+                            }
+                        }
+                        Divider()
+                    }
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 8) {
                         ForEach(iconOptions, id: \.self) { icon in
                             Image(systemName: icon)
@@ -103,6 +125,7 @@ struct AddEditCategoryView: View {
                 }
             }
             .onAppear { setup() }
+            .onChange(of: type) { _, _ in loadParents() }
         }
     }
 
@@ -127,6 +150,11 @@ struct AddEditCategoryView: View {
         guard let ledger = effectiveLedger else { return }
         if let parent = selectedParent, parent.type != type {
             errorMessage = "子分类的支出/收入类型必须与父分类「\(parent.name)」一致"
+            return
+        }
+        if let dup = try? appContainer.categoryService.findByName(name, ledger: ledger, context: modelContext),
+           dup.id != editing?.id {
+            errorMessage = "同名分类「\(name)」已存在"
             return
         }
         do {

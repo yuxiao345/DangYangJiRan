@@ -7,6 +7,13 @@ struct TemplateServiceImpl: TemplateServiceProtocol {
         try context.save()
     }
 
+    func findByName(_ name: String, ledger: Ledger, context: NSManagedObjectContext) throws -> TransactionTemplate? {
+        let request = NSFetchRequest<TransactionTemplate>(entityName: "TransactionTemplate")
+        request.predicate = NSPredicate(format: "ledger.id == %@ AND name == %@", ledger.id as CVarArg, name)
+        request.fetchLimit = 1
+        return try context.fetch(request).first
+    }
+
     func fetchTemplates(for ledger: Ledger, context: NSManagedObjectContext) throws -> [TransactionTemplate] {
         let ledgerID = ledger.id
         let request = NSFetchRequest<TransactionTemplate>(entityName: "TransactionTemplate")

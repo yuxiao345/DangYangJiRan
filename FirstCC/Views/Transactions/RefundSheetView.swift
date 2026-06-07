@@ -4,7 +4,7 @@ import SwiftUI
 struct RefundSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.managedObjectContext) private var modelContext
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
 
     let original: Transaction
     let onDone: () -> Void

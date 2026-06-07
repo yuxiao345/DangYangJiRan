@@ -1,10 +1,10 @@
-import Combine
 import Foundation
 @preconcurrency import CoreData
 import CloudKit
 
+@Observable
 @MainActor
-final class CoreDataStack: ObservableObject {
+final class CoreDataStack {
     static var shared: CoreDataStack!
 
     let container: NSPersistentCloudKitContainer

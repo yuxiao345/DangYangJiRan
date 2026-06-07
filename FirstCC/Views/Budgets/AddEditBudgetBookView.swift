@@ -4,7 +4,7 @@ import SwiftUI
 struct AddEditBudgetBookView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.managedObjectContext) private var modelContext
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
 
     let editing: BudgetBook?
     let ledger: Ledger?
@@ -14,6 +14,7 @@ struct AddEditBudgetBookView: View {
     @State private var startDate: Date = Date()
     @State private var endDate: Date = Calendar.current.date(byAdding: .year, value: 1, to: Date()) ?? Date()
     @State private var isActive: Bool = true
+    @State private var errorMessage: String?
 
     init(editing: BudgetBook? = nil, ledger: Ledger? = nil) {
         self.editing = editing
@@ -33,6 +34,7 @@ struct AddEditBudgetBookView: View {
                 }
             }
             .navigationTitle(editing != nil ? "编辑预算计划" : "新建预算计划")
+            .errorAlert("保存失败", message: $errorMessage)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
@@ -53,6 +55,11 @@ struct AddEditBudgetBookView: View {
 
     private func save() {
         guard let ledger = effectiveLedger else { return }
+        if let dup = try? appContainer.budgetService.findBookByName(name, ledger: ledger, context: modelContext),
+           dup.id != editing?.id {
+            errorMessage = "同名预算计划「\(name)」已存在"
+            return
+        }
         if let b = editing {
             b.name = name
             b.startDate = startDate

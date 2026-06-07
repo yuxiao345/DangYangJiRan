@@ -5,7 +5,7 @@ import SwiftUI
 
 struct BudgetBookListView: View {
     @Environment(\.managedObjectContext) private var modelContext
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
     @State private var books: [BudgetBook] = []
     @State private var showAddSheet = false
     @State private var editingBook: BudgetBook?

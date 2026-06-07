@@ -3,7 +3,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct CreditCardReconciliationView: View {
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
 
     let account: Account
@@ -114,7 +114,7 @@ struct CreditCardReconciliationView: View {
 }
 
 struct StatementTransactionsView: View {
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
@@ -223,7 +223,7 @@ struct StatementTransactionsView: View {
 struct AddEditStatementView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.managedObjectContext) private var modelContext
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
 
     let account: Account
     let editing: CreditCardStatement?

@@ -1,12 +1,12 @@
-import Combine
 import Foundation
 @preconcurrency import CoreData
 
+@Observable
 @MainActor
-final class AccountListViewModel: ObservableObject {
-    @Published var accounts: [Account] = []
-    @Published var totalBalance: Decimal = 0
-    @Published var selectedType: AccountType?
+final class AccountListViewModel {
+    var accounts: [Account] = []
+    var totalBalance: Decimal = 0
+    var selectedType: AccountType?
 
     private let service: AccountServiceProtocol
     private let ledger: Ledger

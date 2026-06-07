@@ -164,6 +164,7 @@
 		9A8E07F52FCD55E8004FCB60 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30A7BF23BB03561C42D70AE8 /* Constants.swift */; };
 		9A8E07F62FCD55E8004FCB60 /* SwiftDataBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9140DF48EBC4497697CB6590 /* SwiftDataBridge.swift */; };
 		9A8E07F72FCD55E8004FCB60 /* CloudKitConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FD37181CF946710701C84CD /* CloudKitConfig.swift */; };
+		BD6B62CD0EF64103AE006176 /* IconSuggestionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C6D17DBC1794751B76AB503 /* IconSuggestionEngine.swift */; };
 		9A8E07F92FCD55F3004FCB60 /* View+ErrorAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36D3759D43EE47A08A8421BE /* View+ErrorAlert.swift */; };
 		9A8E07FA2FCD55F3004FCB60 /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 869E6C318410086C8418DB7A /* Color+Hex.swift */; };
 		9A8E07FB2FCD55F3004FCB60 /* Date+Display.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C3B6534094377FFBECE3D98 /* Date+Display.swift */; };
@@ -308,6 +309,7 @@
 		0DEA46D0089C646200D27B77 /* JoinLedgerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JoinLedgerView.swift; sourceTree = "<group>"; };
 		0F0D546EEE7347FFA48B9EDD /* SettlementStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettlementStatus.swift; sourceTree = "<group>"; };
 		0FD37181CF946710701C84CD /* CloudKitConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitConfig.swift; sourceTree = "<group>"; };
+		6C6D17DBC1794751B76AB503 /* IconSuggestionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconSuggestionEngine.swift; sourceTree = "<group>"; };
 		1067764F58AF43579BF3B574 /* Transaction+Grouping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Transaction+Grouping.swift"; sourceTree = "<group>"; };
 		116393F5429040CABC983CA8 /* SplitEntryEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitEntryEntity.swift; sourceTree = "<group>"; };
 		119691BBF4E64429902986A5 /* NumpadAmountField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumpadAmountField.swift; sourceTree = "<group>"; };
@@ -749,6 +751,7 @@
 				9140DF48EBC4497697CB6590 /* SwiftDataBridge.swift */,
 				0CB28F94C2944BCF91F3F91E /* ChineseExpressionParser.swift */,
 				25BD8B7423ECB057766F757C /* BankLogoPresets.swift */,
+				6C6D17DBC1794751B76AB503 /* IconSuggestionEngine.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -1241,6 +1244,7 @@
 				85DD12DBCBCD4B9AAD4EA49D /* CalendarDayCell.swift in Sources */,
 				2760B2289D5E47E78D2DA298 /* Color+Expense.swift in Sources */,
 				D73A02FE5CF844B68F520A93 /* ChineseExpressionParser.swift in Sources */,
+				BD6B62CD0EF64103AE006176 /* IconSuggestionEngine.swift in Sources */,
 				658D3C8C26A342D6855FE548 /* SearchViewModel.swift in Sources */,
 				F727E0EE67944E628D7560C9 /* SearchView.swift in Sources */,
 				7DB8954774354740A7A4811F /* ExportServiceImpl.swift in Sources */,
@@ -1371,6 +1375,8 @@
 				9A8E07F52FCD55E8004FCB60 /* Constants.swift in Sources */,
 				9A8E07F62FCD55E8004FCB60 /* SwiftDataBridge.swift in Sources */,
 				9A8E07F72FCD55E8004FCB60 /* CloudKitConfig.swift in Sources */,
+				BD6B62CD0EF64103AE006176 /* IconSuggestionEngine.swift in Sources */,
+				BD6B62CD0EF64103AE006176 /* IconSuggestionEngine.swift in Sources */,
 				9A8E07CF2FCD55AB004FCB60 /* TransactionServiceImpl.swift in Sources */,
 				9A8E07D02FCD55AB004FCB60 /* SyncServiceImpl.swift in Sources */,
 				9A8E07D12FCD55AB004FCB60 /* CurrencyServiceImpl.swift in Sources */,

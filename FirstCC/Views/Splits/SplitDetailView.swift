@@ -3,7 +3,7 @@ import SwiftUI
 
 struct SplitDetailView: View {
     @Environment(\.managedObjectContext) private var modelContext
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
 
     let splitGroup: SplitGroup
     @State private var showForm = false

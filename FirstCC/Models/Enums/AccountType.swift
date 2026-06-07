@@ -12,6 +12,21 @@ enum AccountType: String, Codable, CaseIterable {
     case lending = "借贷"
     case other = "自定义"
 
+    var sortPriority: Int {
+        switch self {
+        case .cash: 0
+        case .eWallet: 1
+        case .debitCard: 2
+        case .creditCard: 3
+        case .loan: 4
+        case .lending: 5
+        case .housingFund: 6
+        case .investment: 7
+        case .insurance: 8
+        case .other: 9
+        }
+    }
+
     var displayName: String { NSLocalizedString(rawValue, comment: "") }
 
     var systemIcon: String {

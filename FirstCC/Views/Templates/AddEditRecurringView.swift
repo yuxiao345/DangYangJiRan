@@ -9,7 +9,7 @@ enum RecurringPickerSheet: Identifiable {
 struct AddEditRecurringView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.managedObjectContext) private var modelContext
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
 
     let editingRule: RecurringRule?
     let ledger: Ledger?
@@ -37,6 +37,7 @@ struct AddEditRecurringView: View {
     @State private var merchants: [Merchant] = []
     @State private var projects: [Project] = []
     @State private var pickerSheet: RecurringPickerSheet?
+    @State private var errorMessage: String?
 
     init(editing: RecurringRule? = nil, ledger: Ledger? = nil) {
         self.editingRule = editing
@@ -121,6 +122,7 @@ struct AddEditRecurringView: View {
             }
             .navigationTitle(editingRule != nil ? "编辑周期账" : "新建周期账")
             .navigationBarTitleDisplayMode(.inline)
+            .errorAlert("保存失败", message: $errorMessage)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
@@ -268,6 +270,11 @@ struct AddEditRecurringView: View {
 
     private func save() {
         guard let ledger = effectiveLedger else { return }
+        if let dup = try? appContainer.templateService.findByName(name, ledger: ledger, context: modelContext),
+           dup.id != editingRule?.template?.id {
+            errorMessage = "同名周期账「\(name)」已存在"
+            return
+        }
         if let rule = editingRule, let t = rule.template {
             t.name = name
             t.type = type

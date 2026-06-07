@@ -4,7 +4,7 @@ import SwiftUI
 struct AccountDetailView: View {
     @ObservedObject var account: Account
     @Environment(\.managedObjectContext) private var modelContext
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
     @State private var balance: Decimal = 0
     @State private var transactions: [Transaction] = []
     @State private var showEditSheet = false

@@ -2,14 +2,15 @@ import SwiftUI
 @preconcurrency import CoreData
 
 struct DashboardView: View {
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
-    @StateObject private var viewModel: DashboardViewModel
+    @State private var viewModel: DashboardViewModel
     @State private var showAddSheet = false
     @State private var editingTransaction: Transaction?
+    @State private var showBreakdown = false
 
     init() {
-        _viewModel = StateObject(wrappedValue: DashboardViewModel(
+        _viewModel = State(initialValue: DashboardViewModel(
             accountService: AccountServiceImpl(), transactionService: TransactionServiceImpl()
         ))
     }
@@ -68,9 +69,6 @@ struct DashboardView: View {
             .navigationTitle(appContainer.currentLedger?.name ?? "小金库")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    SyncStatusBadge()
-                }
-                ToolbarItem(placement: .primaryAction) {
                     Button { showAddSheet = true } label: {
                         Image(systemName: "plus")
                     }
@@ -96,19 +94,45 @@ struct DashboardView: View {
 
     private var heroBalanceCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("总资产")
-                .font(.designLabel)
-                .foregroundStyle(Color.designOnSurfaceVariant)
-                .tracking(1.2)
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("净资产")
+                        .font(.designLabel)
+                        .foregroundStyle(Color.designOnSurfaceVariant)
+                        .tracking(1.2)
 
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(CurrencyFormatter.currencySymbol(for: ledgerCurrency))
-                    .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
-                    .foregroundStyle(Color.designPrimaryFixedDim)
-                Text(formattedBalance)
-                    .font(.designDisplayMobile)
-                    .foregroundStyle(Color.designOnSurface)
-                    .tracking(-0.6)
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(CurrencyFormatter.currencySymbol(for: ledgerCurrency))
+                            .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
+                            .foregroundStyle(Color.designPrimaryFixedDim)
+                        Text(formattedBalance)
+                            .font(.designDisplayMobile)
+                            .foregroundStyle(Color.designOnSurface)
+                            .tracking(-0.6)
+                    }
+                }
+
+                Spacer()
+
+                if showBreakdown {
+                    VStack(alignment: .trailing, spacing: 4) {
+                        let assets = viewModel.accountBalances.values.filter { $0 > 0 }.reduce(Decimal.zero, +)
+                        let liabilities = abs(viewModel.accountBalances.values.filter { $0 < 0 }.reduce(Decimal.zero, +))
+                        HStack(spacing: 2) {
+                            Text("总资产")
+                                .font(.designBodyCaption)
+                                .foregroundStyle(Color.designOnSurfaceVariant)
+                            CurrencyText(amount: assets, currencyCode: ledgerCurrency, size: 12, foregroundColor: Color.designPrimaryFixedDim)
+                        }
+                        HStack(spacing: 2) {
+                            Text("总负债")
+                                .font(.designBodyCaption)
+                                .foregroundStyle(Color.designOnSurfaceVariant)
+                            CurrencyText(amount: liabilities, currencyCode: ledgerCurrency, size: 12, foregroundColor: Color.designAccentRed)
+                        }
+                    }
+                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+                }
             }
 
             if let change = viewModel.balanceChange {
@@ -136,6 +160,10 @@ struct DashboardView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
         .glassCard(cornerRadius: 24)
+        .contentShape(RoundedRectangle(cornerRadius: 24))
+        .onTapGesture {
+            withAnimation(.easeInOut(duration: 0.25)) { showBreakdown.toggle() }
+        }
         .overlay(alignment: .topTrailing) {
             Circle()
                 .fill(Color.designPrimaryFixedDim.opacity(0.15))
@@ -171,7 +199,7 @@ struct DashboardView: View {
 
             CurrencyText(amount: abs(amount), currencyCode: ledgerCurrency, showSign: false, size: 22, foregroundColor: color, fractionDigits: 0)
 
-            let maxRef = max(viewModel.monthlyIncome, viewModel.monthlyExpense)
+            let maxRef = max(abs(viewModel.monthlyIncome), abs(viewModel.monthlyExpense))
             let frac = maxRef > 0 ? Double(truncating: (abs(amount) / maxRef) as NSNumber) : 0
             PixelProgressBar(progress: frac, tint: color.opacity(0.6), totalBlocks: 20)
         }

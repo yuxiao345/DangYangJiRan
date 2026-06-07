@@ -28,7 +28,7 @@ enum ReportType: CaseIterable {
 }
 
 struct ReportsView: View {
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
     @State private var viewModel = ReportViewModel()
     @State private var selectedReport: ReportType = .category

@@ -5,6 +5,7 @@ protocol BudgetServiceProtocol {
     // BudgetBook
     func createBook(_ book: BudgetBook, ledger: Ledger, context: NSManagedObjectContext) throws
     func fetchBooks(for ledger: Ledger, context: NSManagedObjectContext) throws -> [BudgetBook]
+    func findBookByName(_ name: String, ledger: Ledger, context: NSManagedObjectContext) throws -> BudgetBook?
     func updateBook(_ book: BudgetBook, context: NSManagedObjectContext) throws
     func deleteBook(_ book: BudgetBook, context: NSManagedObjectContext) throws
     func reorderBooks(_ books: [BudgetBook], context: NSManagedObjectContext) throws

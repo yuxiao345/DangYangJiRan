@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ExportView: View {
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
     @State private var startDate: Date
     @State private var endDate: Date

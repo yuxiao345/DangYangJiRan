@@ -3,7 +3,7 @@ import SwiftUI
 
 struct BudgetBookDetailView: View {
     @Environment(\.managedObjectContext) private var modelContext
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
     let book: BudgetBook
     @State private var items: [BudgetItem] = []
     @State private var showAddSheet = false

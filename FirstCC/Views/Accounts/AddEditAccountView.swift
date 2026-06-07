@@ -4,7 +4,7 @@ import SwiftUI
 struct AddEditAccountView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.managedObjectContext) private var modelContext
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
 
     let ledger: Ledger?
     let editing: Account?
@@ -23,6 +23,7 @@ struct AddEditAccountView: View {
     @State private var hasCreditLimit = false
     @State private var billingDay: Int = 1
     @State private var dueDay: Int = 5
+    @State private var errorMessage: String?
 
     init(ledger: Ledger? = nil) {
         self.ledger = ledger
@@ -122,6 +123,7 @@ struct AddEditAccountView: View {
             }
             .navigationTitle(isEditing ? "编辑账户" : "新增账户")
             .navigationBarTitleDisplayMode(.inline)
+            .errorAlert("保存失败", message: $errorMessage)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") { dismiss() }
@@ -135,6 +137,12 @@ struct AddEditAccountView: View {
     }
 
     private func save() {
+        guard let ledger = effectiveLedger else { return }
+        if let dup = try? appContainer.accountService.findByName(name, ledger: ledger, context: modelContext),
+           dup.id != editing?.id {
+            errorMessage = "同名账户「\(name)」已存在"
+            return
+        }
         if let existing = editing {
             existing.name = name
             existing.currencyCode = currencyCode
@@ -144,7 +152,6 @@ struct AddEditAccountView: View {
             existing.dueDay = accountType == .creditCard ? Int64(dueDay) : 0
             try? appContainer.accountService.updateAccount(existing, context: modelContext)
         } else {
-            guard let ledger = effectiveLedger else { return }
             let account = Account(
                 name: name,
                 currencyCode: currencyCode,

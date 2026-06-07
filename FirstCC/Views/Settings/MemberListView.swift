@@ -2,7 +2,7 @@ import SwiftUI
 @preconcurrency import CoreData
 
 struct MemberListView: View {
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
     @State private var members: [Member] = []
     @State private var showAddAlert = false
@@ -86,7 +86,7 @@ struct MemberListView: View {
 struct EditMemberView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.managedObjectContext) private var modelContext
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
     let member: Member
     @State private var name: String
     @State private var avatar: String

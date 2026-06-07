@@ -2,7 +2,7 @@ import SwiftUI
 @preconcurrency import CoreData
 
 struct RecurringListView: View {
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
     @State private var rules: [RecurringRule] = []
     @State private var showAddSheet = false

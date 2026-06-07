@@ -2,7 +2,7 @@ import SwiftUI
 @preconcurrency import CoreData
 
 struct CategoryListView: View {
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
     @State private var incomeCategories: [Category] = []
     @State private var expenseCategories: [Category] = []

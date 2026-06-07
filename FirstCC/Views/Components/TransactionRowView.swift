@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct TransactionRowView: View {
-    let transaction: Transaction
+    @ObservedObject var transaction: Transaction
 
     var body: some View {
         HStack(spacing: 12) {

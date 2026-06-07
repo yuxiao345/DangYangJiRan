@@ -4,7 +4,7 @@ import CloudKit
 
 struct UserListView: View {
     @Environment(\.managedObjectContext) private var modelContext
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
 
     let ledger: Ledger?
     @State private var users: [User] = []

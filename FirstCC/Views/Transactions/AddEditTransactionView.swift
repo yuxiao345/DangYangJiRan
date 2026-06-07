@@ -29,7 +29,7 @@ struct SplitItemDraft: Identifiable {
 struct AddEditTransactionView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.managedObjectContext) private var modelContext
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
 
     let editing: Transaction?
     let displayMode: Bool
@@ -76,6 +76,7 @@ struct AddEditTransactionView: View {
 
     // Split
     @State private var isSplit = false
+    @State private var showDatePicker = false
     @State private var splitItems: [SplitItemDraft] = []
     @State private var selectedSplitItemID: UUID?
     @State private var splitAmountString: String = ""
@@ -183,6 +184,40 @@ struct AddEditTransactionView: View {
                     SplitFormView(transaction: t, ledger: ledger)
                 }
             }
+            .sheet(isPresented: $showDatePicker) {
+                datePickerSheet
+            }
+    }
+
+    private var datePickerSheet: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                DatePicker("", selection: $date, displayedComponents: [.date])
+                    .datePickerStyle(.graphical)
+                    .padding(.horizontal)
+
+                HStack {
+                    Text("时间")
+                        .font(.designBodyMedium)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    DatePicker("", selection: $date, displayedComponents: [.hourAndMinute])
+                        .labelsHidden()
+                }
+                .padding(.horizontal)
+                .padding(.top, 8)
+
+                Spacer()
+            }
+            .navigationTitle("选择日期")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("确认") { showDatePicker = false }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
     }
 
     @ViewBuilder
@@ -953,7 +988,7 @@ struct AddEditTransactionView: View {
         itemColor: @escaping (T) -> Color,
         recentKey: String,
         selectedItem: T?,
-        onSelect: @escaping (T) -> Void,
+        onSelect: @escaping (T?) -> Void,
         onMore: @escaping () -> Void
     ) -> some View {
         VStack(spacing: 8) {
@@ -977,15 +1012,18 @@ struct AddEditTransactionView: View {
             HStack(spacing: 8) {
                 ForEach(topRecentItems(items: items, recentKey: recentKey, selected: selectedItem)) { item in
                     Button {
-                        saveRecentID("\(item.id)", forKey: recentKey)
-                        onSelect(item)
+                        let isSel = selectedItem?.id == item.id as? AnyHashable
+                        if !isSel {
+                            saveRecentID("\(item.id)", forKey: recentKey)
+                        }
+                        onSelect(isSel ? nil : item)
                     } label: {
                         VStack(spacing: 4) {
                             Image(systemName: itemIcon(item))
                                 .font(.system(size: 18))
                                 .foregroundStyle(
                                     selectedItem?.id == item.id as? AnyHashable
-                                        ? itemColor(item)
+                                        ? Color.designPrimaryContainer
                                         : Color.designOnSurfaceVariant
                                 )
                             if let np = item as? any NameProviding {
@@ -994,7 +1032,7 @@ struct AddEditTransactionView: View {
                                     .lineLimit(1)
                                     .foregroundStyle(
                                         selectedItem?.id == item.id as? AnyHashable
-                                            ? itemColor(item)
+                                            ? Color.designPrimaryContainer
                                             : Color.designOnSurfaceVariant
                                     )
                             }
@@ -1007,7 +1045,7 @@ struct AddEditTransactionView: View {
                             RoundedRectangle(cornerRadius: 12)
                                 .stroke(
                                     selectedItem?.id == item.id as? AnyHashable
-                                        ? itemColor(item).opacity(0.5)
+                                        ? Color.designPrimaryContainer.opacity(0.5)
                                         : Color.clear,
                                     lineWidth: 1
                                 )
@@ -1377,13 +1415,23 @@ struct AddEditTransactionView: View {
 
                 // Date + Photo
                 HStack(spacing: 12) {
-                    DatePicker("日期", selection: $date, displayedComponents: [.date, .hourAndMinute])
-                        .labelsHidden()
-                        .font(.designBodySmall)
+                    Button {
+                        showDatePicker = true
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "calendar")
+                                .font(.designBodySmall)
+                            Text(date.formatted(.dateTime.month(.abbreviated).day(.twoDigits).hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)))
+                                .font(.designBodySmall)
+                        }
+                        .foregroundStyle(Color.designOnSurface)
                         .padding(10)
                         .frame(maxWidth: .infinity)
-                        .background(Color.designSurfaceContainer)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .background(Color.designSurfaceContainer)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
 
                     PhotosPicker(selection: $selectedPickerItems, maxSelectionCount: 5, matching: .images) {
                         HStack(spacing: 4) {
@@ -2123,7 +2171,12 @@ struct AddEditTransactionView: View {
         if let paths = t.photoURLs, !paths.isEmpty {
             PhotoStorage.delete(paths: paths)
         }
-        try? appContainer.transactionService.deleteTransaction(t, context: modelContext)
+        do {
+            try appContainer.transactionService.deleteTransaction(t, context: modelContext)
+        } catch {
+            errorMessage = "删除失败: \(error.localizedDescription)"
+            return
+        }
         dismiss()
     }
 

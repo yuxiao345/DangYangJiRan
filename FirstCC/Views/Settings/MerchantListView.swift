@@ -2,13 +2,14 @@ import SwiftUI
 @preconcurrency import CoreData
 
 struct MerchantListView: View {
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
     @State private var merchants: [Merchant] = []
     @State private var showAddAlert = false
     @State private var newName = ""
     @State private var editingMerchant: Merchant?
     @State private var listVersion = 0
+    @State private var errorMessage: String?
 
     let ledger: Ledger?
     private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }
@@ -44,7 +45,11 @@ struct MerchantListView: View {
                 .onTapGesture { editingMerchant = merchant }
                 .swipeActions {
                     Button(role: .destructive) {
-                        try? appContainer.merchantService.deleteMerchant(merchant, context: modelContext)
+                        do {
+                            try appContainer.merchantService.deleteMerchant(merchant, context: modelContext)
+                        } catch {
+                            NSLog("[MerchantList] 删除商家失败: \(error.localizedDescription)")
+                        }
                         loadMerchants()
                     } label: { Label("删除", systemImage: "trash") }
                 }
@@ -52,6 +57,7 @@ struct MerchantListView: View {
         }
         .navigationTitle("商家管理")
         .id(listVersion)
+        .errorAlert("保存失败", message: $errorMessage)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { showAddAlert = true } label: {
@@ -78,9 +84,17 @@ struct MerchantListView: View {
 
     private func addMerchant() {
         guard let ledger = effectiveLedger else { return }
+        if let dup = try? appContainer.merchantService.findByName(newName, ledger: ledger, context: modelContext) {
+            errorMessage = "同名商家「\(newName)」已存在"
+            return
+        }
         let merchant = Merchant(name: newName, sortOrder: merchants.count, context: modelContext)
-        try? appContainer.merchantService.createMerchant(merchant, ledger: ledger, context: modelContext)
-        loadMerchants()
+        do {
+            try appContainer.merchantService.createMerchant(merchant, ledger: ledger, context: modelContext)
+            loadMerchants()
+        } catch {
+            NSLog("[MerchantList] 添加商家失败: \(error.localizedDescription)")
+        }
     }
 
     private func loadMerchants() {
@@ -92,11 +106,12 @@ struct MerchantListView: View {
 struct EditMerchantView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.managedObjectContext) private var modelContext
-    @EnvironmentObject private var appContainer: AppContainer
+    @Environment(AppContainer.self) private var appContainer
     let merchant: Merchant
     @State private var name: String
     @State private var category: String
     @State private var isActive: Bool
+    @State private var errorMessage: String?
 
     init(merchant: Merchant) {
         self.merchant = merchant
@@ -113,6 +128,7 @@ struct EditMerchantView: View {
                 Toggle("启用", isOn: $isActive)
             }
             .navigationTitle("编辑商家")
+            .errorAlert("保存失败", message: $errorMessage)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) { Button("保存") { save() } }
@@ -121,10 +137,23 @@ struct EditMerchantView: View {
     }
 
     private func save() {
+        guard let ledger = merchant.ledger else {
+            errorMessage = "商家数据异常，缺少关联账本"
+            return
+        }
+        if let dup = try? appContainer.merchantService.findByName(name, ledger: ledger, context: modelContext),
+           dup.id != merchant.id {
+            errorMessage = "同名商家「\(name)」已存在"
+            return
+        }
         merchant.name = name
         merchant.category = category.isEmpty ? nil : category
         merchant.isActive = isActive
-        try? appContainer.merchantService.updateMerchant(merchant, context: modelContext)
-        dismiss()
+        do {
+            try appContainer.merchantService.updateMerchant(merchant, context: modelContext)
+            dismiss()
+        } catch {
+            NSLog("[MerchantList] 编辑商家失败: \(error.localizedDescription)")
+        }
     }
 }
