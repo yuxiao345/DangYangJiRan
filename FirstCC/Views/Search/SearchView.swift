@@ -117,7 +117,7 @@ struct SearchView: View {
         List {
             ForEach(groupedResults, id: \.key) { group in
                 Section(group.key) {
-                    ForEach(group.value, id: \.id) { transaction in
+                    ForEach(group.value, id: \.objectID) { transaction in
                         TransactionRowView(transaction: transaction)
                             .background {
                                 NavigationLink(destination: TransactionDetailView(transaction: transaction)) {

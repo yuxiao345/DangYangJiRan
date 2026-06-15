@@ -571,7 +571,7 @@ struct AddEditTransactionView: View {
                     .font(.designLabel)
                     .foregroundStyle(Color.designPrimary.opacity(0.8))
                 VStack(spacing: 8) {
-                    ForEach(linkedRefunds) { refund in
+                    ForEach(linkedRefunds, id: \.objectID) { refund in
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("退款金额")
@@ -623,7 +623,7 @@ struct AddEditTransactionView: View {
                     .font(.designLabel)
                     .foregroundStyle(Color.designPrimary.opacity(0.8))
                 VStack(spacing: 8) {
-                    ForEach(settledExpenses) { expense in
+                    ForEach(settledExpenses, id: \.objectID) { expense in
                         HStack {
                             Text(LocalizedStringKey(expense.category?.name ?? ""))
                                 .font(.designBodyMedium)
@@ -670,7 +670,7 @@ struct AddEditTransactionView: View {
                         .font(.designLabel)
                         .foregroundStyle(Color.designPrimary.opacity(0.8))
                     VStack(spacing: 8) {
-                        ForEach(settledLendingTransactions) { item in
+                        ForEach(settledLendingTransactions, id: \.objectID) { item in
                             HStack {
                                 Text(LocalizedStringKey(item.lendingDirection?.displayName ?? ""))
                                     .font(.designBodyMedium)
@@ -1145,14 +1145,18 @@ struct AddEditTransactionView: View {
                     HStack(spacing: 8) {
                         splitSubMenu(label: "分类", value: item.category?.name) {
                             ForEach(categories) { cat in
+                                let indent = cat.parent != nil ? "    " : ""
                                 Button {
                                     if let idx = splitItems.firstIndex(where: { $0.id == item.id }) {
                                         splitItems[idx].category = cat
                                     }
                                 } label: {
-                                    Label(cat.name, systemImage: cat.iconName)
+                                    Label("\(indent)\(cat.name)", systemImage: cat.iconName)
                                 }
                             }
+                        }
+                        if let cat = item.category, (cat.children?.count ?? 0) > 0 {
+                            Text("含子分类").font(.system(size: 9)).foregroundStyle(.orange)
                         }
                         splitSubMenu(label: "成员", value: item.member?.name) {
                             ForEach(members) { m in
@@ -1312,12 +1316,12 @@ struct AddEditTransactionView: View {
 
     private var pendingLendingSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(lendingDirection == LendingDirection.collect ? LocalizedStringKey("关联待收款") : LocalizedStringKey("关联待付款"))
+            Text(lendingDirection == LendingDirection.collect ? LocalizedStringKey("关联待收") : LocalizedStringKey("关联待还"))
                 .font(.designLabel)
                 .foregroundStyle(Color.designPrimary.opacity(0.8))
 
             VStack(spacing: 8) {
-                ForEach(pendingLendingTransactions) { item in
+                ForEach(pendingLendingTransactions, id: \.objectID) { item in
                     HStack {
                         Image(systemName: selectedLendingIDs.contains(item.id) ? "checkmark.circle.fill" : "circle")
                             .foregroundStyle(selectedLendingIDs.contains(item.id) ? Color.designPrimaryFixedDim : Color.designOnSurfaceVariant)
@@ -1361,7 +1365,7 @@ struct AddEditTransactionView: View {
                 .foregroundStyle(Color.designPrimary.opacity(0.8))
 
             VStack(spacing: 8) {
-                ForEach(pendingExpenses) { expense in
+                ForEach(pendingExpenses, id: \.objectID) { expense in
                     HStack {
                         Image(systemName: selectedExpenseIDs.contains(expense.id) ? "checkmark.circle.fill" : "circle")
                             .foregroundStyle(selectedExpenseIDs.contains(expense.id) ? Color.designPrimaryFixedDim : Color.designOnSurfaceVariant)
@@ -1979,18 +1983,7 @@ struct AddEditTransactionView: View {
     }
 
     private func signingAmount() -> Decimal {
-        switch type {
-        case .expense: return -abs(amount)
-        case .lending: return lendingSign
-        default: return abs(amount)
-        }
-    }
-
-    private var lendingSign: Decimal {
-        switch lendingDirection {
-        case .lendOut, .repay: return -abs(amount)
-        case .borrowIn, .collect: return abs(amount)
-        }
+        signedAmount(amount: amount, type: type, direction: type == .lending ? lendingDirection : nil)
     }
 
     private func loadPendingLendingTransactions() {

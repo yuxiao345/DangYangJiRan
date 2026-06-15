@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 3. **动代码前先确认。** 任何代码修改必须先解释方案并等用户明确同意。参见 [[feedback_ask_before_code]]。
 4. **iOS 26 优先。** 技术方案使用 Apple 最新推荐 API（iOS 26+），优先兼容 iOS 26.5 正式版。参见 [[feedback_latest_apple_api]]。
 5. **不过度工程化。** 标准 API 能用就用最简单的方式。复杂 workaround 只在彻底排除环境问题后才考虑。参见 [[feedback_no_overengineering]]。
+6. **UI 控件一致性。** 同一页面、同一功能的控件必须使用相同的 SwiftUI 组件。例如：选择器统一使用 `Picker(.menu)`，不允许混用 `Menu` 实现同功能——不同组件的渲染管线不同（SF Symbol vs 系统矢量），会导致字号、颜色、间距不一致，且无法通过调参对齐。
 
 ## Build & Run
 

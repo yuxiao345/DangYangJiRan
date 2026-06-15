@@ -47,7 +47,7 @@ struct TransactionListView: View {
                     } else {
                         ForEach(groupedByDate, id: \.key) { group in
                             dateSectionHeader(dateKey: group.key, transactions: group.value)
-                            ForEach(group.value) { transaction in
+                            ForEach(group.value, id: \.objectID) { transaction in
                                 NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
                                     TransactionRowView(transaction: transaction)
                                 }

@@ -149,7 +149,7 @@ struct StatementTransactionsView: View {
                     Text("该账期内无支出交易")
                         .foregroundStyle(.secondary)
                 } else {
-                    ForEach(transactions) { t in
+                    ForEach(transactions, id: \.objectID) { t in
                         TransactionRowView(transaction: t)
                     }
                 }

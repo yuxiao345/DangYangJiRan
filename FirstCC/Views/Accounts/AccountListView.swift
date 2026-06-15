@@ -83,9 +83,9 @@ struct AccountListView: View {
 
     private var accountGroupsView: some View {
         let groups = accountGroups
-        return ForEach(groups, id: \.type) { group in
+        return ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
             VStack(alignment: .leading, spacing: 12) {
-                groupHeader(type: group.type, count: group.accounts.count)
+                groupHeader(type: group.type, count: group.accounts.count, customName: group.customName)
 
                 ForEach(group.accounts) { account in
                     NavigationLink {
@@ -103,13 +103,13 @@ struct AccountListView: View {
         }
     }
 
-    private func groupHeader(type: AccountType, count: Int) -> some View {
+    private func groupHeader(type: AccountType, count: Int, customName: String? = nil) -> some View {
         HStack(spacing: 6) {
             RoundedRectangle(cornerRadius: 2)
                 .fill(Color.accountAccent(for: type))
                 .frame(width: 3, height: 20)
 
-            Text(type.displayName)
+            Text(customName ?? type.displayName)
                 .font(.designBodyMedium.weight(.bold))
                 .foregroundStyle(Color.designOnSurface)
 
@@ -121,12 +121,17 @@ struct AccountListView: View {
 
     // MARK: - Helpers
 
-    private var accountGroups: [(type: AccountType, accounts: [Account])] {
-        var groups: [(AccountType, [Account])] = []
+    private var accountGroups: [(type: AccountType, accounts: [Account], customName: String?)] {
+        var groups: [(AccountType, [Account], String?)] = []
         for type in AccountType.allCases {
             let matched = accounts.filter { $0.type == type && !$0.isArchived }
-            if !matched.isEmpty {
-                groups.append((type, matched))
+            if type == .other {
+                let byName = Dictionary(grouping: matched) { $0.customTypeName?.isEmpty == false ? $0.customTypeName! : "自定义" }
+                for (name, accts) in byName.sorted(by: { $0.key < $1.key }) {
+                    groups.append((type, accts, name == "自定义" ? nil : name))
+                }
+            } else if !matched.isEmpty {
+                groups.append((type, matched, nil))
             }
         }
         return groups

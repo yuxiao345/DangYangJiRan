@@ -55,9 +55,11 @@ struct SearchablePickerView<Item: Identifiable & Hashable>: View {
                     }
                 }
             }
-            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索")
+            .searchable(text: $searchText, prompt: "搜索")
             .navigationTitle(LocalizedStringKey(title))
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") { dismiss() }

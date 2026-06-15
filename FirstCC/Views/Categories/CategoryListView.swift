@@ -15,8 +15,8 @@ struct CategoryListView: View {
     let ledger: Ledger?
     private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }
 
-    private var flatExpense: [Category] { flattenTree(expenseCategories.filter { $0.parent == nil }) }
-    private var flatIncome: [Category] { flattenTree(incomeCategories.filter { $0.parent == nil }) }
+    private var flatExpense: [Category] { flattenCategoryTree(expenseCategories.filter { $0.parent == nil }) }
+    private var flatIncome: [Category] { flattenCategoryTree(incomeCategories.filter { $0.parent == nil }) }
 
     init(ledger: Ledger? = nil) {
         self.ledger = ledger
@@ -127,21 +127,6 @@ struct CategoryListView: View {
 
     // MARK: - Flat tree (no hidden filter — show all)
 
-    private func flattenTree(_ parents: [Category]) -> [Category] {
-        var result: [Category] = []
-        for parent in parents.sorted(by: { $0.sortOrder < $1.sortOrder }) {
-            result.append(parent)
-            for child in sortedChildren(of: parent) {
-                result.append(child)
-            }
-        }
-        return result
-    }
-
-    private func sortedChildren(of parent: Category) -> [Category] {
-        (parent.children as? Set<Category> ?? [])
-            .sorted { $0.sortOrder < $1.sortOrder }
-    }
 
     private func childrenCount(of parent: Category) -> Int {
         var count = 0
@@ -155,7 +140,7 @@ struct CategoryListView: View {
 
     private func moveCategory(from: IndexSet, to destRaw: Int, isExpense: Bool) {
         let categories = isExpense ? expenseCategories : incomeCategories
-        let flat = flattenTree(categories.filter { $0.parent == nil })
+        let flat = flattenCategoryTree(categories.filter { $0.parent == nil })
         guard let firstSource = from.first else { return }
         let movingItem = flat[firstSource]
 
@@ -259,4 +244,7 @@ struct CategoryListView: View {
         expenseCategories = (try? appContainer.categoryService.fetchAllCategories(for: ledger, type: .expense, context: modelContext)) ?? []
     }
 
+    private func sortedChildren(of parent: Category) -> [Category] {
+        (parent.children as? Set<Category> ?? []).sorted { $0.sortOrder < $1.sortOrder }
+    }
 }

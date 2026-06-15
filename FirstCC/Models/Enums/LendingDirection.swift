@@ -19,8 +19,8 @@ enum LendingDirection: String, Codable, CaseIterable {
 
     var pendingLabel: String {
         switch self {
-        case .lendOut: NSLocalizedString("待收款", comment: "")
-        case .borrowIn: NSLocalizedString("待付款", comment: "")
+        case .lendOut: NSLocalizedString("待收", comment: "")
+        case .borrowIn: NSLocalizedString("待还", comment: "")
         case .collect, .repay: ""
         }
     }

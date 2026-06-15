@@ -3,7 +3,23 @@ import SwiftUI
 struct TransactionRowView: View {
     @ObservedObject var transaction: Transaction
 
+    #if os(macOS)
+    private let titleFont: Font = .designBodySmall.weight(.medium)
+    private let subtitleFont: Font = .designBodyCaption
+    #else
+    private let titleFont: Font = .designBodyMedium.weight(.medium)
+    private let subtitleFont: Font = .designBodySmall
+    #endif
+
     var body: some View {
+        if transaction.managedObjectContext == nil {
+            Color.clear.frame(height: 0)
+        } else {
+            rowContent
+        }
+    }
+
+    private var rowContent: some View {
         HStack(spacing: 12) {
             // Left colored border
             RoundedRectangle(cornerRadius: 2)
@@ -24,7 +40,7 @@ struct TransactionRowView: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 4) {
                     Text(LocalizedStringKey(titleText))
-                        .font(.designBodyMedium.weight(.medium))
+                        .font(titleFont)
                         .foregroundStyle(Color.designOnSurface)
                     if transaction.isReimbursable {
                         let status = transaction.reimbursementStatus
@@ -56,7 +72,7 @@ struct TransactionRowView: View {
                 }
                 if let subtitle = subtitleText {
                     Text(LocalizedStringKey(subtitle))
-                        .font(.designBodySmall)
+                        .font(subtitleFont)
                         .foregroundStyle(Color.designOnSurfaceVariant)
                         .lineLimit(1)
                 }

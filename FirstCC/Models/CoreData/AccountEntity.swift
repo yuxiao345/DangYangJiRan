@@ -7,6 +7,7 @@ final class Account: NSManagedObject,  Sendable {
     @NSManaged var name: String
     @NSManaged var currencyCode: String
     @NSManaged var typeRaw: String
+    @NSManaged var customTypeName: String?
     @NSManaged var iconName: String?
     @NSManaged var colorHex: String?
     @NSManaged var initialBalanceInFen: Int64
@@ -27,6 +28,11 @@ final class Account: NSManagedObject,  Sendable {
     var type: AccountType {
         get { AccountType(rawValue: typeRaw) ?? .other }
         set { typeRaw = newValue.rawValue }
+    }
+
+    var typeDisplayName: String {
+        if type == .other, let custom = customTypeName, !custom.isEmpty { return custom }
+        return type.displayName
     }
 
     var initialBalance: Decimal {

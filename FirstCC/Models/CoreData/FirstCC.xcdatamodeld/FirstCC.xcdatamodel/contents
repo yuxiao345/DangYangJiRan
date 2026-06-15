@@ -37,6 +37,7 @@
         <attribute name="name" optional="NO" attributeType="String" defaultValueString="" />
         <attribute name="currencyCode" optional="NO" attributeType="String" defaultValueString="CNY" />
         <attribute name="typeRaw" optional="NO" attributeType="String" defaultValueString="cash" />
+        <attribute name="customTypeName" optional="YES" attributeType="String" />
         <attribute name="iconName" optional="YES" attributeType="String" />
         <attribute name="colorHex" optional="YES" attributeType="String" />
         <attribute name="initialBalanceInFen" optional="NO" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES" />

@@ -28,6 +28,22 @@ final class DashboardViewModel {
         self.transactionService = transactionService
     }
 
+    func copyFrom(_ other: DashboardViewModel) {
+        monthlyIncome = other.monthlyIncome
+        monthlyExpense = other.monthlyExpense
+        recentTransactions = other.recentTransactions
+        accounts = other.accounts
+        accountBalances = other.accountBalances
+        totalBalance = other.totalBalance
+        previousMonthBalance = other.previousMonthBalance
+        balanceChange = other.balanceChange
+        balanceChangePercent = other.balanceChangePercent
+        budgetSpent = other.budgetSpent
+        budgetLimit = other.budgetLimit
+        hasBudget = other.hasBudget
+        activeBudgetBook = other.activeBudgetBook
+    }
+
     func load(context: NSManagedObjectContext) {
         guard let ledger else { return }
         let calendar = Calendar.current

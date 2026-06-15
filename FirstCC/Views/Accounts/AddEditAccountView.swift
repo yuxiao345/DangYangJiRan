@@ -23,6 +23,8 @@ struct AddEditAccountView: View {
     @State private var hasCreditLimit = false
     @State private var billingDay: Int = 1
     @State private var dueDay: Int = 5
+    @State private var customTypeName: String = ""
+    @State private var existingCustomTypes: [String] = []
     @State private var errorMessage: String?
 
     init(ledger: Ledger? = nil) {
@@ -41,6 +43,7 @@ struct AddEditAccountView: View {
         _creditLimit = State(initialValue: account.creditLimit ?? 0)
         _billingDay = State(initialValue: account.billingDay == 0 ? 1 : Int(account.billingDay))
         _dueDay = State(initialValue: account.dueDay == 0 ? 5 : Int(account.dueDay))
+        _customTypeName = State(initialValue: account.customTypeName ?? "")
     }
 
     var body: some View {
@@ -61,6 +64,19 @@ struct AddEditAccountView: View {
                             ForEach(AccountType.allCases, id: \.self) { type in
                                 Label(type.displayName, systemImage: type.systemIcon)
                                     .tag(type)
+                            }
+                        }
+                    }
+
+                    if accountType == .other {
+                        HStack {
+                            TextField("创建或选择自定义类型名称", text: $customTypeName)
+                            if !existingCustomTypes.isEmpty {
+                                Picker("已有类型", selection: $customTypeName) {
+                                    ForEach(existingCustomTypes, id: \.self) { Text($0).tag($0) }
+                                }
+                                .pickerStyle(.menu)
+                                .labelsHidden()
                             }
                         }
                     }
@@ -133,7 +149,17 @@ struct AddEditAccountView: View {
                         .disabled(name.isEmpty)
                 }
             }
+            .onAppear { loadExistingCustomTypes() }
+            .onChange(of: accountType) { _, _ in loadExistingCustomTypes() }
         }
+    }
+
+    private func loadExistingCustomTypes() {
+        guard let ledger = effectiveLedger, accountType == .other else { existingCustomTypes = []; return }
+        let all = (try? appContainer.accountService.fetchAccounts(for: ledger, context: modelContext)) ?? []
+        let names = all.compactMap { $0.customTypeName }.filter { !$0.isEmpty }
+        if let editing, let current = editing.customTypeName, !current.isEmpty { existingCustomTypes = [current] + Array(Set(names)).filter { $0 != current }.sorted() }
+        else { existingCustomTypes = Array(Set(names)).sorted() }
     }
 
     private func save() {
@@ -150,6 +176,7 @@ struct AddEditAccountView: View {
             existing.creditLimit = hasCreditLimit ? creditLimit : nil
             existing.billingDay = accountType == .creditCard ? Int64(billingDay) : 0
             existing.dueDay = accountType == .creditCard ? Int64(dueDay) : 0
+            existing.customTypeName = accountType == .other ? (customTypeName.isEmpty ? nil : customTypeName) : nil
             try? appContainer.accountService.updateAccount(existing, context: modelContext)
         } else {
             let account = Account(
@@ -162,6 +189,7 @@ struct AddEditAccountView: View {
                 dueDay: accountType == .creditCard ? dueDay : nil,
                 context: modelContext
             )
+            if accountType == .other, !customTypeName.isEmpty { account.customTypeName = customTypeName }
             try? appContainer.accountService.createAccount(account, ledger: ledger, context: modelContext)
         }
         dismiss()

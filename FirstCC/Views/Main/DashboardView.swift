@@ -53,7 +53,7 @@ struct DashboardView: View {
                         .padding(.top, 60)
                     } else {
                         LazyVStack(spacing: 12) {
-                            ForEach(viewModel.recentTransactions) { transaction in
+                            ForEach(viewModel.recentTransactions, id: \.objectID) { transaction in
                                 NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
                                     TransactionRowView(transaction: transaction)
                                 }
@@ -115,20 +115,24 @@ struct DashboardView: View {
                 Spacer()
 
                 if showBreakdown {
-                    VStack(alignment: .trailing, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 4) {
                         let assets = viewModel.accountBalances.values.filter { $0 > 0 }.reduce(Decimal.zero, +)
                         let liabilities = abs(viewModel.accountBalances.values.filter { $0 < 0 }.reduce(Decimal.zero, +))
-                        HStack(spacing: 2) {
+                        HStack(spacing: 4) {
                             Text("总资产")
                                 .font(.designBodyCaption)
                                 .foregroundStyle(Color.designOnSurfaceVariant)
-                            CurrencyText(amount: assets, currencyCode: ledgerCurrency, size: 12, foregroundColor: Color.designPrimaryFixedDim)
+                                .frame(width: 36, alignment: .leading)
+                            CurrencyText(amount: assets, currencyCode: ledgerCurrency, size: 11, foregroundColor: Color.designPrimaryFixedDim)
+                                .frame(width: 78, alignment: .trailing)
                         }
-                        HStack(spacing: 2) {
+                        HStack(spacing: 4) {
                             Text("总负债")
                                 .font(.designBodyCaption)
                                 .foregroundStyle(Color.designOnSurfaceVariant)
-                            CurrencyText(amount: liabilities, currencyCode: ledgerCurrency, size: 12, foregroundColor: Color.designAccentRed)
+                                .frame(width: 36, alignment: .leading)
+                            CurrencyText(amount: liabilities, currencyCode: ledgerCurrency, size: 11, foregroundColor: Color.designAccentRed)
+                                .frame(width: 78, alignment: .trailing)
                         }
                     }
                     .transition(.opacity.combined(with: .move(edge: .trailing)))
@@ -314,18 +318,6 @@ struct DashboardView: View {
         )
         vm.load(context: modelContext)
         vm.loadBudget(context: modelContext, budgetService: appContainer.budgetService)
-        viewModel.monthlyIncome = vm.monthlyIncome
-        viewModel.monthlyExpense = vm.monthlyExpense
-        viewModel.recentTransactions = vm.recentTransactions
-        viewModel.accounts = vm.accounts
-        viewModel.accountBalances = vm.accountBalances
-        viewModel.totalBalance = vm.totalBalance
-        viewModel.previousMonthBalance = vm.previousMonthBalance
-        viewModel.balanceChange = vm.balanceChange
-        viewModel.balanceChangePercent = vm.balanceChangePercent
-        viewModel.budgetSpent = vm.budgetSpent
-        viewModel.budgetLimit = vm.budgetLimit
-        viewModel.hasBudget = vm.hasBudget
-        viewModel.activeBudgetBook = vm.activeBudgetBook
+        viewModel.copyFrom(vm)
     }
 }

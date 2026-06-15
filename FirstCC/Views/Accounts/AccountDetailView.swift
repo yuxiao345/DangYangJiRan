@@ -10,6 +10,14 @@ struct AccountDetailView: View {
     @State private var showEditSheet = false
 
     var body: some View {
+        if account.managedObjectContext == nil {
+            Color.clear
+        } else {
+            accountContent
+        }
+    }
+
+    private var accountContent: some View {
         ScrollView {
             VStack(spacing: 24) {
                 heroCard
@@ -53,7 +61,7 @@ struct AccountDetailView: View {
             }
 
             HStack(spacing: 8) {
-                Text(account.type.displayName)
+                Text(account.typeDisplayName)
                     .font(.custom("JetBrainsMono-Medium", fixedSize: 12))
                     .foregroundStyle(Color.designOnSurfaceVariant)
                     .padding(.horizontal, 10)
@@ -151,18 +159,41 @@ struct AccountDetailView: View {
         .glassCard(cornerRadius: 12)
     }
 
+    // MARK: - Running Balance
+
+    /// 每个日期组的期末余额 (key = 日期标签, value = 该日交易后的余额)
+    private var dateBalances: [String: Decimal] {
+        let groups = transactionDateGroups
+        var result: [String: Decimal] = [:]
+        var running = balance
+        // groups 从最新到最旧排列，从当前余额逐步回推
+        for group in groups {
+            result[group.key] = running
+            let dayNet = group.value.reduce(Decimal.zero) { $0 + $1.amount }
+            running -= dayNet
+        }
+        return result
+    }
+
     // MARK: - Transaction List
 
     @ViewBuilder
     private var transactionList: some View {
         let groups = transactionDateGroups
+        let balances = dateBalances
         ForEach(groups, id: \.key) { group in
             VStack(alignment: .leading, spacing: 8) {
-                Text(group.key)
-                    .font(.designLabel)
-                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
+                HStack {
+                    Text(group.key)
+                        .font(.designLabel)
+                        .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
+                    Spacer()
+                    if let dayBalance = balances[group.key] {
+                        CurrencyText(amount: dayBalance, currencyCode: account.currencyCode, size: 13, foregroundColor: Color.designOnSurfaceVariant.opacity(0.6))
+                    }
+                }
 
-                ForEach(group.value) { t in
+                ForEach(group.value, id: \.objectID) { t in
                     NavigationLink {
                         TransactionDetailView(transaction: t)
                     } label: {

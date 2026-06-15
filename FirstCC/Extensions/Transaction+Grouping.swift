@@ -26,7 +26,7 @@ extension Array where Element == Transaction {
         var result: [(String, [Transaction])] = []
         if !todayTx.isEmpty { result.append(("今天", todayTx)) }
         if !yesterdayTx.isEmpty { result.append(("昨天", yesterdayTx)) }
-        for key in other.keys.sorted(by: >) {
+        for key in other.keys.sorted(by: { other[$0]?.first?.date ?? .distantPast > other[$1]?.first?.date ?? .distantPast }) {
             if let list = other[key] { result.append((key, list)) }
         }
         return result
@@ -47,4 +47,31 @@ extension Array where Element == Transaction {
             return true
         }
     }
+}
+
+/// 根据交易类型和借贷方向计算签名金额
+func signedAmount(amount: Decimal, type: TransactionType, direction: LendingDirection? = nil) -> Decimal {
+    switch type {
+    case .expense: return -abs(amount)
+    case .income: return abs(amount)
+    case .lending:
+        switch direction {
+        case .lendOut, .repay: return -abs(amount)
+        case .borrowIn, .collect: return abs(amount)
+        case .none: return abs(amount)
+        }
+    default: return abs(amount)
+    }
+}
+
+/// 将分类层级（父+子）展平为一维数组，按 sortOrder 排序
+func flattenCategoryTree(_ parents: [Category]) -> [Category] {
+    var result: [Category] = []
+    for parent in parents.sorted(by: { $0.sortOrder < $1.sortOrder }) {
+        result.append(parent)
+        for child in (parent.children as? Set<Category> ?? []).sorted(by: { $0.sortOrder < $1.sortOrder }) {
+            result.append(child)
+        }
+    }
+    return result
 }

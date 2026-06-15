@@ -163,7 +163,7 @@ struct EditAccountView: View {
                     HStack {
                         Text("类型")
                         Spacer()
-                        Text(account.type.displayName)
+                        Text(account.typeDisplayName)
                             .foregroundStyle(.secondary)
                     }
                     Picker("币种", selection: $currencyCode) {
