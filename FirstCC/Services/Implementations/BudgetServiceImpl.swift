@@ -44,11 +44,8 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
     // MARK: - BudgetItem
 
     func createItem(_ item: BudgetItem, book: BudgetBook, ledger: Ledger, context: NSManagedObjectContext) throws {
-        NSLog("[BudgetSvc] createItem: setting book")
         item.book = book
-        NSLog("[BudgetSvc] createItem: saving context")
         try context.save()
-        NSLog("[BudgetSvc] createItem: done")
     }
 
     func fetchItems(for book: BudgetBook, context: NSManagedObjectContext) throws -> [BudgetItem] {
@@ -90,11 +87,7 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
     }
 
     func totalCurrentPeriodSpending(for book: BudgetBook, context: NSManagedObjectContext) -> Decimal {
-        let now = Date()
-        let cal = Calendar.current
-        let start = cal.date(from: cal.dateComponents([.year, .month], from: now)) ?? now
-        let end = cal.date(byAdding: DateComponents(month: 1, day: -1), to: start) ?? now
-        return spending(in: cal.startOfDay(for: start)...cal.endOfDay(for: end), category: nil, book: book, context: context)
+        return spending(in: currentMonthRange(), category: nil, book: book, context: context)
     }
 
     func totalCurrentPeriodBudget(for book: BudgetBook) -> Decimal {
@@ -102,6 +95,28 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
         return items.reduce(into: Decimal(0)) { total, item in
             total += item.amount.normalizedToMonthly(period: item.period)
         }
+    }
+
+    func unbudgetedCategorySpending(for book: BudgetBook, context: NSManagedObjectContext) -> [(Category, Decimal)] {
+        guard let ledger = book.ledger else { return [] }
+
+        let budgetedIDs = Set((book.items as? Set<BudgetItem> ?? [])
+            .compactMap { $0.category?.id })
+        let catRequest = NSFetchRequest<Category>(entityName: "Category")
+        catRequest.predicate = NSPredicate(format: "ledger.id == %@ AND typeRaw == %@",
+            ledger.id as CVarArg, TransactionType.expense.rawValue)
+        let allExpenseCategories = (try? context.fetch(catRequest)) ?? []
+        let unbudgeted = allExpenseCategories.filter { !budgetedIDs.contains($0.id) }
+
+        // Single fetch — partition by category in memory
+        let spendingByCategory = categorySpending(in: currentMonthRange(), for: book, context: context)
+
+        return unbudgeted
+            .compactMap { cat -> (Category, Decimal)? in
+                let s = spendingByCategory[cat.id] ?? 0
+                return s > 0 ? (cat, s) : nil
+            }
+            .sorted { $0.1 > $1.1 }
     }
 
     // MARK: - Private helpers
@@ -114,9 +129,7 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
             let end = cal.date(byAdding: .day, value: 6, to: start) ?? now
             return cal.startOfDay(for: start)...cal.endOfDay(for: end)
         case .monthly:
-            let start = cal.date(from: cal.dateComponents([.year, .month], from: now)) ?? now
-            let end = cal.date(byAdding: DateComponents(month: 1, day: -1), to: start) ?? now
-            return cal.startOfDay(for: start)...cal.endOfDay(for: end)
+            return currentMonthRange(now: now)
         case .quarterly:
             let month = cal.component(.month, from: now)
             let qStart = ((month - 1) / 3) * 3 + 1
@@ -130,22 +143,47 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
         }
     }
 
+    private func currentMonthRange(now: Date = Date()) -> ClosedRange<Date> {
+        let cal = Calendar.current
+        let start = cal.date(from: cal.dateComponents([.year, .month], from: now)) ?? now
+        let end = cal.date(byAdding: DateComponents(month: 1, day: -1), to: start) ?? now
+        return cal.startOfDay(for: start)...cal.endOfDay(for: end)
+    }
+
+    func categorySpending(in range: ClosedRange<Date>, for book: BudgetBook, context: NSManagedObjectContext) -> [UUID: Decimal] {
+        guard let ledgerID = book.ledger?.id else { return [:] }
+        let lower = range.lowerBound
+        let upper = range.upperBound
+        let request = NSFetchRequest<Transaction>(entityName: "Transaction")
+        request.predicate = NSPredicate(format: "date >= %@ AND date <= %@ AND parentTransaction == nil AND ledger.id == %@ AND typeRaw == %@",
+            lower as CVarArg, upper as CVarArg, ledgerID as CVarArg, TransactionType.expense.rawValue)
+        let transactions = (try? context.fetch(request)) ?? []
+        return transactions.reduce(into: [:]) { dict, t in
+            guard t.refundGroupId == nil,
+                  !t.isReimbursable,
+                  let catID = t.category?.id else { return }
+            dict[catID, default: 0] += abs(t.amount)
+        }
+    }
+
     private func spending(in range: ClosedRange<Date>, category: Category?, book: BudgetBook, context: NSManagedObjectContext) -> Decimal {
         guard let ledgerID = book.ledger?.id else { return 0 }
 
         let lower = range.lowerBound
         let upper = range.upperBound
+        var fmt = "date >= %@ AND date <= %@ AND parentTransaction == nil AND ledger.id == %@ AND typeRaw == %@"
+        var args: [CVarArg] = [lower as CVarArg, upper as CVarArg, ledgerID as CVarArg, TransactionType.expense.rawValue]
+        if let cat = category {
+            fmt += " AND category.id == %@"
+            args.append(cat.id as CVarArg)
+        }
         let request = NSFetchRequest<Transaction>(entityName: "Transaction")
-        request.predicate = NSPredicate(format: "date >= %@ AND date <= %@ AND parentTransaction == nil", lower as CVarArg, upper as CVarArg)
-        request.fetchLimit = 10000
+        request.predicate = NSPredicate(format: fmt, argumentArray: args)
         let transactions = (try? context.fetch(request)) ?? []
         return transactions
             .filter { t in
-                guard t.ledger?.id == ledgerID else { return false }
-                guard t.typeRaw == TransactionType.expense.rawValue else { return false }
                 guard t.refundGroupId == nil else { return false }
                 guard !t.isReimbursable else { return false }
-                guard category == nil || t.category?.id == category!.id else { return false }
                 return true
             }
             .reduce(into: Decimal(0)) { $0 += abs($1.amount) }
@@ -163,7 +201,7 @@ private extension Decimal {
     }
 }
 
-private extension Calendar {
+extension Calendar {
     func endOfDay(for date: Date) -> Date {
         self.date(bySettingHour: 23, minute: 59, second: 59, of: date) ?? date
     }

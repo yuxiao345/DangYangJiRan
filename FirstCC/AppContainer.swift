@@ -156,7 +156,7 @@ final class AppContainer {
     // MARK: - Share URL Handling
 
     private func shouldProcessShareURL(_ url: URL) -> Bool {
-        let key = String(url.absoluteString.hashValue)
+        let key = url.absoluteString
         let now = Date()
         if let last = recentShareURLHashes[key], now.timeIntervalSince(last) < 5 {
             DiagnosticLog.log("handleShareURL: skip duplicate within 5s")

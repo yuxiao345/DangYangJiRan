@@ -10,6 +10,9 @@ struct BudgetBookDetailView: View {
     @State private var editingItem: BudgetItem?
     @State private var cumulativeSpent: [UUID: Decimal] = [:]
     @State private var periodSpent: [UUID: Decimal] = [:]
+    @State private var unbudgetedCategories: [(Category, Decimal)] = []
+    @State private var totalUnbudgeted: Decimal = 0
+    @State private var preselectedCategory: Category?
 
     var body: some View {
         List {
@@ -42,6 +45,32 @@ struct BudgetBookDetailView: View {
                         }
                 }
             }
+
+            if !unbudgetedCategories.isEmpty {
+                Section("非预算项") {
+                    ForEach(unbudgetedCategories, id: \.0.id) { cat, spent in
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Image(systemName: cat.iconName)
+                                    .foregroundStyle(Color(hex: cat.colorHex))
+                                Text(LocalizedStringKey(cat.name))
+                                Spacer()
+                            }
+                            budgetSpendingLine(label: "本期", spent: spent, budget: totalUnbudgeted, currency: currency)
+                        }
+                        .padding(.vertical, 2)
+                        .contentShape(Rectangle())
+                        .onTapGesture { preselectedCategory = cat }
+                    }
+                    HStack {
+                        Text("合计")
+                            .font(.designBodyMedium)
+                        Spacer()
+                        CurrencyText(amount: totalUnbudgeted, currencyCode: currency, size: 13, foregroundColor: .red)
+                            .fontWeight(.semibold)
+                    }
+                }
+            }
         }
         .navigationTitle(book.name)
         .toolbar {
@@ -57,6 +86,9 @@ struct BudgetBookDetailView: View {
         .sheet(item: $editingItem, onDismiss: { loadData() }) { item in
             AddEditBudgetItemView(editing: item, book: book)
         }
+        .sheet(item: $preselectedCategory, onDismiss: { loadData() }) { cat in
+            AddEditBudgetItemView(book: book, preselectedCategory: cat)
+        }
         .onAppear(perform: loadData)
     }
 
@@ -65,7 +97,6 @@ struct BudgetBookDetailView: View {
         let totalCumulative = appContainer.budgetService.totalCumulativeSpending(for: book, context: modelContext)
         let totalPeriod = appContainer.budgetService.totalCurrentPeriodSpending(for: book, context: modelContext)
         let periodBudget = appContainer.budgetService.totalCurrentPeriodBudget(for: book)
-        let currency = book.ledger?.defaultCurrencyCode ?? "CNY"
 
         return VStack(spacing: 12) {
             budgetSummaryBlock(
@@ -112,7 +143,6 @@ struct BudgetBookDetailView: View {
     }
 
     private func itemRow(_ item: BudgetItem) -> some View {
-        let currency = book.ledger?.defaultCurrencyCode ?? "CNY"
         let cumSpent = cumulativeSpent[item.id] ?? 0
         let perSpent = periodSpent[item.id] ?? 0
         let totalBgt = item.totalBudget
@@ -188,11 +218,24 @@ struct BudgetBookDetailView: View {
         }
     }
 
+    private var currency: String { book.ledger?.defaultCurrencyCode ?? "CNY" }
+
     private func loadData() {
+        let cal = Calendar.current
+        let now = Date()
+        let monthStart = cal.date(from: cal.dateComponents([.year, .month], from: now)) ?? now
+        let monthEnd = cal.date(byAdding: DateComponents(month: 1, day: -1), to: monthStart) ?? now
+        let monthRange = cal.startOfDay(for: monthStart)...cal.endOfDay(for: monthEnd)
+
         items = (try? appContainer.budgetService.fetchItems(for: book, context: modelContext)) ?? []
+        let cumDict = appContainer.budgetService.categorySpending(in: book.startDate...Date(), for: book, context: modelContext)
+        let perDict = appContainer.budgetService.categorySpending(in: monthRange, for: book, context: modelContext)
         for item in items {
-            cumulativeSpent[item.id] = appContainer.budgetService.cumulativeSpending(for: item, context: modelContext)
-            periodSpent[item.id] = appContainer.budgetService.currentPeriodSpending(for: item, context: modelContext)
+            let catID = item.category?.id
+            cumulativeSpent[item.id] = catID.flatMap { cumDict[$0] } ?? 0
+            periodSpent[item.id] = catID.flatMap { perDict[$0] } ?? 0
         }
+        unbudgetedCategories = appContainer.budgetService.unbudgetedCategorySpending(for: book, context: modelContext)
+        totalUnbudgeted = unbudgetedCategories.reduce(0) { $0 + $1.1 }
     }
 }

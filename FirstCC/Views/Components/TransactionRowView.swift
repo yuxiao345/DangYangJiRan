@@ -89,7 +89,7 @@ struct TransactionRowView: View {
 
     // MARK: - Computed properties
 
-    private static let shortDateFormat = Date.FormatStyle.dateTime.month(.abbreviated).day(.twoDigits)
+    private static let shortDateFormat = Date.FormatStyle.dateTime.month(.abbreviated).day(.twoDigits).weekday(.wide)
 
     private var iconName: String {
         if let d = transaction.lendingDirection { return d.systemIcon }

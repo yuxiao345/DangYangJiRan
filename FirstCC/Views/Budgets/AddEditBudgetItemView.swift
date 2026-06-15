@@ -8,6 +8,7 @@ struct AddEditBudgetItemView: View {
 
     let editing: BudgetItem?
     let book: BudgetBook
+    let preselectedCategory: Category?
     private var effectiveLedger: Ledger? { book.ledger ?? appContainer.currentLedger }
 
     @State private var amount: Decimal = 0
@@ -18,9 +19,10 @@ struct AddEditBudgetItemView: View {
     @State private var categories: [Category] = []
     @State private var pickerSheet: Category?
 
-    init(editing: BudgetItem? = nil, book: BudgetBook) {
+    init(editing: BudgetItem? = nil, book: BudgetBook, preselectedCategory: Category? = nil) {
         self.editing = editing
         self.book = book
+        self.preselectedCategory = preselectedCategory
     }
 
     var body: some View {
@@ -110,6 +112,8 @@ struct AddEditBudgetItemView: View {
                     alertThreshold = item.alertThreshold
                     isActive = item.isActive
                     selectedCategory = item.category
+                } else if let cat = preselectedCategory {
+                    selectedCategory = cat
                 }
             }
             .onChange(of: pickerSheet) { _, newValue in

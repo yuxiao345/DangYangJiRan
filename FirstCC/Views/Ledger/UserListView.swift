@@ -80,7 +80,9 @@ struct UserListView: View {
         isSyncing = true
         defer { isSyncing = false }
 
-        if let share = try? await fetchShare(for: ledger) {
+        let fetchedShare = try? await fetchShare(for: ledger)
+        let neededRepair = !ledger.isShared
+        if let share = fetchedShare {
             if !ledger.isShared {
                 ledger.isShared = true
                 try? appContainer.coreDataStack.viewContext.save()
@@ -95,8 +97,8 @@ struct UserListView: View {
         msgs.append("账本: \(ledger.name)")
         msgs.append("isShared: \(ledger.isShared)")
         msgs.append("shareRecordName: \(ledger.shareRecordName ?? "nil")")
-        if let share = try? await fetchShare(for: ledger) {
-            if ledger.isShared {
+        if let share = fetchedShare {
+            if neededRepair {
                 msgs.append("已修复: isShared → true")
             }
             msgs.append("CKShare: recordID=\(share.recordID.recordName)")

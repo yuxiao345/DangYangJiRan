@@ -118,7 +118,11 @@ struct FirstCCApp: App {
             } else {
                 ProgressView("正在准备数据...")
                     .task {
-                        try? await appContainer.loadStores()
+                        do {
+                            try await appContainer.loadStores()
+                        } catch {
+                            DiagnosticLog.log("loadStores FAILED: \(error.localizedDescription)")
+                        }
                         storesLoaded = true
                     }
             }
