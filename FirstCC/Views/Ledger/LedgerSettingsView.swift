@@ -102,8 +102,12 @@ struct LedgerSettingsView: View {
                     if shareDetected == nil {
                         Text("正在检查 iCloud 共享状态...")
                     } else if isShared {
+#if DEBUG
                         let diag = "currentUser: \(appContainer.currentUserRecordID ?? "nil")\nownerRID: \(ledger.ownerUserRecordID ?? "nil")"
                         Text((isOwner ? "此账本已开启共享，其他用户可加入协作记账" : "你正在参与此共享账本，仅拥有者可管理成员") + "\n\n[诊断] \(diag)")
+#else
+                        Text(isOwner ? "此账本已开启共享，其他用户可加入协作记账" : "你正在参与此共享账本，仅拥有者可管理成员")
+#endif
                     } else {
                         Text("开启后可邀请其他 iCloud 用户共同记账")
                     }

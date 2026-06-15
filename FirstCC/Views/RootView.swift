@@ -33,10 +33,16 @@ struct RootView: View {
         .fullScreenCover(isPresented: $isLocked) {
             AppLockView()
         }
+        .alert("共享失败", isPresented: Binding(get: { appContainer.shareErrorMessage != nil }, set: { if !$0 { appContainer.shareErrorMessage = nil } })) {
+            Button("好") { appContainer.shareErrorMessage = nil }
+        } message: {
+            Text(appContainer.shareErrorMessage ?? "")
+        }
     }
 
     private func processRecurring() {
         guard appContainer.currentLedger != nil else { return }
-        try? appContainer.recurringService.processDueRecurring(context: modelContext)
+        do { try appContainer.recurringService.processDueRecurring(context: modelContext) }
+        catch { DiagnosticLog.log("processRecurring FAILED: \(error.localizedDescription)") }
     }
 }

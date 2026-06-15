@@ -61,7 +61,8 @@ final class SyncServiceImpl: SyncServiceProtocol {
         // 必须在 share() 之前设置 ownerUserRecordID，这样共享数据库才有正确值
         if ledger.ownerUserRecordID == nil || ledger.ownerUserRecordID?.isEmpty == true {
             ledger.ownerUserRecordID = try? await ckContainer.userRecordID().recordName
-            try? coreDataStack.viewContext.save()
+            do { try coreDataStack.viewContext.save() }
+            catch { DiagnosticLog.log("SyncService: save ownerUserRecordID FAILED \(error.localizedDescription)") }
         }
         let share = try await CloudKitShareCoordinator.shared.createShare(
             ledgerID: ledger.id,

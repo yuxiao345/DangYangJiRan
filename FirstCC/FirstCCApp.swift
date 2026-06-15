@@ -113,20 +113,13 @@ struct FirstCCApp: App {
                     .preferredColorScheme(preferredScheme)
                     .attachSceneDelegate()
                     .onOpenURL { url in
-                        Task {
-                            await appContainer.handleShareURL(url)
-                        }
+                        Task { await appContainer.handleShareURL(url) }
                     }
             } else {
                 ProgressView("正在准备数据...")
                     .task {
-                        do {
-                            try await appContainer.loadStores()
-                            storesLoaded = true
-                        } catch {
-                            // If store loading fails, show anyway (user sees empty state)
-                            storesLoaded = true
-                        }
+                        try? await appContainer.loadStores()
+                        storesLoaded = true
                     }
             }
         }

@@ -9,7 +9,9 @@ struct UserListView: View {
     let ledger: Ledger?
     @State private var users: [User] = []
     @State private var isSyncing = false
+#if DEBUG
     @State private var diagMessage: String = ""
+#endif
 
     private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }
 
@@ -37,6 +39,7 @@ struct UserListView: View {
                 }
             }
             }
+#if DEBUG
             if !diagMessage.isEmpty {
                 Section("诊断") {
                     Text(diagMessage)
@@ -44,6 +47,7 @@ struct UserListView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+#endif
         }
         .navigationTitle("共享成员")
         .refreshable { await refreshMembers() }
@@ -67,23 +71,32 @@ struct UserListView: View {
     private func refreshMembers() async {
         guard let ledger = effectiveLedger else {
             loadUsers()
+#if DEBUG
             diagMessage = "ledger=nil, currentLedger=\(appContainer.currentLedger?.name ?? "nil")"
+#endif
             return
         }
 
         isSyncing = true
         defer { isSyncing = false }
 
+        if let share = try? await fetchShare(for: ledger) {
+            if !ledger.isShared {
+                ledger.isShared = true
+                try? appContainer.coreDataStack.viewContext.save()
+            }
+            try? await appContainer.syncService?.syncParticipants(share: share, for: ledger)
+        }
+
+        loadUsers()
+
+#if DEBUG
         var msgs: [String] = []
         msgs.append("账本: \(ledger.name)")
         msgs.append("isShared: \(ledger.isShared)")
         msgs.append("shareRecordName: \(ledger.shareRecordName ?? "nil")")
-
         if let share = try? await fetchShare(for: ledger) {
-            // 如果 CKShare 存在但 isShared 是 false，修复它
-            if !ledger.isShared {
-                ledger.isShared = true
-                try? appContainer.coreDataStack.viewContext.save()
+            if ledger.isShared {
                 msgs.append("已修复: isShared → true")
             }
             msgs.append("CKShare: recordID=\(share.recordID.recordName)")
@@ -95,15 +108,13 @@ struct UserListView: View {
                     ?? "nil"
                 msgs.append("  - role=\(p.role.rawValue) id=\(id) status=\(p.acceptanceStatus.rawValue)")
             }
-            try? await appContainer.syncService?.syncParticipants(share: share, for: ledger)
             msgs.append("syncParticipants 完成")
         } else {
-            msgs.append("CKShare: 未找到 (三种方式均失败)")
+            msgs.append("CKShare: 未找到")
         }
-
-        loadUsers()
         msgs.append("本地 User 数: \(users.count)")
         diagMessage = msgs.joined(separator: "\n")
+#endif
     }
 
     private func fetchShare(for ledger: Ledger) async throws -> CKShare? {

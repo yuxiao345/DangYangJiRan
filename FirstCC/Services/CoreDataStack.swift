@@ -24,6 +24,8 @@ final class CoreDataStack {
     /// Used by `waitForImportSettled` to detect when initial sync is complete.
     private(set) var lastImportEventTime: Date = Date()
 
+    let cloudKitAvailable: Bool
+
     init() {
         guard let modelURL = Bundle.main.url(forResource: "FirstCC", withExtension: "momd") else {
             fatalError("CoreDataStack: FirstCC.momd not found")
@@ -31,6 +33,9 @@ final class CoreDataStack {
         guard let model = NSManagedObjectModel(contentsOf: modelURL) else {
             fatalError("CoreDataStack: Failed to load NSManagedObjectModel")
         }
+
+        cloudKitAvailable = FileManager.default.ubiquityIdentityToken != nil
+        DiagnosticLog.log("CoreDataStack: cloudKitAvailable=\(cloudKitAvailable)")
 
         container = NSPersistentCloudKitContainer(name: "FirstCC", managedObjectModel: model)
 
@@ -42,19 +47,24 @@ final class CoreDataStack {
 
         let privateDescription = NSPersistentStoreDescription(url: privateURL)
         privateDescription.configuration = "Private"
-        let privateOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: CloudKitConfig.containerIdentifier)
-        privateOptions.databaseScope = .private
-        privateDescription.cloudKitContainerOptions = privateOptions
+        if cloudKitAvailable {
+            let privateOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: CloudKitConfig.containerIdentifier)
+            privateOptions.databaseScope = .private
+            privateDescription.cloudKitContainerOptions = privateOptions
+        }
         privateDescription.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
         privateDescription.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
 
-        let sharedDescription = NSPersistentStoreDescription(url: sharedURL)
-        sharedDescription.configuration = "Shared"
-        let sharedOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: CloudKitConfig.containerIdentifier)
-        sharedOptions.databaseScope = .shared
-        sharedDescription.cloudKitContainerOptions = sharedOptions
-
-        container.persistentStoreDescriptions = [privateDescription, sharedDescription]
+        if cloudKitAvailable {
+            let sharedDescription = NSPersistentStoreDescription(url: sharedURL)
+            sharedDescription.configuration = "Shared"
+            let sharedOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: CloudKitConfig.containerIdentifier)
+            sharedOptions.databaseScope = .shared
+            sharedDescription.cloudKitContainerOptions = sharedOptions
+            container.persistentStoreDescriptions = [privateDescription, sharedDescription]
+        } else {
+            container.persistentStoreDescriptions = [privateDescription]
+        }
 
         container.viewContext.automaticallyMergesChangesFromParent = true
         container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
@@ -173,17 +183,20 @@ final class CoreDataStack {
 
 //#if DEBUG
 //        // Sync CoreData model → CloudKit development schema.
-//        // Needed when schema was initialized from a prior model version (e.g. SwiftData)
-//        // and new fields haven't been pushed to CloudKit.
-//        for attempt in 1...3 {
-//            do {
-//                try await container.initializeCloudKitSchema()
-//                DiagnosticLog.log("CoreDataStack: initializeCloudKitSchema OK (attempt \(attempt))")
-//                break
-//            } catch {
-//                DiagnosticLog.log("CoreDataStack: initializeCloudKitSchema attempt \(attempt)/3 FAIL: \(error.localizedDescription)")
-//                if attempt < 3 {
-//                    try? await Task.sleep(nanoseconds: 3_000_000_000)
+//        // Only runs once per app install (clear UserDefaults key to re-deploy).
+//        let schemaKey = "CoreDataStack_didInitializeSchema"
+//        if !UserDefaults.standard.bool(forKey: schemaKey) {
+//            for attempt in 1...3 {
+//                do {
+//                    try await container.initializeCloudKitSchema()
+//                    UserDefaults.standard.set(true, forKey: schemaKey)
+//                    DiagnosticLog.log("CoreDataStack: initializeCloudKitSchema OK (attempt \(attempt))")
+//                    break
+//                } catch {
+//                    DiagnosticLog.log("CoreDataStack: initializeCloudKitSchema attempt \(attempt)/3 FAIL: \(error.localizedDescription)")
+//                    if attempt < 3 {
+//                        try? await Task.sleep(nanoseconds: 3_000_000_000)
+//                    }
 //                }
 //            }
 //        }
@@ -307,6 +320,26 @@ final class CoreDataStack {
                 }
             }
         }
+    }
+
+    /// Deploy CoreData schema to CloudKit Development environment.
+    /// Call from Debug menu after model changes. Not suitable for app launch (watchdog risk).
+    func initializeSchema() async throws {
+        DiagnosticLog.log("CoreDataStack: initializeSchema begin")
+        for attempt in 1...3 {
+            do {
+                try await container.initializeCloudKitSchema()
+                DiagnosticLog.log("CoreDataStack: initializeSchema OK (attempt \(attempt))")
+                return
+            } catch {
+                DiagnosticLog.log("CoreDataStack: initializeSchema attempt \(attempt)/3 FAIL: \(error.localizedDescription)")
+                if attempt < 3 {
+                    try? await Task.sleep(nanoseconds: 3_000_000_000)
+                }
+            }
+        }
+        throw NSError(domain: "CoreDataStack", code: -5,
+            userInfo: [NSLocalizedDescriptionKey: "Schema 部署失败，请稍后重试"])
     }
 
     func fetchSharedLedgerCount() throws -> Int {

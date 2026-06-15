@@ -39,6 +39,8 @@ final class AppContainer {
     var syncStatus: SyncStatus = .synced
     var isAuthenticated: Bool = false
     var currentUserRecordID: String?
+    var shareErrorMessage: String?
+    private var recentShareURLHashes: [String: Date] = [:]
 
     /// Whether the current user is the owner of the given ledger
     func isOwner(of ledger: Ledger) -> Bool {
@@ -109,6 +111,11 @@ final class AppContainer {
     func loadStores() async throws {
         try await coreDataStack.loadStores()
 
+        guard coreDataStack.cloudKitAvailable else {
+            configureDefaultLedger()
+            return
+        }
+
         // Fetch current iCloud user identity for permission checks
         await fetchCurrentUserIdentity()
 
@@ -148,7 +155,27 @@ final class AppContainer {
 
     // MARK: - Share URL Handling
 
+    private func shouldProcessShareURL(_ url: URL) -> Bool {
+        let key = String(url.absoluteString.hashValue)
+        let now = Date()
+        if let last = recentShareURLHashes[key], now.timeIntervalSince(last) < 5 {
+            DiagnosticLog.log("handleShareURL: skip duplicate within 5s")
+            return false
+        }
+        recentShareURLHashes[key] = now
+        recentShareURLHashes = recentShareURLHashes.filter { now.timeIntervalSince($0.value) < 30 }
+        return true
+    }
+
+    private func presentShareError(_ error: Error) {
+        let message = (error as NSError).domain == CKError.errorDomain
+            ? "共享失败，请检查网络或确认共享邀请仍然有效后重试"
+            : "共享失败，请稍后重试"
+        shareErrorMessage = message
+    }
+
     func handleShareURL(_ url: URL) async {
+        guard shouldProcessShareURL(url) else { return }
         let count = UserDefaults.standard.integer(forKey: "diag_onOpenURLFired") + 1
         UserDefaults.standard.set(count, forKey: "diag_onOpenURLFired")
         UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "diag_onOpenURLLastTime")
@@ -164,6 +191,7 @@ final class AppContainer {
         } catch {
             DiagnosticLog.log("handleShareURL: resolve failed \(error.localizedDescription)")
             UserDefaults.standard.set(error.localizedDescription, forKey: "diag_onOpenURLError")
+            presentShareError(error)
         }
     }
 
@@ -236,7 +264,8 @@ final class AppContainer {
                 currentLedger = first
                 UserDefaults.standard.set(first.id.uuidString, forKey: "currentLedgerID")
                 first.shareRecordName = metadata.share.recordID.recordName
-                try? viewContext.save()
+                do { try viewContext.save() }
+                catch { DiagnosticLog.log("import: save shareRecordName FAILED \(error.localizedDescription)") }
                 // Mark as recovered so relaunch won't re-accept (which fails with "CREATE operation not permitted")
                 UserDefaults.standard.set(true, forKey: shareRecoveryKey(for: metadata.share.recordID.recordName))
                 syncStatus = .error("已切换到共享账本：\(first.name)")
@@ -257,7 +286,8 @@ final class AppContainer {
             // Attempt participant sync on fallback path too
             if let ledger = currentLedger, ledger.isShared {
                 ledger.shareRecordName = metadata.share.recordID.recordName
-                try? viewContext.save()
+                do { try viewContext.save() }
+                catch { DiagnosticLog.log("fallback: save shareRecordName FAILED \(error.localizedDescription)") }
                 UserDefaults.standard.set(true, forKey: shareRecoveryKey(for: metadata.share.recordID.recordName))
                 do {
                     try await syncService?.syncParticipants(metadata: metadata, for: ledger)
@@ -269,6 +299,7 @@ final class AppContainer {
             DiagnosticLog.log("handleAcceptedShareMetadata: FAILED \(error.localizedDescription)")
             UserDefaults.standard.set(error.localizedDescription, forKey: "diag_shareAcceptError")
             syncStatus = .error("共享失败：\(error.localizedDescription)")
+            presentShareError(error)
         }
     }
 

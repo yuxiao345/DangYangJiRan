@@ -4,9 +4,12 @@ import UIKit
 
 struct SyncStatusBadge: View {
     @Environment(AppContainer.self) private var appContainer
+#if DEBUG
     @State private var showDetail = false
+#endif
 
     var body: some View {
+#if DEBUG
         Button {
             showDetail = true
         } label: {
@@ -27,6 +30,10 @@ struct SyncStatusBadge: View {
         } message: {
             Text(diagnosticText)
         }
+#else
+        statusIcon
+            .foregroundStyle(statusColor)
+#endif
     }
 
     @ViewBuilder
@@ -50,6 +57,7 @@ struct SyncStatusBadge: View {
         }
     }
 
+#if DEBUG
     private var diagnosticText: String {
         let status = appContainer.syncStatus.displayName
         let log = DiagnosticLog.read()
@@ -97,6 +105,7 @@ struct SyncStatusBadge: View {
 
         return "[共享调试版本 v5]\n\n状态:\n\(status)\n\n\(udDiag)\n诊断日志:\n\(log)"
     }
+#endif
 
     private var statusColor: Color {
         switch appContainer.syncStatus {
