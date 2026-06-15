@@ -44,12 +44,17 @@ final class DashboardViewModel {
         activeBudgetBook = other.activeBudgetBook
     }
 
+    func load(ledger: Ledger, context: NSManagedObjectContext) {
+        self.ledger = ledger
+        load(context: context)
+    }
+
     func load(context: NSManagedObjectContext) {
         guard let ledger else { return }
         let calendar = Calendar.current
         let now = Date()
-        guard let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) else { return }
-        let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)!
+        guard let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now)),
+              let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart) else { return }
 
         accounts = (try? accountService.fetchAccounts(for: ledger, context: context)) ?? []
         totalBalance = 0

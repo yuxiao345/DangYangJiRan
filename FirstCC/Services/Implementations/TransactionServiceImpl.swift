@@ -81,19 +81,25 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
     ) throws -> [Transaction] {
         let ledgerID = ledger.id
         let request = NSFetchRequest<Transaction>(entityName: "Transaction")
-        request.predicate = NSPredicate(format: "ledger.id == %@ AND parentTransaction == nil", ledgerID as CVarArg)
+
+        // 将日期/类型过滤推到 SQLite 层，减少内存加载
+        var preds: [NSPredicate] = [
+            NSPredicate(format: "ledger.id == %@ AND parentTransaction == nil", ledgerID as CVarArg)
+        ]
+        if let range = filters?.dateRange {
+            preds.append(NSPredicate(format: "date >= %@ AND date < %@", range.lowerBound as NSDate, range.upperBound as NSDate))
+        }
+        if let type = filters?.type {
+            preds.append(NSPredicate(format: "typeRaw == %@", type.rawValue))
+        }
+        request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: preds)
         request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
-        let all = try context.fetch(request)
+        let results = try context.fetch(request)
 
-        guard let filters = filters else { return all }
+        guard let filters = filters else { return results }
 
-        return all.filter { t in
-            if let range = filters.dateRange {
-                guard range.contains(t.date) else { return false }
-            }
-            if let type = filters.type, t.type != type {
-                return false
-            }
+        // 金额范围 + 关键字过滤仍在内存中进行（多字段 OR 查询在 CoreData 层效率不高）
+        return results.filter { t in
             if let amountRange = filters.amountRange {
                 guard amountRange.contains(abs(t.amount)) else { return false }
             }
@@ -102,7 +108,7 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
                 guard !tokens.isEmpty else { return true }
                 let lcNote = t.note?.lowercased()
                 let lcTags = t.tags.map { $0.lowercased() }
-                let match = tokens.allSatisfy { token in
+                guard tokens.allSatisfy({ token in
                     if lcNote?.contains(token) == true { return true }
                     if lcTags.contains(where: { $0.contains(token) }) { return true }
                     if let name = t.merchant?.name, name.lowercased().contains(token) { return true }
@@ -112,8 +118,7 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
                     if let name = t.member?.name, name.lowercased().contains(token) { return true }
                     if let name = t.project?.name, name.lowercased().contains(token) { return true }
                     return false
-                }
-                guard match else { return false }
+                }) else { return false }
             }
             return true
         }

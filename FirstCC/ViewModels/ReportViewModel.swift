@@ -312,10 +312,8 @@ final class ReportViewModel {
             }
 
             if let maxIn = trendData.max(by: { $0.income < $1.income }), maxIn.income > 0 {
-                print("[DEBUG] 最大收入: \(maxIn.label) ¥\(maxIn.income)")
             }
             if let maxEx = trendData.max(by: { $0.expense < $1.expense }), maxEx.expense > 0 {
-                print("[DEBUG] 最大支出: \(maxEx.label) ¥\(maxEx.expense)")
             }
 
         default:
@@ -355,10 +353,8 @@ final class ReportViewModel {
             }
 
             if let maxIn = trendData.max(by: { $0.income < $1.income }), maxIn.income > 0 {
-                print("[DEBUG] 最大收入: \(maxIn.label) ¥\(maxIn.income)")
             }
             if let maxEx = trendData.max(by: { $0.expense < $1.expense }), maxEx.expense > 0 {
-                print("[DEBUG] 最大支出: \(maxEx.label) ¥\(maxEx.expense)")
             }
         }
     }

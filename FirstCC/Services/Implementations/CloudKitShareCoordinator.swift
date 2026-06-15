@@ -19,7 +19,7 @@ final class CloudKitShareCoordinator {
             DiagnosticLog.log("CloudKitCoordinator: using existing CoreDataStack")
             return s
         }
-        fatalError("CloudKitCoordinator: CoreDataStack.shared not initialized")
+        throw NSError(domain: "CloudKitCoordinator", code: -1, userInfo: [NSLocalizedDescriptionKey: "数据未就绪，请稍后重试"])
     }
 
     @MainActor

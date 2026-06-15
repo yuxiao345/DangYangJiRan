@@ -311,13 +311,7 @@ struct DashboardView: View {
 
     private func refresh() {
         guard let ledger = appContainer.currentLedger else { return }
-        let vm = DashboardViewModel(
-            accountService: appContainer.accountService,
-            transactionService: appContainer.transactionService,
-            ledger: ledger
-        )
-        vm.load(context: modelContext)
-        vm.loadBudget(context: modelContext, budgetService: appContainer.budgetService)
-        viewModel.copyFrom(vm)
+        viewModel.load(ledger: ledger, context: modelContext)
+        viewModel.loadBudget(context: modelContext, budgetService: appContainer.budgetService)
     }
 }

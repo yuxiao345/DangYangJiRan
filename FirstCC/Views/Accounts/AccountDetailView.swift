@@ -127,6 +127,7 @@ struct AccountDetailView: View {
                 }
                 .buttonStyle(.plain)
 
+                #if DEBUG
                 NavigationLink {
                     OCRTestView(account: account)
                 } label: {
@@ -143,6 +144,7 @@ struct AccountDetailView: View {
                     .glassCard(cornerRadius: 12)
                 }
                 .buttonStyle(.plain)
+                #endif
             }
         }
     }

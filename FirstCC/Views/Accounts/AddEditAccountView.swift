@@ -177,7 +177,8 @@ struct AddEditAccountView: View {
             existing.billingDay = accountType == .creditCard ? Int64(billingDay) : 0
             existing.dueDay = accountType == .creditCard ? Int64(dueDay) : 0
             existing.customTypeName = accountType == .other ? (customTypeName.isEmpty ? nil : customTypeName) : nil
-            try? appContainer.accountService.updateAccount(existing, context: modelContext)
+            do { try appContainer.accountService.updateAccount(existing, context: modelContext) }
+            catch { errorMessage = "保存失败: \(error.localizedDescription)"; return }
         } else {
             let account = Account(
                 name: name,
@@ -190,7 +191,8 @@ struct AddEditAccountView: View {
                 context: modelContext
             )
             if accountType == .other, !customTypeName.isEmpty { account.customTypeName = customTypeName }
-            try? appContainer.accountService.createAccount(account, ledger: ledger, context: modelContext)
+            do { try appContainer.accountService.createAccount(account, ledger: ledger, context: modelContext) }
+            catch { errorMessage = "保存失败: \(error.localizedDescription)"; return }
         }
         dismiss()
     }

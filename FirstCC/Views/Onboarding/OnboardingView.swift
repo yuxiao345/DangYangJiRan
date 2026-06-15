@@ -32,14 +32,6 @@ struct OnboardingView: View {
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
 
-                    NavigationLink {
-                        JoinLedgerView()
-                    } label: {
-                        Label("加入账本", systemImage: "person.badge.plus")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
                 }
                 .padding(.horizontal, 40)
             }

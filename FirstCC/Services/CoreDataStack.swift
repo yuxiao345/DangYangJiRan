@@ -10,8 +10,8 @@ final class CoreDataStack {
     let container: NSPersistentCloudKitContainer
 
     var viewContext: NSManagedObjectContext { container.viewContext }
-    var privateStore: NSPersistentStore {
-        container.persistentStoreCoordinator.persistentStores.first { $0.url == privateURL }!
+    var privateStore: NSPersistentStore? {
+        container.persistentStoreCoordinator.persistentStores.first { $0.url == privateURL }
     }
     var sharedStore: NSPersistentStore? {
         container.persistentStoreCoordinator.persistentStores.first { $0.url == sharedURL }
@@ -34,7 +34,9 @@ final class CoreDataStack {
 
         container = NSPersistentCloudKitContainer(name: "FirstCC", managedObjectModel: model)
 
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            fatalError("CoreDataStack: Application Support directory not found")
+        }
         privateURL = appSupport.appendingPathComponent("FirstCC.sqlite")
         sharedURL = appSupport.appendingPathComponent("FirstCC.shared.sqlite")
 
@@ -156,9 +158,9 @@ final class CoreDataStack {
                     if isPrivate { lastError = error }
                 }
                 if !resumed {
-                    if isPrivate && lastError != nil {
+                    if isPrivate, let error = lastError {
                         resumed = true
-                        continuation.resume(throwing: lastError!)
+                        continuation.resume(throwing: error)
                     } else if isPrivate {
                         resumed = true
                         DiagnosticLog.log("CoreDataStack: Private store loaded, proceeding (Shared may still be pending)")
