@@ -13,6 +13,8 @@ struct BudgetBookDetailView: View {
     @State private var unbudgetedCategories: [(Category, Decimal)] = []
     @State private var totalUnbudgeted: Decimal = 0
     @State private var preselectedCategory: Category?
+    @State private var navCategory: Category?
+    @State private var deleteCandidate: BudgetItem?
 
     var body: some View {
         List {
@@ -27,8 +29,6 @@ struct BudgetBookDetailView: View {
                 }
                 ForEach(items) { item in
                     itemRow(item)
-                        .contentShape(Rectangle())
-                        .onTapGesture { editingItem = item }
                         .swipeActions(edge: .leading) {
                             Button { editingItem = item } label: {
                                 Label("编辑", systemImage: "pencil")
@@ -37,8 +37,7 @@ struct BudgetBookDetailView: View {
                         }
                         .swipeActions(edge: .trailing) {
                             Button(role: .destructive) {
-                                try? appContainer.budgetService.deleteItem(item, context: modelContext)
-                                loadData()
+                                deleteCandidate = item
                             } label: {
                                 Label("删除", systemImage: "trash")
                             }
@@ -90,6 +89,19 @@ struct BudgetBookDetailView: View {
             AddEditBudgetItemView(book: book, preselectedCategory: cat)
         }
         .onAppear(perform: loadData)
+        .navigationDestination(item: $navCategory) { cat in
+            TransactionListView(filterCategory: cat, options: [.hideTypeFilter, .hideAddButton])
+        }
+        .confirmationDialog("确定删除此预算项？", isPresented: showDeleteConfirm) {
+            Button("删除", role: .destructive) {
+                if let item = deleteCandidate {
+                    try? appContainer.budgetService.deleteItem(item, context: modelContext)
+                    loadData()
+                }
+                deleteCandidate = nil
+            }
+            Button("取消", role: .cancel) { deleteCandidate = nil }
+        }
     }
 
     private var summaryCard: some View {
@@ -147,7 +159,7 @@ struct BudgetBookDetailView: View {
         let perSpent = periodSpent[item.id] ?? 0
         let totalBgt = item.totalBudget
 
-        return VStack(alignment: .leading, spacing: 4) {
+        let rowContent = VStack(alignment: .leading, spacing: 4) {
             HStack {
                 if let cat = item.category {
                     Image(systemName: cat.iconName)
@@ -163,23 +175,19 @@ struct BudgetBookDetailView: View {
                     .font(.designBodySmall)
                     .foregroundStyle(.secondary)
             }
-
-            // 本期
-            budgetSpendingLine(
-                label: "本期",
-                spent: perSpent,
-                budget: item.amount,
-                currency: currency
-            )
-            // 累计
-            budgetSpendingLine(
-                label: "累计",
-                spent: cumSpent,
-                budget: totalBgt,
-                currency: currency
-            )
+            budgetSpendingLine(label: "本期", spent: perSpent, budget: item.amount, currency: currency)
+            budgetSpendingLine(label: "累计", spent: cumSpent, budget: totalBgt, currency: currency)
         }
         .padding(.vertical, 2)
+        .contentShape(Rectangle())
+
+        return Group {
+            if let cat = item.category {
+                rowContent.onTapGesture { navCategory = cat }
+            } else {
+                rowContent.onTapGesture { editingItem = item }
+            }
+        }
     }
 
     private func budgetSpendingLine(label: String, spent: Decimal, budget: Decimal, currency: String) -> some View {
@@ -219,6 +227,9 @@ struct BudgetBookDetailView: View {
     }
 
     private var currency: String { book.ledger?.defaultCurrencyCode ?? "CNY" }
+    private var showDeleteConfirm: Binding<Bool> {
+        Binding(get: { deleteCandidate != nil }, set: { if !$0 { deleteCandidate = nil } })
+    }
 
     private func loadData() {
         let cal = Calendar.current

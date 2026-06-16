@@ -1,9 +1,18 @@
 import SwiftUI
 @preconcurrency import CoreData
 
+struct TransactionListOptions: OptionSet {
+    let rawValue: Int
+    static let hideCalendar   = TransactionListOptions(rawValue: 1 << 0)
+    static let hideTypeFilter = TransactionListOptions(rawValue: 1 << 1)
+    static let hideAddButton  = TransactionListOptions(rawValue: 1 << 2)
+}
+
 struct TransactionListView: View {
     @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
+    var filterCategory: Category? = nil
+    var options: TransactionListOptions = []
     @State private var transactions: [Transaction] = []
     @State private var showAddSheet = false
     @State private var filterType: TransactionType?
@@ -20,18 +29,20 @@ struct TransactionListView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                CalendarStripView(
-                    selectedMonth: $selectedMonth,
-                    selectedDay: $selectedDay,
-                    isExpanded: $isCalendarExpanded,
-                    dailyExpense: $dailyExpense,
-                    dailyIncome: $dailyIncome,
-                    maxDailyExpense: $maxDailyExpense,
-                    monthlyIncome: $monthlyIncome,
-                    monthlyExpense: $monthlyExpense
-                )
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
+                if !options.contains(.hideCalendar) {
+                    CalendarStripView(
+                        selectedMonth: $selectedMonth,
+                        selectedDay: $selectedDay,
+                        isExpanded: $isCalendarExpanded,
+                        dailyExpense: $dailyExpense,
+                        dailyIncome: $dailyIncome,
+                        maxDailyExpense: $maxDailyExpense,
+                        monthlyIncome: $monthlyIncome,
+                        monthlyExpense: $monthlyExpense
+                    )
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                }
 
                 LazyVStack(spacing: 12) {
                     if transactions.isEmpty {
@@ -61,7 +72,7 @@ struct TransactionListView: View {
         }
         .modifier(ScrollCollapseModifier(isCalendarExpanded: $isCalendarExpanded))
         .designScreen()
-        .navigationTitle("流水")
+        .navigationTitle(filterCategory.map { LocalizedStringKey($0.name) } ?? "流水")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 if let ledger = appContainer.currentLedger {
@@ -75,24 +86,28 @@ struct TransactionListView: View {
                     }
                 }
             }
-            ToolbarItem(placement: .primaryAction) {
-                Button { showAddSheet = true } label: {
-                    Image(systemName: "plus")
+            if !options.contains(.hideAddButton) {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { showAddSheet = true } label: {
+                        Image(systemName: "plus")
+                    }
                 }
             }
-            ToolbarItem(placement: .navigationBarLeading) {
-                Menu {
-                    Button("全部") { filterType = nil }
-                    Button(TransactionType.expense.displayName) { filterType = .expense }
-                    Button(TransactionType.income.displayName) { filterType = .income }
-                    Button(TransactionType.transfer.displayName) { filterType = .transfer }
-                    Button(TransactionType.lending.displayName) { filterType = .lending }
+            if !options.contains(.hideTypeFilter) {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Menu {
+                        Button("全部") { filterType = nil }
+                        Button(TransactionType.expense.displayName) { filterType = .expense }
+                        Button(TransactionType.income.displayName) { filterType = .income }
+                        Button(TransactionType.transfer.displayName) { filterType = .transfer }
+                        Button(TransactionType.lending.displayName) { filterType = .lending }
 
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: filterType != nil ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                        Text(filterType?.displayName ?? "全部")
-                            .font(.designBodySmall)
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: filterType != nil ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                            Text(filterType?.displayName ?? "全部")
+                                .font(.designBodySmall)
+                        }
                     }
                 }
             }
@@ -173,12 +188,14 @@ struct TransactionListView: View {
             return true
         }
 
+        let calData = filterCategory.map { cat in normal.filter { $0.category?.id == cat.id } } ?? normal
+
         var expenseByDay: [Int: Decimal] = [:]
         var incomeByDay: [Int: Decimal] = [:]
         var totalIncome: Decimal = 0
         var totalExpense: Decimal = 0
 
-        for t in normal {
+        for t in calData {
             let d = cal.component(.day, from: t.date)
             switch t.type {
             case .expense:
@@ -211,6 +228,9 @@ struct TransactionListView: View {
         }
         if let type = filterType {
             result = result.filter { $0.type == type }
+        }
+        if let cat = filterCategory {
+            result = result.filter { $0.category?.id == cat.id }
         }
         transactions = result
     }

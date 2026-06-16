@@ -476,21 +476,29 @@ struct AddEditTransactionView: View {
                                 Image(systemName: cat.iconName)
                                     .foregroundStyle(Color(hex: cat.colorHex))
                                     .frame(width: 24)
-                                Text(LocalizedStringKey(cat.name))
-                                    .font(.designBodyMedium)
-                                    .foregroundStyle(Color.designOnSurface)
                             } else {
                                 Image(systemName: "questionmark.circle")
                                     .foregroundStyle(Color.designOnSurfaceVariant)
                                     .frame(width: 24)
-                                Text("未分类")
-                                    .font(.designBodyMedium)
-                                    .foregroundStyle(Color.designOnSurfaceVariant)
                             }
-                            if let m = child.member {
-                                Text(m.name)
-                                    .font(.designBodySmall)
-                                    .foregroundStyle(Color.designOnSurfaceVariant)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(child.category.map { LocalizedStringKey($0.name) } ?? "未分类")
+                                    .font(.designBodyMedium)
+                                    .foregroundStyle(child.category != nil ? Color.designOnSurface : Color.designOnSurfaceVariant)
+                                HStack(spacing: 4) {
+                                    if let m = child.member {
+                                        Text(m.name)
+                                            .font(.designBodySmall)
+                                            .foregroundStyle(Color.designOnSurfaceVariant)
+                                    }
+                                    if let n = child.note, !n.isEmpty {
+                                        if child.member != nil { Text("·").font(.designBodySmall).foregroundStyle(.tertiary) }
+                                        Text(n)
+                                            .font(.designBodySmall)
+                                            .foregroundStyle(.tertiary)
+                                            .lineLimit(1)
+                                    }
+                                }
                             }
                             Spacer()
                             CurrencyText(amount: abs(child.amount), currencyCode: child.currencyCode, size: 17, foregroundColor: .designAccentRed)
@@ -1192,6 +1200,12 @@ struct AddEditTransactionView: View {
                             }
                         }
                     }
+                    TextField("备注", text: Binding(
+                        get: { item.note },
+                        set: { if let idx = splitItems.firstIndex(where: { $0.id == item.id }) { splitItems[idx].note = $0 } }
+                    ))
+                    .font(.designBodySmall)
+                    .textFieldStyle(.plain)
                 }
                 .padding(12)
                 .glassCard(cornerRadius: 12)
@@ -1772,7 +1786,7 @@ struct AddEditTransactionView: View {
 
     private func loadData() {
         guard let ledger = appContainer.currentLedger else { return }
-        accounts = (try? appContainer.accountService.fetchAccounts(for: ledger, context: modelContext)) ?? []
+        accounts = (try? appContainer.accountService.fetchAccounts(for: ledger, context: modelContext))?.filter { !$0.isArchived } ?? []
         loadCategories()
         members = (try? appContainer.memberService.fetchMembers(for: ledger, context: modelContext))?.filter { $0.isActive } ?? []
         merchants = (try? appContainer.merchantService.fetchMerchants(for: ledger, context: modelContext))?.filter { $0.isActive } ?? []
