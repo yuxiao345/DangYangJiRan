@@ -120,7 +120,7 @@ struct AccountsManagementView: View {
 
     private func loadAccounts() {
         guard let ledger = effectiveLedger else { return }
-        accounts = (try? appContainer.accountService.fetchAccounts(for: ledger, context: modelContext)) ?? []
+        accounts = (try? appContainer.accountService.fetchAccounts(for: ledger, includeArchived: true, context: modelContext)) ?? []
         for a in accounts {
             balances[a.id] = appContainer.accountService.calculateBalance(for: a, context: modelContext)
         }

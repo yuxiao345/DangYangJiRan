@@ -17,8 +17,7 @@ final class AccountListViewModel {
     }
 
     func load(context: NSManagedObjectContext) {
-        let allAccounts = (try? service.fetchAccounts(for: ledger, context: context)) ?? []
-        accounts = allAccounts.filter { !$0.isArchived }
+        accounts = (try? service.fetchAccounts(for: ledger, context: context)) ?? []
         totalBalance = accounts.reduce(0) { $0 + service.calculateBalance(for: $1, context: context) }
     }
 

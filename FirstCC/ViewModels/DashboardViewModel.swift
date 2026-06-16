@@ -56,7 +56,7 @@ final class DashboardViewModel {
         guard let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now)),
               let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart) else { return }
 
-        accounts = (try? accountService.fetchAccounts(for: ledger, context: context)) ?? []
+        accounts = (try? accountService.fetchAccounts(for: ledger, includeArchived: true, context: context)) ?? []
         totalBalance = 0
         for a in accounts {
             let bal = accountService.calculateBalance(for: a, context: context)

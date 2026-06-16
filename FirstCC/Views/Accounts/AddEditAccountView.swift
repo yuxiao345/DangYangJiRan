@@ -156,7 +156,7 @@ struct AddEditAccountView: View {
 
     private func loadExistingCustomTypes() {
         guard let ledger = effectiveLedger, accountType == .other else { existingCustomTypes = []; return }
-        let all = (try? appContainer.accountService.fetchAccounts(for: ledger, context: modelContext)) ?? []
+        let all = (try? appContainer.accountService.fetchAccounts(for: ledger, includeArchived: true, context: modelContext)) ?? []
         let names = all.compactMap { $0.customTypeName }.filter { !$0.isEmpty }
         if let editing, let current = editing.customTypeName, !current.isEmpty { existingCustomTypes = [current] + Array(Set(names)).filter { $0 != current }.sorted() }
         else { existingCustomTypes = Array(Set(names)).sorted() }

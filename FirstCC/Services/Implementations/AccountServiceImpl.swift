@@ -14,10 +14,12 @@ struct AccountServiceImpl: AccountServiceProtocol {
         return try context.fetch(request).first
     }
 
-    func fetchAccounts(for ledger: Ledger, context: NSManagedObjectContext) throws -> [Account] {
+    func fetchAccounts(for ledger: Ledger, includeArchived: Bool = false, context: NSManagedObjectContext) throws -> [Account] {
         let ledgerID = ledger.id
         let request = NSFetchRequest<Account>(entityName: "Account")
-        request.predicate = NSPredicate(format: "ledger.id == %@", ledgerID as CVarArg)
+        var fmt = "ledger.id == %@"
+        if !includeArchived { fmt += " AND isArchived == NO" }
+        request.predicate = NSPredicate(format: fmt, ledgerID as CVarArg)
         return try context.fetch(request).sorted { a, b in
             if a.type.sortPriority != b.type.sortPriority { return a.type.sortPriority < b.type.sortPriority }
             if a.sortOrder != b.sortOrder { return a.sortOrder < b.sortOrder }

@@ -140,7 +140,6 @@ struct AccountListView: View {
     private func loadAccounts() {
         guard let ledger = appContainer.currentLedger else { return }
         accounts = (try? appContainer.accountService.fetchAccounts(for: ledger, context: modelContext)) ?? []
-        accounts = accounts.filter { !$0.isArchived }
         for account in accounts {
             balances[account.id] = appContainer.accountService.calculateBalance(for: account, context: modelContext)
             if account.type == .lending {

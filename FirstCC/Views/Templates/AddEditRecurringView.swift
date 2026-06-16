@@ -235,7 +235,7 @@ struct AddEditRecurringView: View {
 
     private func loadData() {
         guard let ledger = effectiveLedger else { return }
-        accounts = (try? appContainer.accountService.fetchAccounts(for: ledger, context: modelContext))?.filter { !$0.isArchived } ?? []
+        accounts = (try? appContainer.accountService.fetchAccounts(for: ledger, context: modelContext)) ?? []
         loadCategories()
         members = (try? appContainer.memberService.fetchMembers(for: ledger, context: modelContext))?.filter { $0.isActive } ?? []
         merchants = (try? appContainer.merchantService.fetchMerchants(for: ledger, context: modelContext))?.filter { $0.isActive } ?? []
