@@ -1,15 +1,24 @@
 import SwiftUI
 @preconcurrency import CoreData
 
+struct TransactionListOptions: OptionSet {
+    let rawValue: Int
+    static let hideCalendar   = TransactionListOptions(rawValue: 1 << 0)
+    static let hideTypeFilter = TransactionListOptions(rawValue: 1 << 1)
+    static let hideAddButton  = TransactionListOptions(rawValue: 1 << 2)
+}
+
 struct TransactionListContent: View {
     @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
-    @Binding var selection: Transaction?
     @State private var transactions: [Transaction] = []
     @State private var filterType: TransactionType?
     @State private var selectedMonth: Date = Date().startOfMonth
     @State private var selectedDate: Date?
     @State private var transactionDays: Set<Int> = []
+
+    var filterCategory: Category?
+    var options: TransactionListOptions = []
 
     private let weekdaySymbols = ["一", "二", "三", "四", "五", "六", "日"]
     private let cal = Calendar.current
@@ -17,8 +26,10 @@ struct TransactionListContent: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            miniCalendar
-            Divider()
+            if !options.contains(.hideCalendar) {
+                miniCalendar
+                Divider()
+            }
             ScrollView {
                 LazyVStack(spacing: 6) {
                     if transactions.isEmpty {
@@ -29,13 +40,9 @@ struct TransactionListContent: View {
                             Text(group.key).font(.caption).foregroundStyle(Color.designOnSurfaceVariant)
                                 .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 6)
                             ForEach(group.value) { t in
-                                Button {
-                                    selection = t
-                                } label: {
+                                NavigationLink(value: t) {
                                     TransactionRowView(transaction: t)
                                         .padding(.vertical, 2)
-                                        .background(selection?.id == t.id ? Color.accentColor.opacity(0.08) : Color.clear)
-                                        .clipShape(RoundedRectangle(cornerRadius: 6))
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -46,16 +53,22 @@ struct TransactionListContent: View {
             }
             .designScreen()
         }
+        .navigationDestination(for: Transaction.self) { t in
+            TransactionDetailContent(transaction: t)
+        }
+        .navigationTitle(filterCategory.map { LocalizedStringKey($0.name) } ?? "流水")
         .toolbar {
-            ToolbarItem(placement: .principal) {
-                Picker("类型", selection: $filterType) {
-                    Text("全部").tag(nil as TransactionType?)
-                    ForEach([TransactionType.expense, .income, .transfer, .lending], id: \.self) { t in
-                        Text(t.displayName).tag(t as TransactionType?)
+            if !options.contains(.hideTypeFilter) {
+                ToolbarItem(placement: .principal) {
+                    Picker("类型", selection: $filterType) {
+                        Text("全部").tag(nil as TransactionType?)
+                        ForEach([TransactionType.expense, .income, .transfer, .lending], id: \.self) { t in
+                            Text(t.displayName).tag(t as TransactionType?)
+                        }
                     }
+                    .pickerStyle(.segmented)
+                    .frame(width: 300)
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 300)
             }
             ToolbarItem(placement: .navigation) {
                 HStack(spacing: 4) {
@@ -158,6 +171,7 @@ struct TransactionListContent: View {
         transactionDays = Set(result.filter { $0.type != .transfer }.map { cal.component(.day, from: $0.date) })
         if let type = filterType { result = result.filter { $0.type == type } }
         if let date = selectedDate { result = result.filter { cal.isDate($0.date, inSameDayAs: date) } }
+        if let cat = filterCategory { result = result.filter { $0.category?.id == cat.id } }
         transactions = result
     }
 
@@ -165,4 +179,3 @@ struct TransactionListContent: View {
         selectedMonth = cal.date(byAdding: .month, value: delta, to: selectedMonth)?.startOfMonth ?? selectedMonth
     }
 }
-

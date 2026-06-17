@@ -25,7 +25,7 @@ struct BudgetBookListView: View {
                     .foregroundStyle(.secondary)
             }
             ForEach(books) { book in
-                NavigationLink(destination: BudgetBookDetailView(book: book)) {
+                NavigationLink(destination: budgetDetailDestination(for: book)) {
                     bookRow(book)
                 }
                 .swipeActions(edge: .leading) {
@@ -56,9 +56,11 @@ struct BudgetBookListView: View {
                     Image(systemName: "plus")
                 }
             }
+            #if os(iOS)
             ToolbarItem(placement: .navigationBarLeading) {
                 EditButton()
             }
+            #endif
         }
         .sheet(isPresented: $showAddSheet) {
             AddEditBudgetBookView(ledger: effectiveLedger)
@@ -102,6 +104,15 @@ struct BudgetBookListView: View {
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private func budgetDetailDestination(for book: BudgetBook) -> some View {
+        #if os(macOS)
+        BudgetBookDetailMacView(book: book)
+        #else
+        BudgetBookDetailView(book: book)
+        #endif
     }
 
     private func reloadBooks() {

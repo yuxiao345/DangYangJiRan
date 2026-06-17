@@ -28,12 +28,15 @@ struct NumpadAmountField: View {
                 if !showNumpad { text = formatDecimal(amount) }
             } label: {
                 HStack {
-                    Text(currencySymbol).foregroundStyle(.secondary)
+                    Text(currencySymbol)
+                        .font(.custom("JetBrainsMono-Medium", fixedSize: 15))
+                        .foregroundStyle(.secondary)
                     Text(displayText)
+                        .font(.custom("JetBrainsMono-Medium", fixedSize: 15))
                         .foregroundStyle(showNumpad ? Color.designPrimary : .primary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(Rectangle())
                 }
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 

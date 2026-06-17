@@ -19,16 +19,18 @@ enum ReportType: String, CaseIterable, Identifiable {
 }
 
 struct ReportTypeContent: View {
-    @State private var selectedReport: ReportType?
-    @Environment(\.openWindow) private var openWindow
-
     var body: some View {
-        List(ReportType.allCases, selection: $selectedReport) { report in
-            Label(report.rawValue, systemImage: report.icon)
-                .padding(.vertical, 4)
+        List(ReportType.allCases) { report in
+            NavigationLink(value: report) {
+                Label(report.rawValue, systemImage: report.icon)
+                    .padding(.vertical, 4)
+            }
         }
         .scrollContentBackground(.hidden)
         .designScreen()
+        .navigationDestination(for: ReportType.self) { _ in
+            ReportDetailContent()
+        }
     }
 }
 
@@ -43,4 +45,3 @@ struct ReportDetailContent: View {
         .designScreen()
     }
 }
-

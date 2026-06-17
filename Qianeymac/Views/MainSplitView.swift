@@ -4,11 +4,6 @@ import SwiftUI
 struct MainSplitView: View {
     @Environment(AppContainer.self) private var appContainer
     @State private var selection: MacNavItem = .dashboard
-    @State private var selectedAccount: Account?
-    @State private var selectedTransaction: Transaction?
-    @State private var settingsMainSelection: SettingsMainItem?
-    @State private var settingsSelectedLedger: Ledger?
-    @State private var settingsLedgerSubSelection: LedgerSettingsItem?
     @State private var showAddSheet = false
     @State private var allLedgers: [Ledger] = []
     @State private var showCreateLedgerSheet = false
@@ -19,11 +14,10 @@ struct MainSplitView: View {
             sidebar
                 .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 240)
         } detail: {
-            mainColumnContent
-                .inspector(isPresented: Binding(get: { inspectorShown }, set: { if !$0 { selectedAccount = nil; selectedTransaction = nil; settingsMainSelection = nil } })) {
-                    inspectorContent
-                }
-                .navigationSplitViewColumnWidth(min: 360, ideal: 560)
+            NavigationStack {
+                mainColumnContent
+            }
+            .navigationSplitViewColumnWidth(min: 400, ideal: 600)
         }
         .navigationTitle("")
         .toolbar { macToolbar }
@@ -32,8 +26,6 @@ struct MainSplitView: View {
         .onReceive(NotificationCenter.default.publisher(for: .macMenuNavigate)) { notif in
             if let item = notif.object as? MacNavItem {
                 selection = item
-                selectedAccount = nil
-                selectedTransaction = nil
             }
         }
         .sheet(isPresented: $showAddSheet) {
@@ -63,8 +55,14 @@ struct MainSplitView: View {
                     Label("新增账本", systemImage: "plus")
                 }
             } label: {
-                Text(appContainer.currentLedger?.name ?? "小金库")
+                Text("  " + (appContainer.currentLedger?.name ?? "小金库"))
                     .font(.custom("SpaceGrotesk-Bold", fixedSize: 18))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.designGlassBg.opacity(0.5))
+                    )
             }.menuStyle(.borderlessButton)
         }
         ToolbarItem(placement: .primaryAction) {
@@ -78,26 +76,26 @@ struct MainSplitView: View {
     private var sidebar: some View {
         List {
             ForEach(MacNavItem.allCases) { item in
-                Label(item.rawValue, systemImage: item.icon)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
-                    .padding(.vertical, 2)
-                    .background(selection == item ? Color.accentColor.opacity(0.15) : Color.clear)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .onTapGesture {
-                        if selection != item {
-                            selection = item
-                            selectedAccount = nil
-                            selectedTransaction = nil
-                        }
+                HStack(spacing: 10) {
+                    Image(systemName: item.icon)
+                        .frame(width: 20)
+                    Text(item.rawValue)
+                }
+                .font(.designBodyMedium)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .padding(.vertical, 6)
+                .padding(.horizontal, 8)
+                .background(selection == item ? Color.accentColor.opacity(0.15) : Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .onTapGesture {
+                    if selection != item {
+                        selection = item
                     }
+                }
             }
         }
         .listStyle(.sidebar)
-    }
-
-    private var inspectorShown: Bool {
-        selectedAccount != nil || selectedTransaction != nil || settingsMainSelection != nil
     }
 
     // MARK: - Main Column
@@ -108,42 +106,13 @@ struct MainSplitView: View {
         case .dashboard:
             DashboardContentColumn()
         case .accounts:
-            AccountListContent(selection: $selectedAccount)
+            AccountListContent()
         case .transactions:
-            TransactionListContent(selection: $selectedTransaction)
+            TransactionListContent()
         case .reports:
             ReportTypeContent()
         case .settings:
-            SettingsContentColumn(
-                mainSelection: $settingsMainSelection,
-                selectedLedger: $settingsSelectedLedger,
-                ledgerSubSelection: $settingsLedgerSubSelection
-            )
-        }
-    }
-
-    @ViewBuilder
-    private var inspectorContent: some View {
-        switch selection {
-        case .accounts:
-            if let account = selectedAccount {
-                AccountDetailContent(account: account)
-                    .toolbar { ToolbarItem(placement: .destructiveAction) { Button("关闭") { selectedAccount = nil } } }
-            }
-        case .transactions:
-            if let transaction = selectedTransaction {
-                TransactionDetailContent(transaction: transaction)
-                    .toolbar { ToolbarItem(placement: .destructiveAction) { Button("关闭") { selectedTransaction = nil } } }
-            }
-        case .settings:
-            if settingsMainSelection != nil {
-                SettingsDetailColumn(
-                    mainSelection: $settingsMainSelection,
-                    selectedLedger: $settingsSelectedLedger,
-                    ledgerSubSelection: $settingsLedgerSubSelection
-                )
-            }
-        default: EmptyView()
+            MacSettingsView()
         }
     }
 

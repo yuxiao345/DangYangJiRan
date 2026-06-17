@@ -4,7 +4,6 @@ import SwiftUI
 struct AccountListContent: View {
     @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
-    @Binding var selection: Account?
     @State private var accounts: [Account] = []
     @State private var balances: [UUID: Decimal] = [:]
 
@@ -15,7 +14,17 @@ struct AccountListContent: View {
                     Text(group.key).font(.caption).foregroundStyle(Color.designOnSurfaceVariant)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     ForEach(group.value) { account in
-                        accountRow(account)
+                        NavigationLink(value: account) {
+                            HStack {
+                                Label(account.name, systemImage: account.type.systemIcon)
+                                Spacer()
+                                Text(CurrencyFormatter.formatDecimal(amount: balances[account.id] ?? 0, currencyCode: account.currencyCode))
+                                    .foregroundStyle((balances[account.id] ?? 0) >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed)
+                            }
+                            .padding(10)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 if accounts.isEmpty {
@@ -25,6 +34,9 @@ struct AccountListContent: View {
             .padding(16)
         }
         .designScreen()
+        .navigationDestination(for: Account.self) { account in
+            AccountDetailContent(account: account)
+        }
         .onAppear(perform: load)
         .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in load() }
     }
@@ -32,23 +44,6 @@ struct AccountListContent: View {
     private var groupedAccounts: [(key: String, value: [Account])] {
         Dictionary(grouping: accounts) { $0.typeDisplayName }
             .sorted { $0.key < $1.key }.map { ($0.key, $0.value) }
-    }
-
-    private func accountRow(_ account: Account) -> some View {
-        Button {
-            selection = account
-        } label: {
-            HStack {
-                Label(account.name, systemImage: account.type.systemIcon)
-                Spacer()
-                Text(CurrencyFormatter.formatDecimal(amount: balances[account.id] ?? 0, currencyCode: account.currencyCode))
-                    .foregroundStyle((balances[account.id] ?? 0) >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed)
-            }
-            .padding(10)
-            .background(selection?.id == account.id ? Color.accentColor.opacity(0.1) : Color.clear)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-        }
-        .buttonStyle(.plain)
     }
 
     private func load() {
@@ -59,4 +54,3 @@ struct AccountListContent: View {
         }
     }
 }
-

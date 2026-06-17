@@ -2,10 +2,10 @@ import SwiftUI
 @preconcurrency import CoreData
 
 func progressColor(_ p: Double) -> Color {
-    if p > 1.0 { return .red }
+    if p > 1.0 { return .designAccentRed }
     if p > 0.8 { return .orange }
     if p > 0.5 { return .yellow }
-    return .green
+    return .designPrimaryFixedDim
 }
 
 // View files split into Qianeymac/Views/:

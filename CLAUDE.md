@@ -53,6 +53,63 @@ Target: `钱伲`, scheme: `钱伲`, bundle ID: `com.qianey.app`, container: `iCl
 - Dashboard refreshes on `Notification.Name.transactionDidChange` and `onChange(of: currentLedger?.id)`
 - `UserDefaults.string(forKey: "currentLedgerID")` persists last-used ledger across restarts
 
+## Platform Feature Parity
+
+两个 target 共享同一套 Model/Service/Utility 层，但 View 层大多独立实现。修改任一平台功能时，**必须检查本表**确认另一个平台是否需要同步修改。
+
+### 修改检查清单
+
+改 iOS 功能 → 查 Mac 列是否独立实现 → 如是，检查 Mac 实现是否需要同步
+改 Mac 功能 → 查 iOS 列是否独立实现 → 如是，检查 iOS 实现是否需要同步
+改共享代码 → 两个平台同时受影响，两边都要测
+
+| 功能模块 | iOS (钱伲) | Mac (Qianeymac) | 共享代码 |
+|---------|-----------|----------------|---------|
+| **总览/仪表盘** | `DashboardView` | `DashboardContentColumn` | `DashboardViewModel`, services |
+| **账户列表** | `AccountListView` | `AccountListContent` | services |
+| **账户详情** | `AccountDetailView` | `AccountDetailContent` | services |
+| **新增/编辑账户** | `AddEditAccountView` | 复用 iOS（共享） | `AddEditAccountView` |
+| **流水列表** | `TransactionListView` | `TransactionListContent` | `TransactionListOptions`, services |
+| **流水详情** | `TransactionDetailView`→`AddEditTransactionView(displayMode:)` | `TransactionDetailContent`→`MacAddTransactionSheet(displayMode:)` | - |
+| **记一笔** | `AddEditTransactionView` | `MacAddTransactionSheet` | services |
+| **收支日历** | `CalendarStripView`+`CalendarDayCell` | 内置在 `TransactionListContent` | - |
+| **报表** | `ReportsView` | `ReportTypeContent`+`ReportDetailContent` | `ReportViewModel` |
+| **设置主页** | `SettingsView` | `MacSettingsView` | - |
+| **账本列表** | `LedgerListSettingsView` (in SettingsContent) | `MacLedgerSettingsView` | services |
+| **分类管理** | `CategoryListView`+`AddEditCategoryView` | `MacCategoryListView`+`MacCategoryEditSheet` | services |
+| **成员管理** | `MemberListView` | `MacMemberListView`+`MacMemberEditSheet` | services |
+| **预算详情** | `BudgetBookDetailView` | `BudgetBookDetailMacView` | `AddEditBudgetItemView`, services |
+| **预算列表** | `BudgetBookListView` | 复用（`#if os(macOS)` 条件编译） | `BudgetBookListView` |
+| **新增/编辑预算** | `AddEditBudgetBookView` | 复用 iOS（共享） | `AddEditBudgetBookView` |
+| **搜索** | `SearchView` | 未实现 | `SearchViewModel`, `ChineseExpressionParser` |
+| **高级搜索** | `SearchView` (多条件) | 未实现 | - |
+| **数据导出** | `ExportView` | 未实现 | `ExportServiceProtocol` |
+| **App 锁** | `AppLockView` | 未实现 | `BiometricAuth` |
+| **共享管理** | `CloudSharingView`+`LedgerSettingsView` | 未实现 | `SyncServiceImpl`, `CloudKitShareCoordinator` |
+| **信用卡对账** | `CreditCardReconciliationView` | 未实现 | services |
+| **商户/项目管理** | iOS Settings 内 | Mac 未实现 | services |
+
+### 共享层（两个 target 都编译）
+
+- **Models:** 所有 `Models/CoreData/*Entity.swift`、`Models/Enums/*.swift`
+- **Services:** 所有 `Services/Protocols/`、`Services/Implementations/`
+- **Design System:** `Font+Design.swift`、`Color+Design.swift`、`GlassModifiers.swift`
+- **ViewModels:** `DashboardViewModel`、`SearchViewModel`、`ReportViewModel`、`AccountListViewModel`
+- **Extensions:** `Date+Display`、`Color+Hex`、`Color+Expense`、`Transaction+Grouping` 等
+- **Utilities:** `CurrencyFormatter`、`DateFormatters`、`ChineseExpressionParser`、`DiagnosticLog` 等
+- **Components:** `CurrencyText`、`TransactionRowView`、`PixelProgressBar`、`NumpadAmountField`、`SearchablePickerView`、`DatePickerButton`
+
+### 跨平台条件编译
+
+共享文件中使用 `#if os(macOS)` / `#if os(iOS)` 处理平台差异：
+- `BudgetBookListView.swift` — `EditButton`（iOS only）、`NavigationLink` 目标
+- `Color+Design.swift` — 部分颜色微调
+- `TransactionRowView.swift` — 部分渲染差异
+
+### 添加新文件到 Mac target
+
+Mac target 使用显式 Sources 列表（非自动同步）。新增共享文件时，需要同时加到 `project.pbxproj` 中 Mac target（`9AB5F8AC2FCD51C400F5044E`）的 Sources phase。
+
 ## Sharing (CKShare)
 
 Sharing flow: owner taps Button → `createShareAndShow()` → `CoreDataStack.createShareForLedger()` → `CloudSharingView` (wraps `UICloudSharingController`).

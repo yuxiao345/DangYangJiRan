@@ -1,106 +1,183 @@
 import SwiftUI
 @preconcurrency import CoreData
 
-struct SettingsContentColumn: View {
-    @Binding var mainSelection: SettingsMainItem?
-    @Binding var selectedLedger: Ledger?
-    @Binding var ledgerSubSelection: LedgerSettingsItem?
+// MARK: - Settings (two-column NavigationStack)
 
+struct MacSettingsView: View {
     var body: some View {
-        Group {
-            if let ledger = selectedLedger {
-                ledgerSubList(ledger)
-            } else {
-                mainList
-            }
-        }
-    }
-
-    // MARK: Main settings list
-
-    private var mainList: some View {
-        List(selection: $mainSelection) {
-            ForEach(SettingsMainItem.allCases) { item in
-                Label(item.rawValue, systemImage: item.icon)
-                    .padding(.vertical, 3)
-                    .tag(item)
+        List {
+            Section("设置") {
+                NavigationLink(value: SettingsNavItem.appearance) {
+                    Label("外观", systemImage: "paintbrush")
+                }
+                NavigationLink(value: SettingsNavItem.ledgers) {
+                    Label("账本", systemImage: "books.vertical")
+                }
+                NavigationLink(value: SettingsNavItem.about) {
+                    Label("关于", systemImage: "info.circle")
+                }
             }
         }
         .scrollContentBackground(.hidden)
         .designScreen()
-    }
-
-    // MARK: Ledger sub-items list
-
-    private func ledgerSubList(_ ledger: Ledger) -> some View {
-        List(selection: $ledgerSubSelection) {
-            Section {
-                ForEach(LedgerSettingsItem.allCases) { item in
-                    Label(item.rawValue, systemImage: item.icon)
-                        .padding(.vertical, 3)
-                        .tag(item)
-                }
-            } header: {
-                HStack {
-                    Button {
-                        self.selectedLedger = nil
-                        self.ledgerSubSelection = nil
-                    } label: {
-                        Image(systemName: "chevron.left")
-                    }
-                    .buttonStyle(.borderless)
-                    Text(ledger.name).font(.headline)
-                }
-                .padding(.bottom, 4)
+        .navigationDestination(for: SettingsNavItem.self) { item in
+            switch item {
+            case .appearance:
+                AppearanceSettingsView()
+            case .ledgers:
+                MacLedgerSettingsView()
+            case .about:
+                AboutSettingsView()
             }
         }
-        .scrollContentBackground(.hidden)
-        .designScreen()
     }
 }
 
-// MARK: - Settings Detail Column
+enum SettingsNavItem: Hashable {
+    case appearance, ledgers, about
+}
 
-struct SettingsDetailColumn: View {
+// MARK: - Ledger Settings (replaces SettingsContentColumn + SettingsDetailColumn)
+
+struct MacLedgerSettingsView: View {
     @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
-    @Binding var mainSelection: SettingsMainItem?
-    @Binding var selectedLedger: Ledger?
-    @Binding var ledgerSubSelection: LedgerSettingsItem?
+    @State private var ledgers: [Ledger] = []
+    @State private var showCreateSheet = false
+    @State private var showDeleteAlert = false
+    @State private var ledgerToDelete: Ledger?
 
     var body: some View {
-        Group {
-            if let main = mainSelection {
-                switch main {
-                case .appearance:
-                    AppearanceSettingsView()
-                case .ledgers:
-                    if let ledger = selectedLedger, let sub = ledgerSubSelection {
-                        ledgerSubDetail(ledger: ledger, sub: sub)
-                    } else {
-                        LedgerListSettingsView(onSelect: { ledger in
-                            selectedLedger = ledger
-                            ledgerSubSelection = nil
-                        })
+        List {
+            ForEach(ledgers) { ledger in
+                NavigationLink(value: ledger) {
+                    HStack(spacing: 10) {
+                        Image(systemName: ledger.iconName)
+                            .foregroundStyle(ledger.isShared ? Color.designPrimaryFixed : Color.designPrimaryContainer)
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 4) {
+                                Text(ledger.name).font(.body).foregroundStyle(Color.designOnSurface)
+                                if ledger.isShared {
+                                    Image(systemName: "person.2.fill").font(.caption2)
+                                        .foregroundStyle(Color.designPrimaryFixed)
+                                }
+                            }
+                            Text("\(ledger.type.displayName) · \(ledger.defaultCurrencyCode)")
+                                .font(.caption).foregroundStyle(Color.designOnSurfaceVariant)
+                        }
+                        Spacer()
+                        if ledger.id == appContainer.currentLedger?.id {
+                            Image(systemName: "checkmark")
+                                .foregroundStyle(Color.designPrimaryContainer).fontWeight(.semibold)
+                        }
                     }
-                case .about:
-                    AboutSettingsView()
+                    .padding(.vertical, 2)
                 }
+                .contextMenu {
+                    if ledgers.count > 1 && (!ledger.isShared || appContainer.isOwner(of: ledger)) {
+                        Button(role: .destructive) {
+                            ledgerToDelete = ledger
+                            showDeleteAlert = true
+                        } label: {
+                            Label("删除", systemImage: "trash")
+                        }
+                    }
+                }
+                .swipeActions(edge: .trailing) {
+                    if ledgers.count > 1 && (!ledger.isShared || appContainer.isOwner(of: ledger)) {
+                        Button(role: .destructive) {
+                            ledgerToDelete = ledger
+                            showDeleteAlert = true
+                        } label: {
+                            Label("删除", systemImage: "trash")
+                        }
+                    }
+                }
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .designScreen()
+        .navigationTitle("账本管理")
+        .navigationDestination(for: Ledger.self) { ledger in
+            MacLedgerDetailView(ledger: ledger)
+        }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { showCreateSheet = true } label: {
+                    Image(systemName: "plus")
+                }
+            }
+        }
+        .onAppear(perform: load)
+        .sheet(isPresented: $showCreateSheet, onDismiss: { load() }) {
+            CreateLedgerSheet { newLedger in
+                appContainer.currentLedger = newLedger
+                UserDefaults.standard.set(newLedger.id.uuidString, forKey: "currentLedgerID")
+                load()
+            }
+        }
+        .alert("确认删除", isPresented: $showDeleteAlert) {
+            Button("取消", role: .cancel) {}
+            Button("删除", role: .destructive) { confirmDelete() }
+        } message: {
+            if let ledger = ledgerToDelete, ledger.isShared {
+                Text("这是共享账本。删除后其他成员将无法访问，数据将保留在你的本地。")
             } else {
-                EmptySelectionView(message: "选择设置项")
+                Text("删除账本会同时删除该账本下的所有数据，此操作不可撤销。")
             }
         }
     }
 
-    @ViewBuilder
-    private func ledgerSubDetail(ledger: Ledger, sub: LedgerSettingsItem) -> some View {
-        switch sub {
-        case .categories:
-            MacCategoryListView(ledger: ledger)
-        case .members:
-            MacMemberListView(ledger: ledger)
+    private func load() {
+        let all = (try? appContainer.ledgerService.fetchLedgers(context: modelContext)) ?? []
+        ledgers = all.filter { !appContainer.exitedSharedLedgerIDs.contains($0.id) }
+    }
+
+    private func confirmDelete() {
+        guard let ledger = ledgerToDelete, ledgers.count > 1 else { return }
+        let wasCurrent = ledger.id == appContainer.currentLedger?.id
+        do {
+            try appContainer.ledgerService.deleteLedger(ledger, context: modelContext)
+        } catch {
+            DiagnosticLog.log("LedgerSettings: delete FAILED \(error.localizedDescription)")
+        }
+        if wasCurrent, let next = (try? appContainer.ledgerService.fetchLedgers(context: modelContext))?.first {
+            appContainer.currentLedger = next
+            UserDefaults.standard.set(next.id.uuidString, forKey: "currentLedgerID")
+        }
+        load()
+    }
+}
+
+// MARK: - Ledger Detail (categories + members)
+
+struct MacLedgerDetailView: View {
+    let ledger: Ledger
+
+    var body: some View {
+        List {
+            NavigationLink(value: LedgerDetailNavItem.categories(ledger)) {
+                Label("分类管理", systemImage: "square.grid.2x2")
+            }
+            NavigationLink(value: LedgerDetailNavItem.members(ledger)) {
+                Label("成员管理", systemImage: "person.2")
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .designScreen()
+        .navigationTitle(ledger.name)
+        .navigationDestination(for: LedgerDetailNavItem.self) { item in
+            switch item {
+            case .categories(let l): MacCategoryListView(ledger: l)
+            case .members(let l): MacMemberListView(ledger: l)
+            }
         }
     }
+}
+
+enum LedgerDetailNavItem: Hashable {
+    case categories(Ledger)
+    case members(Ledger)
 }
 
 // MARK: - Appearance Settings
@@ -125,6 +202,7 @@ struct AppearanceSettingsView: View {
             .padding(32).frame(maxWidth: 600)
         }
         .designScreen()
+        .navigationTitle("外观")
     }
 }
 
@@ -150,126 +228,6 @@ struct AboutSettingsView: View {
             .padding(32).frame(maxWidth: 600)
         }
         .designScreen()
+        .navigationTitle("关于")
     }
 }
-
-// MARK: - Ledger List Settings
-
-struct LedgerListSettingsView: View {
-    @Environment(AppContainer.self) private var appContainer
-    @Environment(\.managedObjectContext) private var modelContext
-    @State private var ledgers: [Ledger] = []
-    @State private var showCreateSheet = false
-    @State private var showDeleteAlert = false
-    @State private var ledgerToDelete: Ledger?
-
-    let onSelect: (Ledger) -> Void
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text("账本管理").font(.headline).foregroundStyle(Color.designOnSurface)
-                    Spacer()
-                    Button { showCreateSheet = true } label: {
-                        Image(systemName: "plus").fontWeight(.semibold)
-                    }
-                    .buttonStyle(.borderless)
-                }
-                .padding(.bottom, 4)
-
-                ForEach(ledgers) { ledger in
-                    ledgerRow(ledger)
-                }
-
-                if ledgers.isEmpty {
-                    Text("暂无账本").foregroundStyle(Color.designOnSurfaceVariant).padding(.top, 20)
-                }
-            }
-            .padding(24).frame(maxWidth: 600)
-        }
-        .designScreen()
-        .onAppear(perform: load)
-        .sheet(isPresented: $showCreateSheet, onDismiss: { load() }) {
-            CreateLedgerSheet { newLedger in
-                appContainer.currentLedger = newLedger
-                UserDefaults.standard.set(newLedger.id.uuidString, forKey: "currentLedgerID")
-                load()
-            }
-        }
-        .alert("确认删除", isPresented: $showDeleteAlert) {
-            Button("取消", role: .cancel) {}
-            Button("删除", role: .destructive) { confirmDelete() }
-        } message: {
-            if let ledger = ledgerToDelete, ledger.isShared {
-                Text("这是共享账本。删除后其他成员将无法访问，数据将保留在你的本地。")
-            } else {
-                Text("删除账本会同时删除该账本下的所有数据，此操作不可撤销。")
-            }
-        }
-    }
-
-    private func ledgerRow(_ ledger: Ledger) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: ledger.iconName)
-                .foregroundStyle(ledger.isShared ? Color.designPrimaryFixed : Color.designPrimaryContainer)
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 4) {
-                    Text(ledger.name).font(.body).foregroundStyle(Color.designOnSurface)
-                    if ledger.isShared {
-                        Image(systemName: "person.2.fill").font(.caption2)
-                            .foregroundStyle(Color.designPrimaryFixed)
-                    }
-                }
-                Text("\(ledger.type.displayName) · \(ledger.defaultCurrencyCode)")
-                    .font(.caption).foregroundStyle(Color.designOnSurfaceVariant)
-            }
-            Spacer()
-            if ledger.id == appContainer.currentLedger?.id {
-                Image(systemName: "checkmark")
-                    .foregroundStyle(Color.designPrimaryContainer).fontWeight(.semibold)
-            }
-            if ledgers.count > 1 && (!ledger.isShared || appContainer.isOwner(of: ledger)) {
-                Button {
-                    ledgerToDelete = ledger
-                    showDeleteAlert = true
-                } label: {
-                    Image(systemName: "trash").foregroundStyle(Color.designAccentRed)
-                }
-                .buttonStyle(.borderless)
-            }
-        }
-        .padding(12)
-        .background(Color.designGlassBg.opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .contentShape(Rectangle())
-        .onTapGesture {
-            if ledger.id != appContainer.currentLedger?.id {
-                appContainer.currentLedger = ledger
-                UserDefaults.standard.set(ledger.id.uuidString, forKey: "currentLedgerID")
-            }
-            onSelect(ledger)
-        }
-    }
-
-    private func load() {
-        let all = (try? appContainer.ledgerService.fetchLedgers(context: modelContext)) ?? []
-        ledgers = all.filter { !appContainer.exitedSharedLedgerIDs.contains($0.id) }
-    }
-
-    private func confirmDelete() {
-        guard let ledger = ledgerToDelete, ledgers.count > 1 else { return }
-        let wasCurrent = ledger.id == appContainer.currentLedger?.id
-        do {
-            try appContainer.ledgerService.deleteLedger(ledger, context: modelContext)
-        } catch {
-            DiagnosticLog.log("LedgerListSettings: delete FAILED \(error.localizedDescription)")
-        }
-        if wasCurrent, let next = (try? appContainer.ledgerService.fetchLedgers(context: modelContext))?.first {
-            appContainer.currentLedger = next
-            UserDefaults.standard.set(next.id.uuidString, forKey: "currentLedgerID")
-        }
-        load()
-    }
-}
-

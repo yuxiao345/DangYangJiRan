@@ -23,32 +23,3 @@ enum MacNavItem: String, CaseIterable, Identifiable {
     }
 }
 
-// MARK: - Settings Navigation
-
-enum SettingsMainItem: String, CaseIterable, Identifiable {
-    case appearance = "外观"
-    case ledgers = "账本"
-    case about = "关于"
-
-    var id: String { rawValue }
-    var icon: String {
-        switch self {
-        case .appearance: "paintbrush"
-        case .ledgers: "books.vertical"
-        case .about: "info.circle"
-        }
-    }
-}
-
-enum LedgerSettingsItem: String, CaseIterable, Identifiable {
-    case categories = "分类管理"
-    case members = "成员管理"
-
-    var id: String { rawValue }
-    var icon: String {
-        switch self {
-        case .categories: "square.grid.2x2"
-        case .members: "person.2"
-        }
-    }
-}

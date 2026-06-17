@@ -1079,6 +1079,14 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F00200000000000000000001 /* SpaceGrotesk-Light.ttf in Resources */,
+				F00200000000000000000002 /* SpaceGrotesk-Regular.ttf in Resources */,
+				F00200000000000000000003 /* SpaceGrotesk-Medium.ttf in Resources */,
+				F00200000000000000000004 /* SpaceGrotesk-SemiBold.ttf in Resources */,
+				F00200000000000000000005 /* SpaceGrotesk-Bold.ttf in Resources */,
+				F00200000000000000000006 /* JetBrainsMono-Regular.ttf in Resources */,
+				F00200000000000000000007 /* JetBrainsMono-Medium.ttf in Resources */,
+				F00200000000000000000008 /* JetBrainsMono-Bold.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1161,6 +1169,11 @@
 				E3F12A09B0014A49B0010002 /* AppLockView.swift in Sources */,
 				C38E3E4DEA4F4398ADFA40A1 /* NumpadGrid.swift in Sources */,
 				F7793B95069E45DA9F889052 /* NumpadAmountField.swift in Sources */,
+				31517376DF4F45270BBF9C9F /* AddEditTransactionView.swift in Sources */,
+				DE7AC17290274739B1858192 /* CalendarStripView.swift in Sources */,
+				A36254276A04C8687BA9364 /* SplitFormView.swift in Sources */,
+				5E71CD41BDB011262314E89E /* TransactionDetailView.swift in Sources */,
+				0C632EDC5C511E7EFA7938C3 /* TransactionListView.swift in Sources */,
 				7189462FCDFD42A29A4D6413 /* DatePickerButton.swift in Sources */,
 				8345512F45BA0E7F55334110 /* CurrencyText.swift in Sources */,
 				C947BEAB64D7696729AC5F3D /* FullScreenPhotoView.swift in Sources */,
@@ -1181,8 +1194,8 @@
 				A55C6821EAF6058D988DD6CD /* OCRTestView.swift in Sources */,
 				105BC98E03DBAAF350FEC455 /* AddEditBudgetBookView.swift in Sources */,
 				1E637A1FB0875E26562CC069 /* AddEditBudgetItemView.swift in Sources */,
+								F69DE52BAAA7B7AE7E2BA8B0 /* BudgetBookListView.swift in Sources */,
 				D423415670DCBD9635C53BDB /* BudgetBookDetailView.swift in Sources */,
-				F69DE52BAAA7B7AE7E2BA8B0 /* BudgetBookListView.swift in Sources */,
 				0484BE1BB3DC3558FA2CCC52 /* AddEditRecurringView.swift in Sources */,
 				A1D107127733190AA6AD0456 /* AddEditTemplateView.swift in Sources */,
 				973206DC22C7E422FC588F40 /* RecurringListView.swift in Sources */,
@@ -1286,6 +1299,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				105BC98E03DBAAF350FEC455 /* AddEditBudgetBookView.swift in Sources */,
+				1E637A1FB0875E26562CC069 /* AddEditBudgetItemView.swift in Sources */,
+								F69DE52BAAA7B7AE7E2BA8B0 /* BudgetBookListView.swift in Sources */,
 				9A8E07AC2FCD5537004FCB60 /* BudgetBookEntity.swift in Sources */,
 				9A8E07AD2FCD5537004FCB60 /* SplitEntryEntity.swift in Sources */,
 				9A8E07AE2FCD5537004FCB60 /* ProjectEntity.swift in Sources */,
