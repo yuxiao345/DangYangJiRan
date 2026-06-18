@@ -195,6 +195,19 @@
 		9AB303812FDAACE700185B4D /* SearchablePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 942E11744D3E866B2C87DA3F /* SearchablePickerView.swift */; };
 		9AB303822FDAACE700185B4D /* NumpadAmountField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119691BBF4E64429902986A5 /* NumpadAmountField.swift */; };
 		9AB303832FDAACE700185B4D /* NumpadGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 458691A145A84013AA5641B6 /* NumpadGrid.swift */; };
+		9AC8FB202FE3BBA000679EC7 /* AddEditBudgetBookView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDAEED1A1D8033C2FECF73C8 /* AddEditBudgetBookView.swift */; };
+		9AC8FB212FE3BBA000679EC7 /* AddEditBudgetItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4044625EB81FA02ADFB6DB0E /* AddEditBudgetItemView.swift */; };
+		9AC8FB222FE3BBA000679EC7 /* BudgetBookListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB4CB2772D5535E494A8980A /* BudgetBookListView.swift */; };
+		9AC8FB232FE3BBA000679EC7 /* SpaceGrotesk-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F00100000000000000000001 /* SpaceGrotesk-Light.ttf */; };
+		9AC8FB242FE3BBA000679EC7 /* SpaceGrotesk-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F00100000000000000000002 /* SpaceGrotesk-Regular.ttf */; };
+		9AC8FB252FE3BBA000679EC7 /* SpaceGrotesk-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F00100000000000000000003 /* SpaceGrotesk-Medium.ttf */; };
+		9AC8FB262FE3BBA000679EC7 /* SpaceGrotesk-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F00100000000000000000004 /* SpaceGrotesk-SemiBold.ttf */; };
+		9AC8FB272FE3BBA000679EC7 /* SpaceGrotesk-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F00100000000000000000005 /* SpaceGrotesk-Bold.ttf */; };
+		9AC8FB282FE3BBA000679EC7 /* JetBrainsMono-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F00100000000000000000006 /* JetBrainsMono-Regular.ttf */; };
+		9AC8FB292FE3BBA000679EC7 /* JetBrainsMono-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F00100000000000000000007 /* JetBrainsMono-Medium.ttf */; };
+		9AC8FB2A2FE3BBA000679EC7 /* JetBrainsMono-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F00100000000000000000008 /* JetBrainsMono-Bold.ttf */; };
+		9AC8FB6B2FE3BC1A00679EC7 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 9AC8FB6A2FE3BC1A00679EC7 /* Localizable.xcstrings */; };
+		9AC8FB6C2FE3BC1A00679EC7 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 9AC8FB6A2FE3BC1A00679EC7 /* Localizable.xcstrings */; };
 		9DDFB9E1B80A2E556EDF6639 /* LedgerSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D8132C4EDFBAEEC7935A871 /* LedgerSettingsView.swift */; };
 		9ED1E16F7B46F3CAA63E7BAC /* BankOCRServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1491176FAE7F344BACF32F91 /* BankOCRServiceProtocol.swift */; };
 		9F88E48A319445199EDDC0B4 /* View+ErrorAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36D3759D43EE47A08A8421BE /* View+ErrorAlert.swift */; };
@@ -412,6 +425,7 @@
 		9AB5F8B02FCD51C400F5044E /* Qianeymac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Qianeymac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9AB5F8C12FCD51C700F5044E /* QianeymacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QianeymacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9AB5F8CB2FCD51C700F5044E /* QianeymacUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QianeymacUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9AC8FB6A2FE3BC1A00679EC7 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		9C21B584CD4840E630796829 /* CreditCardReconciliationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditCardReconciliationView.swift; sourceTree = "<group>"; };
 		9CCBBC471DD34C89B04A236A /* LedgerDeepCopyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedgerDeepCopyService.swift; sourceTree = "<group>"; };
 		9EC70245AAD246858EB68CFC /* SyncStatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncStatusBadge.swift; sourceTree = "<group>"; };
@@ -653,6 +667,7 @@
 		368AB4F546722A1C79687401 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				9AC8FB6A2FE3BC1A00679EC7 /* Localizable.xcstrings */,
 				B7179DD40F926BA5C3E05A8B /* Assets.xcassets */,
 				7DB63CE4205FA78E2BE83CF3 /* Assets.xcassets */,
 				F00300000000000000000001 /* Fonts */,
@@ -1079,14 +1094,15 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F00200000000000000000001 /* SpaceGrotesk-Light.ttf in Resources */,
-				F00200000000000000000002 /* SpaceGrotesk-Regular.ttf in Resources */,
-				F00200000000000000000003 /* SpaceGrotesk-Medium.ttf in Resources */,
-				F00200000000000000000004 /* SpaceGrotesk-SemiBold.ttf in Resources */,
-				F00200000000000000000005 /* SpaceGrotesk-Bold.ttf in Resources */,
-				F00200000000000000000006 /* JetBrainsMono-Regular.ttf in Resources */,
-				F00200000000000000000007 /* JetBrainsMono-Medium.ttf in Resources */,
-				F00200000000000000000008 /* JetBrainsMono-Bold.ttf in Resources */,
+				9AC8FB232FE3BBA000679EC7 /* SpaceGrotesk-Light.ttf in Resources */,
+				9AC8FB242FE3BBA000679EC7 /* SpaceGrotesk-Regular.ttf in Resources */,
+				9AC8FB252FE3BBA000679EC7 /* SpaceGrotesk-Medium.ttf in Resources */,
+				9AC8FB262FE3BBA000679EC7 /* SpaceGrotesk-SemiBold.ttf in Resources */,
+				9AC8FB272FE3BBA000679EC7 /* SpaceGrotesk-Bold.ttf in Resources */,
+				9AC8FB6C2FE3BC1A00679EC7 /* Localizable.xcstrings in Resources */,
+				9AC8FB282FE3BBA000679EC7 /* JetBrainsMono-Regular.ttf in Resources */,
+				9AC8FB292FE3BBA000679EC7 /* JetBrainsMono-Medium.ttf in Resources */,
+				9AC8FB2A2FE3BBA000679EC7 /* JetBrainsMono-Bold.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1110,6 +1126,7 @@
 			files = (
 				4C123E5116650484726DA9F7 /* Assets.xcassets in Resources */,
 				F00200000000000000000001 /* SpaceGrotesk-Light.ttf in Resources */,
+				9AC8FB6B2FE3BC1A00679EC7 /* Localizable.xcstrings in Resources */,
 				F00200000000000000000002 /* SpaceGrotesk-Regular.ttf in Resources */,
 				F00200000000000000000003 /* SpaceGrotesk-Medium.ttf in Resources */,
 				F00200000000000000000004 /* SpaceGrotesk-SemiBold.ttf in Resources */,
@@ -1171,7 +1188,6 @@
 				F7793B95069E45DA9F889052 /* NumpadAmountField.swift in Sources */,
 				31517376DF4F45270BBF9C9F /* AddEditTransactionView.swift in Sources */,
 				DE7AC17290274739B1858192 /* CalendarStripView.swift in Sources */,
-				A36254276A04C8687BA9364 /* SplitFormView.swift in Sources */,
 				5E71CD41BDB011262314E89E /* TransactionDetailView.swift in Sources */,
 				0C632EDC5C511E7EFA7938C3 /* TransactionListView.swift in Sources */,
 				7189462FCDFD42A29A4D6413 /* DatePickerButton.swift in Sources */,
@@ -1194,7 +1210,7 @@
 				A55C6821EAF6058D988DD6CD /* OCRTestView.swift in Sources */,
 				105BC98E03DBAAF350FEC455 /* AddEditBudgetBookView.swift in Sources */,
 				1E637A1FB0875E26562CC069 /* AddEditBudgetItemView.swift in Sources */,
-								F69DE52BAAA7B7AE7E2BA8B0 /* BudgetBookListView.swift in Sources */,
+				F69DE52BAAA7B7AE7E2BA8B0 /* BudgetBookListView.swift in Sources */,
 				D423415670DCBD9635C53BDB /* BudgetBookDetailView.swift in Sources */,
 				0484BE1BB3DC3558FA2CCC52 /* AddEditRecurringView.swift in Sources */,
 				A1D107127733190AA6AD0456 /* AddEditTemplateView.swift in Sources */,
@@ -1299,9 +1315,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				105BC98E03DBAAF350FEC455 /* AddEditBudgetBookView.swift in Sources */,
-				1E637A1FB0875E26562CC069 /* AddEditBudgetItemView.swift in Sources */,
-								F69DE52BAAA7B7AE7E2BA8B0 /* BudgetBookListView.swift in Sources */,
+				9AC8FB202FE3BBA000679EC7 /* AddEditBudgetBookView.swift in Sources */,
+				9AC8FB212FE3BBA000679EC7 /* AddEditBudgetItemView.swift in Sources */,
+				9AC8FB222FE3BBA000679EC7 /* BudgetBookListView.swift in Sources */,
 				9A8E07AC2FCD5537004FCB60 /* BudgetBookEntity.swift in Sources */,
 				9A8E07AD2FCD5537004FCB60 /* SplitEntryEntity.swift in Sources */,
 				9A8E07AE2FCD5537004FCB60 /* ProjectEntity.swift in Sources */,

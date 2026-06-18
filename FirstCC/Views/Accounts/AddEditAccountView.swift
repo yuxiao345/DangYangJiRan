@@ -166,7 +166,7 @@ struct AddEditAccountView: View {
         guard let ledger = effectiveLedger else { return }
         if let dup = try? appContainer.accountService.findByName(name, ledger: ledger, context: modelContext),
            dup.id != editing?.id {
-            errorMessage = "同名账户「\(name)」已存在"
+            errorMessage = String(localized: "同名账户「\(name)」已存在")
             return
         }
         if let existing = editing {
@@ -178,7 +178,7 @@ struct AddEditAccountView: View {
             existing.dueDay = accountType == .creditCard ? Int64(dueDay) : 0
             existing.customTypeName = accountType == .other ? (customTypeName.isEmpty ? nil : customTypeName) : nil
             do { try appContainer.accountService.updateAccount(existing, context: modelContext) }
-            catch { errorMessage = "保存失败: \(error.localizedDescription)"; return }
+            catch { errorMessage = String(localized: "保存失败: \(error.localizedDescription)"); return }
         } else {
             let account = Account(
                 name: name,
@@ -192,29 +192,29 @@ struct AddEditAccountView: View {
             )
             if accountType == .other, !customTypeName.isEmpty { account.customTypeName = customTypeName }
             do { try appContainer.accountService.createAccount(account, ledger: ledger, context: modelContext) }
-            catch { errorMessage = "保存失败: \(error.localizedDescription)"; return }
+            catch { errorMessage = String(localized: "保存失败: \(error.localizedDescription)"); return }
         }
         dismiss()
     }
 
     private func currencyName(_ code: String) -> String {
         switch code {
-        case "CNY": return "人民币"
-        case "USD": return "美元"
-        case "EUR": return "欧元"
-        case "JPY": return "日元"
-        case "GBP": return "英镑"
-        case "HKD": return "港币"
-        case "AUD": return "澳元"
-        case "CAD": return "加元"
-        case "KRW": return "韩元"
-        case "TWD": return "新台币"
-        case "SGD": return "新加坡元"
-        case "CHF": return "瑞士法郎"
-        case "NZD": return "新西兰元"
-        case "THB": return "泰铢"
-        case "MYR": return "马币"
-        case "INR": return "印度卢比"
+        case "CNY": return String(localized: "人民币")
+        case "USD": return String(localized: "美元")
+        case "EUR": return String(localized: "欧元")
+        case "JPY": return String(localized: "日元")
+        case "GBP": return String(localized: "英镑")
+        case "HKD": return String(localized: "港币")
+        case "AUD": return String(localized: "澳元")
+        case "CAD": return String(localized: "加元")
+        case "KRW": return String(localized: "韩元")
+        case "TWD": return String(localized: "新台币")
+        case "SGD": return String(localized: "新加坡元")
+        case "CHF": return String(localized: "瑞士法郎")
+        case "NZD": return String(localized: "新西兰元")
+        case "THB": return String(localized: "泰铢")
+        case "MYR": return String(localized: "马币")
+        case "INR": return String(localized: "印度卢比")
         default: return code
         }
     }

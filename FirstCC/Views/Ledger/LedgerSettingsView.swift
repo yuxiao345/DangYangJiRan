@@ -420,14 +420,14 @@ struct LedgerSettingsView: View {
 
     private func currencyName(_ code: String) -> String {
         switch code {
-        case "CNY": return "人民币"
-        case "USD": return "美元"
-        case "EUR": return "欧元"
-        case "JPY": return "日元"
-        case "GBP": return "英镑"
-        case "HKD": return "港币"
-        case "AUD": return "澳元"
-        case "CAD": return "加元"
+        case "CNY": return String(localized: "人民币")
+        case "USD": return String(localized: "美元")
+        case "EUR": return String(localized: "欧元")
+        case "JPY": return String(localized: "日元")
+        case "GBP": return String(localized: "英镑")
+        case "HKD": return String(localized: "港币")
+        case "AUD": return String(localized: "澳元")
+        case "CAD": return String(localized: "加元")
         default: return code
         }
     }

@@ -86,7 +86,7 @@ enum SplitError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidAmounts:
-            return "分摊金额配置无效"
+            return String(localized: "分摊金额配置无效")
         }
     }
 }

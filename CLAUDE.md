@@ -15,6 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Simulator build (use -jobs 4 + wholemodule for build stability)
+# String Catalog (.xcstrings) compiled automatically by Xcode's xcstringstool
 xcodebuild -project FirstCC.xcodeproj -scheme 钱伲 -destination "platform=iOS Simulator,name=iPhone 17" -derivedDataPath /tmp/firstcc-build -jobs 4 SWIFT_COMPILATION_MODE=wholemodule
 
 # Device build (replace DEVICE_ID)

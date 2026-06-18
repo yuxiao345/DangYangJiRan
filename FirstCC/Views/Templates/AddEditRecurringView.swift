@@ -217,12 +217,12 @@ struct AddEditRecurringView: View {
 
     private func pickerRow(label: String, value: String?) -> some View {
         HStack {
-            Text(label).foregroundStyle(Color.designOnSurface)
+            Text(LocalizedStringKey(label)).foregroundStyle(Color.designOnSurface)
             Spacer()
             if let value {
                 Text(LocalizedStringKey(value)).foregroundStyle(.secondary)
             } else {
-                Text("选择\(label)").foregroundStyle(.secondary)
+                Text(LocalizedStringKey("选择\(label)")).foregroundStyle(.secondary)
             }
         }
         .contentShape(Rectangle())
@@ -272,7 +272,7 @@ struct AddEditRecurringView: View {
         guard let ledger = effectiveLedger else { return }
         if let dup = try? appContainer.templateService.findByName(name, ledger: ledger, context: modelContext),
            dup.id != editingRule?.template?.id {
-            errorMessage = "同名周期账「\(name)」已存在"
+            errorMessage = String(localized: "同名周期账「\(name)」已存在")
             return
         }
         if let rule = editingRule, let t = rule.template {

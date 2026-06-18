@@ -10,11 +10,11 @@ enum ReportPeriod: Hashable {
 
     var label: String {
         switch self {
-        case .thisMonth: "本月"
-        case .last3Months: "近3月"
-        case .last6Months: "近6月"
-        case .lastYear: "近1年"
-        case .last3Years: "近3年"
+        case .thisMonth: String(localized: "本月")
+        case .last3Months: String(localized: "近3月")
+        case .last6Months: String(localized: "近6月")
+        case .lastYear: String(localized: "近1年")
+        case .last3Years: String(localized: "近3年")
         }
     }
 
@@ -97,13 +97,13 @@ final class ReportViewModel {
     }
 
     var displayTitle: String {
-        guard let id = selectedCategoryID else { return "支出分类" }
+        guard let id = selectedCategoryID else { return String(localized: "支出分类") }
         for top in categoryExpenses {
             if top.id == id { return top.name }
             if let child = top.children.first(where: { $0.id == id }) { return child.name }
         }
-        if id == Self.uncategorizedUUID { return "未分类" }
-        return "支出分类"
+        if id == Self.uncategorizedUUID { return String(localized: "未分类") }
+        return String(localized: "支出分类")
     }
 
     var displayTotal: Decimal {
@@ -267,18 +267,16 @@ final class ReportViewModel {
 
         switch selectedPeriod {
         case .last3Years:
-            let monthDF = DateFormatter()
-            monthDF.dateFormat = "M月"
-            let yearDF = DateFormatter()
-            yearDF.dateFormat = "yy年"
+            let monthFmt = Date.FormatStyle.dateTime.month(.abbreviated)
+            let yearFmt = Date.FormatStyle.dateTime.year(.twoDigits)
 
             var byYearMonth: [String: (yearLabel: String?, monthLabel: String, income: Decimal, expense: Decimal)] = [:]
             var order: [String] = []
             var prevYear: String?
 
             for t in filtered {
-                let yearKey = yearDF.string(from: t.date)
-                let monthKey = monthDF.string(from: t.date)
+                let yearKey = t.date.formatted(yearFmt)
+                let monthKey = t.date.formatted(monthFmt)
                 let compoundKey = "\(yearKey)\(monthKey)"
 
                 if byYearMonth[compoundKey] == nil {
@@ -324,16 +322,14 @@ final class ReportViewModel {
             let endYear = cal.component(.year, from: range.upperBound)
             let useYearPrefix = startYear != endYear
 
-            let monthDF = DateFormatter()
-            monthDF.dateFormat = "M月"
-            let yearDF = DateFormatter()
-            yearDF.dateFormat = "yy年"
+            let monthFmt = Date.FormatStyle.dateTime.month(.abbreviated)
+            let yearFmt = Date.FormatStyle.dateTime.year(.twoDigits)
 
             var byMonth: [String: (income: Decimal, expense: Decimal)] = [:]
             var monthOrder: [String] = []
 
             for t in filtered {
-                let key = useYearPrefix ? "\(yearDF.string(from: t.date))\(monthDF.string(from: t.date))" : monthDF.string(from: t.date)
+                let key = useYearPrefix ? "\(t.date.formatted(yearFmt))\(t.date.formatted(monthFmt))" : t.date.formatted(monthFmt)
                 if byMonth[key] == nil {
                     monthOrder.append(key)
                     byMonth[key] = (0, 0)

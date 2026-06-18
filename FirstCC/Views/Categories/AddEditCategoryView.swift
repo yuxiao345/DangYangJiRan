@@ -149,12 +149,12 @@ struct AddEditCategoryView: View {
     private func save() {
         guard let ledger = effectiveLedger else { return }
         if let parent = selectedParent, parent.type != type {
-            errorMessage = "子分类的支出/收入类型必须与父分类「\(parent.name)」一致"
+            errorMessage = String(localized: "子分类的支出/收入类型必须与父分类「\(parent.name)」一致")
             return
         }
         if let dup = try? appContainer.categoryService.findByName(name, ledger: ledger, context: modelContext),
            dup.id != editing?.id {
-            errorMessage = "同名分类「\(name)」已存在"
+            errorMessage = String(localized: "同名分类「\(name)」已存在")
             return
         }
         do {

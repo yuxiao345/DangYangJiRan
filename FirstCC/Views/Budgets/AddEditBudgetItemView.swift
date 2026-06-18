@@ -376,10 +376,10 @@ struct AddEditBudgetItemView: View {
 
     private var periodUnit: String {
         switch period {
-        case .weekly: "周"
-        case .monthly: "月"
-        case .quarterly: "季度"
-        case .yearly: "年"
+        case .weekly: String(localized: "周")
+        case .monthly: String(localized: "月")
+        case .quarterly: String(localized: "季度")
+        case .yearly: String(localized: "年")
         }
     }
 
@@ -430,7 +430,7 @@ struct AddEditBudgetItemView: View {
         if let cat = selectedCategory {
             let existing = (try? appContainer.budgetService.fetchItems(for: book, context: modelContext)) ?? []
             if let dup = existing.first(where: { $0.category?.id == cat.id && $0.id != editing?.id }) {
-                errorMessage = "该分类已存在预算项，不能重复添加"
+                errorMessage = String(localized: "该分类已存在预算项，不能重复添加")
                 return
             }
         }

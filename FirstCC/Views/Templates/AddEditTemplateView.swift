@@ -183,7 +183,7 @@ struct AddEditTemplateView: View {
 
     private func pickerRow(label: String, value: String?) -> some View {
         HStack {
-            Text(label).foregroundStyle(Color.designOnSurface)
+            Text(LocalizedStringKey(label)).foregroundStyle(Color.designOnSurface)
             Spacer()
             if let value {
                 Text(LocalizedStringKey(value)).foregroundStyle(.secondary)
@@ -231,7 +231,7 @@ struct AddEditTemplateView: View {
         guard let ledger = effectiveLedger else { return }
         if let dup = try? appContainer.templateService.findByName(name, ledger: ledger, context: modelContext),
            dup.id != editing?.id {
-            errorMessage = "同名模板「\(name)」已存在"
+            errorMessage = String(localized: "同名模板「\(name)」已存在")
             return
         }
         if let t = editing {

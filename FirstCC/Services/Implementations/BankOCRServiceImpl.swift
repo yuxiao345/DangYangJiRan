@@ -392,10 +392,10 @@ enum BankOCRError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .invalidImage: return "无法读取图片"
-        case .invalidPDF: return "无法读取PDF文件"
-        case .noTextFound: return "图片中未识别到文字，请确保截图清晰"
-        case .noTransactionsFound: return "未识别到银行交易明细，请确保截图中包含交易列表"
+        case .invalidImage: return String(localized: "无法读取图片")
+        case .invalidPDF: return String(localized: "无法读取PDF文件")
+        case .noTextFound: return String(localized: "图片中未识别到文字，请确保截图清晰")
+        case .noTransactionsFound: return String(localized: "未识别到银行交易明细，请确保截图中包含交易列表")
         }
     }
 }

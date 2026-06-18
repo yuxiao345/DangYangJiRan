@@ -135,7 +135,7 @@ struct BudgetBookDetailView: View {
 
         return VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .firstTextBaseline) {
-                Text(label)
+                Text(LocalizedStringKey(label))
                     .font(.designBodyMedium)
                 Spacer()
                 CurrencyText(amount: spent, currencyCode: currency, size: 15, foregroundColor: ratio > 1.0 ? .red : .primary)
@@ -197,7 +197,7 @@ struct BudgetBookDetailView: View {
 
         return VStack(spacing: 2) {
             HStack(alignment: .firstTextBaseline) {
-                Text(label)
+                Text(LocalizedStringKey(label))
                     .font(.designBodySmall)
                     .foregroundStyle(.secondary)
                 Spacer()

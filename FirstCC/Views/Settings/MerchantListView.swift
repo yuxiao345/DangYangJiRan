@@ -85,7 +85,7 @@ struct MerchantListView: View {
     private func addMerchant() {
         guard let ledger = effectiveLedger else { return }
         if let dup = try? appContainer.merchantService.findByName(newName, ledger: ledger, context: modelContext) {
-            errorMessage = "同名商家「\(newName)」已存在"
+            errorMessage = String(localized: "同名商家「\(newName)」已存在")
             return
         }
         let merchant = Merchant(name: newName, sortOrder: merchants.count, context: modelContext)
@@ -138,12 +138,12 @@ struct EditMerchantView: View {
 
     private func save() {
         guard let ledger = merchant.ledger else {
-            errorMessage = "商家数据异常，缺少关联账本"
+            errorMessage = String(localized: "商家数据异常，缺少关联账本")
             return
         }
         if let dup = try? appContainer.merchantService.findByName(name, ledger: ledger, context: modelContext),
            dup.id != merchant.id {
-            errorMessage = "同名商家「\(name)」已存在"
+            errorMessage = String(localized: "同名商家「\(name)」已存在")
             return
         }
         merchant.name = name

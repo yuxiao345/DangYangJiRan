@@ -26,15 +26,11 @@ extension Date {
     }
 
     var monthDisplay: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy年M月"
-        return formatter.string(from: self)
+        self.formatted(.dateTime.year().month(.wide))
     }
 
     var shortDisplay: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "M月d日"
-        return formatter.string(from: self)
+        self.formatted(.dateTime.month(.abbreviated).day())
     }
 
     var weekdayDisplay: String {

@@ -335,7 +335,7 @@ struct OCRTestView: View {
                 if let csv = currentCSVData {
                     result = appContainer.bankOCRService.recognizeTransactions(fromCSV: csv)
                     if result.isEmpty {
-                        errorMessage = "CSV解析失败，请检查文件格式"
+                        errorMessage = String(localized: "CSV解析失败，请检查文件格式")
                         isProcessing = false
                         return
                     }

@@ -365,9 +365,9 @@ enum SyncError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .invalidShareTarget: return "无效的分享目标"
-        case .invalidShareURL: return "无效的分享链接"
-        case .shareContainerNotReady: return "同步未就绪，请确认 iCloud 已登录且网络正常"
+        case .invalidShareTarget: return String(localized: "无效的分享目标")
+        case .invalidShareURL: return String(localized: "无效的分享链接")
+        case .shareContainerNotReady: return String(localized: "同步未就绪，请确认 iCloud 已登录且网络正常")
         }
     }
 }

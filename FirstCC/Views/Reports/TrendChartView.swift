@@ -69,7 +69,7 @@ struct TrendChartView: View {
                 RoundedRectangle(cornerRadius: 1)
                     .fill(color)
                     .frame(width: 6, height: 6)
-                Text(label)
+                Text(LocalizedStringKey(label))
                     .font(.custom("JetBrainsMono-Medium", fixedSize: 9))
                     .foregroundStyle(color.opacity(0.8))
             }
@@ -149,7 +149,7 @@ struct TrendChartView: View {
     private func legendDot(color: Color, label: String) -> some View {
         HStack(spacing: 3) {
             PixelBlock(color: color, size: 5)
-            Text(label)
+            Text(LocalizedStringKey(label))
                 .font(.designBodySmall)
                 .foregroundStyle(Color.designOnSurfaceVariant)
         }

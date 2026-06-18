@@ -551,10 +551,10 @@ struct AddEditStatementView: View {
         switch match.status {
         case .suspectedDateMismatch:
             let dayDiff = Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: bankDate), to: Calendar.current.startOfDay(for: txn.date)).day ?? 0
-            return "日期差\(abs(dayDiff))天"
+            return String(localized: "日期差\(abs(dayDiff))天")
         case .suspectedAmountMismatch:
             let diff = abs(bankAmount - txn.amount)
-            return "金额差¥\(diff.formatted(.number.precision(.fractionLength(2))))"
+            return String(localized: "金额差¥\(diff.formatted(.number.precision(.fractionLength(2))))")
         default: return ""
         }
     }
@@ -562,7 +562,7 @@ struct AddEditStatementView: View {
     private func miniStat(_ label: String, _ value: String, _ color: Color) -> some View {
         VStack(spacing: 1) {
             Text(value).font(.designBodySmall).fontWeight(.bold).foregroundStyle(color)
-            Text(label).font(.designBodySmall).foregroundStyle(.secondary)
+            Text(LocalizedStringKey(label)).font(.designBodySmall).foregroundStyle(.secondary)
         }
     }
 

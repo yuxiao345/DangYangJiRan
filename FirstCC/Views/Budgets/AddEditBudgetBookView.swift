@@ -57,7 +57,7 @@ struct AddEditBudgetBookView: View {
         guard let ledger = effectiveLedger else { return }
         if let dup = try? appContainer.budgetService.findBookByName(name, ledger: ledger, context: modelContext),
            dup.id != editing?.id {
-            errorMessage = "同名预算计划「\(name)」已存在"
+            errorMessage = String(localized: "同名预算计划「\(name)」已存在")
             return
         }
         if let b = editing {

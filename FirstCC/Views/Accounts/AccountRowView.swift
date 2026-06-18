@@ -71,10 +71,10 @@ struct AccountRowView: View {
     private var typeBadge: String? {
         switch account.type {
         case .creditCard:
-            if balance < 0 { return "待还款" }
+            if balance < 0 { return String(localized: "待还款") }
             return nil
         case .lending:
-            return "借贷"
+            return String(localized: "借贷")
         default:
             return nil
         }

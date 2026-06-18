@@ -42,7 +42,7 @@ enum ExchangeRateError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .rateNotFound(let from, let to): return "未找到 \(from)→\(to) 汇率"
+        case .rateNotFound(let from, let to): return String(localized: "未找到 \(from)→\(to) 汇率")
         }
     }
 }

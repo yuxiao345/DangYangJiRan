@@ -169,8 +169,8 @@ final class AppContainer {
 
     private func presentShareError(_ error: Error) {
         let message = (error as NSError).domain == CKError.errorDomain
-            ? "共享失败，请检查网络或确认共享邀请仍然有效后重试"
-            : "共享失败，请稍后重试"
+            ? String(localized: "共享失败，请检查网络或确认共享邀请仍然有效后重试")
+            : String(localized: "共享失败，请稍后重试")
         shareErrorMessage = message
     }
 
@@ -240,7 +240,7 @@ final class AppContainer {
         DiagnosticLog.startSession("share accept \(Date())")
         DiagnosticLog.log("handleAcceptedShareMetadata: called")
         UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "diag_acceptFlowStartTime")
-        syncStatus = .error("接收开始")
+        syncStatus = .error(String(localized: "接收开始"))
 
         do {
             // New join — clear stale tracker from any previous exit
@@ -249,14 +249,14 @@ final class AppContainer {
             // Clean up clone ledgers from previous exit operations
             cleanupCloneLedgers()
 
-            syncStatus = .error("正在接受共享邀请")
+            syncStatus = .error(String(localized: "正在接受共享邀请"))
             try await syncService?.acceptShare(metadata: metadata)
             DiagnosticLog.log("handleAcceptedShareMetadata: accept OK, importing...")
             UserDefaults.standard.set(true, forKey: "diag_acceptInvitationOK")
 
-            syncStatus = .error("共享邀请已接受，正在导入账本")
+            syncStatus = .error(String(localized: "共享邀请已接受，正在导入账本"))
             let imported = try await syncService?.importSharedData(into: coreDataStack) ?? []
-            syncStatus = .error("导入结果：\(imported.count) 个账本")
+            syncStatus = .error(String(localized: "导入结果：\(imported.count) 个账本"))
             UserDefaults.standard.set(imported.count, forKey: "diag_importLedgerCount")
 
             if let first = imported.first {
@@ -268,20 +268,20 @@ final class AppContainer {
                 catch { DiagnosticLog.log("import: save shareRecordName FAILED \(error.localizedDescription)") }
                 // Mark as recovered so relaunch won't re-accept (which fails with "CREATE operation not permitted")
                 UserDefaults.standard.set(true, forKey: shareRecoveryKey(for: metadata.share.recordID.recordName))
-                syncStatus = .error("已切换到共享账本：\(first.name)")
+                syncStatus = .error(String(localized: "已切换到共享账本：\(first.name)"))
 
                 do {
                     try await syncService?.syncParticipants(metadata: metadata, for: first)
                     DiagnosticLog.log("import: participants synced")
                 } catch {
                     DiagnosticLog.log("import: syncParticipants FAILED \(error.localizedDescription)")
-                    syncStatus = .error("成员同步失败：\(error.localizedDescription)")
+                    syncStatus = .error(String(localized: "成员同步失败：\(error.localizedDescription)"))
                 }
                 return
             }
 
             DiagnosticLog.log("import: 0 ledgers returned, falling back")
-            syncStatus = .error("导入 0 个账本，正在刷新本地账本列表")
+            syncStatus = .error(String(localized: "导入 0 个账本，正在刷新本地账本列表"))
             await refreshAndSwitchToSharedLedger()
             // Attempt participant sync on fallback path too
             if let ledger = currentLedger, ledger.isShared {
@@ -298,7 +298,7 @@ final class AppContainer {
         } catch {
             DiagnosticLog.log("handleAcceptedShareMetadata: FAILED \(error.localizedDescription)")
             UserDefaults.standard.set(error.localizedDescription, forKey: "diag_shareAcceptError")
-            syncStatus = .error("共享失败：\(error.localizedDescription)")
+            syncStatus = .error(String(localized: "共享失败：\(error.localizedDescription)"))
             presentShareError(error)
         }
     }
@@ -409,7 +409,7 @@ final class AppContainer {
         let context = viewContext
         let fetch = NSFetchRequest<Ledger>(entityName: "Ledger")
         guard let ledgers = try? context.fetch(fetch) else {
-            syncStatus = .error("刷新失败：无法读取本地账本")
+            syncStatus = .error(String(localized: "刷新失败：无法读取本地账本"))
             return
         }
 
@@ -423,16 +423,16 @@ final class AppContainer {
         if let shared = newSharedLedger {
             currentLedger = shared
             UserDefaults.standard.set(shared.id.uuidString, forKey: "currentLedgerID")
-            syncStatus = .error("刷新后切换到共享账本：\(shared.name)")
+            syncStatus = .error(String(localized: "刷新后切换到共享账本：\(shared.name)"))
             return
         }
 
         if let anyNew = ledgers.first(where: { $0.id != currentLedger?.id }) {
             currentLedger = anyNew
             UserDefaults.standard.set(anyNew.id.uuidString, forKey: "currentLedgerID")
-            syncStatus = .error("刷新后切换到新账本：\(anyNew.name)")
+            syncStatus = .error(String(localized: "刷新后切换到新账本：\(anyNew.name)"))
         } else {
-            syncStatus = .error("刷新完成：未发现新的共享账本")
+            syncStatus = .error(String(localized: "刷新完成：未发现新的共享账本"))
         }
     }
 
