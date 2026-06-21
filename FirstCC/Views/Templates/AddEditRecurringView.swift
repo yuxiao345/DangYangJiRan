@@ -208,9 +208,9 @@ struct AddEditRecurringView: View {
 
     private var frequencyDescription: String {
         let base = frequency.displayName
-        var desc = interval > 1 ? "每\(interval)\(base.dropFirst())" : base
+        var desc = interval > 1 ? String(localized: "每\(String(interval))\(frequency.unitName)") : base
         if hasEndDate {
-            desc += "，至\(endDate.formatted(date: .abbreviated, time: .omitted))止"
+            desc += String(localized: "，至\(endDate.formatted(date: .abbreviated, time: .omitted))止")
         }
         return desc
     }

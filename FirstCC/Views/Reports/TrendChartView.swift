@@ -186,9 +186,10 @@ struct TrendChartView: View {
     }
 
     private func formatAxis(_ value: Double) -> String {
-        if value >= 10000 {
+        let isChinese = Bundle.main.preferredLocalizations.first?.hasPrefix("zh") ?? true
+        if value >= 10000 && isChinese {
             let wan = value / 10000
-            return wan.formatted(.number.precision(.fractionLength(0...1))) + "万"
+            return wan.formatted(.number.precision(.fractionLength(0...1))) + String(localized: "万")
         }
         return value.formatted(.number.grouping(.automatic).precision(.fractionLength(0)))
     }

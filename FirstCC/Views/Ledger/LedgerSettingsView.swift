@@ -324,7 +324,7 @@ struct LedgerSettingsView: View {
                 if cloudShare != nil {
                     showCloudShare = true
                 } else {
-                    shareError = "无法读取共享信息，请稍后重试"
+                    shareError = String(localized: "无法读取共享信息，请稍后重试")
                 }
             }
         }
@@ -372,7 +372,7 @@ struct LedgerSettingsView: View {
             } catch {
                 await MainActor.run {
                     isExiting = false
-                    shareError = "数据复制失败：\(error.localizedDescription)"
+                    shareError = String(localized: "数据复制失败：\(error.localizedDescription)")
                 }
             }
         }

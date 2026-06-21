@@ -234,11 +234,11 @@ final class SyncServiceImpl: SyncServiceProtocol {
 
             if name.isEmpty {
                 if isMe {
-                    name = "我"
+                    name = String(localized: "我")
                 } else if participant.role == .owner {
-                    name = "创建者"
+                    name = String(localized: "创建者")
                 } else {
-                    name = "共享成员"
+                    name = String(localized: "共享成员")
                 }
             } else if isMe {
                 name = "我"

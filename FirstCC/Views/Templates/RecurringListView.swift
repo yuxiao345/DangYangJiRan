@@ -153,13 +153,14 @@ struct RecurringListView: View {
     }
 
     private func frequencyDescription(_ rule: RecurringRule) -> String {
-        var desc = ""
+        var desc: String
         if rule.interval > 1 {
-            desc += "每\(rule.interval)"
+            desc = String(localized: "每\(String(rule.interval))\(rule.frequency.unitName)")
+        } else {
+            desc = rule.frequency.displayName
         }
-        desc += rule.frequency.displayName
         if let end = rule.endDate {
-            desc += " · 至\(end.formatted(date: .abbreviated, time: .omitted))"
+            desc += String(localized: " · 至\(end.formatted(date: .abbreviated, time: .omitted))")
         }
         return desc
     }

@@ -77,11 +77,13 @@ struct CurrencyFormatter {
         let sign = amount.isNegative ? "-" : ""
         let symbol = simpleCurrencySymbol(for: currencyCode.isEmpty ? "CNY" : currencyCode)
 
-        if absValue >= 10000 {
+        let isChinese = Bundle.main.preferredLocalizations.first?.hasPrefix("zh") ?? true
+
+        if absValue >= 10000 && isChinese {
             let wan = absValue / 10000
             let number = NSDecimalNumber(decimal: wan)
             if let formatted = shortWanFormatter.string(from: number) {
-                return "\(sign)\(symbol)\(formatted)万"
+                return "\(sign)\(symbol)\(formatted)\(String(localized: "万"))"
             }
         }
 

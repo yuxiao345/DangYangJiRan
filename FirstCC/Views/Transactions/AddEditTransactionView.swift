@@ -126,13 +126,13 @@ struct AddEditTransactionView: View {
 
     private var accountLabel: String {
         if type == .transfer || type == .lending {
-            return isViewingTransferInflow ? "转入账户" : "转出账户"
+            return isViewingTransferInflow ? String(localized: "转入账户") : String(localized: "转出账户")
         }
-        return "账户"
+        return String(localized: "账户")
     }
 
     private var toAccountLabel: String {
-        return isViewingTransferInflow ? "转出账户" : "转入账户"
+        return isViewingTransferInflow ? String(localized: "转出账户") : String(localized: "转入账户")
     }
 
     var body: some View {
