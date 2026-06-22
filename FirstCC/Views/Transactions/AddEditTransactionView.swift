@@ -104,7 +104,7 @@ struct AddEditTransactionView: View {
         return f
     }()
 
-    init(editing: Transaction? = nil, prefillType: TransactionType? = nil, prefillExpenseIDs: [UUID] = [], displayMode: Bool = false) {
+    init(editing: Transaction? = nil, prefillType: TransactionType? = nil, prefillExpenseIDs: [UUID] = [], prefillDate: Date? = nil, displayMode: Bool = false) {
         self.editing = editing
         self.displayMode = displayMode
         if displayMode { _isEditing = State(initialValue: false) }
@@ -114,6 +114,9 @@ struct AddEditTransactionView: View {
         if !prefillExpenseIDs.isEmpty {
             _selectedExpenseIDs = State(initialValue: Set(prefillExpenseIDs))
             _showReimbursementSection = State(initialValue: true)
+        }
+        if let d = prefillDate {
+            _date = State(initialValue: d)
         }
     }
 

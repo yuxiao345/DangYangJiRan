@@ -113,7 +113,7 @@ struct TransactionListView: View {
             }
         }
         .sheet(isPresented: $showAddSheet) {
-            AddEditTransactionView()
+            AddEditTransactionView(prefillDate: resolvedSelectedDate)
         }
         .onAppear(perform: loadCalendarData)
         .onChange(of: selectedMonth) { _, _ in loadCalendarData() }
@@ -163,6 +163,13 @@ struct TransactionListView: View {
     // MARK: - Grouping
 
     private static let dateGroupLocale = Locale(identifier: "zh_CN")
+
+    private var resolvedSelectedDate: Date? {
+        guard let day = selectedDay else { return nil }
+        var comps = Calendar.current.dateComponents([.year, .month], from: selectedMonth)
+        comps.day = day
+        return Calendar.current.date(from: comps)
+    }
 
     private var groupedByDate: [(key: String, value: [Transaction])] {
         transactions.groupedByRelativeDate(locale: Self.dateGroupLocale)

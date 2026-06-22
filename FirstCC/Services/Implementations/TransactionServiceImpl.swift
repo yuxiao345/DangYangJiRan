@@ -126,6 +126,25 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
                     if let name = t.toAccount?.name, name.lowercased().contains(token) { return true }
                     if let name = t.member?.name, name.lowercased().contains(token) { return true }
                     if let name = t.project?.name, name.lowercased().contains(token) { return true }
+                    // Amount: match formatted absolute value (e.g. "6199" in "￥6,199.00")
+                    if String(format: "%.0f", Double(truncating: abs(t.amount) as NSNumber)).contains(token) { return true }
+                    if String(format: "%.2f", Double(truncating: abs(t.amount) as NSNumber)).contains(token) { return true }
+                    // Split entries: member name
+                    if let entries = t.splitGroup?.entries {
+                        for entry in entries {
+                            if let mn = entry.member?.name, mn.lowercased().contains(token) { return true }
+                        }
+                    }
+                    // Split children: their own notes/categories/members/projects/accounts
+                    if let children = t.splitChildren {
+                        for child in children {
+                            if let cn = child.note, cn.lowercased().contains(token) { return true }
+                            if let ccat = child.category?.name, ccat.lowercased().contains(token) { return true }
+                            if let cmem = child.member?.name, cmem.lowercased().contains(token) { return true }
+                            if let cproj = child.project?.name, cproj.lowercased().contains(token) { return true }
+                            if let cacc = child.account?.name, cacc.lowercased().contains(token) { return true }
+                        }
+                    }
                     return false
                 }) else { return false }
             }
