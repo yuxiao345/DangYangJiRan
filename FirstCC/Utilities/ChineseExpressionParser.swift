@@ -9,6 +9,10 @@ struct ParsedSearchQuery {
     var dateKeyword: String?
     var amountKeyword: String?
     var typeKeyword: String?
+
+    var isEmpty: Bool {
+        dateRange == nil && amountRange == nil && transactionType == nil && keyword == nil
+    }
 }
 
 enum ChineseExpressionParser {
@@ -95,6 +99,14 @@ enum ChineseExpressionParser {
                 guard let n = Int((str as NSString).substring(with: match.range(at: 2))),
                       let start = cal.date(byAdding: .year, value: -n, to: startOfToday)?.startOfYear else { return nil }
                 return DateMatch(range: start..<tomorrowStart, matched: match.fullString(in: str), remaining: remove(match, from: str))
+            }),
+            // "6月"/"6月份" — standalone month in current year
+            ("(\\d{1,2})月(?:份)?", { match, str in
+                guard let m = Int((str as NSString).substring(with: match.range(at: 1))),
+                      (1...12).contains(m),
+                      let start = cal.date(from: DateComponents(year: cal.component(.year, from: today), month: m, day: 1)),
+                      let end = cal.date(byAdding: .month, value: 1, to: start) else { return nil }
+                return DateMatch(range: start..<end, matched: match.fullString(in: str), remaining: remove(match, from: str))
             }),
         ]
 
@@ -465,7 +477,8 @@ enum ChineseExpressionParser {
     }
 
     private static func extractType(from input: String) -> TypeMatch {
-        let typeKeywords: [(String, TransactionType)] = [
+        // Exact type keywords (higher priority)
+        let exactTypeKeywords: [(String, TransactionType)] = [
             ("收入", .income),
             ("支出", .expense),
             ("转账", .transfer),
@@ -473,15 +486,29 @@ enum ChineseExpressionParser {
             ("调整", .adjustment),
         ]
 
-        // Find the last-occurring type keyword
+        // First check exact matches
         var best: (keyword: String, type: TransactionType, position: Int)?
-        for (keyword, type) in typeKeywords {
+        for (keyword, type) in exactTypeKeywords {
             if let r = input.range(of: keyword, options: .backwards) {
                 let pos = input.distance(from: input.startIndex, to: r.lowerBound)
                 if let b = best {
                     if pos > b.position { best = (keyword, type, pos) }
                 } else {
                     best = (keyword, type, pos)
+                }
+            }
+        }
+
+        // If no exact match, try intent keywords
+        if best == nil {
+            for (keyword, type) in intentTypeKeywords {
+                if let r = input.range(of: keyword, options: .backwards) {
+                    let pos = input.distance(from: input.startIndex, to: r.lowerBound)
+                    if let b = best {
+                        if pos > b.position { best = (keyword, type, pos) }
+                    } else {
+                        best = (keyword, type, pos)
+                    }
                 }
             }
         }
@@ -496,7 +523,25 @@ enum ChineseExpressionParser {
 
     // MARK: - Helpers
 
-    private static let noiseCharacters: Set<Character> = ["的", "了", "吗", "呢", "吧", "啊", "呀", "哦", "嗯", "嘛", "呗", "啦", "在"]
+    private static let noiseCharacters: Set<Character> = [
+        "的", "了", "吗", "呢", "吧", "啊", "呀", "哦", "嗯", "嘛", "呗", "啦", "在",
+    ]
+
+    private static let noisePhrases: [String] = [
+        "我想知道", "我想", "想知道", "帮我查", "查一下", "请问",
+        "一共", "总共", "多少钱", "多少", "花了", "用了", "上面", "方面",
+        "有没有", "是不是", "怎么样", "如何",
+    ]
+
+    private static let intentTypeKeywords: [(String, TransactionType)] = [
+        ("花了", .expense), ("用了", .expense), ("花销", .expense),
+        ("开支", .expense), ("花费", .expense), ("消费", .expense),
+        ("付了", .expense), ("买了", .expense),
+        ("赚了", .income), ("进账", .income),
+        ("收了", .income), ("挣了", .income),
+        ("转出", .transfer), ("转入", .transfer),
+        ("借出", .lending), ("借入", .lending), ("借钱", .lending),
+    ]
 
     private static func tokenizeAndJoin(_ input: String) -> String {
         let tokenizer = NLTokenizer(unit: .word)
@@ -508,7 +553,19 @@ enum ChineseExpressionParser {
     }
 
     private static func stripNoise(_ input: String) -> String {
-        let filtered = input.filter { !noiseCharacters.contains($0) }
+        var result = input
+        // Remove noise phrases
+        for phrase in noisePhrases {
+            result = result.replacingOccurrences(of: phrase, with: "")
+        }
+        // "在X上/面" → extract X as keyword
+        if let regex = try? NSRegularExpression(pattern: "在(.+?)(?:上|面|方面)"),
+           let match = regex.firstMatch(in: result, range: NSRange(result.startIndex..., in: result)),
+           let r = Range(match.range(at: 1), in: result) {
+            let extracted = String(result[r])
+            result.replaceSubrange(Range(match.range, in: result)!, with: extracted)
+        }
+        let filtered = result.filter { !noiseCharacters.contains($0) }
         return filtered.trimmingCharacters(in: .whitespaces)
     }
 

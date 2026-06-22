@@ -151,6 +151,47 @@ Do NOT use `CKShareTransferRepresentation` / `ShareLink` — that approach ties 
 
 **Sharing changes:** Keep it simple. Use `container.share([rootObject], to: nil)`. Do not introduce raw CKShare APIs, `CKShareTransferRepresentation`, or multi-step workarounds unless proven necessary after exhausting all standard-API debugging (schema deployment, store state, actor isolation).
 
-## i18n
+## i18n / 多语言规范
 
-Source language: zh-Hans. `Localizable.xcstrings` (String Catalog, 249 entries) handles both Chinese and English. Enum `displayName` uses `NSLocalizedString(rawValue, comment: "")`. Stored strings (names, categories) use `Text(LocalizedStringKey(value))` for runtime lookup.
+**这是强制性规范。所有新增/修改代码必须遵循，不允许硬编码中文。**
+
+### 基础
+
+- 源语言：zh-Hans，翻译目标：en
+- 文件：`FirstCC/Resources/Localizable.xcstrings`（String Catalog，编译时由 xcstringstool 自动处理）
+- 不要手动创建 `.lproj` / `.strings` 文件 — xcstringstool 编译时自动生成
+
+### 五种场景及处理方式
+
+| 类型 | 场景 | 解决方案 |
+|------|------|---------|
+| **A** | `Text("中文")`、`Label("中文")`、`Button("中文")` 等 SwiftUI 字符串字面量 | SwiftUI 自动视作 `LocalizedStringKey`，只需在 Catalog 加条目 |
+| **B** | `String` 变量/参数：`errorMessage = "中文"`、`return "中文"`、函数参数 `title: "中文"` | 用 `String(localized: "中文")` |
+| **C** | 函数内 `Text(label)` 拿 `String` 变量显示 | `Text(LocalizedStringKey(label))` |
+| **D** | 日期格式硬编码 | 用 `Date.FormatStyle` 自适应系统 locale |
+| **E** | `enum` 的 `displayName` | `NSLocalizedString(rawValue, comment: "")` |
+
+### Catalog 条目新增流程
+
+1. 写完代码后，把新增的中文字符串加进 `Localizable.xcstrings`
+2. 每个条目必须有 `zh-Hans`（源值）和 `en`（翻译值）
+3. JSON 格式：
+```json
+"中文字符串": {
+  "extractionState": "manual",
+  "localizations": {
+    "zh-Hans": {"stringUnit": {"state": "translated", "value": "中文字符串"}},
+    "en": {"stringUnit": {"state": "translated", "value": "English Translation"}}
+  }
+}
+```
+4. 带插值的字符串：`String(localized: "每\(n)")` → Catalog key 为 `"每%lld"`（Int→%lld, String→%@）
+5. 添加后验证：`python3 -c "import json; json.load(open('FirstCC/Resources/Localizable.xcstrings'))"`
+
+### 噪音短语顺序（仅规则引擎相关）
+
+`ChineseExpressionParser` 的 `noisePhrases` 数组中，**长短语必须排在短短语前面**（如 "多少钱" 在 "多少" 前面），否则长短语会被短匹配截断。
+
+### 现有条目数
+
+719 条目（zh-Hans + en 全覆盖）。

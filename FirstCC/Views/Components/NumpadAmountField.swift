@@ -4,13 +4,15 @@ import SwiftUI
 struct NumpadAmountField: View {
     @Binding var amount: Decimal
     let currencySymbol: String
+    let allowSignToggle: Bool
 
     @State private var showNumpad = false
     @State private var text: String = ""
 
-    init(amount: Binding<Decimal>, currencySymbol: String = "¥") {
+    init(amount: Binding<Decimal>, currencySymbol: String = "¥", allowSignToggle: Bool = false) {
         self._amount = amount
         self.currencySymbol = currencySymbol
+        self.allowSignToggle = allowSignToggle
     }
 
     var body: some View {
@@ -64,6 +66,27 @@ struct NumpadAmountField: View {
                     }
                     .buttonStyle(.plain)
 
+                    if allowSignToggle {
+                        Button {
+                            if text.hasPrefix("-") {
+                                text.removeFirst()
+                            } else {
+                                text = "-" + text
+                            }
+                        } label: {
+                            Text("+/-")
+                                .font(.custom("JetBrainsMono-Medium", fixedSize: 16))
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 48)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.designSurfaceContainer.opacity(0.5))
+                                )
+                                .foregroundStyle(Color.designOnSurfaceVariant)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
                     Button {
                         syncToBinding()
                         withAnimation(.easeInOut(duration: 0.2)) {
@@ -106,7 +129,7 @@ struct NumpadAmountField: View {
     }
 
     private func parseText() -> Decimal {
-        Decimal(string: text.filter { $0.isNumber || $0 == "." }) ?? 0
+        Decimal(string: text.filter { $0.isNumber || $0 == "." || $0 == "-" }) ?? 0
     }
 
     private func syncToBinding() {

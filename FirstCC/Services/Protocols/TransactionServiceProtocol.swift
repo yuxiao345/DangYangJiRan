@@ -29,9 +29,10 @@ protocol TransactionServiceProtocol {
 struct TransactionFilters {
     var dateRange: Range<Date>?
     var amountRange: ClosedRange<Decimal>?
-    var accountID: UUID?
-    var categoryID: UUID?
-    var tags: [String]?
     var type: TransactionType?
     var keyword: String?
+    // 多选：同类 = OR, 跨类 = AND
+    var categoryIDs: Set<UUID>?
+    var memberIDs: Set<UUID>?
+    var projectIDs: Set<UUID>?
 }

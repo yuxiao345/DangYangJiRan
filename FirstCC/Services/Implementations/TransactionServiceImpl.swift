@@ -92,6 +92,15 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
         if let type = filters?.type {
             preds.append(NSPredicate(format: "typeRaw == %@", type.rawValue))
         }
+        if let ids = filters?.categoryIDs, !ids.isEmpty {
+            preds.append(NSPredicate(format: "category.id IN %@", Array(ids) as NSArray))
+        }
+        if let ids = filters?.memberIDs, !ids.isEmpty {
+            preds.append(NSPredicate(format: "member.id IN %@", Array(ids) as NSArray))
+        }
+        if let ids = filters?.projectIDs, !ids.isEmpty {
+            preds.append(NSPredicate(format: "project.id IN %@", Array(ids) as NSArray))
+        }
         request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: preds)
         request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
         let results = try context.fetch(request)

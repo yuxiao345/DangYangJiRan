@@ -156,6 +156,7 @@
 		9A8E07EC2FCD55D2004FCB60 /* ReportViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E45CC9E82755427EADB2BA5F /* ReportViewModel.swift */; };
 		9A8E07ED2FCD55E8004FCB60 /* DateFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01D75752123DF42AB96E4272 /* DateFormatters.swift */; };
 		9A8E07EE2FCD55E8004FCB60 /* ChineseExpressionParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB28F94C2944BCF91F3F91E /* ChineseExpressionParser.swift */; };
+		596CCABBDAFBB9AF1C09E0F1 /* NLQueryParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3173047F27FC2EE8EA003652 /* NLQueryParser.swift */; };
 		9A8E07EF2FCD55E8004FCB60 /* DiagnosticLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78E03226D9E2C5452E1F5F3C /* DiagnosticLog.swift */; };
 		9A8E07F02FCD55E8004FCB60 /* CurrencyFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 616DDCA24AD507E700D4E02A /* CurrencyFormatter.swift */; };
 		9A8E07F12FCD55E8004FCB60 /* BiometricAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = AED97BB9935C8B1476C9B44C /* BiometricAuth.swift */; };
@@ -256,6 +257,7 @@
 		D423415670DCBD9635C53BDB /* BudgetBookDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFCAE20D6A42424A1CE75C26 /* BudgetBookDetailView.swift */; };
 		D654F83E82DE3B07BDC54B2D /* SyncServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = A57DC433798434D184024462 /* SyncServiceProtocol.swift */; };
 		D73A02FE5CF844B68F520A93 /* ChineseExpressionParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB28F94C2944BCF91F3F91E /* ChineseExpressionParser.swift */; };
+		AB64321FA78EC56143057790 /* NLQueryParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3173047F27FC2EE8EA003652 /* NLQueryParser.swift */; };
 		D863147B6A614103A2F03AE7 /* SplitGroupEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA72651BC0D4CF79893B5F9 /* SplitGroupEntity.swift */; };
 		DC1F3B6E420E5FBB26B684D5 /* CSVStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8E979140E64CD5A924B3FB5 /* CSVStorage.swift */; };
 		DE689EACC4E2CE4783DA0BCE /* AccountRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68CE49DF8E68612B65F18AA5 /* AccountRowView.swift */; };
@@ -291,6 +293,14 @@
 		FA5AE7A3C7B3480B8CD17A18 /* LedgerDeepCopyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CCBBC471DD34C89B04A236A /* LedgerDeepCopyService.swift */; };
 		FD2C9721768BC0DECAFBD9EA /* LedgerRole.swift in Sources */ = {isa = PBXBuildFile; fileRef = 123B9066865398E03B8DD922 /* LedgerRole.swift */; };
 		FD91B103255DEB923850049C /* CloudKitConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FD37181CF946710701C84CD /* CloudKitConfig.swift */; };
+		2CC982602CEB418FA5F0828A /* Set+Toggle.swift in Sources */ = {isa = PBXBuildFile; fileRef = D301E304595F4FE79A15BF68 /* Set+Toggle.swift */; };
+		AD5C7191D0C948FA97222B90 /* Set+Toggle.swift in Sources */ = {isa = PBXBuildFile; fileRef = D301E304595F4FE79A15BF68 /* Set+Toggle.swift */; };
+		213E5B79357A4CBD8618529B /* MultiSelectChipRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47717F8E4ED84F5B8853794A /* MultiSelectChipRow.swift */; };
+		49274ACA807A4AF2BB340ABE /* MultiSelectChipRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47717F8E4ED84F5B8853794A /* MultiSelectChipRow.swift */; };
+		F03E251EB83C49E9A302DF9C /* MultiSelectPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A5CCFB4EBF3467B8F45A096 /* MultiSelectPickerView.swift */; };
+		5D29496A598040738908E53E /* MultiSelectPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A5CCFB4EBF3467B8F45A096 /* MultiSelectPickerView.swift */; };
+		1BBF779FF14B48B496C7AD33 /* AdvancedFilterPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 864230BBE48A4673AEFA3F8D /* AdvancedFilterPanel.swift */; };
+		CB716F7C99D248469ACE0A1E /* AdvancedFilterPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 864230BBE48A4673AEFA3F8D /* AdvancedFilterPanel.swift */; };
 		FFD3CC4FA09133AB7E0CFC53 /* AccountDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89DBFB59681FF75B16E21478 /* AccountDetailView.swift */; };
 /* End PBXBuildFile section */
 
@@ -324,6 +334,7 @@
 		09771EB93D882023220E07CC /* MerchantListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MerchantListView.swift; sourceTree = "<group>"; };
 		0A3BECB91DEF16E35F62A662 /* ExportServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportServiceProtocol.swift; sourceTree = "<group>"; };
 		0CB28F94C2944BCF91F3F91E /* ChineseExpressionParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChineseExpressionParser.swift; sourceTree = "<group>"; };
+		3173047F27FC2EE8EA003652 /* NLQueryParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NLQueryParser.swift; sourceTree = "<group>"; };
 		0F0D546EEE7347FFA48B9EDD /* SettlementStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettlementStatus.swift; sourceTree = "<group>"; };
 		0FD37181CF946710701C84CD /* CloudKitConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitConfig.swift; sourceTree = "<group>"; };
 		1067764F58AF43579BF3B574 /* Transaction+Grouping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Transaction+Grouping.swift"; sourceTree = "<group>"; };
@@ -488,6 +499,10 @@
 		FB18074394D7CADFC89B2D67 /* CurrencyServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyServiceProtocol.swift; sourceTree = "<group>"; };
 		FD9C98A4532441F197C92D1E /* SplitFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitFormView.swift; sourceTree = "<group>"; };
 		FFDB4DF6538746E0A70203A4 /* RecurringRuleEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringRuleEntity.swift; sourceTree = "<group>"; };
+		D301E304595F4FE79A15BF68 /* Set+Toggle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Set+Toggle.swift"; sourceTree = "<group>"; };
+		47717F8E4ED84F5B8853794A /* MultiSelectChipRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiSelectChipRow.swift; sourceTree = "<group>"; };
+		4A5CCFB4EBF3467B8F45A096 /* MultiSelectPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiSelectPickerView.swift; sourceTree = "<group>"; };
+		864230BBE48A4673AEFA3F8D /* AdvancedFilterPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedFilterPanel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -542,6 +557,8 @@
 				119691BBF4E64429902986A5 /* NumpadAmountField.swift */,
 				1F11A80E181707BCA833B204 /* BankLogoPickerView.swift */,
 				5EF154BCA29F4CD1B0BE230E /* DatePickerButton.swift */,
+				47717F8E4ED84F5B8853794A /* MultiSelectChipRow.swift */,
+				4A5CCFB4EBF3467B8F45A096 /* MultiSelectPickerView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -730,6 +747,7 @@
 				36D3759D43EE47A08A8421BE /* View+ErrorAlert.swift */,
 				1067764F58AF43579BF3B574 /* Transaction+Grouping.swift */,
 				123B6255B17F4B3C9C8C6249 /* Color+Expense.swift */,
+				D301E304595F4FE79A15BF68 /* Set+Toggle.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -769,6 +787,7 @@
 				D8E979140E64CD5A924B3FB5 /* CSVStorage.swift */,
 				9140DF48EBC4497697CB6590 /* SwiftDataBridge.swift */,
 				0CB28F94C2944BCF91F3F91E /* ChineseExpressionParser.swift */,
+				3173047F27FC2EE8EA003652 /* NLQueryParser.swift */,
 				25BD8B7423ECB057766F757C /* BankLogoPresets.swift */,
 				6C6D17DBC1794751B76AB503 /* IconSuggestionEngine.swift */,
 			);
@@ -940,6 +959,7 @@
 			isa = PBXGroup;
 			children = (
 				B2FFD3FD75A04C9997B5688A /* SearchView.swift */,
+				864230BBE48A4673AEFA3F8D /* AdvancedFilterPanel.swift */,
 			);
 			path = Search;
 			sourceTree = "<group>";
@@ -1275,6 +1295,7 @@
 				85DD12DBCBCD4B9AAD4EA49D /* CalendarDayCell.swift in Sources */,
 				2760B2289D5E47E78D2DA298 /* Color+Expense.swift in Sources */,
 				D73A02FE5CF844B68F520A93 /* ChineseExpressionParser.swift in Sources */,
+					AB64321FA78EC56143057790 /* NLQueryParser.swift in Sources */,
 				BD6B62CD0EF64103AE006176 /* IconSuggestionEngine.swift in Sources */,
 				658D3C8C26A342D6855FE548 /* SearchViewModel.swift in Sources */,
 				F727E0EE67944E628D7560C9 /* SearchView.swift in Sources */,
@@ -1308,6 +1329,10 @@
 				40BECDDF637C4AE0BDC45BA1 /* TransactionTemplateEntity.swift in Sources */,
 				6C7B58D11AFA42BCA3117319 /* UserEntity.swift in Sources */,
 				C7DBCF0C54434E02AD15745B /* CoreDataStack.swift in Sources */,
+		2CC982602CEB418FA5F0828A /* Set+Toggle.swift in Sources */,
+		213E5B79357A4CBD8618529B /* MultiSelectChipRow.swift in Sources */,
+		F03E251EB83C49E9A302DF9C /* MultiSelectPickerView.swift in Sources */,
+		1BBF779FF14B48B496C7AD33 /* AdvancedFilterPanel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1394,6 +1419,7 @@
 				9A8E07CE2FCD55AB004FCB60 /* SplitServiceImpl.swift in Sources */,
 				9A8E07ED2FCD55E8004FCB60 /* DateFormatters.swift in Sources */,
 				9A8E07EE2FCD55E8004FCB60 /* ChineseExpressionParser.swift in Sources */,
+					596CCABBDAFBB9AF1C09E0F1 /* NLQueryParser.swift in Sources */,
 				9A8E07EF2FCD55E8004FCB60 /* DiagnosticLog.swift in Sources */,
 				9A8E07F02FCD55E8004FCB60 /* CurrencyFormatter.swift in Sources */,
 				9A8E07F12FCD55E8004FCB60 /* BiometricAuth.swift in Sources */,
@@ -1421,6 +1447,10 @@
 				9AB303812FDAACE700185B4D /* SearchablePickerView.swift in Sources */,
 				9AB303822FDAACE700185B4D /* NumpadAmountField.swift in Sources */,
 				9AB303832FDAACE700185B4D /* NumpadGrid.swift in Sources */,
+		AD5C7191D0C948FA97222B90 /* Set+Toggle.swift in Sources */,
+		49274ACA807A4AF2BB340ABE /* MultiSelectChipRow.swift in Sources */,
+		5D29496A598040738908E53E /* MultiSelectPickerView.swift in Sources */,
+		CB716F7C99D248469ACE0A1E /* AdvancedFilterPanel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

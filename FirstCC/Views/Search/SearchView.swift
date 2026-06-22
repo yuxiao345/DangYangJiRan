@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SearchView: View {
+    @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
     @State private var viewModel: SearchViewModel
     @FocusState private var isFocused: Bool
@@ -12,6 +13,7 @@ struct SearchView: View {
     var body: some View {
         VStack(spacing: 0) {
             searchBar
+            advancedFilterPanel
             filterChips
             if viewModel.hasSearched && !viewModel.hasResults {
                 emptyResult
@@ -29,6 +31,7 @@ struct SearchView: View {
         .onChange(of: viewModel.searchText) { _, _ in
             viewModel.scheduleSearch(context: modelContext)
         }
+        .designScreen()
     }
 
     // MARK: - Search Bar
@@ -38,7 +41,7 @@ struct SearchView: View {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(Color.designOnSurfaceVariant)
 
-            TextField("搜索交易...", text: $viewModel.searchText)
+            TextField("搜索交易... 例如 2026 餐饮", text: $viewModel.searchText)
                 .textFieldStyle(.plain)
                 .focused($isFocused)
                 .autocorrectionDisabled()
@@ -62,27 +65,64 @@ struct SearchView: View {
         .padding(.top, 8)
     }
 
+    // MARK: - Advanced Filter Panel
+
+    private var advancedFilterPanel: some View {
+        AdvancedFilterPanel(
+            isExpanded: $viewModel.isFilterPanelExpanded,
+            selectedCategoryIDs: $viewModel.selectedCategoryIDs,
+            selectedMemberIDs: $viewModel.selectedMemberIDs,
+            selectedProjectIDs: $viewModel.selectedProjectIDs,
+            dateFrom: $viewModel.dateFrom,
+            dateTo: $viewModel.dateTo,
+            amountMin: $viewModel.amountMin,
+            amountMax: $viewModel.amountMax,
+            keyword: $viewModel.manualKeyword,
+            onApply: { viewModel.applyManualFilters(context: modelContext) }
+        )
+        .padding(.horizontal, 12)
+        .padding(.top, 8)
+    }
+
     // MARK: - Filter Chips
 
     @ViewBuilder
     private var filterChips: some View {
-        let filters = viewModel.activeFilters
-        if !filters.isEmpty {
+        let chips = viewModel.activeFilterChips
+        if !chips.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
-                    ForEach(filters, id: \.self) { chip in
-                        Text(chip)
-                            .font(.designBodySmall)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background {
-                                Capsule()
-                                    .fill(Color.designPrimaryContainer.opacity(0.1))
+                    ForEach(chips) { chip in
+                        HStack(spacing: 4) {
+                            Text(chip.label)
+                                .font(.designBodySmall)
+                            if chip.isManual, let clear = chip.clearAction {
+                                Button(action: clear) {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 8, weight: .bold))
+                                        .foregroundStyle(Color.designOnSurfaceVariant)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .overlay {
-                                Capsule()
-                                    .stroke(Color.designPrimaryContainer.opacity(0.3), lineWidth: 1)
-                            }
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background {
+                            Capsule()
+                                .fill(chip.isManual
+                                    ? Color.designPrimaryFixedDim.opacity(0.15)
+                                    : Color.designPrimaryContainer.opacity(0.1))
+                        }
+                        .overlay {
+                            Capsule()
+                                .stroke(chip.isManual
+                                    ? Color.designPrimaryFixedDim.opacity(0.5)
+                                    : Color.designPrimaryContainer.opacity(0.3),
+                                    lineWidth: 1)
+                        }
+                        .foregroundStyle(chip.isManual
+                            ? Color.designPrimaryFixedDim
+                            : Color.designOnSurfaceVariant)
                     }
                 }
                 .padding(.horizontal, 12)

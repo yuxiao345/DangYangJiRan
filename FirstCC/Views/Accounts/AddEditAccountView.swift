@@ -112,7 +112,7 @@ struct AddEditAccountView: View {
                 }
 
                 Section("余额") {
-                    NumpadAmountField(amount: $initialBalance)
+                    NumpadAmountField(amount: $initialBalance, allowSignToggle: true)
                 }
 
                 if accountType == .creditCard {
