@@ -1,5 +1,10 @@
 import SwiftUI
 
+// MARK: - NameProviding (shared protocol, also in AddEditTransactionView for iOS)
+#if os(macOS)
+protocol NameProviding { var name: String { get } }
+#endif
+
 /// Multi-select chip row — generalizes the `recentPickerRow` pattern
 /// Tap a chip to toggle its UUID in selectedIDs. Shows up to 4 chips + "更多" button.
 struct MultiSelectChipRow<Item: Identifiable & Hashable>: View where Item.ID == UUID {

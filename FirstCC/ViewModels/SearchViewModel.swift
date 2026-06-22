@@ -34,6 +34,37 @@ final class SearchViewModel {
     init(ledger: Ledger, transactionService: TransactionServiceProtocol) {
         self.ledger = ledger
         self.transactionService = transactionService
+        reloadSavedFilters()
+        restoreFilterState()
+    }
+
+    // MARK: - Filter State Persistence
+
+    private static let filterStateKey = "active_filter_state"
+
+    private func persistFilterState() {
+        let state = SavedFilter(
+            name: "__active__", dateFrom: dateFrom, dateTo: dateTo,
+            amountMin: amountMin, amountMax: amountMax,
+            categoryIDs: Array(selectedCategoryIDs),
+            memberIDs: Array(selectedMemberIDs),
+            projectIDs: Array(selectedProjectIDs),
+            keyword: manualKeyword, createdAt: Date()
+        )
+        if let data = try? JSONEncoder().encode(state) {
+            UserDefaults.standard.set(data, forKey: Self.filterStateKey)
+        }
+    }
+
+    private func restoreFilterState() {
+        guard let data = UserDefaults.standard.data(forKey: Self.filterStateKey),
+              let state = try? JSONDecoder().decode(SavedFilter.self, from: data) else { return }
+        dateFrom = state.dateFrom; dateTo = state.dateTo
+        amountMin = state.amountMin; amountMax = state.amountMax
+        selectedCategoryIDs = Set(state.categoryIDs)
+        selectedMemberIDs = Set(state.memberIDs)
+        selectedProjectIDs = Set(state.projectIDs)
+        manualKeyword = state.keyword
     }
 
     var totalCount: Int { searchResults.count }
@@ -110,6 +141,29 @@ final class SearchViewModel {
         return chips
     }
 
+    // MARK: - Sort
+
+    enum SortOrder: String, CaseIterable {
+        case dateDesc = "按日期排序"
+        case amountDesc = "按金额降序"
+        case amountAsc = "按金额升序"
+
+        var displayName: String { NSLocalizedString(rawValue, comment: "") }
+    }
+
+    var sortOrder: SortOrder = .dateDesc
+
+    var sortedResults: [Transaction] {
+        switch sortOrder {
+        case .dateDesc:
+            return searchResults.sorted { $0.date > $1.date }
+        case .amountDesc:
+            return searchResults.sorted { abs($0.amount) > abs($1.amount) }
+        case .amountAsc:
+            return searchResults.sorted { abs($0.amount) < abs($1.amount) }
+        }
+    }
+
     var hasManualFilters: Bool {
         !selectedCategoryIDs.isEmpty || !selectedMemberIDs.isEmpty || !selectedProjectIDs.isEmpty
         || dateFrom != nil || dateTo != nil || amountMin != nil || amountMax != nil
@@ -134,7 +188,40 @@ final class SearchViewModel {
         amountMax = nil
         manualType = nil
         manualKeyword = ""
+        persistFilterState()
     }
+
+    // MARK: - Saved Filters
+
+    var savedFilters: [SavedFilter] = []
+
+    func reloadSavedFilters() { savedFilters = UserDefaults.standard.savedFilters() }
+
+    func saveCurrentFilter(name: String) {
+        let filter = SavedFilter(
+            name: name,
+            dateFrom: dateFrom, dateTo: dateTo,
+            amountMin: amountMin, amountMax: amountMax,
+            categoryIDs: Array(selectedCategoryIDs),
+            memberIDs: Array(selectedMemberIDs),
+            projectIDs: Array(selectedProjectIDs),
+            keyword: manualKeyword,
+            createdAt: Date()
+        )
+        UserDefaults.standard.saveFilter(filter)
+        reloadSavedFilters()
+    }
+
+    func applyFilter(_ filter: SavedFilter) {
+        dateFrom = filter.dateFrom; dateTo = filter.dateTo
+        amountMin = filter.amountMin; amountMax = filter.amountMax
+        selectedCategoryIDs = Set(filter.categoryIDs)
+        selectedMemberIDs = Set(filter.memberIDs)
+        selectedProjectIDs = Set(filter.projectIDs)
+        manualKeyword = filter.keyword
+    }
+
+    func deleteFilter(id: UUID) { UserDefaults.standard.deleteFilter(id: id); reloadSavedFilters() }
 
     // MARK: - Search
 
@@ -225,6 +312,7 @@ final class SearchViewModel {
 
             self.searchResults = results
             self.isSearching = false
+            persistFilterState()
         }
     }
 

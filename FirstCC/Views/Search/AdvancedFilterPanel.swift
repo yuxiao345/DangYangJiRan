@@ -18,6 +18,7 @@ struct AdvancedFilterPanel: View {
     @Binding var keyword: String
 
     var onApply: () -> Void
+    var onSave: (() -> Void)?
 
     @State private var categories: [Category] = []
     @State private var members: [Member] = []
@@ -52,6 +53,11 @@ struct AdvancedFilterPanel: View {
         VStack(spacing: 6) {
             // Header
             Button {
+                if !isExpanded {
+                    #if os(iOS)
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    #endif
+                }
                 withAnimation(.easeInOut(duration: 0.25)) { isExpanded.toggle() }
             } label: {
                 HStack {
@@ -156,7 +162,7 @@ struct AdvancedFilterPanel: View {
             .padding(8)
             .background {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(.systemGray6))
+                    .fill(Color.designSurfaceContainer)
             }
 
             // Actions
@@ -182,6 +188,21 @@ struct AdvancedFilterPanel: View {
                 }
                 .buttonStyle(.plain)
 
+                if let onSave = onSave {
+                    Button {
+                        onSave()
+                    } label: {
+                        Image(systemName: "bookmark")
+                            .frame(width: 36, height: 36)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.designPrimaryContainer.opacity(0.1))
+                            )
+                            .foregroundStyle(Color.designPrimaryContainer)
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 Button {
                     withAnimation(.easeInOut(duration: 0.25)) { isExpanded = false }
                     onApply()
@@ -202,13 +223,51 @@ struct AdvancedFilterPanel: View {
 
     // MARK: - Date Section
 
+    private let datePresets: [(String, Range<Date>)] = {
+        let cal = Calendar.current
+        let today = Date()
+        let startOfToday = today.startOfDay
+        let tomorrowStart = startOfToday.adding(.day, value: 1)
+        return [
+            (String(localized: "今天"), startOfToday..<tomorrowStart),
+            (String(localized: "本周"), today.startOfWeek..<today.startOfWeek.adding(.day, value: 7)),
+            (String(localized: "本月"), today.startOfMonth..<today.startOfMonth.adding(.month, value: 1)),
+            (String(localized: "今年"), today.startOfYear..<today.startOfYear.adding(.year, value: 1)),
+        ]
+    }()
+
     private var dateRangeSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("日期").font(.designLabel).foregroundStyle(Color.designPrimary.opacity(0.8))
+            // Quick presets
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(datePresets, id: \.0) { preset in
+                        let isActive = dateFrom == preset.1.lowerBound && dateTo == preset.1.upperBound
+                        Button {
+                            if isActive { dateFrom = nil; dateTo = nil }
+                            else { dateFrom = preset.1.lowerBound; dateTo = preset.1.upperBound }
+                        } label: {
+                            Text(preset.0)
+                                .font(.caption)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(
+                                    Capsule().fill(isActive ? Color.designPrimaryFixedDim.opacity(0.15) : Color.designSurfaceContainer)
+                                )
+                                .overlay(
+                                    Capsule().stroke(isActive ? Color.designPrimaryFixedDim.opacity(0.5) : Color.clear, lineWidth: 1)
+                                )
+                                .foregroundStyle(isActive ? Color.designPrimaryFixedDim : .secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            // From / To
             HStack(spacing: 8) {
                 dateButton(String(localized: "开始"), date: $dateFrom, target: .from)
-                Text("至")
-                    .foregroundStyle(.secondary)
+                Text("至").font(.caption).foregroundStyle(.secondary)
                 dateButton(String(localized: "结束"), date: $dateTo, target: .to)
             }
         }
@@ -222,7 +281,7 @@ struct AdvancedFilterPanel: View {
         } label: {
             HStack {
                 Text(date.wrappedValue?.formatted(date: .numeric, time: .omitted) ?? label)
-                    .font(.subheadline)
+                    .font(.caption)
                     .foregroundStyle(date.wrappedValue != nil ? .primary : .secondary)
                 Image(systemName: "calendar")
                     .font(.system(size: 12))
@@ -235,7 +294,7 @@ struct AdvancedFilterPanel: View {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(date.wrappedValue != nil
                         ? Color.designPrimaryFixedDim.opacity(0.08)
-                        : Color(.systemGray6))
+                        : Color.designSurfaceContainer)
             )
         }
         .buttonStyle(.plain)
@@ -250,7 +309,9 @@ struct AdvancedFilterPanel: View {
                 Spacer()
             }
             .navigationTitle(activeDateTarget == .from ? String(localized: "开始日期") : String(localized: "结束日期"))
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") { showDateSheet = false }
@@ -277,6 +338,7 @@ struct AdvancedFilterPanel: View {
             HStack(spacing: 8) {
                 amountButton(String(localized: "最低"), value: $amountMin, target: .min)
                 Text("至")
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                 amountButton(String(localized: "最高"), value: $amountMax, target: .max)
             }
@@ -288,34 +350,47 @@ struct AdvancedFilterPanel: View {
     }
 
     private func amountButton(_ label: String, value: Binding<Decimal?>, target: AmountFieldTarget) -> some View {
-        Button {
-            activeAmountField = target
-            let v = value.wrappedValue
-            numpadText = (v != nil && v != 0) ? "\(v!)" : ""
-            showNumpad = true
-        } label: {
-            HStack {
-                if let v = value.wrappedValue, v != 0 {
-                    Text("¥\(v)")
-                        .font(.subheadline)
-                        .foregroundStyle(.primary)
-                } else {
-                    Text(label)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+        let hasValue = value.wrappedValue != nil && value.wrappedValue != 0
+        return HStack(spacing: 0) {
+            Button {
+                activeAmountField = target
+                let v = value.wrappedValue
+                numpadText = (v != nil && v != 0) ? "\(v!)" : ""
+                showNumpad = true
+            } label: {
+                HStack {
+                    if let v = value.wrappedValue, v != 0 {
+                        Text("¥\(v)")
+                            .font(.caption)
+                            .foregroundStyle(.primary)
+                    } else {
+                        Text(label)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .frame(maxWidth: .infinity)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(value.wrappedValue != nil && value.wrappedValue != 0
-                        ? Color.designPrimaryFixedDim.opacity(0.08)
-                        : Color(.systemGray6))
-            )
+            .buttonStyle(.plain)
+
+            if hasValue {
+                Button {
+                    value.wrappedValue = nil
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
+                        .padding(.trailing, 8)
+                }
+                .buttonStyle(.plain)
+            }
         }
-        .buttonStyle(.plain)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(hasValue ? Color.designPrimaryFixedDim.opacity(0.08) : Color.designSurfaceContainer)
+        )
     }
 
     private var sharedNumpadSheet: some View {
@@ -345,7 +420,7 @@ struct AdvancedFilterPanel: View {
                             .frame(height: 48)
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color(.systemGray6))
+                                    .fill(Color.designSurfaceContainer)
                             )
                             .foregroundStyle(.secondary)
                     }
@@ -364,7 +439,7 @@ struct AdvancedFilterPanel: View {
                             .frame(height: 48)
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color(.systemGray6))
+                                    .fill(Color.designSurfaceContainer)
                             )
                             .foregroundStyle(.secondary)
                     }
@@ -373,7 +448,9 @@ struct AdvancedFilterPanel: View {
                 .padding(.horizontal)
             }
             .navigationTitle(activeAmountField == .min ? String(localized: "最低金额") : String(localized: "最高金额"))
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") { showNumpad = false }

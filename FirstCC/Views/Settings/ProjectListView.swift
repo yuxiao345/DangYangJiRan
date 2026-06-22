@@ -42,7 +42,7 @@ struct ProjectListView: View {
                     }
                     if let budget = project.budget {
                         HStack(spacing: 2) {
-                            Text("预算:")
+                            Text("\(String(localized: "预算")):")
                                 .font(.designBodySmall)
                             CurrencyText(amount: budget, currencyCode: ledgerCurrency, size: 11, foregroundColor: .designPrimaryContainer)
                         }

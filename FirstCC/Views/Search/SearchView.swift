@@ -5,6 +5,8 @@ struct SearchView: View {
     @Environment(\.managedObjectContext) private var modelContext
     @State private var viewModel: SearchViewModel
     @FocusState private var isFocused: Bool
+    @State private var showSaveAlert = false
+    @State private var saveFilterName = ""
 
     init(viewModel: SearchViewModel) {
         _viewModel = State(initialValue: viewModel)
@@ -13,6 +15,7 @@ struct SearchView: View {
     var body: some View {
         VStack(spacing: 0) {
             searchBar
+            savedFiltersRow
             advancedFilterPanel
             filterChips
             if viewModel.hasSearched && !viewModel.hasResults {
@@ -32,6 +35,56 @@ struct SearchView: View {
             viewModel.scheduleSearch(context: modelContext)
         }
         .designScreen()
+        .alert(String(localized: "保存筛选"), isPresented: $showSaveAlert) {
+            TextField(String(localized: "名称"), text: $saveFilterName)
+            Button(String(localized: "取消"), role: .cancel) {}
+            Button(String(localized: "保存")) {
+                let name = saveFilterName.trimmingCharacters(in: .whitespaces)
+                if !name.isEmpty { viewModel.saveCurrentFilter(name: name) }
+                saveFilterName = ""
+            }
+        }
+    }
+
+    // MARK: - Saved Filters
+
+    @ViewBuilder
+    private var savedFiltersRow: some View {
+        let filters = viewModel.savedFilters
+        if !filters.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(filters) { filter in
+                        HStack(spacing: 2) {
+                            Button {
+                                viewModel.applyFilter(filter)
+                                viewModel.applyManualFilters(context: modelContext)
+                            } label: {
+                                Text(filter.name)
+                                    .font(.caption)
+                                    .padding(.leading, 10)
+                                    .padding(.vertical, 5)
+                            }
+                            .buttonStyle(.plain)
+                            Button {
+                                viewModel.deleteFilter(id: filter.id)
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 11))
+                                    .padding(.trailing, 6)
+                                    .padding(.vertical, 5)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .background(Capsule().fill(Color.designPrimaryContainer.opacity(0.1)))
+                        .overlay(Capsule().stroke(Color.designPrimaryContainer.opacity(0.3), lineWidth: 1))
+                        .foregroundStyle(Color.designPrimaryContainer)
+                    }
+                }
+                .padding(.horizontal, 12)
+            }
+            .padding(.top, 6)
+        }
     }
 
     // MARK: - Search Bar
@@ -78,7 +131,8 @@ struct SearchView: View {
             amountMin: $viewModel.amountMin,
             amountMax: $viewModel.amountMax,
             keyword: $viewModel.manualKeyword,
-            onApply: { viewModel.applyManualFilters(context: modelContext) }
+            onApply: { viewModel.applyManualFilters(context: modelContext) },
+            onSave: { showSaveAlert = true }
         )
         .padding(.horizontal, 12)
         .padding(.top, 8)
@@ -134,21 +188,45 @@ struct SearchView: View {
     // MARK: - Summary Row
 
     private var summaryRow: some View {
-        HStack {
-            Text("找到 \(viewModel.totalCount) 笔交易，合计 ")
-                .font(.designBodyMedium)
-                .foregroundStyle(Color.designOnSurfaceVariant)
-            CurrencyText(
-                amount: viewModel.totalAmount,
-                currencyCode: "",
-                size: 15,
-                foregroundColor: viewModel.totalAmount >= 0 ? Color.designOnSurface : Color.designAccentRed
-            )
-            .fontWeight(.semibold)
-            Spacer()
+        VStack(spacing: 4) {
+            HStack {
+                Text("找到 \(viewModel.totalCount) 笔交易，合计 ")
+                    .font(.designBodyMedium)
+                    .foregroundStyle(Color.designOnSurfaceVariant)
+                CurrencyText(
+                    amount: viewModel.totalAmount,
+                    currencyCode: "",
+                    size: 15,
+                    foregroundColor: viewModel.totalAmount >= 0 ? Color.designOnSurface : Color.designAccentRed
+                )
+                .fontWeight(.semibold)
+                Spacer()
+                sortMenu
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+    }
+
+    private var sortMenu: some View {
+        Menu {
+            ForEach(SearchViewModel.SortOrder.allCases, id: \.self) { order in
+                Button {
+                    viewModel.sortOrder = order
+                } label: {
+                    HStack {
+                        Text(LocalizedStringKey(order.displayName))
+                        if viewModel.sortOrder == order {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            Image(systemName: "arrow.up.arrow.down")
+                .font(.system(size: 14))
+                .foregroundStyle(.secondary)
+        }
     }
 
     // MARK: - Result List
@@ -173,7 +251,8 @@ struct SearchView: View {
     }
 
     private var groupedResults: [(key: String, value: [Transaction])] {
-        let grouped = Dictionary(grouping: viewModel.searchResults) { t in
+        let sorted = viewModel.sortedResults
+        let grouped = Dictionary(grouping: sorted) { t in
             t.date.formatted(date: .complete, time: .omitted)
         }
         return grouped.sorted { $0.key > $1.key }.map { ($0.key, $0.value.sorted { $0.date > $1.date }) }
@@ -190,9 +269,15 @@ struct SearchView: View {
             Text("未找到匹配的交易")
                 .font(.designHeadlineMedium)
                 .foregroundStyle(Color.designOnSurfaceVariant)
-            Text("尝试调整搜索关键词")
-                .font(.designBodyMedium)
-                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+            if viewModel.hasManualFilters {
+                Text("试试清除筛选条件，或者放宽日期/金额范围")
+                    .font(.designBodyMedium)
+                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+            } else {
+                Text("试试换个关键词，例如 餐饮 或 2026")
+                    .font(.designBodyMedium)
+                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+            }
             Spacer()
         }
     }
