@@ -37,28 +37,31 @@ struct CategoryPieChartView: View {
     }
 
     private var donutChart: some View {
-        Chart(categories) { item in
-            SectorMark(
-                angle: .value("金额", abs(Double(truncating: item.amount as NSNumber))),
-                innerRadius: .ratio(0.55),
-                angularInset: 1
-            )
-            .foregroundStyle(Color(hex: item.colorHex) ?? .gray)
-        }
-        .chartAngleSelection(value: $selectedAngle)
-        .onChange(of: selectedAngle) { _, angle in
-            guard let angle else { return }
-            var cumulative: Double = 0
-            for item in categories {
-                cumulative += Double(truncating: item.amount as NSNumber)
-                if angle <= cumulative {
-                    onCategoryTap(item.id)
-                    selectedAngle = nil
-                    return
+        ZStack {
+            Chart(categories) { item in
+                SectorMark(
+                    angle: .value("金额", abs(Double(truncating: item.amount as NSNumber))),
+                    innerRadius: .ratio(0.55),
+                    angularInset: 1
+                )
+                .foregroundStyle(Color(hex: item.colorHex) ?? .gray)
+            }
+            .chartAngleSelection(value: $selectedAngle)
+            .onChange(of: selectedAngle) { _, angle in
+                guard let angle else { return }
+                var cumulative: Double = 0
+                for item in categories {
+                    cumulative += Double(truncating: item.amount as NSNumber)
+                    if angle <= cumulative {
+                        onCategoryTap(item.id)
+                        selectedAngle = nil
+                        return
+                    }
                 }
             }
-        }
-        .chartBackground { _ in
+            .frame(height: 220)
+
+            // Center label overlaid on top so taps aren't intercepted by chartAngleSelection
             VStack(spacing: 2) {
                 if isDrilledDown {
                     Button {
@@ -81,7 +84,6 @@ struct CategoryPieChartView: View {
                     .fontWeight(.bold)
             }
         }
-        .frame(height: 220)
     }
 
     // MARK: - Category List

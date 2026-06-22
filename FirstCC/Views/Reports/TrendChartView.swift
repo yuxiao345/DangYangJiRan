@@ -4,9 +4,29 @@ struct TrendChartView: View {
     let dataPoints: [TrendDataPoint]
     let period: ReportPeriod
 
-    private let maxBlocks = 20
-    private let blockGap: CGFloat = 1
-    private let labelAreaHeight: CGFloat = 20
+    @State private var selectedMonthID: UUID?
+    @State private var showIncome = true
+    @State private var showExpense = true
+    @State private var showNet = true
+
+    // MARK: - Summary (selected month or full period)
+
+    private var activePoint: TrendDataPoint? {
+        guard let id = selectedMonthID else { return nil }
+        return dataPoints.first { $0.id == id }
+    }
+
+    private var summaryIncome: Decimal {
+        activePoint?.income ?? totalIncome
+    }
+
+    private var summaryExpense: Decimal {
+        activePoint?.expense ?? totalExpense
+    }
+
+    private var summaryBalance: Decimal {
+        summaryIncome - summaryExpense
+    }
 
     private var totalIncome: Decimal {
         dataPoints.map(\.income).reduce(0, +)
@@ -16,38 +36,97 @@ struct TrendChartView: View {
         dataPoints.map(\.expense).reduce(0, +)
     }
 
-    private var netBalance: Decimal {
-        totalIncome - totalExpense
+    // MARK: - Bar Scaling
+
+    /// Max across all three metrics so each bar segment scales to the same ceiling
+    private var globalMax: Double {
+        let maxInc = dataPoints.map { Double(truncating: $0.income as NSNumber) }.max() ?? 1
+        let maxExp = dataPoints.map { Double(truncating: $0.expense as NSNumber) }.max() ?? 1
+        let maxNet = dataPoints.map { abs(Double(truncating: ($0.income - $0.expense) as NSNumber)) }.max() ?? 1
+        return max(maxInc, maxExp, maxNet)
     }
 
-    private var incomeMax: Double {
-        dataPoints.map { Double(truncating: $0.income as NSNumber) }.max() ?? 1
+    private var axisCeiling: Double {
+        niceCeiling(globalMax)
     }
 
-    private var expenseMax: Double {
-        dataPoints.map { Double(truncating: $0.expense as NSNumber) }.max() ?? 1
+    private var axisValues: [Double] {
+        [0, axisCeiling / 2, axisCeiling]
     }
 
-    /// Y-axis ceiling: max of both scales, so labels cover the full range
-    private var barMax: Double {
-        max(incomeMax, expenseMax)
+    // MARK: - Display Order
+
+    /// Data points reversed: newest at top, oldest at bottom
+    private var displayPoints: [TrendDataPoint] {
+        dataPoints.reversed()
     }
+
+    // MARK: - Year Range
+
+    private var yearRange: String {
+        let years = yearSet
+        if years.count >= 2 {
+            let sorted = years.sorted()
+            return "\(sorted.first!) – \(sorted.last!)"
+        }
+        if let y = years.first { return "\(y)" }
+        return ""
+    }
+
+    /// All distinct years detected from labels (works for all periods)
+    private var yearSet: Set<Int> {
+        var years = Set<Int>()
+        for dp in dataPoints {
+            if let y = extractYear(from: dp) { years.insert(y) }
+        }
+        // Also try yearLabel for last3Years
+        for dp in dataPoints {
+            if let yl = dp.yearLabel, let y = Int(yl) { years.insert(2000 + y) }
+        }
+        return years
+    }
+
+    /// Extract 4-digit year from label (e.g. "24年6月" → 2024, "6月" → nil)
+    private func extractYear(from dp: TrendDataPoint) -> Int? {
+        guard let nianIdx = dp.label.firstIndex(of: "年") else { return nil }
+        let prefix = String(dp.label[..<nianIdx])
+        guard let yy = Int(prefix) else { return nil }
+        return yy >= 1000 ? yy : 2000 + yy
+    }
+
+    /// Extract year string from label for separator display (e.g. "24年6月" → "2024")
+    private func yearString(from dp: TrendDataPoint) -> String? {
+        guard let year = extractYear(from: dp) else { return nil }
+        return "\(year)"
+    }
+
+    // MARK: - Body
 
     var body: some View {
         if dataPoints.isEmpty {
-            VStack(spacing: 8) {
-                Image(systemName: "chart.bar")
-                    .font(.largeTitle)
-                    .foregroundStyle(Color.designOnSurfaceVariant)
-                Text("暂无收支数据")
-                    .foregroundStyle(Color.designOnSurfaceVariant)
-            }
+            emptyState
         } else {
-            VStack(spacing: 0) {
-                summaryCards
-                pixelChart
+            ScrollView {
+                VStack(spacing: 16) {
+                    summaryCards
+                        .padding(.horizontal, 16)
+                    chartCard
+                        .padding(.horizontal, 16)
+                }
+                .padding(.vertical, 8)
             }
-            .frame(maxWidth: .infinity)
+        }
+    }
+
+    // MARK: - Empty State
+
+    private var emptyState: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "chart.bar")
+                .font(.largeTitle)
+                .foregroundStyle(Color.designOnSurfaceVariant)
+            Text("暂无收支数据")
+                .foregroundStyle(Color.designOnSurfaceVariant)
         }
     }
 
@@ -55,134 +134,270 @@ struct TrendChartView: View {
 
     private var summaryCards: some View {
         HStack(spacing: 8) {
-            summaryCard(label: "收入", amount: totalIncome, color: Color.designAccentGreen)
-            summaryCard(label: "支出", amount: totalExpense, color: Color.designAccentRed)
-            summaryCard(label: "结余", amount: netBalance, color: netBalance >= 0 ? Color.designAccentGreen : Color.designAccentRed)
+            summaryCard(
+                label: String(localized: "收入"),
+                amount: summaryIncome,
+                color: Color.designAccentGreen
+            )
+            summaryCard(
+                label: String(localized: "支出"),
+                amount: summaryExpense,
+                color: Color.designAccentRed
+            )
+            summaryCard(
+                label: String(localized: "结余"),
+                amount: summaryBalance,
+                color: summaryBalance >= 0 ? Color.designAccentGreen : Color.designAccentRed
+            )
         }
-        .padding(.horizontal, 12)
-        .padding(.top, 8)
+        .animation(.easeInOut(duration: 0.2), value: selectedMonthID)
     }
 
     private func summaryCard(label: String, amount: Decimal, color: Color) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 4) {
-                RoundedRectangle(cornerRadius: 1)
-                    .fill(color)
-                    .frame(width: 6, height: 6)
-                Text(LocalizedStringKey(label))
-                    .font(.custom("JetBrainsMono-Medium", fixedSize: 9))
-                    .foregroundStyle(color.opacity(0.8))
-            }
-            CurrencyText(amount: amount, currencyCode: "", size: 14, foregroundColor: color, fractionDigits: 0)
-                .fontWeight(.bold)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
+            Text(label)
+                .font(.designLabel)
+                .foregroundStyle(color.opacity(0.8))
+            CurrencyText(
+                amount: amount,
+                currencyCode: "",
+                size: 16,
+                foregroundColor: color,
+                fractionDigits: 0
+            )
+            .fontWeight(.bold)
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
-        .glassCard(cornerRadius: 12)
+        .padding(12)
+        .glassCard(cornerRadius: 16)
     }
 
-    // MARK: - Pixel Chart
+    // MARK: - Chart Card
 
-    private var pixelChart: some View {
-        let ceiling = niceCeiling(barMax)
+    private var chartCard: some View {
+        VStack(spacing: 0) {
+            chartHeader
+            chartRows
+            chartAxis
+        }
+        .padding(16)
+        .glassCard(cornerRadius: 24)
+    }
 
-        return GeometryReader { geo in
-            let legendH: CGFloat = 18
-            let dynBlockPx = max(4, min(20, (geo.size.height - legendH - labelAreaHeight - 28) / CGFloat(maxBlocks) - blockGap))
-            let minColW = dynBlockPx * 2 + blockGap + 8
-            let totalNeed = minColW * CGFloat(dataPoints.count)
-            let availW = geo.size.width - 32 - 24
-            let useScroll = totalNeed > availW
-            let colPad: CGFloat = useScroll ? 3 : max(3, (availW - totalNeed) / CGFloat(dataPoints.count) / 2)
+    // MARK: - Chart Header
 
-            VStack(spacing: 4) {
-                HStack(alignment: .bottom, spacing: 2) {
-                    yAxisColumn(blockSize: dynBlockPx, maxValue: ceiling)
+    private var chartHeader: some View {
+        HStack {
+            HStack(spacing: 12) {
+                legendToggle(
+                    color: Color.designAccentGreen,
+                    activeColor: Color.designAccentGreen,
+                    label: String(localized: "收入"),
+                    isOn: $showIncome
+                )
+                legendToggle(
+                    color: Color.designAccentRed,
+                    activeColor: Color.designAccentRed,
+                    label: String(localized: "支出"),
+                    isOn: $showExpense
+                )
+                legendToggle(
+                    color: Color.blue,
+                    activeColor: Color.blue,
+                    label: String(localized: "结余"),
+                    isOn: $showNet
+                )
+            }
+            Spacer()
+            if !yearRange.isEmpty {
+                Text(yearRange)
+                    .font(.custom("JetBrainsMono-Medium", fixedSize: 11))
+                    .foregroundStyle(Color.designOnSurfaceVariant)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule()
+                            .fill(Color.designSurfaceContainer.opacity(0.5))
+                    )
+                    .overlay(
+                        Capsule()
+                            .stroke(Color.designOutlineVariant.opacity(0.2), lineWidth: 1)
+                    )
+            }
+        }
+        .padding(.bottom, 16)
+    }
 
-                    if useScroll {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            barRow(maxValue: ceiling, blockSize: dynBlockPx, colPad: colPad)
-                        }
-                    } else {
-                        barRow(maxValue: ceiling, blockSize: dynBlockPx, colPad: colPad)
-                            .frame(maxWidth: .infinity)
+    private func legendToggle(color: Color, activeColor: Color, label: String, isOn: Binding<Bool>) -> some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                isOn.wrappedValue.toggle()
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(isOn.wrappedValue ? activeColor : Color.gray.opacity(0.35))
+                    .frame(width: 8, height: 8)
+                Text(label)
+                    .font(.custom("JetBrainsMono-Medium", fixedSize: 11))
+                    .foregroundStyle(isOn.wrappedValue ? Color.designOnSurfaceVariant : Color.designOnSurfaceVariant.opacity(0.4))
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Chart Rows
+
+    private var chartRows: some View {
+        let points = displayPoints
+        return ForEach(Array(points.enumerated()), id: \.element.id) { i, point in
+            if i == 0, let year = yearString(from: point) {
+                yearSeparator(label: year)
+            } else if i > 0,
+                      let prevYear = yearString(from: points[i - 1]),
+                      let thisYear = yearString(from: point),
+                      prevYear != thisYear {
+                yearSeparator(label: thisYear)
+            }
+            monthRowButton(point: point)
+        }
+    }
+
+    private func yearSeparator(label: String) -> some View {
+        HStack(spacing: 0) {
+            Rectangle()
+                .fill(Color.designOutlineVariant.opacity(0.2))
+                .frame(height: 1)
+            Text(label)
+                .font(.custom("JetBrainsMono-Medium", fixedSize: 10))
+                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
+                .padding(.horizontal, 12)
+            Rectangle()
+                .fill(Color.designOutlineVariant.opacity(0.2))
+                .frame(height: 1)
+        }
+        .padding(.vertical, 10)
+    }
+
+    private func monthRowButton(point: TrendDataPoint) -> some View {
+        let isSelected = selectedMonthID == point.id
+
+        return Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                selectedMonthID = isSelected ? nil : point.id
+            }
+        } label: {
+            monthRow(point: point, isSelected: isSelected)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func monthRow(point: TrendDataPoint, isSelected: Bool) -> some View {
+        let incomeVal = Double(truncating: point.income as NSNumber)
+        let expenseVal = Double(truncating: point.expense as NSNumber)
+        let netVal = incomeVal - expenseVal
+        let ceil = axisCeiling
+
+        return HStack(spacing: 10) {
+            // Month label
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(isSelected ? Color.designAccentGreen : Color.designAccentGreen.opacity(0.3))
+                    .frame(width: 5, height: 5)
+                Text(monthDisplayLabel(for: point))
+                    .font(.custom("JetBrainsMono-Medium", fixedSize: 11))
+                    .foregroundStyle(isSelected ? Color.designOnSurface : Color.designOnSurfaceVariant)
+            }
+            .frame(width: 42, alignment: .leading)
+
+            // Three independent bar segments
+            GeometryReader { geo in
+                let totalW = geo.size.width
+                HStack(spacing: 3) {
+                    if showIncome, incomeVal > 0 {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.designAccentGreen)
+                            .frame(width: max(4, totalW * (incomeVal / ceil)))
                     }
-                }
-
-                Spacer(minLength: 0)
-
-                legendRow
-            }
-            .padding(8)
-            .background {
-                RoundedRectangle(cornerRadius: 4)
-                    .stroke(Color.designOutlineVariant.opacity(0.3), lineWidth: 1)
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.top, 16)
-    }
-
-    private var legendRow: some View {
-        HStack(spacing: 12) {
-            legendDot(color: .designAccentGreen, label: "收入")
-            legendDot(color: .designAccentRed, label: "支出")
-            legendDot(color: .blue, label: "结余趋势")
-        }
-    }
-
-    private func barRow(maxValue: Double, blockSize: CGFloat, colPad: CGFloat) -> some View {
-        HStack(alignment: .bottom, spacing: 0) {
-            ForEach(Array(dataPoints.enumerated()), id: \.element.id) { i, point in
-                VStack(spacing: 2) {
-                    pixelBarsColumn(for: point, maxValue: maxValue, blockSize: blockSize)
-                    xLabel(for: point)
-                        .frame(height: labelAreaHeight)
-                }
-                .padding(.horizontal, colPad)
-            }
-        }
-    }
-
-    private func legendDot(color: Color, label: String) -> some View {
-        HStack(spacing: 3) {
-            PixelBlock(color: color, size: 5)
-            Text(LocalizedStringKey(label))
-                .font(.designBodySmall)
-                .foregroundStyle(Color.designOnSurfaceVariant)
-        }
-    }
-
-    // MARK: - Y Axis Labels
-
-    private func yAxisColumn(blockSize: CGFloat, maxValue: Double) -> some View {
-        let rowIndices = [20, 15, 10, 5, 0]
-
-        return VStack(spacing: 2) {
-            VStack(spacing: blockGap) {
-                ForEach(0..<maxBlocks, id: \.self) { i in
-                    let row = maxBlocks - 1 - i
-                    if rowIndices.contains(row) {
-                        let value = Double(row) / Double(maxBlocks) * maxValue
-                        Text(formatAxis(value))
-                            .font(.system(size: 7).monospacedDigit())
-                            .foregroundStyle(Color.designOnSurfaceVariant)
-                            .lineLimit(1)
-                            .frame(height: blockSize, alignment: .center)
-                    } else {
-                        Color.clear.frame(height: blockSize)
+                    if showExpense, expenseVal > 0 {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.designAccentRed.opacity(0.7))
+                            .frame(width: max(4, totalW * (expenseVal / ceil)))
                     }
+                    if showNet, netVal != 0 {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.blue.opacity(0.6))
+                            .frame(width: max(4, totalW * (abs(netVal) / ceil)))
+                    }
+                    Spacer(minLength: 0)
                 }
+                .frame(height: 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(isSelected
+                            ? Color.designSurfaceContainer.opacity(0.6)
+                            : Color.designSurfaceContainer.opacity(0.3))
+                )
             }
-            Color.clear.frame(height: labelAreaHeight)
+            .frame(height: 16)
+
+            // Net amount
+            Text(formatNetAmount(netVal))
+                .font(.custom("JetBrainsMono-Medium", fixedSize: 11))
+                .foregroundStyle(netAmountColor(netVal))
+                .frame(width: 48, alignment: .trailing)
         }
-        .frame(width: 32)
+        .padding(.vertical, 6)
+        .padding(.horizontal, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isSelected ? Color.designPrimaryContainer.opacity(0.08) : Color.clear)
+        )
     }
+
+    private func monthDisplayLabel(for point: TrendDataPoint) -> String {
+        var raw = point.label
+        // For last3Years: strip year prefix via yearLabel (e.g. "24年" from "24年6月")
+        if let yl = point.yearLabel, raw.hasPrefix(yl) {
+            raw = String(raw.dropFirst(yl.count))
+        }
+        // Strip remaining year prefix: "26年6月" → "6月"
+        if let nianIdx = raw.firstIndex(of: "年") {
+            raw = String(raw[raw.index(after: nianIdx)...])
+        }
+        return raw
+    }
+
+    // MARK: - Bottom Axis
+
+    private var chartAxis: some View {
+        HStack {
+            Spacer()
+                .frame(width: 42 + 10)
+            ForEach(axisValues.indices, id: \.self) { i in
+                if i > 0 { Spacer() }
+                Text("¥\(formatAxis(axisValues[i]))")
+                    .font(.custom("JetBrainsMono-Medium", fixedSize: 10))
+                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
+            }
+            Spacer()
+                .frame(width: 48 + 10)
+        }
+        .padding(.top, 12)
+        .padding(.horizontal, 2)
+    }
+
+    // MARK: - Helpers
 
     private func niceCeiling(_ value: Double) -> Double {
-        value * 1.3
+        guard value > 0 else { return 100 }
+        let exp = floor(log10(value))
+        let base = pow(10, exp)
+        let mantissa = value / base
+        let nice: Double = mantissa <= 1 ? 1 : mantissa <= 2 ? 2 : mantissa <= 5 ? 5 : 10
+        return nice * base * 1.2
     }
 
     private func formatAxis(_ value: Double) -> String {
@@ -191,89 +406,31 @@ struct TrendChartView: View {
             let wan = value / 10000
             return wan.formatted(.number.precision(.fractionLength(0...1))) + String(localized: "万")
         }
+        if value >= 1000 {
+            let k = value / 1000
+            return k.formatted(.number.precision(.fractionLength(0...1))) + "k"
+        }
         return value.formatted(.number.grouping(.automatic).precision(.fractionLength(0)))
     }
 
-    // MARK: - Pixel Bars Column
-
-    private func pixelBarsColumn(for point: TrendDataPoint, maxValue: Double, blockSize: CGFloat) -> some View {
-        let incomeVal = Double(truncating: point.income as NSNumber)
-        let expenseVal = Double(truncating: point.expense as NSNumber)
-        let netVal = incomeVal - expenseVal
-        let incomeBlocks = incomeVal > 0 ? max(1, Int((incomeVal / maxValue * Double(maxBlocks)).rounded(.up))) : 0
-        let expenseBlocks = expenseVal > 0 ? max(1, Int((expenseVal / maxValue * Double(maxBlocks)).rounded(.up))) : 0
-
-        // Blue net marker: appears in income column when net>0, expense column when net<0
-        let incomeNetIdx: Int? = {
-            guard maxValue > 0, netVal > 0 else { return nil }
-            let raw = Int((netVal / maxValue * Double(maxBlocks)).rounded())
-            return min(maxBlocks - 1, raw)
-        }()
-        let expenseNetIdx: Int? = {
-            guard maxValue > 0, netVal < 0 else { return nil }
-            let raw = Int((-netVal / maxValue * Double(maxBlocks)).rounded())
-            return min(maxBlocks - 1, raw)
-        }()
-
-        return HStack(alignment: .bottom, spacing: blockGap) {
-            VStack(spacing: blockGap) {
-                ForEach(0..<maxBlocks, id: \.self) { i in
-                    let row = maxBlocks - 1 - i
-                    let isTrend = incomeNetIdx == row
-                    PixelBlock(
-                        color: row < incomeBlocks ? (isTrend ? .blue : .green) : blockBg,
-                        size: blockSize
-                    )
-                }
-            }
-
-            VStack(spacing: blockGap) {
-                ForEach(0..<maxBlocks, id: \.self) { i in
-                    let row = maxBlocks - 1 - i
-                    let isTrend = expenseNetIdx == row
-                    PixelBlock(
-                        color: row < expenseBlocks ? (isTrend ? .blue : .red) : blockBg,
-                        size: blockSize
-                    )
-                }
-            }
+    private func formatNetAmount(_ value: Double) -> String {
+        if value == 0 { return "0" }
+        let sign = value > 0 ? "+" : ""
+        let absVal = abs(value)
+        if absVal >= 10000 {
+            let wan = absVal / 10000
+            return "\(sign)\(String(format: "%.1f", wan))万"
         }
+        if absVal >= 1000 {
+            let k = absVal / 1000
+            return "\(sign)\(String(format: "%.1f", k))k"
+        }
+        return "\(sign)\(Int(absVal))"
     }
 
-    private var blockBg: Color {
-        Color.designOutlineVariant.opacity(0.12)
-    }
-
-    // MARK: - X Axis Label
-
-    @ViewBuilder
-    private func xLabel(for point: TrendDataPoint) -> some View {
-        if period == .last3Years {
-            VStack(spacing: 0) {
-                Text(point.yearLabel ?? " ")
-                    .font(.system(size: 7))
-                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                Text(shortLabel(for: point))
-                    .font(.system(size: 7))
-                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-            }
-        } else {
-            Text(point.label)
-                .font(.system(size: 8))
-                .foregroundStyle(Color.designOnSurfaceVariant)
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
-        }
-    }
-
-    private func shortLabel(for point: TrendDataPoint) -> String {
-        if let yl = point.yearLabel, point.label.hasPrefix(yl) {
-            return String(point.label.dropFirst(yl.count))
-        }
-        return point.label
+    private func netAmountColor(_ value: Double) -> Color {
+        if value > 0 { return Color.designAccentGreen }
+        if value < 0 { return Color.designAccentRed }
+        return Color.designOnSurfaceVariant
     }
 }

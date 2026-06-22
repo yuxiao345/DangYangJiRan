@@ -15,14 +15,14 @@ enum ReportType: CaseIterable {
     var supportedPeriods: [ReportPeriod] {
         switch self {
         case .category: [.thisMonth, .last3Months, .last6Months]
-        case .trend: [.last6Months, .lastYear, .last3Years]
+        case .trend: [.lastYear, .last2Years, .last3Years]
         }
     }
 
     var defaultPeriod: ReportPeriod {
         switch self {
         case .category: .thisMonth
-        case .trend: .last6Months
+        case .trend: .lastYear
         }
     }
 }
@@ -144,7 +144,7 @@ struct ReportsView: View {
                     centerTitle: viewModel.displayTitle,
                     isDrilledDown: viewModel.selectedCategoryID != nil,
                     onCategoryTap: { viewModel.selectCategory($0) },
-                    onCenterTap: { viewModel.selectCategory(nil) },
+                    onCenterTap: { viewModel.goBack() },
                     onSelectTransaction: { tx in selectedTransaction = tx },
                     transactions: viewModel.isShowingTransactions ? viewModel.displayTransactions : nil
                 )

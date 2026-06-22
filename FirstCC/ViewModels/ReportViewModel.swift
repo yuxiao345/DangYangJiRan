@@ -6,6 +6,7 @@ enum ReportPeriod: Hashable {
     case last3Months
     case last6Months
     case lastYear
+    case last2Years
     case last3Years
 
     var label: String {
@@ -14,6 +15,7 @@ enum ReportPeriod: Hashable {
         case .last3Months: String(localized: "近3月")
         case .last6Months: String(localized: "近6月")
         case .lastYear: String(localized: "近1年")
+        case .last2Years: String(localized: "近2年")
         case .last3Years: String(localized: "近3年")
         }
     }
@@ -33,6 +35,9 @@ enum ReportPeriod: Hashable {
             return start..<end
         case .lastYear:
             guard let start = cal.date(byAdding: .year, value: -1, to: now)?.startOfMonth else { return nil }
+            return start..<end
+        case .last2Years:
+            guard let start = cal.date(byAdding: .year, value: -2, to: now)?.startOfMonth else { return nil }
             return start..<end
         case .last3Years:
             guard let start = cal.date(byAdding: .year, value: -3, to: now)?.startOfYear else { return nil }
@@ -446,6 +451,19 @@ final class ReportViewModel {
         } else {
             selectedCategoryID = id
         }
+    }
+
+    func goBack() {
+        guard let id = selectedCategoryID else { return }
+        // If current selection is a child of a top-level category, go back to parent
+        for top in categoryExpenses {
+            if top.children.contains(where: { $0.id == id }) {
+                selectedCategoryID = top.id
+                return
+            }
+        }
+        // Already at top level, go to root
+        selectedCategoryID = nil
     }
 
     /// Amount in ledger's default currency (converted if cross-currency)
