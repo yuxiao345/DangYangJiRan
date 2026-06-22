@@ -2,12 +2,20 @@ import SwiftUI
 
 struct TrendChartView: View {
     let dataPoints: [TrendDataPoint]
-    let period: ReportPeriod
 
     @State private var selectedMonthID: UUID?
     @State private var showIncome = true
     @State private var showExpense = true
     @State private var showNet = true
+
+    // MARK: - Totals (single pass)
+
+    private var totals: (income: Decimal, expense: Decimal) {
+        dataPoints.reduce(into: (income: Decimal(0), expense: Decimal(0))) { acc, dp in
+            acc.income += dp.income
+            acc.expense += dp.expense
+        }
+    }
 
     // MARK: - Summary (selected month or full period)
 
@@ -16,49 +24,25 @@ struct TrendChartView: View {
         return dataPoints.first { $0.id == id }
     }
 
-    private var summaryIncome: Decimal {
-        activePoint?.income ?? totalIncome
-    }
-
-    private var summaryExpense: Decimal {
-        activePoint?.expense ?? totalExpense
-    }
-
-    private var summaryBalance: Decimal {
-        summaryIncome - summaryExpense
-    }
-
-    private var totalIncome: Decimal {
-        dataPoints.map(\.income).reduce(0, +)
-    }
-
-    private var totalExpense: Decimal {
-        dataPoints.map(\.expense).reduce(0, +)
-    }
-
     // MARK: - Bar Scaling
 
-    /// Max across all three metrics so each bar segment scales to the same ceiling
     private var globalMax: Double {
-        let maxInc = dataPoints.map { Double(truncating: $0.income as NSNumber) }.max() ?? 1
-        let maxExp = dataPoints.map { Double(truncating: $0.expense as NSNumber) }.max() ?? 1
-        let maxNet = dataPoints.map { abs(Double(truncating: ($0.income - $0.expense) as NSNumber)) }.max() ?? 1
-        return max(maxInc, maxExp, maxNet)
+        dataPoints.reduce(into: 0.0) { acc, dp in
+            let inc = Double(truncating: dp.income as NSNumber)
+            let exp = Double(truncating: dp.expense as NSNumber)
+            let net = abs(inc - exp)
+            acc = max(acc, inc, exp, net)
+        }
     }
 
     private var axisCeiling: Double {
         niceCeiling(globalMax)
     }
 
-    private var axisValues: [Double] {
-        [0, axisCeiling / 2, axisCeiling]
-    }
-
     // MARK: - Display Order
 
-    /// Data points reversed: newest at top, oldest at bottom
     private var displayPoints: [TrendDataPoint] {
-        dataPoints.reversed()
+        Array(dataPoints.reversed())
     }
 
     // MARK: - Year Range
@@ -73,31 +57,8 @@ struct TrendChartView: View {
         return ""
     }
 
-    /// All distinct years detected from labels (works for all periods)
     private var yearSet: Set<Int> {
-        var years = Set<Int>()
-        for dp in dataPoints {
-            if let y = extractYear(from: dp) { years.insert(y) }
-        }
-        // Also try yearLabel for last3Years
-        for dp in dataPoints {
-            if let yl = dp.yearLabel, let y = Int(yl) { years.insert(2000 + y) }
-        }
-        return years
-    }
-
-    /// Extract 4-digit year from label (e.g. "24年6月" → 2024, "6月" → nil)
-    private func extractYear(from dp: TrendDataPoint) -> Int? {
-        guard let nianIdx = dp.label.firstIndex(of: "年") else { return nil }
-        let prefix = String(dp.label[..<nianIdx])
-        guard let yy = Int(prefix) else { return nil }
-        return yy >= 1000 ? yy : 2000 + yy
-    }
-
-    /// Extract year string from label for separator display (e.g. "24年6月" → "2024")
-    private func yearString(from dp: TrendDataPoint) -> String? {
-        guard let year = extractYear(from: dp) else { return nil }
-        return "\(year)"
+        Set(dataPoints.compactMap(\.year))
     }
 
     // MARK: - Body
@@ -106,11 +67,14 @@ struct TrendChartView: View {
         if dataPoints.isEmpty {
             emptyState
         } else {
+            let ceil = axisCeiling
+            let t = totals
+            let yr = yearRange
             ScrollView {
                 VStack(spacing: 16) {
-                    summaryCards
+                    summaryCards(totals: t)
                         .padding(.horizontal, 16)
-                    chartCard
+                    chartCard(ceil: ceil, yearRange: yr)
                         .padding(.horizontal, 16)
                 }
                 .padding(.vertical, 8)
@@ -132,22 +96,25 @@ struct TrendChartView: View {
 
     // MARK: - Summary Cards
 
-    private var summaryCards: some View {
-        HStack(spacing: 8) {
+    private func summaryCards(totals: (income: Decimal, expense: Decimal)) -> some View {
+        let inc = activePoint?.income ?? totals.income
+        let exp = activePoint?.expense ?? totals.expense
+        let bal = inc - exp
+        return HStack(spacing: 8) {
             summaryCard(
                 label: String(localized: "收入"),
-                amount: summaryIncome,
+                amount: inc,
                 color: Color.designAccentGreen
             )
             summaryCard(
                 label: String(localized: "支出"),
-                amount: summaryExpense,
+                amount: exp,
                 color: Color.designAccentRed
             )
             summaryCard(
                 label: String(localized: "结余"),
-                amount: summaryBalance,
-                color: summaryBalance >= 0 ? Color.designAccentGreen : Color.designAccentRed
+                amount: bal,
+                color: bal >= 0 ? Color.designAccentGreen : Color.designAccentRed
             )
         }
         .animation(.easeInOut(duration: 0.2), value: selectedMonthID)
@@ -176,11 +143,12 @@ struct TrendChartView: View {
 
     // MARK: - Chart Card
 
-    private var chartCard: some View {
-        VStack(spacing: 0) {
-            chartHeader
-            chartRows
-            chartAxis
+    private func chartCard(ceil: Double, yearRange: String) -> some View {
+        let axisVals: [Double] = [0, ceil / 2, ceil]
+        return VStack(spacing: 0) {
+            chartHeader(yearRange: yearRange)
+            chartRows(ceil: ceil)
+            chartAxis(values: axisVals)
         }
         .padding(16)
         .glassCard(cornerRadius: 24)
@@ -188,23 +156,20 @@ struct TrendChartView: View {
 
     // MARK: - Chart Header
 
-    private var chartHeader: some View {
+    private func chartHeader(yearRange: String) -> some View {
         HStack {
             HStack(spacing: 12) {
                 legendToggle(
-                    color: Color.designAccentGreen,
                     activeColor: Color.designAccentGreen,
                     label: String(localized: "收入"),
                     isOn: $showIncome
                 )
                 legendToggle(
-                    color: Color.designAccentRed,
                     activeColor: Color.designAccentRed,
                     label: String(localized: "支出"),
                     isOn: $showExpense
                 )
                 legendToggle(
-                    color: Color.blue,
                     activeColor: Color.blue,
                     label: String(localized: "结余"),
                     isOn: $showNet
@@ -213,7 +178,7 @@ struct TrendChartView: View {
             Spacer()
             if !yearRange.isEmpty {
                 Text(yearRange)
-                    .font(.custom("JetBrainsMono-Medium", fixedSize: 11))
+                    .font(.designMonoDataCompact)
                     .foregroundStyle(Color.designOnSurfaceVariant)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
@@ -230,7 +195,7 @@ struct TrendChartView: View {
         .padding(.bottom, 16)
     }
 
-    private func legendToggle(color: Color, activeColor: Color, label: String, isOn: Binding<Bool>) -> some View {
+    private func legendToggle(activeColor: Color, label: String, isOn: Binding<Bool>) -> some View {
         Button {
             withAnimation(.easeInOut(duration: 0.2)) {
                 isOn.wrappedValue.toggle()
@@ -241,7 +206,7 @@ struct TrendChartView: View {
                     .fill(isOn.wrappedValue ? activeColor : Color.gray.opacity(0.35))
                     .frame(width: 8, height: 8)
                 Text(label)
-                    .font(.custom("JetBrainsMono-Medium", fixedSize: 11))
+                    .font(.designMonoDataCompact)
                     .foregroundStyle(isOn.wrappedValue ? Color.designOnSurfaceVariant : Color.designOnSurfaceVariant.opacity(0.4))
             }
         }
@@ -250,18 +215,29 @@ struct TrendChartView: View {
 
     // MARK: - Chart Rows
 
-    private var chartRows: some View {
+    private func chartRows(ceil: Double) -> some View {
         let points = displayPoints
         return ForEach(Array(points.enumerated()), id: \.element.id) { i, point in
-            if i == 0, let year = yearString(from: point) {
-                yearSeparator(label: year)
+            if i == 0, let year = point.year {
+                yearSeparator(label: "\(year)")
             } else if i > 0,
-                      let prevYear = yearString(from: points[i - 1]),
-                      let thisYear = yearString(from: point),
+                      let prevYear = points[i - 1].year,
+                      let thisYear = point.year,
                       prevYear != thisYear {
-                yearSeparator(label: thisYear)
+                yearSeparator(label: "\(thisYear)")
             }
-            monthRowButton(point: point)
+            monthRow(point: point, ceil: ceil, isSelected: selectedMonthID == point.id)
+                .accessibilityAddTraits(selectedMonthID == point.id ? [.isButton, .isSelected] : .isButton)
+                .accessibilityAction {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selectedMonthID = selectedMonthID == point.id ? nil : point.id
+                    }
+                }
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selectedMonthID = selectedMonthID == point.id ? nil : point.id
+                    }
+                }
         }
     }
 
@@ -271,7 +247,7 @@ struct TrendChartView: View {
                 .fill(Color.designOutlineVariant.opacity(0.2))
                 .frame(height: 1)
             Text(label)
-                .font(.custom("JetBrainsMono-Medium", fixedSize: 10))
+                .font(.designLabelSmall)
                 .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
                 .padding(.horizontal, 12)
             Rectangle()
@@ -281,24 +257,10 @@ struct TrendChartView: View {
         .padding(.vertical, 10)
     }
 
-    private func monthRowButton(point: TrendDataPoint) -> some View {
-        let isSelected = selectedMonthID == point.id
-
-        return Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                selectedMonthID = isSelected ? nil : point.id
-            }
-        } label: {
-            monthRow(point: point, isSelected: isSelected)
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func monthRow(point: TrendDataPoint, isSelected: Bool) -> some View {
+    private func monthRow(point: TrendDataPoint, ceil: Double, isSelected: Bool) -> some View {
         let incomeVal = Double(truncating: point.income as NSNumber)
         let expenseVal = Double(truncating: point.expense as NSNumber)
         let netVal = incomeVal - expenseVal
-        let ceil = axisCeiling
 
         return HStack(spacing: 10) {
             // Month label
@@ -306,8 +268,8 @@ struct TrendChartView: View {
                 Circle()
                     .fill(isSelected ? Color.designAccentGreen : Color.designAccentGreen.opacity(0.3))
                     .frame(width: 5, height: 5)
-                Text(monthDisplayLabel(for: point))
-                    .font(.custom("JetBrainsMono-Medium", fixedSize: 11))
+                Text(point.monthLabel)
+                    .font(.designMonoDataCompact)
                     .foregroundStyle(isSelected ? Color.designOnSurface : Color.designOnSurfaceVariant)
             }
             .frame(width: 42, alignment: .leading)
@@ -345,7 +307,7 @@ struct TrendChartView: View {
 
             // Net amount
             Text(formatNetAmount(netVal))
-                .font(.custom("JetBrainsMono-Medium", fixedSize: 11))
+                .font(.designMonoDataCompact)
                 .foregroundStyle(netAmountColor(netVal))
                 .frame(width: 48, alignment: .trailing)
         }
@@ -357,29 +319,16 @@ struct TrendChartView: View {
         )
     }
 
-    private func monthDisplayLabel(for point: TrendDataPoint) -> String {
-        var raw = point.label
-        // For last3Years: strip year prefix via yearLabel (e.g. "24年" from "24年6月")
-        if let yl = point.yearLabel, raw.hasPrefix(yl) {
-            raw = String(raw.dropFirst(yl.count))
-        }
-        // Strip remaining year prefix: "26年6月" → "6月"
-        if let nianIdx = raw.firstIndex(of: "年") {
-            raw = String(raw[raw.index(after: nianIdx)...])
-        }
-        return raw
-    }
-
     // MARK: - Bottom Axis
 
-    private var chartAxis: some View {
+    private func chartAxis(values: [Double]) -> some View {
         HStack {
             Spacer()
                 .frame(width: 42 + 10)
-            ForEach(axisValues.indices, id: \.self) { i in
+            ForEach(values.indices, id: \.self) { i in
                 if i > 0 { Spacer() }
-                Text("¥\(formatAxis(axisValues[i]))")
-                    .font(.custom("JetBrainsMono-Medium", fixedSize: 10))
+                Text("¥\(CurrencyFormatter.formatCompactNumber(values[i]))")
+                    .font(.designLabelSmall)
                     .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
             }
             Spacer()
@@ -400,32 +349,10 @@ struct TrendChartView: View {
         return nice * base * 1.2
     }
 
-    private func formatAxis(_ value: Double) -> String {
-        let isChinese = Bundle.main.preferredLocalizations.first?.hasPrefix("zh") ?? true
-        if value >= 10000 && isChinese {
-            let wan = value / 10000
-            return wan.formatted(.number.precision(.fractionLength(0...1))) + String(localized: "万")
-        }
-        if value >= 1000 {
-            let k = value / 1000
-            return k.formatted(.number.precision(.fractionLength(0...1))) + "k"
-        }
-        return value.formatted(.number.grouping(.automatic).precision(.fractionLength(0)))
-    }
-
     private func formatNetAmount(_ value: Double) -> String {
         if value == 0 { return "0" }
-        let sign = value > 0 ? "+" : ""
-        let absVal = abs(value)
-        if absVal >= 10000 {
-            let wan = absVal / 10000
-            return "\(sign)\(String(format: "%.1f", wan))万"
-        }
-        if absVal >= 1000 {
-            let k = absVal / 1000
-            return "\(sign)\(String(format: "%.1f", k))k"
-        }
-        return "\(sign)\(Int(absVal))"
+        let sign = value > 0 ? "+" : "-"
+        return "\(sign)\(CurrencyFormatter.formatCompactNumber(abs(value)))"
     }
 
     private func netAmountColor(_ value: Double) -> Color {

@@ -71,27 +71,52 @@ struct CurrencyFormatter {
 
     static func formatShort(
         amount: Decimal,
-        currencyCode: String = "CNY"
+        currencyCode: String = "CNY",
+        showSymbol: Bool = true
     ) -> String {
         let absValue = amount.absoluteValue
         let sign = amount.isNegative ? "-" : ""
-        let symbol = simpleCurrencySymbol(for: currencyCode.isEmpty ? "CNY" : currencyCode)
-
-        let isChinese = Bundle.main.preferredLocalizations.first?.hasPrefix("zh") ?? true
-
-        if absValue >= 10000 && isChinese {
-            let wan = absValue / 10000
-            let number = NSDecimalNumber(decimal: wan)
-            if let formatted = shortWanFormatter.string(from: number) {
-                return "\(sign)\(symbol)\(formatted)\(String(localized: "万"))"
-            }
-        }
+        let symbol = showSymbol ? simpleCurrencySymbol(for: currencyCode.isEmpty ? "CNY" : currencyCode) : ""
 
         let number = NSDecimalNumber(decimal: absValue)
+        if let compact = compactNumberString(from: number, sign: sign, symbol: symbol) {
+            return compact
+        }
+
         if let formatted = shortIntegerFormatter.string(from: number) {
             return "\(sign)\(symbol)\(formatted)"
         }
         return "\(sign)\(symbol)0"
+    }
+
+    /// Compact number formatting for axis labels and net amounts (no symbol, handles 万/k)
+    static func formatCompactNumber(_ value: Double) -> String {
+        if value == 0 { return "0" }
+        let isChinese = Bundle.main.preferredLocalizations.first?.hasPrefix("zh") ?? true
+
+        if value >= 10000 && isChinese {
+            let wan = value / 10000
+            return wan.formatted(.number.precision(.fractionLength(0...1))) + String(localized: "万")
+        }
+        if value >= 1000 {
+            let k = value / 1000
+            return k.formatted(.number.precision(.fractionLength(0...1))) + "k"
+        }
+        return value.formatted(.number.grouping(.automatic).precision(.fractionLength(0)))
+    }
+
+    /// Shared compact suffix logic: returns "X万" string if applicable, nil otherwise
+    private static func compactNumberString(from number: NSDecimalNumber, sign: String, symbol: String) -> String? {
+        let isChinese = Bundle.main.preferredLocalizations.first?.hasPrefix("zh") ?? true
+        let absDecimal = number.decimalValue.absoluteValue
+
+        if absDecimal >= 10000 && isChinese {
+            let wan = absDecimal / 10000
+            if let formatted = shortWanFormatter.string(from: NSDecimalNumber(decimal: wan)) {
+                return "\(sign)\(symbol)\(formatted)\(String(localized: "万"))"
+            }
+        }
+        return nil
     }
 
     /// Adaptive: uses formatDecimal for amounts under 10k (precision), formatShort for 10k+ (compact).

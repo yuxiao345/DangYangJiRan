@@ -19,22 +19,77 @@
         }
       }
     },
-    "%@ (%@)": {
+    "—": {},
+    "，至%@止": {
+      "extractionState": "manual",
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " until %@"
+          }
+        },
         "zh-Hans": {
           "stringUnit": {
-            "state": "new",
-            "value": "%1$@ (%2$@)"
+            "state": "translated",
+            "value": "，至%@止"
           }
         }
       }
     },
+    "·": {},
+    "· %@项": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · %@ items"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· %@项"
+          }
+        }
+      }
+    },
+    "· 已暂停": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · Paused"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· 已暂停"
+          }
+        }
+      }
+    },
+    "(%lld)": {},
+    "/": {},
     "%@ — %@": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "new",
             "value": "%1$@ — %2$@"
+          }
+        }
+      }
+    },
+    "%@ (%@)": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ (%2$@)"
           }
         }
       }
@@ -57,6 +112,17 @@
       }
     },
     "%@ 锁": {},
+    "%@:": {},
+    "%@（%lld笔）": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@（%2$lld笔）"
+          }
+        }
+      }
+    },
     "%@%@": {
       "localizations": {
         "zh-Hans": {
@@ -118,25 +184,16 @@
         }
       }
     },
-    "%@（%lld笔）": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$@（%2$lld笔）"
-          }
-        }
-      }
-    },
     "%lld": {},
     "%lld 笔": {},
     "%lld%%": {},
     "%lld个预算项": {},
     "%lld月": {},
     "%lld月明细": {},
-    "(%lld)": {},
+    "↔": {},
     "+/-": {},
-    "/": {},
+    "¥": {},
+    "¥%@": {},
     "0.00": {},
     "1 %@ = %@ %@": {
       "localizations": {
@@ -376,45 +433,6 @@
         }
       }
     },
-    "¥": {},
-    "¥%@": {},
-    "·": {},
-    "· %@项": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": " · %@ items"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "· %@项"
-          }
-        }
-      }
-    },
-    "· 已暂停": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": " · Paused"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "· 已暂停"
-          }
-        }
-      }
-    },
-    "—": {},
-    "↔": {},
     "一次性奖金": {
       "extractionState": "manual",
       "localizations": {
@@ -745,16 +763,16 @@
     "今年": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "今年"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "This Year"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今年"
           }
         }
       }
@@ -916,16 +934,16 @@
     "保存筛选": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "保存筛选"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Save Filter"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存筛选"
           }
         }
       }
@@ -1579,6 +1597,125 @@
         }
       }
     },
+    "最低": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Min"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最低"
+          }
+        }
+      }
+    },
+    "最低金额": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Min Amount"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最低金额"
+          }
+        }
+      }
+    },
+    "最大可退金额 %@%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Max refund %@%@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最大可退金额 %@%@"
+          }
+        }
+      }
+    },
+    "最近交易": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近交易"
+          }
+        }
+      }
+    },
+    "最近使用": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近使用"
+          }
+        }
+      }
+    },
+    "最高": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Max"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最高"
+          }
+        }
+      }
+    },
+    "最高金额": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Max Amount"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最高金额"
+          }
+        }
+      }
+    },
     "净资产": {
       "extractionState": "manual",
       "localizations": {
@@ -1961,23 +2098,6 @@
         }
       }
     },
-    "剩余": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Remaining"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "剩余"
-          }
-        }
-      }
-    },
     "副业所得": {
       "extractionState": "manual",
       "localizations": {
@@ -1991,6 +2111,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "副业所得"
+          }
+        }
+      }
+    },
+    "剩余": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remaining"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剩余"
           }
         }
       }
@@ -2386,6 +2523,8 @@
         }
       }
     },
+    "合计: %@%%": {},
+    "合计: ¥%@": {},
     "同名分类「%@」已存在": {
       "extractionState": "manual",
       "localizations": {
@@ -4843,16 +4982,16 @@
     "按日期排序": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "按日期排序"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Sort by Date"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按日期排序"
           }
         }
       }
@@ -4877,16 +5016,16 @@
     "按金额升序": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "按金额升序"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Sort by Amount ↑"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按金额升序"
           }
         }
       }
@@ -4894,16 +5033,16 @@
     "按金额降序": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "按金额降序"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Sort by Amount ↓"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按金额降序"
           }
         }
       }
@@ -5493,6 +5632,23 @@
         }
       }
     },
+    "无（作为一级分类）": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "None (Top-Level)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无（作为一级分类）"
+          }
+        }
+      }
+    },
     "无匹配结果": {
       "extractionState": "manual",
       "localizations": {
@@ -5608,23 +5764,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "无法读取图片"
-          }
-        }
-      }
-    },
-    "无（作为一级分类）": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "None (Top-Level)"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无（作为一级分类）"
           }
         }
       }
@@ -6162,125 +6301,6 @@
         }
       }
     },
-    "最低": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Min"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "最低"
-          }
-        }
-      }
-    },
-    "最低金额": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Min Amount"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "最低金额"
-          }
-        }
-      }
-    },
-    "最大可退金额 %@%@": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Max refund %@%@"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "最大可退金额 %@%@"
-          }
-        }
-      }
-    },
-    "最近交易": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recent"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "最近交易"
-          }
-        }
-      }
-    },
-    "最近使用": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recent"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "最近使用"
-          }
-        }
-      }
-    },
-    "最高": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Max"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "最高"
-          }
-        }
-      }
-    },
-    "最高金额": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Max Amount"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "最高金额"
-          }
-        }
-      }
-    },
     "月": {
       "extractionState": "manual",
       "localizations": {
@@ -6455,16 +6475,16 @@
     "本周": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "本周"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "This Week"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本周"
           }
         }
       }
@@ -7879,6 +7899,23 @@
         }
       }
     },
+    "红包": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Red Envelope"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "红包"
+          }
+        }
+      }
+    },
     "累计": {
       "extractionState": "manual",
       "localizations": {
@@ -7909,23 +7946,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "累计支出"
-          }
-        }
-      }
-    },
-    "红包": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Red Envelope"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "红包"
           }
         }
       }
@@ -8589,16 +8609,16 @@
     "试试换个关键词，例如 餐饮 或 2026": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "试试换个关键词，例如 餐饮 或 2026"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Try a different keyword, e.g. dining or 2026"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "试试换个关键词，例如 餐饮 或 2026"
           }
         }
       }
@@ -8606,16 +8626,16 @@
     "试试清除筛选条件，或者放宽日期/金额范围": {
       "extractionState": "manual",
       "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "试试清除筛选条件，或者放宽日期/金额范围"
-          }
-        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Try clearing filters or broadening date/amount range"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "试试清除筛选条件，或者放宽日期/金额范围"
           }
         }
       }
@@ -10168,6 +10188,23 @@
         }
       }
     },
+    "饮料": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beverages"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "饮料"
+          }
+        }
+      }
+    },
     "餐饮": {
       "extractionState": "manual",
       "localizations": {
@@ -10198,23 +10235,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "餐饮饮食"
-          }
-        }
-      }
-    },
-    "饮料": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Beverages"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "饮料"
           }
         }
       }
@@ -10305,19 +10325,36 @@
         }
       }
     },
-    "，至%@止": {
+    "本分类": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": " until %@"
-          }
-        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "，至%@止"
+            "value": "本分类"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Direct"
+          }
+        }
+      }
+    },
+    "未知": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未知"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown"
           }
         }
       }

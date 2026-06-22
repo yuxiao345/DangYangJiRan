@@ -155,7 +155,7 @@ struct ReportsView: View {
 
     @ViewBuilder
     private var trendReport: some View {
-        TrendChartView(dataPoints: viewModel.trendData, period: viewModel.selectedPeriod)
+        TrendChartView(dataPoints: viewModel.trendData)
     }
 
     private func loadData() {

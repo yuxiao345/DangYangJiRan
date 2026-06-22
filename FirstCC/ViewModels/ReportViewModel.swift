@@ -53,13 +53,15 @@ struct CategoryExpenseItem: Identifiable {
     let colorHex: String
     let amount: Decimal
     let percentage: Double
+    let parentID: UUID?
     let children: [CategoryExpenseItem]
 }
 
 struct TrendDataPoint: Identifiable {
     let id = UUID()
     let label: String
-    let yearLabel: String?
+    let monthLabel: String
+    let year: Int?
     let income: Decimal
     let expense: Decimal
 }
@@ -189,11 +191,12 @@ final class ReportViewModel {
                 txByCategory[directID] = directTXByRoot[id] ?? []
                 childItems.append(CategoryExpenseItem(
                     id: directID,
-                    name: "本分类",
+                    name: String(localized: "本分类"),
                     iconName: entry.cat.iconName,
                     colorHex: entry.cat.colorHex,
                     amount: entry.directAmount,
                     percentage: parentTotal > 0 ? Double(truncating: (entry.directAmount / parentTotal) as NSNumber) : 0,
+                    parentID: id,
                     children: []
                 ))
             }
@@ -202,11 +205,12 @@ final class ReportViewModel {
                 let childCat = categoryLookup[childID]
                 return CategoryExpenseItem(
                     id: childID,
-                    name: childCat?.name ?? "未知",
+                    name: childCat?.name ?? String(localized: "未知"),
                     iconName: childCat?.iconName ?? "questionmark",
                     colorHex: childCat?.colorHex ?? "#999999",
                     amount: childAmount,
                     percentage: parentTotal > 0 ? Double(truncating: (childAmount / parentTotal) as NSNumber) : 0,
+                    parentID: id,
                     children: []
                 )
             }.sorted { $0.amount > $1.amount }
@@ -220,6 +224,7 @@ final class ReportViewModel {
                 colorHex: entry.cat.colorHex,
                 amount: entry.total,
                 percentage: totalExpense > 0 ? Double(truncating: (entry.total / totalExpense) as NSNumber) : 0,
+                parentID: nil,
                 children: childItems
             )
         }.sorted { $0.amount > $1.amount }
@@ -233,6 +238,7 @@ final class ReportViewModel {
                 colorHex: "#AAAAAA",
                 amount: uncategorizedTotal,
                 percentage: totalExpense > 0 ? Double(truncating: (uncategorizedTotal / totalExpense) as NSNumber) : 0,
+                parentID: nil,
                 children: []
             )
             categoryExpenses.append(uncategorizedItem)
@@ -275,9 +281,8 @@ final class ReportViewModel {
             let monthFmt = Date.FormatStyle.dateTime.month(.abbreviated)
             let yearFmt = Date.FormatStyle.dateTime.year(.twoDigits)
 
-            var byYearMonth: [String: (yearLabel: String?, monthLabel: String, income: Decimal, expense: Decimal)] = [:]
+            var byYearMonth: [String: (monthLabel: String, income: Decimal, expense: Decimal)] = [:]
             var order: [String] = []
-            var prevYear: String?
 
             for t in filtered {
                 let yearKey = t.date.formatted(yearFmt)
@@ -286,14 +291,11 @@ final class ReportViewModel {
 
                 if byYearMonth[compoundKey] == nil {
                     order.append(compoundKey)
-                    let isNewYear = yearKey != prevYear
                     byYearMonth[compoundKey] = (
-                        yearLabel: isNewYear ? yearKey : nil,
                         monthLabel: monthKey,
                         income: 0,
                         expense: 0
                     )
-                    prevYear = yearKey
                 }
                 guard var entry = byYearMonth[compoundKey] else { continue }
                 if t.type == .income {
@@ -305,18 +307,15 @@ final class ReportViewModel {
             }
             trendData = order.compactMap { key in
                 byYearMonth[key].map { v in
-                    TrendDataPoint(
+                    let (year, _) = parseYearMonth(from: key)
+                    return TrendDataPoint(
                         label: key,
-                        yearLabel: v.yearLabel,
+                        monthLabel: v.monthLabel,
+                        year: year,
                         income: v.income,
                         expense: v.expense
                     )
                 }
-            }
-
-            if let maxIn = trendData.max(by: { $0.income < $1.income }), maxIn.income > 0 {
-            }
-            if let maxEx = trendData.max(by: { $0.expense < $1.expense }), maxEx.expense > 0 {
             }
 
         default:
@@ -349,14 +348,17 @@ final class ReportViewModel {
             }
             trendData = monthOrder.compactMap { key in
                 byMonth[key].map { v in
-                    TrendDataPoint(label: key, yearLabel: nil, income: v.income, expense: v.expense)
+                    let (year, monthLabel) = parseYearMonth(from: key)
+                    return TrendDataPoint(
+                        label: key,
+                        monthLabel: monthLabel,
+                        year: year,
+                        income: v.income,
+                        expense: v.expense
+                    )
                 }
             }
 
-            if let maxIn = trendData.max(by: { $0.income < $1.income }), maxIn.income > 0 {
-            }
-            if let maxEx = trendData.max(by: { $0.expense < $1.expense }), maxEx.expense > 0 {
-            }
         }
     }
 
@@ -455,15 +457,20 @@ final class ReportViewModel {
 
     func goBack() {
         guard let id = selectedCategoryID else { return }
-        // If current selection is a child of a top-level category, go back to parent
+        selectedCategoryID = findItem(id: id)?.parentID
+    }
+
+    private func findItem(id: UUID) -> CategoryExpenseItem? {
         for top in categoryExpenses {
-            if top.children.contains(where: { $0.id == id }) {
-                selectedCategoryID = top.id
-                return
+            if top.id == id { return top }
+            for child in top.children {
+                if child.id == id { return child }
+                for grandchild in child.children {
+                    if grandchild.id == id { return grandchild }
+                }
             }
         }
-        // Already at top level, go to root
-        selectedCategoryID = nil
+        return nil
     }
 
     /// Amount in ledger's default currency (converted if cross-currency)
@@ -483,5 +490,17 @@ final class ReportViewModel {
             current = p
         }
         return current
+    }
+
+    /// Parse compound key into (year, monthLabel). E.g. "24年6月" → (2024, "6月"), "6月" → (nil, "6月")
+    private func parseYearMonth(from key: String) -> (year: Int?, monthLabel: String) {
+        guard let nianIdx = key.firstIndex(of: "年") else {
+            return (nil, key)
+        }
+        let yearStr = String(key[..<nianIdx])
+        let monthStr = String(key[key.index(after: nianIdx)...])
+        guard let yy = Int(yearStr) else { return (nil, key) }
+        let year = yy >= 100 ? yy : 2000 + yy
+        return (year, monthStr)
     }
 }

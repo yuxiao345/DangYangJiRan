@@ -44,6 +44,9 @@ extension Font {
     /// Mono data small — 12pt Medium
     static let designMonoDataSmall = Font.custom("JetBrainsMono-Medium", size: 12, relativeTo: .caption2)
 
+    /// Mono data compact — 11pt Medium (chart rows, compact labels)
+    static let designMonoDataCompact = Font.custom("JetBrainsMono-Medium", fixedSize: 11)
+
     // MARK: Space Grotesk additional
 
     /// Body caption — 12pt Regular
