@@ -94,6 +94,7 @@ struct AddEditAccountView: View {
                             Text("Logo")
                                 .foregroundStyle(.primary)
                             Spacer()
+                            #if os(iOS)
                             if let logoID = selectedLogoID, let logo = BankLogoPresets.all.first(where: { $0.id == logoID }) {
                                 HStack(spacing: 8) {
                                     Image(uiImage: logo.logoImage)
@@ -107,6 +108,10 @@ struct AddEditAccountView: View {
                                 Text("不选择（使用类型图标）")
                                     .foregroundStyle(.secondary)
                             }
+                            #else
+                            Text("不选择（使用类型图标）")
+                                .foregroundStyle(.secondary)
+                            #endif
                         }
                     }
                 }
@@ -134,11 +139,15 @@ struct AddEditAccountView: View {
                     }
                 }
             }
+            #if os(iOS)
             .sheet(isPresented: $showLogoPicker) {
                 BankLogoPickerView(selectedLogoID: $selectedLogoID)
             }
+            #endif
             .navigationTitle(isEditing ? "编辑账户" : "新增账户")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .errorAlert("保存失败", message: $errorMessage)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

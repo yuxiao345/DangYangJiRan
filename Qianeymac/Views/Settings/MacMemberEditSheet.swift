@@ -24,7 +24,7 @@ struct MacMemberEditSheet: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("编辑联系人").font(.title2.weight(.semibold))
+            Text("编辑联系人").font(.designHeadlineLarge)
             Form {
                 TextField("姓名", text: $name)
                 Picker("头像", selection: $avatar) {

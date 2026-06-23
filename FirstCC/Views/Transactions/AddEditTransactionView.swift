@@ -801,6 +801,7 @@ struct AddEditTransactionView: View {
                 }
                 .foregroundStyle(type == t ? Color.designPrimaryContainer : Color.designOnSurfaceVariant)
                 .buttonStyle(.plain)
+                .disabled(editing != nil)
             }
         }
         .padding(4)
@@ -1281,6 +1282,7 @@ struct AddEditTransactionView: View {
                     }
                     .foregroundStyle(lendingDirection == d ? Color.designPrimaryContainer : Color.designOnSurfaceVariant)
                     .buttonStyle(.plain)
+                    .disabled(editing != nil)
                 }
             }
             .padding(4)
@@ -1647,6 +1649,7 @@ struct AddEditTransactionView: View {
                 itemIcon: { $0.iconName ?? "creditcard" },
                 itemColor: { Color(hex: $0.colorHex ?? "#007AFF") },
                 recentKey: "recent_account",
+                groupLabel: { $0.type.displayName },
                 selection: $selectedAccount
             )
         case .toAccount:
@@ -1657,6 +1660,7 @@ struct AddEditTransactionView: View {
                 itemIcon: { $0.iconName ?? "creditcard" },
                 itemColor: { Color(hex: $0.colorHex ?? "#007AFF") },
                 recentKey: "recent_toaccount",
+                groupLabel: { $0.type.displayName },
                 selection: $selectedToAccount
             )
         case .category:
@@ -2092,10 +2096,25 @@ struct AddEditTransactionView: View {
         if t.type == .lending {
             t.lendingDirection = lendingDirection
             if lendingDirection == LendingDirection.lendOut || lendingDirection == LendingDirection.borrowIn {
-                t.lendingStatus = LendingStatus.pending
+                // Preserve settled status — don't reset an already-settled debt back to pending
+                if original.lendingStatus != .settled {
+                    t.lendingStatus = .pending
+                }
             }
-            if (lendingDirection == LendingDirection.collect || lendingDirection == LendingDirection.repay) && !selectedLendingIDs.isEmpty {
-                try linkSettledLendingTransactions(to: t.id)
+            if lendingDirection == LendingDirection.collect || lendingDirection == LendingDirection.repay {
+                // Unlink previously settled transactions before re-linking with updated selection
+                let unlinkReq = NSFetchRequest<Transaction>(entityName: "Transaction")
+                unlinkReq.predicate = NSPredicate(format: "settledByLendingTransactionId == %@", id as CVarArg)
+                if let previouslySettled = try? modelContext.fetch(unlinkReq) {
+                    for item in previouslySettled {
+                        item.settledByLendingTransactionId = nil
+                        item.settledAmount = nil
+                        item.lendingStatus = .pending
+                    }
+                }
+                if !selectedLendingIDs.isEmpty {
+                    try linkSettledLendingTransactions(to: t.id)
+                }
             }
         }
         if t.type == .income, !selectedExpenseIDs.isEmpty {

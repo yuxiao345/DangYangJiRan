@@ -13,7 +13,7 @@ struct CreateLedgerSheet: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Text("新建账本").font(.title2.weight(.semibold))
+            Text("新建账本").font(.designHeadlineLarge)
             Form {
                 TextField("账本名称", text: $name)
                 Picker("类型", selection: $type) {

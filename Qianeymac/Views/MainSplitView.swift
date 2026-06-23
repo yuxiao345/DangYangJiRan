@@ -111,8 +111,6 @@ struct MainSplitView: View {
             TransactionListContent()
         case .reports:
             ReportTypeContent()
-        case .settings:
-            MacSettingsView()
         }
     }
 

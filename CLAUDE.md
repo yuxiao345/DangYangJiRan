@@ -5,6 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Principles
 
 1. **查文档再写代码。** 对实现方法不确定时，先查 Apple 官方文档和开发者论坛，不要自己猜测。
+   - **返工两次即查。** 同一问题的修改超过 2 次仍未达到预期，必须停下来查阅 Apple 官方文档，确认标准做法后再继续。不能用熟悉的 API 反复拼凑试错。
+   - **不要默认跳过。** "这个应该能拼出来"不等于"不需要查文档"。动手前主动问：Apple 对这个场景有没有专门的 API？如果有，那才是正确答案。如果有，那才是正确答案。
 2. **追根因再修。** 标准 API 不达预期时，先去官方文档和论坛查清为什么，不要急于引入 workaround。上次 CKShare 过度工程化就是教训。
 3. **动代码前先确认。** 任何代码修改必须先解释方案并等用户明确同意。参见 [[feedback_ask_before_code]]。
 4. **iOS 26 优先。** 技术方案使用 Apple 最新推荐 API（iOS 26+），优先兼容 iOS 26.5 正式版。参见 [[feedback_latest_apple_api]]。

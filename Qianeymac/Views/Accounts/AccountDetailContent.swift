@@ -12,17 +12,17 @@ struct AccountDetailContent: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(account.name).font(.title2.weight(.semibold)).foregroundStyle(Color.designOnSurface)
-                    Text(account.typeDisplayName).font(.caption).foregroundStyle(Color.designOnSurfaceVariant)
+                    Text(account.name).font(.designHeadlineLarge).foregroundStyle(Color.designOnSurface)
+                    Text(account.typeDisplayName).font(.designBodyCaption).foregroundStyle(Color.designOnSurfaceVariant)
                 }
                 HStack(spacing: 4) {
                     Text(CurrencyFormatter.currencySymbol(for: account.currencyCode))
-                        .font(.title3).foregroundStyle(Color.designPrimaryFixedDim)
+                        .font(.designHeadlineMedium).foregroundStyle(Color.designPrimaryFixedDim)
                     Text(CurrencyFormatter.formatDecimal(amount: balance, fractionDigits: 2))
                         .font(.largeTitle.weight(.bold)).foregroundStyle(Color.designOnSurface)
                 }
                 Divider()
-                Text("交易记录").font(.headline).foregroundStyle(Color.designOnSurface)
+                Text("交易记录").font(.designHeadlineMedium).foregroundStyle(Color.designOnSurface)
                 if transactions.isEmpty {
                     Text("暂无交易记录")
                         .foregroundStyle(Color.designOnSurfaceVariant).padding(.top, 20)

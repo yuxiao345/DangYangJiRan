@@ -26,17 +26,25 @@ struct TrendChartView: View {
 
     // MARK: - Bar Scaling
 
-    private var globalMax: Double {
-        dataPoints.reduce(into: 0.0) { acc, dp in
-            let inc = Double(truncating: dp.income as NSNumber)
-            let exp = Double(truncating: dp.expense as NSNumber)
-            let net = abs(inc - exp)
-            acc = max(acc, inc, exp, net)
+    /// Dynamic ceiling: sum of VISIBLE metrics for the heaviest month.
+    /// Used for both bar widths AND axis labels — toggling legend items updates the axis.
+    private var barCeil: Double {
+        var maxSum = 0.0
+        for dp in dataPoints {
+            var s = 0.0
+            if showIncome { s += Double(truncating: dp.income as NSNumber) }
+            if showExpense { s += Double(truncating: dp.expense as NSNumber) }
+            if showNet {
+                let n = Double(truncating: dp.income as NSNumber) - Double(truncating: dp.expense as NSNumber)
+                if n > 0 { s += n }
+            }
+            maxSum = max(maxSum, s)
         }
+        return maxSum > 0 ? maxSum : 100
     }
 
     private var axisCeiling: Double {
-        niceCeiling(globalMax)
+        niceCeiling(barCeil)
     }
 
     // MARK: - Display Order
@@ -68,13 +76,14 @@ struct TrendChartView: View {
             emptyState
         } else {
             let ceil = axisCeiling
+            let bCeil = barCeil
             let t = totals
             let yr = yearRange
             ScrollView {
                 VStack(spacing: 16) {
                     summaryCards(totals: t)
                         .padding(.horizontal, 16)
-                    chartCard(ceil: ceil, yearRange: yr)
+                    chartCard(ceil: ceil, barCeil: bCeil, yearRange: yr)
                         .padding(.horizontal, 16)
                 }
                 .padding(.vertical, 8)
@@ -143,11 +152,11 @@ struct TrendChartView: View {
 
     // MARK: - Chart Card
 
-    private func chartCard(ceil: Double, yearRange: String) -> some View {
+    private func chartCard(ceil: Double, barCeil: Double, yearRange: String) -> some View {
         let axisVals: [Double] = [0, ceil / 2, ceil]
         return VStack(spacing: 0) {
             chartHeader(yearRange: yearRange)
-            chartRows(ceil: ceil)
+            chartRows(ceil: barCeil)
             chartAxis(values: axisVals)
         }
         .padding(16)
@@ -274,7 +283,7 @@ struct TrendChartView: View {
             }
             .frame(width: 42, alignment: .leading)
 
-            // Three independent bar segments
+            // Three bar segments, all scaled to the same dynamic ceil (sum of visible metrics for heaviest month)
             GeometryReader { geo in
                 let totalW = geo.size.width
                 HStack(spacing: 3) {
@@ -288,10 +297,10 @@ struct TrendChartView: View {
                             .fill(Color.designAccentRed.opacity(0.7))
                             .frame(width: max(4, totalW * (expenseVal / ceil)))
                     }
-                    if showNet, netVal != 0 {
+                    if showNet, netVal > 0 {
                         RoundedRectangle(cornerRadius: 3)
                             .fill(Color.blue.opacity(0.6))
-                            .frame(width: max(4, totalW * (abs(netVal) / ceil)))
+                            .frame(width: max(4, totalW * (netVal / ceil)))
                     }
                     Spacer(minLength: 0)
                 }
@@ -345,8 +354,8 @@ struct TrendChartView: View {
         let exp = floor(log10(value))
         let base = pow(10, exp)
         let mantissa = value / base
-        let nice: Double = mantissa <= 1 ? 1 : mantissa <= 2 ? 2 : mantissa <= 5 ? 5 : 10
-        return nice * base * 1.2
+        let nice: Double = mantissa <= 1 ? 1 : mantissa <= 1.5 ? 1.5 : mantissa <= 2 ? 2 : mantissa <= 2.5 ? 2.5 : mantissa <= 3 ? 3 : mantissa <= 4 ? 4 : mantissa <= 5 ? 5 : mantissa <= 7.5 ? 7.5 : 10
+        return nice * base
     }
 
     private func formatNetAmount(_ value: Double) -> String {

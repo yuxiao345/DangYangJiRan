@@ -11,7 +11,7 @@ struct AccountListContent: View {
         ScrollView {
             LazyVStack(spacing: 8) {
                 ForEach(groupedAccounts, id: \.key) { group in
-                    Text(group.key).font(.caption).foregroundStyle(Color.designOnSurfaceVariant)
+                    Text(group.key).font(.designBodyCaption).foregroundStyle(Color.designOnSurfaceVariant)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     ForEach(group.value) { account in
                         NavigationLink(value: account) {

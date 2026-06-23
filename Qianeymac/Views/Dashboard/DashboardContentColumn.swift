@@ -105,7 +105,7 @@ struct DashboardContentColumn: View {
                     Image(systemName: change >= 0 ? "arrow.up.right" : "arrow.down.right")
                         .font(.system(size: 10, weight: .bold))
                     Text("\(change >= 0 ? "+" : "")\(CurrencyFormatter.formatDecimal(amount: change, fractionDigits: 0)) (\(String(format: "%.1f", Double(truncating: pct as NSNumber)))%)")
-                        .font(.custom("JetBrainsMono-Medium", fixedSize: 13))
+                        .font(.designMonoData)
                     Text("较上月")
                         .font(.designBodyCaption)
                         .foregroundStyle(Color.designOnSurfaceVariant)
@@ -176,7 +176,7 @@ struct DashboardContentColumn: View {
                     .foregroundStyle(isBudgetHovered ? Color.designAccentGreen : Color.designOnSurface)
                 Spacer()
                 Image(systemName: "chevron.right")
-                    .font(.caption)
+                    .font(.designBodyCaption)
                     .foregroundStyle(isBudgetHovered ? Color.designAccentGreen : Color.secondary)
                     .offset(x: isBudgetHovered ? 2 : 0)
             }
@@ -204,12 +204,12 @@ struct DashboardContentColumn: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             HStack {
                 Image(systemName: "plus.circle")
-                    .font(.title3)
+                    .font(.designHeadlineMedium)
                 Text("设置预算，掌控每月开支")
                     .font(.designBodyMedium)
                 Spacer()
                 Image(systemName: "chevron.right")
-                    .font(.caption)
+                    .font(.designBodyCaption)
             }
             .foregroundStyle(Color.designOnSurfaceVariant)
         }

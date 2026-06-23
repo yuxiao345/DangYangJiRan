@@ -14,7 +14,7 @@ struct MacCategoryListView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
-                    Text("分类管理").font(.headline).foregroundStyle(Color.designOnSurface)
+                    Text("分类管理").font(.designHeadlineMedium).foregroundStyle(Color.designOnSurface)
                     Spacer()
                     Button { showAddSheet = true } label: {
                         Image(systemName: "plus").fontWeight(.semibold)
@@ -23,13 +23,13 @@ struct MacCategoryListView: View {
                 }
 
                 if !expenseCategories.isEmpty {
-                    Text("支出分类").font(.caption).foregroundStyle(Color.designOnSurfaceVariant)
+                    Text("支出分类").font(.designBodyCaption).foregroundStyle(Color.designOnSurfaceVariant)
                     ForEach(flatExpense) { cat in
                         categoryRow(cat)
                     }
                 }
                 if !incomeCategories.isEmpty {
-                    Text("收入分类").font(.caption).foregroundStyle(Color.designOnSurfaceVariant).padding(.top, 8)
+                    Text("收入分类").font(.designBodyCaption).foregroundStyle(Color.designOnSurfaceVariant).padding(.top, 8)
                     ForEach(flatIncome) { cat in
                         categoryRow(cat)
                     }
@@ -60,9 +60,9 @@ struct MacCategoryListView: View {
         HStack(spacing: 8) {
             Image(systemName: cat.iconName)
                 .foregroundStyle(Color(hex: cat.colorHex))
-            Text(LocalizedStringKey(cat.name)).font(.body)
+            Text(LocalizedStringKey(cat.name)).font(.designBodyMedium)
             if cat.isSystem {
-                Text("内置").font(.caption2).foregroundStyle(.secondary)
+                Text("内置").font(.designBodyCaption).foregroundStyle(.secondary)
             }
             Spacer()
             Toggle("", isOn: Binding(

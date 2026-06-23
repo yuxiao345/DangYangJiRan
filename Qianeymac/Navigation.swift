@@ -8,7 +8,6 @@ enum MacNavItem: String, CaseIterable, Identifiable {
     case accounts = "账户"
     case transactions = "流水"
     case reports = "报表"
-    case settings = "设置"
 
     var id: String { rawValue }
 
@@ -18,7 +17,6 @@ enum MacNavItem: String, CaseIterable, Identifiable {
         case .accounts: "creditcard"
         case .transactions: "list.bullet"
         case .reports: "chart.bar"
-        case .settings: "gearshape"
         }
     }
 }

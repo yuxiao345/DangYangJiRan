@@ -56,14 +56,14 @@ struct MacLedgerSettingsView: View {
                             .foregroundStyle(ledger.isShared ? Color.designPrimaryFixed : Color.designPrimaryContainer)
                         VStack(alignment: .leading, spacing: 2) {
                             HStack(spacing: 4) {
-                                Text(ledger.name).font(.body).foregroundStyle(Color.designOnSurface)
+                                Text(ledger.name).font(.designBodyMedium).foregroundStyle(Color.designOnSurface)
                                 if ledger.isShared {
-                                    Image(systemName: "person.2.fill").font(.caption2)
+                                    Image(systemName: "person.2.fill").font(.designBodyCaption)
                                         .foregroundStyle(Color.designPrimaryFixed)
                                 }
                             }
                             Text("\(ledger.type.displayName) · \(ledger.defaultCurrencyCode)")
-                                .font(.caption).foregroundStyle(Color.designOnSurfaceVariant)
+                                .font(.designBodyCaption).foregroundStyle(Color.designOnSurfaceVariant)
                         }
                         Spacer()
                         if ledger.id == appContainer.currentLedger?.id {
@@ -182,27 +182,152 @@ enum LedgerDetailNavItem: Hashable {
 
 // MARK: - Appearance Settings
 
+// MARK: - Appearance Settings
+
 struct AppearanceSettingsView: View {
     @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 28) {
+                // Section: Appearance Mode
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("外观").font(.headline).foregroundStyle(Color.designOnSurface)
-                    Picker("外观模式", selection: $appearanceMode) {
-                        Text("跟随系统").tag(AppearanceMode.system)
-                        Text("浅色").tag(AppearanceMode.light)
-                        Text("深色").tag(AppearanceMode.dark)
+                    Text("外观模式").font(.designLabel).foregroundStyle(Color.designOnSurfaceVariant)
+
+                    HStack(spacing: 16) {
+                        appearanceOption(.system)
+                        appearanceOption(.light)
+                        appearanceOption(.dark)
                     }
-                    .pickerStyle(.segmented).frame(maxWidth: 300)
                 }
-                .padding(24).glassCard(cornerRadius: 16)
+
+                Spacer()
             }
-            .padding(32).frame(maxWidth: 600)
+            .padding(32)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .designScreen()
-        .navigationTitle("外观")
+    }
+
+    // MARK: - Option Card
+
+    private func appearanceOption(_ mode: AppearanceMode) -> some View {
+        let isSelected = appearanceMode == mode
+        return VStack(spacing: 8) {
+            // Preview thumbnail
+            appearancePreview(mode)
+                .frame(width: 128, height: 80)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(isSelected ? Color.accentColor : Color.designOnSurfaceVariant.opacity(0.15), lineWidth: isSelected ? 2 : 1)
+                )
+                .shadow(color: .black.opacity(0.06), radius: 3, y: 2)
+
+            // Radio + label
+            HStack(spacing: 6) {
+                Image(systemName: isSelected ? "circle.inset.filled" : "circle")
+                    .font(.system(size: 12))
+                    .foregroundStyle(isSelected ? Color.accentColor : Color.designOnSurfaceVariant.opacity(0.5))
+                Text(mode.displayName)
+                    .font(.designBodyCaption)
+                    .foregroundStyle(isSelected ? Color.designOnSurface : Color.designOnSurfaceVariant)
+            }
+        }
+        .onTapGesture { appearanceMode = mode }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Preview Thumbnail
+
+    @ViewBuilder
+    private func appearancePreview(_ mode: AppearanceMode) -> some View {
+        let bgColor: Color = {
+            switch mode {
+            case .light: Color.white
+            case .dark: Color(red: 0.15, green: 0.15, blue: 0.17)
+            case .system: Color(red: 0.85, green: 0.85, blue: 0.88) // gradient-like
+            }
+        }()
+
+        let windowBg: Color = {
+            switch mode {
+            case .light: Color(red: 0.95, green: 0.95, blue: 0.97)
+            case .dark: Color(red: 0.12, green: 0.12, blue: 0.14)
+            case .system: Color(red: 0.88, green: 0.88, blue: 0.90)
+            }
+        }()
+
+        let sidebarBg: Color = {
+            switch mode {
+            case .light: Color(red: 0.92, green: 0.92, blue: 0.94)
+            case .dark: Color(red: 0.10, green: 0.10, blue: 0.12)
+            case .system: Color(red: 0.84, green: 0.84, blue: 0.87)
+            }
+        }()
+
+        let toolbarBg: Color = {
+            switch mode {
+            case .light: Color(red: 0.97, green: 0.97, blue: 0.98)
+            case .dark: Color(red: 0.16, green: 0.16, blue: 0.18)
+            case .system: Color(red: 0.91, green: 0.91, blue: 0.93)
+            }
+        }()
+
+        let textFg: Color = {
+            switch mode {
+            case .light: Color.black.opacity(0.8)
+            case .dark: Color.white.opacity(0.85)
+            case .system: Color.black.opacity(0.7)
+            }
+        }()
+
+        ZStack {
+            // Window chrome background
+            RoundedRectangle(cornerRadius: 8)
+                .fill(bgColor)
+
+            VStack(spacing: 0) {
+                // Traffic light buttons
+                HStack(spacing: 4) {
+                    Circle().fill(Color.red.opacity(0.7)).frame(width: 4, height: 4)
+                    Circle().fill(Color.orange.opacity(0.6)).frame(width: 4, height: 4)
+                    Circle().fill(Color.green.opacity(0.6)).frame(width: 4, height: 4)
+                    Spacer()
+                }
+                .padding(.horizontal, 6)
+                .padding(.top, 5)
+                .padding(.bottom, 3)
+
+                // Toolbar
+                Rectangle().fill(toolbarBg).frame(height: 7)
+
+                // Content area with sidebar mock
+                HStack(spacing: 0) {
+                    Rectangle().fill(sidebarBg).frame(width: 28)
+                    VStack(spacing: 2) {
+                        ForEach(0..<3, id: \.self) { i in
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(textFg.opacity(0.15))
+                                .frame(height: 4)
+                                .padding(.horizontal, i == 0 ? 6 : (i == 1 ? 12 : 18))
+                        }
+                        Spacer()
+                    }
+                    .padding(.vertical, 6)
+                }
+            }
+        }
+    }
+}
+
+private extension AppearanceMode {
+    var displayName: String {
+        switch self {
+        case .system: String(localized: "自动")
+        case .light: String(localized: "浅色")
+        case .dark: String(localized: "深色")
+        }
     }
 }
 
@@ -213,13 +338,13 @@ struct AboutSettingsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("关于").font(.headline).foregroundStyle(Color.designOnSurface)
+                    Text("关于").font(.designHeadlineMedium).foregroundStyle(Color.designOnSurface)
                     Text("钱伲 — 家庭记账与资产管理")
                         .foregroundStyle(Color.designOnSurfaceVariant)
                     if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
                        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String {
                         Text("版本 \(version) (\(build))")
-                            .font(.caption)
+                            .font(.designBodyCaption)
                             .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
                     }
                 }

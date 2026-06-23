@@ -20,71 +20,123 @@ struct MacAddTransactionSheet: View {
     let editing: Transaction?
     let displayMode: Bool
 
-    @State private var isEditing: Bool = false
+    @State private var isEditing: Bool
     @State private var deleteTarget: Transaction?
-    @State private var type: TransactionType = .expense
-    @State private var amount: Decimal = 0
-    @State private var amountString: String = ""
-    @State private var note: String = ""
-    @State private var date: Date = Date()
+    @State private var type: TransactionType
+    @State private var amount: Decimal
+    @State private var amountString: String
+    @State private var note: String
+    @State private var date: Date
     @State private var selectedAccount: Account?
     @State private var selectedToAccount: Account?
     @State private var selectedCategory: Category?
     @State private var selectedMember: Member?
     @State private var selectedMerchant: Merchant?
     @State private var selectedProject: Project?
-    @State private var accounts: [Account] = []
-    @State private var categories: [Category] = []
-    @State private var members: [Member] = []
-    @State private var merchants: [Merchant] = []
-    @State private var projects: [Project] = []
+    @State private var accounts: [Account]
+    @State private var categories: [Category]
+    @State private var members: [Member]
+    @State private var merchants: [Merchant]
+    @State private var projects: [Project]
     @State private var pickerSheet: MacSheetPicker?
     @State private var errorMessage: String?
-    @State private var lendingDirection: LendingDirection = .lendOut
-    @State private var pendingLendingTransactions: [Transaction] = []
-    @State private var selectedLendingIDs: Set<UUID> = []
-    @State private var templates: [TransactionTemplate] = []
-    @State private var showTemplates = false
-    @State private var isSplit = false
-    @State private var splitItems: [SplitItemDraft] = []
-    @State private var isReimbursable = false
-    @State private var pendingExpenses: [Transaction] = []
-    @State private var selectedExpenseIDs: Set<UUID> = []
-    @State private var selectedCurrencyCode: String = ""
+    @State private var lendingDirection: LendingDirection
+    @State private var pendingLendingTransactions: [Transaction]
+    @State private var selectedLendingIDs: Set<UUID>
+    @State private var templates: [TransactionTemplate]
+    @State private var showTemplates: Bool
+    @State private var isSplit: Bool
+    @State private var splitItems: [SplitItemDraft]
+    @State private var isReimbursable: Bool
+    @State private var pendingExpenses: [Transaction]
+    @State private var selectedExpenseIDs: Set<UUID>
+    @State private var selectedCurrencyCode: String
     @State private var exchangeRate: Decimal?
     @State private var convertedAmount: Decimal?
-    @State private var selectedPhotos: [PhotosPickerItem] = []
-    @State private var photoDataList: [Data] = []
-    @State private var showRefundSheet = false
+    @State private var selectedPhotos: [PhotosPickerItem]
+    @State private var photoDataList: [Data]
+    @State private var showRefundSheet: Bool
 
     init(editing: Transaction? = nil, displayMode: Bool = false, refunding: Transaction? = nil) {
+        // Resolve initial values for all @State vars outside conditionals
+        // (Xcode 27 @State macro forbids default + init override on same var)
+        let initEditing: Transaction?
+        let initDisplayMode: Bool
+        let initType: TransactionType
+        let initAmount: Decimal
+        let initAmountString: String
+        let initNote: String
+        let initDate: Date
+        let initAccount: Account?
+        let initToAccount: Account?
+        let initCategory: Category?
+        let initMember: Member?
+        let initMerchant: Merchant?
+        let initProject: Project?
+        let initLendingDirection: LendingDirection
+
         if let t = refunding {
-            self.editing = nil; self.displayMode = false
-            _type = State(initialValue: t.type)
-            _amount = State(initialValue: abs(t.amount))
-            _amountString = State(initialValue: String(describing: abs(t.amount)))
-            _note = State(initialValue: "退款: \(t.note ?? "")")
-            _date = State(initialValue: Date())
-            _selectedAccount = State(initialValue: t.account)
-            _selectedCategory = State(initialValue: t.category)
-            return
+            initEditing = nil; initDisplayMode = false
+            initType = t.type; initAmount = abs(t.amount)
+            initAmountString = String(describing: abs(t.amount))
+            initNote = "退款: \(t.note ?? "")"; initDate = Date()
+            initAccount = t.account; initToAccount = nil
+            initCategory = t.category; initMember = nil
+            initMerchant = nil; initProject = nil
+            initLendingDirection = .lendOut
+        } else if let t = editing {
+            initEditing = t; initDisplayMode = displayMode
+            initType = t.type; initAmount = abs(t.amount)
+            initAmountString = String(describing: abs(t.amount))
+            initNote = t.note ?? ""; initDate = t.date
+            initAccount = t.account; initToAccount = t.toAccount
+            initCategory = t.category; initMember = t.member
+            initMerchant = t.merchant; initProject = t.project
+            initLendingDirection = t.lendingDirection ?? .lendOut
+        } else {
+            initEditing = nil; initDisplayMode = false
+            initType = .expense; initAmount = 0
+            initAmountString = ""; initNote = ""; initDate = Date()
+            initAccount = nil; initToAccount = nil
+            initCategory = nil; initMember = nil
+            initMerchant = nil; initProject = nil
+            initLendingDirection = .lendOut
         }
-        self.editing = editing
-        self.displayMode = displayMode
-        if let t = editing {
-            _type = State(initialValue: t.type)
-            _amount = State(initialValue: abs(t.amount))
-            _amountString = State(initialValue: String(describing: abs(t.amount)))
-            _note = State(initialValue: t.note ?? "")
-            _date = State(initialValue: t.date)
-            _selectedAccount = State(initialValue: t.account)
-            _selectedToAccount = State(initialValue: t.toAccount)
-            _selectedCategory = State(initialValue: t.category)
-            _selectedMember = State(initialValue: t.member)
-            _selectedMerchant = State(initialValue: t.merchant)
-            _selectedProject = State(initialValue: t.project)
-            _lendingDirection = State(initialValue: t.lendingDirection ?? .lendOut)
-        }
+
+        self.editing = initEditing
+        self.displayMode = initDisplayMode
+        _type = State(initialValue: initType)
+        _amount = State(initialValue: initAmount)
+        _amountString = State(initialValue: initAmountString)
+        _note = State(initialValue: initNote)
+        _date = State(initialValue: initDate)
+        _selectedAccount = State(initialValue: initAccount)
+        _selectedToAccount = State(initialValue: initToAccount)
+        _selectedCategory = State(initialValue: initCategory)
+        _selectedMember = State(initialValue: initMember)
+        _selectedMerchant = State(initialValue: initMerchant)
+        _selectedProject = State(initialValue: initProject)
+        _lendingDirection = State(initialValue: initLendingDirection)
+        // Remaining @State: use default values (always the same regardless of path)
+        _isEditing = State(initialValue: false)
+        _accounts = State(initialValue: [])
+        _categories = State(initialValue: [])
+        _members = State(initialValue: [])
+        _merchants = State(initialValue: [])
+        _projects = State(initialValue: [])
+        _pendingLendingTransactions = State(initialValue: [])
+        _selectedLendingIDs = State(initialValue: [])
+        _templates = State(initialValue: [])
+        _showTemplates = State(initialValue: false)
+        _isSplit = State(initialValue: false)
+        _splitItems = State(initialValue: [])
+        _isReimbursable = State(initialValue: false)
+        _pendingExpenses = State(initialValue: [])
+        _selectedExpenseIDs = State(initialValue: [])
+        _selectedCurrencyCode = State(initialValue: "")
+        _selectedPhotos = State(initialValue: [])
+        _photoDataList = State(initialValue: [])
+        _showRefundSheet = State(initialValue: false)
     }
 
     private var isViewing: Bool { displayMode && !isEditing }
@@ -94,6 +146,8 @@ struct MacAddTransactionSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
+                    // 模板（仅新建时，对齐iOS）
+                    if editing == nil && !templates.isEmpty { templateSection }
                     // 类型切换
                     typeRow
                     // 借贷方向
@@ -194,7 +248,7 @@ struct MacAddTransactionSheet: View {
                                         .frame(width: 40, height: 40).clipShape(RoundedRectangle(cornerRadius: 6))
                                         .overlay(alignment: .topTrailing) {
                                             Button { photoDataList.remove(at: i) } label: {
-                                                Image(systemName: "xmark.circle.fill").font(.caption).foregroundStyle(.red)
+                                                Image(systemName: "xmark.circle.fill").font(.designBodyCaption).foregroundStyle(.red)
                                             }.buttonStyle(.plain)
                                         }
                                 }
@@ -239,7 +293,6 @@ struct MacAddTransactionSheet: View {
         if type == .expense && editing == nil { splitReimbToggle }
         if isSplit { splitSection }
         if type == .income && !pendingExpenses.isEmpty { reimbursementSection }
-        if editing == nil && !templates.isEmpty { templateSection }
     }
 
     private var splitReimbToggle: some View {
@@ -333,7 +386,7 @@ struct MacAddTransactionSheet: View {
             HStack(spacing: 8) {
                 ForEach(Array(recent.prefix(4).enumerated()), id: \.offset) { _, tpl in
                     Button { applyTemplate(tpl) } label: {
-                        Text(tpl.name).font(.system(size: 11)).lineLimit(1)
+                        Text(tpl.name).font(.designBodyCaption).lineLimit(1)
                             .padding(.horizontal, 8).padding(.vertical, 6)
                             .glassCard(cornerRadius: 8)
                     }.buttonStyle(.plain)
@@ -477,6 +530,7 @@ struct MacAddTransactionSheet: View {
                     .stroke(sel ? Color.designPrimaryContainer.opacity(0.4) : Color.clear, lineWidth: 1))
                 .foregroundStyle(sel ? Color.designPrimaryContainer : Color.designOnSurfaceVariant)
         }.buttonStyle(.plain)
+        .disabled(editing != nil)
     }
 
     // MARK: - Lending Section
@@ -535,6 +589,7 @@ struct MacAddTransactionSheet: View {
                     .stroke(sel ? Color.orange.opacity(0.4) : Color.clear, lineWidth: 1))
                 .foregroundStyle(sel ? .orange : Color.designOnSurfaceVariant)
         }.buttonStyle(.plain)
+        .disabled(editing != nil)
     }
 
     // MARK: - Recent Picker Row
@@ -578,9 +633,9 @@ struct MacAddTransactionSheet: View {
                     let isSel = (selected as? any Identifiable)?.id as? AnyHashable == item.id as? AnyHashable
                     Button { onSelect(item) } label: {
                         VStack(spacing: 4) {
-                            Image(systemName: icon(item)).font(.system(size: 16))
+                            Image(systemName: icon(item)).font(.system(size: 14))
                                 .foregroundStyle(isSel ? Color.designPrimaryContainer : Color.designOnSurfaceVariant)
-                            Text(name(item)).font(.system(size: 9)).lineLimit(1)
+                            Text(name(item)).font(.designBodyCaption).lineLimit(1)
                                 .foregroundStyle(isSel ? Color.designPrimaryContainer : Color.designOnSurfaceVariant)
                         }
                         .frame(maxWidth: .infinity).padding(.vertical, 8)
@@ -765,7 +820,7 @@ struct MacPickerList<T: Identifiable & Hashable>: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Text(title).font(.headline).padding(.top, 12).padding(.bottom, 8)
+            Text(title).font(.designHeadlineMedium).padding(.top, 12).padding(.bottom, 8)
             List {
                 Button { selection = nil; dismiss() } label: {
                     Label("清除选择", systemImage: "xmark.circle").foregroundStyle(.secondary)

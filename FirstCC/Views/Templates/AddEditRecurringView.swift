@@ -144,6 +144,7 @@ struct AddEditRecurringView: View {
                         itemIcon: { $0.iconName ?? "creditcard" },
                         itemColor: { Color(hex: $0.colorHex ?? "#007AFF") },
                         recentKey: "recent_account",
+                        groupLabel: { $0.type.displayName },
                         selection: $selectedAccount
                     )
                 case .toAccount:
@@ -154,6 +155,7 @@ struct AddEditRecurringView: View {
                         itemIcon: { $0.iconName ?? "creditcard" },
                         itemColor: { Color(hex: $0.colorHex ?? "#007AFF") },
                         recentKey: "recent_toaccount",
+                        groupLabel: { $0.type.displayName },
                         selection: $selectedToAccount
                     )
                 case .category:

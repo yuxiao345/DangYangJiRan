@@ -11,6 +11,7 @@ struct SearchablePickerView<Item: Identifiable & Hashable>: View {
     let recentKey: String
     let indentLevel: ((Item) -> Int)?
     let childrenProvider: ((Item) -> [Item])?
+    let groupLabel: ((Item) -> String)?
     @Binding var selection: Item?
 
     @State private var searchText = ""
@@ -25,6 +26,7 @@ struct SearchablePickerView<Item: Identifiable & Hashable>: View {
         recentKey: String,
         indentLevel: ((Item) -> Int)? = nil,
         childrenProvider: ((Item) -> [Item])? = nil,
+        groupLabel: ((Item) -> String)? = nil,
         selection: Binding<Item?>
     ) {
         self.title = title
@@ -35,6 +37,7 @@ struct SearchablePickerView<Item: Identifiable & Hashable>: View {
         self.recentKey = recentKey
         self.indentLevel = indentLevel
         self.childrenProvider = childrenProvider
+        self.groupLabel = groupLabel
         self._selection = selection
     }
 
@@ -49,9 +52,20 @@ struct SearchablePickerView<Item: Identifiable & Hashable>: View {
                     }
                 }
 
-                Section(searchText.isEmpty ? "全部" : "搜索结果") {
-                    ForEach(filteredItems) { item in
-                        itemRow(item)
+                if searchText.isEmpty, let gl = groupLabel {
+                    let groups = groupedItems(using: gl)
+                    ForEach(groups, id: \.label) { group in
+                        Section(group.label) {
+                            ForEach(group.items) { item in
+                                itemRow(item)
+                            }
+                        }
+                    }
+                } else {
+                    Section(searchText.isEmpty ? "全部" : "搜索结果") {
+                        ForEach(filteredItems) { item in
+                            itemRow(item)
+                        }
                     }
                 }
             }
@@ -135,5 +149,19 @@ struct SearchablePickerView<Item: Identifiable & Hashable>: View {
         ids.insert(id, at: 0)
         recentIDs = Array(ids.prefix(8))
         UserDefaults.standard.set(recentIDs, forKey: recentKey)
+    }
+
+    /// Group items preserving the original sorted order (first-seen group wins ordering)
+    private func groupedItems(using gl: (Item) -> String) -> [(label: String, items: [Item])] {
+        var seen: [String] = []
+        var dict: [String: [Item]] = [:]
+        for item in items {
+            let label = gl(item)
+            if dict[label] == nil {
+                seen.append(label)
+            }
+            dict[label, default: []].append(item)
+        }
+        return seen.map { (label: $0, items: dict[$0] ?? []) }
     }
 }

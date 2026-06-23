@@ -34,10 +34,10 @@ struct TransactionListContent: View {
                 LazyVStack(spacing: 6) {
                     if transactions.isEmpty {
                         Text(selectedDate != nil ? "当天没有交易记录" : "本月暂无交易记录")
-                            .font(.caption).foregroundStyle(Color.designOnSurfaceVariant).padding(.top, 40)
+                            .font(.designBodyCaption).foregroundStyle(Color.designOnSurfaceVariant).padding(.top, 40)
                     } else {
                         ForEach(groupedByDate, id: \.key) { group in
-                            Text(group.key).font(.caption).foregroundStyle(Color.designOnSurfaceVariant)
+                            Text(group.key).font(.designBodyCaption).foregroundStyle(Color.designOnSurfaceVariant)
                                 .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 6)
                             ForEach(group.value) { t in
                                 NavigationLink(value: t) {
@@ -73,7 +73,7 @@ struct TransactionListContent: View {
             ToolbarItem(placement: .navigation) {
                 HStack(spacing: 4) {
                     Button { shiftMonth(-1) } label: { Image(systemName: "chevron.left") }
-                    Text(selectedMonth.monthDisplay).font(.headline)
+                    Text(selectedMonth.monthDisplay).font(.designHeadlineMedium)
                     Button { shiftMonth(1) } label: { Image(systemName: "chevron.right") }
                 }
             }
@@ -91,7 +91,7 @@ struct TransactionListContent: View {
             LazyVGrid(columns: cols, spacing: 1) {
                 ForEach(weekdaySymbols, id: \.self) { sym in
                     Text(sym)
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.designLabelSmall)
                         .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
                         .frame(width: cellSize, height: 16)
                 }
@@ -114,7 +114,7 @@ struct TransactionListContent: View {
                             }
                             VStack(spacing: 0) {
                                 Text(d.day > 0 ? "\(d.day)" : "")
-                                    .font(.system(size: 11, weight: d.isToday ? .semibold : .regular))
+                                    .font(d.isToday ? .designBodyCaption.bold() : .designBodyCaption)
                                     .foregroundStyle(
                                         d.date != nil && selectedDate != nil && cal.isDate(d.date!, inSameDayAs: selectedDate!)
                                             ? Color.white : d.day > 0 ? Color.designOnSurface : Color.clear

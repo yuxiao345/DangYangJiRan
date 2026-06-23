@@ -249,7 +249,7 @@ private struct BudgetItemRowView: View {
                         .font(.designBodySmall)
                         .foregroundStyle(isHovered ? Color.designAccentGreen : Color.designOnSurface)
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 9, weight: .semibold))
+                        .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(Color.designOnSurfaceVariant.opacity(isHovered ? 0.6 : 0))
                         .offset(x: isHovered ? 2 : -4)
                 } else {

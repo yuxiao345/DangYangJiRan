@@ -14,7 +14,7 @@ struct MacMemberListView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text("成员管理").font(.headline).foregroundStyle(Color.designOnSurface)
+                    Text("成员管理").font(.designHeadlineMedium).foregroundStyle(Color.designOnSurface)
                     Spacer()
                     Button { showAddAlert = true } label: {
                         Image(systemName: "plus").fontWeight(.semibold)
@@ -53,9 +53,9 @@ struct MacMemberListView: View {
         HStack(spacing: 8) {
             Image(systemName: member.avatar)
                 .foregroundStyle(Color.designPrimaryContainer)
-            Text(LocalizedStringKey(member.name)).font(.body)
+            Text(LocalizedStringKey(member.name)).font(.designBodyMedium)
             if !member.isActive {
-                Text("已停用").font(.caption).foregroundStyle(Color.designOnSurfaceVariant)
+                Text("已停用").font(.designBodyCaption).foregroundStyle(Color.designOnSurfaceVariant)
             }
             Spacer()
             Button {

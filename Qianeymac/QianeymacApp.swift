@@ -75,9 +75,15 @@ struct QianeymacApp: App {
                     .keyboardShortcut("3")
                 Button("报表") { postNavigate(.reports) }
                     .keyboardShortcut("4")
-                Button("设置") { postNavigate(.settings) }
-                    .keyboardShortcut("5")
             }
+        }
+
+        Settings {
+            SettingsWindow()
+                .environment(\.managedObjectContext, appContainer.viewContext)
+                .environment(appContainer)
+                .tint(Color.designAccentGreen)
+                .preferredColorScheme(preferredScheme)
         }
     }
 

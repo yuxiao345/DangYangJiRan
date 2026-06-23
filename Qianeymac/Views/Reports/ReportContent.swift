@@ -39,7 +39,7 @@ struct ReportDetailContent: View {
         VStack(spacing: 16) {
             Image(systemName: "chart.bar.xaxis").font(.system(size: 48))
                 .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
-            Text("报表功能即将上线").font(.title3).foregroundStyle(Color.designOnSurfaceVariant)
+            Text("报表功能即将上线").font(.designHeadlineMedium).foregroundStyle(Color.designOnSurfaceVariant)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .designScreen()
