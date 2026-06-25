@@ -202,7 +202,12 @@
       "Bash(SRCROOT=/Users/gyu/Documents/AI/10-FirstCC BUILT_PRODUCTS_DIR=/tmp/firstcc-build/Build/Products/Debug-iphonesimulator/钱伲.app python3 *)",
       "Bash(xcrun --show-sdk-platform-version --sdk iphonesimulator)",
       "Bash(xcrun *)",
-      "Read(//Applications/Xcode-beta.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/**)"
+      "Read(//Applications/Xcode-beta.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/**)",
+      "Bash(system_profiler SPHardwareDataType)",
+      "Bash(scutil --get ComputerName)",
+      "Bash(scutil --get LocalHostName)",
+      "Bash(rm -rf ~/Library/Developer/Xcode/DerivedData/FirstCC-*)",
+      "Bash(rm -rf /tmp/firstcc-build-mac)"
     ]
   },
   "hooks": {
