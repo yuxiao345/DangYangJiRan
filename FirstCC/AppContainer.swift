@@ -73,9 +73,7 @@ final class AppContainer {
         bankOCRService = BankOCRServiceImpl()
         #endif
         splitService = SplitServiceImpl()
-        #if os(iOS)
         exportService = ExportServiceImpl()
-        #endif
         currencyService = CurrencyServiceImpl()
         exchangeRateService = ExchangeRateServiceImpl()
         if let ckContainer = cloudKitContainer {

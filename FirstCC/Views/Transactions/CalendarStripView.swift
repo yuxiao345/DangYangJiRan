@@ -169,6 +169,40 @@ struct CalendarStripView: View {
 
     // MARK: - Month Grid
 
+    /// Unified cell model: single data source → single ForEach, no ID collisions.
+    private struct GridCell: Identifiable {
+        let id: String
+        let day: Int
+        let isCurrentMonth: Bool
+    }
+
+    private var monthCells: [GridCell] {
+        let offset = weekdayOffset
+        let days = daysInMonth
+        let totalCells = offset + days
+        let trailing = (7 - (totalCells % 7)) % 7
+        let cal = Calendar.current
+        let prevMonth = cal.date(byAdding: .month, value: -1, to: selectedMonth) ?? selectedMonth
+        let prevDays = prevMonth.daysInMonth
+
+        var cells: [GridCell] = []
+
+        // Leading padding: show actual dates from previous month
+        for i in 0..<offset {
+            let day = prevDays - offset + i + 1
+            cells.append(GridCell(id: "pad-\(i)", day: day, isCurrentMonth: false))
+        }
+        // Current month
+        for d in 1...days {
+            cells.append(GridCell(id: "d-\(d)", day: d, isCurrentMonth: true))
+        }
+        // Trailing padding: show sequential dates from next month
+        for i in 0..<trailing {
+            cells.append(GridCell(id: "trail-\(i)", day: i + 1, isCurrentMonth: false))
+        }
+        return cells
+    }
+
     private var monthGrid: some View {
         let cal = Calendar.current
         let today = cal.component(.day, from: Date())
@@ -177,60 +211,30 @@ struct CalendarStripView: View {
         let selMonth = cal.component(.month, from: selectedMonth)
         let selYear = cal.component(.year, from: selectedMonth)
         let isSelCurrentMonth = (todayMonth == selMonth && todayYear == selYear)
-
-        let prevMonth = cal.date(byAdding: .month, value: -1, to: selectedMonth) ?? selectedMonth
-        let prevDays = prevMonth.daysInMonth
-
-        let totalCells = weekdayOffset + daysInMonth
-        let trailingCells = (7 - (totalCells % 7)) % 7
+        let cells = monthCells
 
         return LazyVGrid(columns: columns, spacing: 2) {
-            ForEach(0..<weekdayOffset, id: \.self) { i in
-                let d = prevDays - weekdayOffset + i + 1
-                CalendarDayCell(
-                    day: d,
-                    hasTransaction: false,
-                    isToday: false,
-                    isSelected: false,
-                    isCurrentMonth: false,
-                    onTap: {}
-                )
-            }
-
-            ForEach(1...daysInMonth, id: \.self) { d in
-                let hasTx = (dailyExpense[d] ?? 0) > 0 || (dailyIncome[d] ?? 0) > 0
-                let isTodayDate = isSelCurrentMonth && d == today
+            ForEach(cells) { cell in
+                let hasTx = cell.isCurrentMonth && ((dailyExpense[cell.day] ?? 0) > 0 || (dailyIncome[cell.day] ?? 0) > 0)
+                let isTodayDate = cell.isCurrentMonth && isSelCurrentMonth && cell.day == today
 
                 CalendarDayCell(
-                    day: d,
+                    day: cell.day,
                     hasTransaction: hasTx,
                     isToday: isTodayDate,
-                    isSelected: selectedDay == d,
-                    isCurrentMonth: true,
-                    onTap: {
-                        if selectedDay == d {
+                    isSelected: cell.isCurrentMonth && selectedDay == cell.day,
+                    isCurrentMonth: cell.isCurrentMonth,
+                    onTap: cell.isCurrentMonth ? {
+                        if selectedDay == cell.day {
                             selectedDay = nil
                         } else {
-                            selectedDay = d
+                            selectedDay = cell.day
                             withAnimation(.easeInOut(duration: 0.25)) {
                                 isExpanded = false
                             }
                         }
-                    }
+                    } : {}
                 )
-            }
-
-            if trailingCells > 0 {
-                ForEach(1...trailingCells, id: \.self) { d in
-                    CalendarDayCell(
-                        day: d,
-                        hasTransaction: false,
-                        isToday: false,
-                        isSelected: false,
-                        isCurrentMonth: false,
-                        onTap: {}
-                    )
-                }
             }
         }
     }

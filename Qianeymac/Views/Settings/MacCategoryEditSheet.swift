@@ -66,11 +66,14 @@ struct MacCategoryEditSheet: View {
                 Divider()
 
                 // Form fields
-                VStack(spacing: 10) {
-                    LabeledContent("名称：") {
+                Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
+                    GridRow {
+                        Text("名称：")
+                            .gridColumnAlignment(.trailing)
                         TextField("", text: $name).textFieldStyle(.roundedBorder)
                     }
-                    LabeledContent("类型：") {
+                    GridRow {
+                        Text("类型：")
                         Picker("", selection: $catType) {
                             Text("支出").tag(TransactionType.expense)
                             Text("收入").tag(TransactionType.income)
@@ -79,7 +82,8 @@ struct MacCategoryEditSheet: View {
                         .onChange(of: catType) { _, _ in loadParents() }
                     }
                     if !parentOptions.isEmpty {
-                        LabeledContent("上级：") {
+                        GridRow {
+                            Text("上级：")
                             Picker("", selection: $selectedParent) {
                                 Text("无（顶级分类）").tag(nil as Category?)
                                 ForEach(parentOptions.filter { $0.id != editing?.id }, id: \.self) { p in
@@ -93,17 +97,6 @@ struct MacCategoryEditSheet: View {
                 .buttonSizing(.flexible)
                 .frame(width: 320)
                 .frame(maxWidth: .infinity, alignment: .center)
-
-                Divider()
-
-                HStack {
-                    Spacer()
-                    Button("取消") { dismiss() }.keyboardShortcut(.escape)
-                    Button("保存") { save() }.keyboardShortcut(.return)
-                        .buttonStyle(.borderedProminent).tint(Color.designPrimaryContainer)
-                        .disabled(name.isEmpty)
-                    Spacer()
-                }
             }
             .padding(32)
             .frame(maxWidth: .infinity)

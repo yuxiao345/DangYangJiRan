@@ -1,5 +1,7 @@
 import SwiftUI
 @preconcurrency import CoreData
+import CloudKit
+import UniformTypeIdentifiers
 
 // MARK: - Settings Window (⌘,)
 
@@ -67,6 +69,17 @@ private struct LedgerSettingsContent: View {
     @State private var sheetRecurring = false
     @State private var sheetExport = false
 
+    // Share state
+    @State private var cloudShare: CKShare?
+    @State private var shareDetected: Bool? = nil
+    @State private var isCreatingShare = false
+    @State private var isExiting = false
+    @State private var shareError: String?
+    @State private var clonedLedgerID: UUID?
+    @State private var shareZoneIDForPurge: CKRecordZone.ID?
+    @State private var showCloseShareAlert = false
+    @State private var showExitShareAlert = false
+
     private let currencies = ["CNY", "USD", "EUR", "JPY", "GBP", "HKD", "AUD", "CAD", "KRW", "TWD", "SGD", "CHF", "NZD", "THB", "MYR", "INR"]
 
     private var effectiveLedger: Ledger? {
@@ -110,15 +123,32 @@ private struct LedgerSettingsContent: View {
         } message: {
             Text("删除账本会同时删除该账本下的所有数据，此操作不可撤销。")
         }
+        .alert("关闭共享", isPresented: $showCloseShareAlert) {
+            Button("取消", role: .cancel) {}
+            Button("关闭共享", role: .destructive) { closeShare() }
+        } message: {
+            Text("关闭共享后，其他成员将无法访问此账本。你的数据将保留为本地账本。")
+        }
+        .alert("退出共享", isPresented: $showExitShareAlert) {
+            Button("取消", role: .cancel) {}
+            Button("退出共享", role: .destructive) { exitShare() }
+        } message: {
+            Text("退出后你将无法访问此共享账本。数据将保留一份本地副本。")
+        }
+        .alert("共享失败", isPresented: .init(get: { shareError != nil }, set: { if !$0 { shareError = nil } })) {
+            Button("确定", role: .cancel) { shareError = nil }
+        } message: {
+            Text(shareError ?? "未知错误")
+        }
         .sheet(isPresented: $sheetAccounts) { MacAccountListView() }
         .sheet(isPresented: $sheetCategories) { if let ledger = effectiveLedger { MacCategoryListView(ledger: ledger) } }
         .sheet(isPresented: $sheetMembers) { if let ledger = effectiveLedger { MacMemberListView(ledger: ledger) } }
-        .sheet(isPresented: $sheetMerchants) { PlaceholderView(title: "商家管理", icon: "building.2") }
-        .sheet(isPresented: $sheetProjects) { PlaceholderView(title: "项目管理", icon: "folder") }
-        .sheet(isPresented: $sheetBudgets) { BudgetBookListView(ledger: effectiveLedger) }
-        .sheet(isPresented: $sheetTemplates) { PlaceholderView(title: "模板管理", icon: "doc.text") }
-        .sheet(isPresented: $sheetRecurring) { PlaceholderView(title: "周期账管理", icon: "repeat") }
-        .sheet(isPresented: $sheetExport) { PlaceholderView(title: "数据导出", icon: "square.and.arrow.up") }
+        .sheet(isPresented: $sheetMerchants) { if let ledger = effectiveLedger { MacMerchantListView(ledger: ledger) } }
+        .sheet(isPresented: $sheetProjects) { if let ledger = effectiveLedger { MacProjectListView(ledger: ledger) } }
+        .sheet(isPresented: $sheetBudgets) { if let ledger = effectiveLedger { MacBudgetBookListView(ledger: ledger) } }
+        .sheet(isPresented: $sheetTemplates) { if let ledger = effectiveLedger { MacTemplateListView(ledger: ledger) } }
+        .sheet(isPresented: $sheetRecurring) { if let ledger = effectiveLedger { MacRecurringListView(ledger: ledger) } }
+        .sheet(isPresented: $sheetExport) { MacExportView() }
     }
 
     /// Full-width hairline divider matching Apple Calendar Settings style
@@ -221,6 +251,8 @@ private struct LedgerSettingsContent: View {
                 Divider()
                 managementRow("数据导出", icon: "square.and.arrow.up", count: nil) { sheetExport = true }
             }
+            .frame(width: 300)
+            .frame(maxWidth: .infinity, alignment: .center)
         }
         .padding(.horizontal, 40)
     }
@@ -253,20 +285,245 @@ private struct LedgerSettingsContent: View {
         VStack(alignment: .leading, spacing: 4) {
             Text("共享管理").font(.designLabel).foregroundStyle(Color.designOnSurfaceVariant)
 
-            HStack {
-                Image(systemName: "person.2")
-                    .foregroundStyle(Color.designOnSurfaceVariant)
-                Text("iCloud 共享")
-                    .font(.designBodyMedium).foregroundStyle(Color.designOnSurface)
-                Spacer()
-                Text("即将上线").font(.designBodyCaption)
-                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
-                    .padding(.horizontal, 8).padding(.vertical, 2)
-                    .background(Capsule().fill(Color.designSurfaceContainer.opacity(0.5)))
+            VStack(spacing: 0) {
+                if shareDetected == nil {
+                    HStack {
+                        ProgressView().scaleEffect(0.7)
+                        Text("正在检测共享状态...")
+                            .font(.designBodyCaption)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                    }
+                    .padding(.vertical, 8)
+                } else if shareDetected == true, let ledger = effectiveLedger {
+                    // Shared state
+                    shareInfoRow(ledger: ledger)
+                    Divider()
+                    if isOwner {
+                        shareActionRow("管理共享", icon: "square.and.arrow.up") { openExistingShare() }
+                        Divider()
+                        shareActionRow("关闭共享", icon: "person.2.slash", destructive: true) {
+                            showCloseShareAlert = true
+                        }
+                    } else {
+                        shareActionRow("退出共享", icon: "rectangle.portrait.and.arrow.right", destructive: true) {
+                            showExitShareAlert = true
+                        }
+                    }
+                } else {
+                    // Not shared
+                    HStack {
+                        if isCreatingShare {
+                            ProgressView().scaleEffect(0.7)
+                            Text("正在创建共享...")
+                                .font(.designBodyCaption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Button { createShareAndShow() } label: {
+                                Label("启用共享", systemImage: "person.2.badge.plus")
+                            }
+                            .buttonStyle(.borderless)
+                            .disabled(isCreatingShare)
+                        }
+                        Spacer()
+                    }
+                    .padding(.vertical, 8)
+                }
             }
-            .padding(.top, 4)
+            .frame(width: 300)
+            .frame(maxWidth: .infinity, alignment: .center)
         }
         .padding(.horizontal, 40)
+        .task { await detectShare() }
+    }
+
+    private func shareInfoRow(ledger: Ledger) -> some View {
+        HStack {
+            Label("iCloud 共享", systemImage: "person.2.fill")
+                .font(.designBodyMedium)
+                .foregroundStyle(Color.designPrimaryFixedDim)
+            Spacer()
+            Text(isOwner ? "拥有者" : "参与者")
+                .font(.designBodyCaption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 8)
+    }
+
+    private func shareActionRow(_ title: String, icon: String, destructive: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Label(title, systemImage: icon)
+                if isExiting { Spacer(); ProgressView().scaleEffect(0.7) }
+            }
+        }
+        .buttonStyle(.borderless)
+        .foregroundStyle(destructive ? .red : Color.designPrimaryContainer)
+        .disabled(isExiting)
+        .padding(.vertical, 8)
+    }
+
+    private var isOwner: Bool {
+        if let share = cloudShare, share.currentUserParticipant?.role == .owner { return true }
+        guard let ledger = effectiveLedger else { return false }
+        return appContainer.isOwner(of: ledger)
+    }
+
+    // MARK: - Share Actions
+
+    private func createShareAndShow() {
+        isCreatingShare = true
+        Task {
+            do {
+                guard let ledger = effectiveLedger,
+                      let syncService = appContainer.syncService as? SyncServiceImpl else {
+                    throw SyncError.invalidShareTarget
+                }
+                let share = try await syncService.createShare(for: ledger)
+                await MainActor.run {
+                    ledger.isShared = true
+                    ledger.shareRecordName = share.recordID.recordName
+                    try? modelContext.save()
+                    cloudShare = share
+                    isCreatingShare = false
+                    shareDetected = true
+                    showSharingService(share: share)
+                }
+                try await syncService.syncParticipants(share: share, for: ledger)
+            } catch {
+                await MainActor.run {
+                    isCreatingShare = false
+                    shareError = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    private func detectShare() async {
+        guard let ledger = effectiveLedger else { shareDetected = false; return }
+
+        if let recordName = ledger.shareRecordName {
+            let recordID = CKRecord.ID(recordName: recordName)
+            do {
+                let records = try await CKContainer.default().sharedCloudDatabase.records(for: [recordID])
+                if let share = records[recordID] as? CKShare {
+                    repairLedgerFromShare(share)
+                    cloudShare = share
+                    shareDetected = true
+                    return
+                }
+            } catch {}
+        }
+
+        do {
+            let shares = try appContainer.coreDataStack.container.fetchShares(matching: [ledger.objectID])
+            if let share = shares[ledger.objectID] {
+                repairLedgerFromShare(share)
+                cloudShare = share
+                shareDetected = true
+                return
+            }
+        } catch {}
+
+        shareDetected = false
+    }
+
+    private func repairLedgerFromShare(_ share: CKShare) {
+        guard let ledger = effectiveLedger else { return }
+        var changed = false
+        if !ledger.isShared { ledger.isShared = true; changed = true }
+        if ledger.shareRecordName == nil { ledger.shareRecordName = share.recordID.recordName; changed = true }
+        if share.currentUserParticipant?.role == .owner {
+            let myID = appContainer.currentUserRecordID
+            if ledger.ownerUserRecordID != myID { ledger.ownerUserRecordID = myID; changed = true }
+        }
+        if changed { try? modelContext.save() }
+    }
+
+    private func openExistingShare() {
+        Task {
+            await detectShare()
+            await MainActor.run {
+                if let share = cloudShare {
+                    showSharingService(share: share)
+                } else {
+                    shareError = String(localized: "无法读取共享信息，请稍后重试")
+                }
+            }
+        }
+    }
+
+    private func showSharingService(share: CKShare) {
+        if let service = NSSharingService(named: .cloudSharing) {
+            service.delegate = ShareDelegate(onStop: { [self] in
+                Task { @MainActor in await handleStopSharing() }
+            })
+            service.perform(withItems: [share])
+        }
+    }
+
+    // MARK: - Stop / Exit Share
+
+    @MainActor
+    private func handleStopSharing() async {
+        guard let ledger = effectiveLedger else { return }
+        if isOwner {
+            ledger.isShared = false
+            try? modelContext.save()
+            appContainer.syncStatus = .synced
+            shareDetected = false
+        } else if let cloneID = clonedLedgerID {
+            appContainer.exitedSharedLedgerIDs.insert(ledger.id)
+            let fetch = NSFetchRequest<Ledger>(entityName: "Ledger")
+            fetch.predicate = NSPredicate(format: "id == %@", cloneID as CVarArg)
+            fetch.fetchLimit = 1
+            if let clone = try? modelContext.fetch(fetch).first {
+                appContainer.currentLedger = clone
+                UserDefaults.standard.set(clone.id.uuidString, forKey: "currentLedgerID")
+                if let zoneID = shareZoneIDForPurge {
+                    appContainer.coreDataStack.purgeSharedZone(zoneID: zoneID)
+                }
+                appContainer.syncStatus = .synced
+            }
+        }
+    }
+
+    private func closeShare() {
+        guard let ledger = effectiveLedger else { return }
+        isExiting = true
+        Task {
+            await detectShare()
+            await MainActor.run {
+                isExiting = false
+                if let share = cloudShare {
+                    showSharingService(share: share)
+                }
+            }
+        }
+    }
+
+    private func exitShare() {
+        guard let ledger = effectiveLedger else { return }
+        isExiting = true
+        Task {
+            do {
+                let clone = try LedgerDeepCopyService.deepCopy(ledger, into: modelContext)
+                await detectShare()
+                await MainActor.run {
+                    clonedLedgerID = clone.id
+                    shareZoneIDForPurge = cloudShare?.recordID.zoneID
+                    isExiting = false
+                    if let share = cloudShare {
+                        showSharingService(share: share)
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    isExiting = false
+                    shareError = String(localized: "数据复制失败：\(error.localizedDescription)")
+                }
+            }
+        }
     }
 
     // MARK: - Delete
@@ -362,7 +619,6 @@ private struct PlaceholderView: View {
 struct MacAccountListView: View {
     @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
-    @Environment(\.dismiss) private var dismiss
     @State private var accounts: [Account] = []
     @State private var accountSheet: AccountSheet?
 
@@ -379,6 +635,17 @@ struct MacAccountListView: View {
 
     var body: some View {
         List {
+            HStack {
+                Text("账户管理").font(.designHeadlineMedium).foregroundStyle(Color.designOnSurface)
+                Spacer()
+                Button {
+                    accountSheet = .new
+                } label: {
+                    Image(systemName: "plus").fontWeight(.semibold)
+                }
+                .buttonStyle(.borderless)
+            }
+            .listRowSeparator(.hidden)
             ForEach(accounts) { account in
                 Button {
                     accountSheet = .edit(account)
@@ -410,20 +677,7 @@ struct MacAccountListView: View {
         }
         .scrollContentBackground(.hidden)
         .designScreen()
-        .navigationTitle("账户管理")
         .frame(minWidth: 420, minHeight: 340)
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    accountSheet = .new
-                } label: {
-                    Image(systemName: "plus")
-                }
-            }
-            ToolbarItem(placement: .cancellationAction) {
-                Button("完成") { dismiss() }
-            }
-        }
         .onAppear { load() }
         .sheet(item: $accountSheet) { sheet in
             switch sheet {
@@ -441,6 +695,19 @@ struct MacAccountListView: View {
     private func load() {
         guard let ledger = appContainer.currentLedger else { return }
         accounts = (try? appContainer.accountService.fetchAccounts(for: ledger, includeArchived: true, context: modelContext)) ?? []
+    }
+}
+
+// MARK: - Share Delegate
+
+private class ShareDelegate: NSObject, NSSharingServiceDelegate {
+    let onStop: () -> Void
+    init(onStop: @escaping () -> Void) { self.onStop = onStop }
+
+    func sharingService(_ sharingService: NSSharingService, didShareItems items: [Any]) {}
+    func sharingService(_ sharingService: NSSharingService, didFailToShareItems items: [Any], error: any Error) {}
+    func sharingService(_ sharingService: NSSharingService, sourceWindowForShareItems items: [Any], sharingContentScope: UnsafeMutablePointer<NSSharingService.SharingContentScope>) -> NSWindow? {
+        NSApp.keyWindow
     }
 }
 

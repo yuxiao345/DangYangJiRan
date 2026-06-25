@@ -147,6 +147,7 @@ struct ExportServiceImpl: ExportServiceProtocol {
     // MARK: - Share
 
     func shareURL(_ url: URL) {
+        #if os(iOS)
         let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
 
         guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
@@ -158,6 +159,9 @@ struct ExportServiceImpl: ExportServiceProtocol {
         } else {
             root.present(activityVC, animated: true)
         }
+        #else
+        // macOS: sharing handled via NSSavePanel in the view layer
+        #endif
     }
 
     // MARK: - Helpers

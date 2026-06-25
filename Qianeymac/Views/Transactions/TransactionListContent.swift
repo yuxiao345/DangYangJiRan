@@ -20,16 +20,59 @@ struct TransactionListContent: View {
     var filterCategory: Category?
     var options: TransactionListOptions = []
 
-    private let weekdaySymbols = ["一", "二", "三", "四", "五", "六", "日"]
     private let cal = Calendar.current
-    private let cellSize: CGFloat = 26
+    private let weekdaySymbols = ["一", "二", "三", "四", "五", "六", "日"]
+
+    private var typeFilterOptions: [(String, TransactionType?)] {
+        [("全部", nil), (TransactionType.expense.displayName, .expense),
+         (TransactionType.income.displayName, .income),
+         (TransactionType.transfer.displayName, .transfer),
+         (TransactionType.lending.displayName, .lending)]
+    }
 
     var body: some View {
         VStack(spacing: 0) {
+            // Header
             if !options.contains(.hideCalendar) {
-                miniCalendar
+                HStack(spacing: 12) {
+                    HStack(spacing: 4) {
+                        Button { shiftMonth(-1) } label: {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 14, weight: .semibold))
+                                .frame(width: 28, height: 28)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.borderless)
+                        Text(selectedMonth.monthDisplay)
+                            .font(.designHeadlineMedium)
+                            .frame(width: 120)
+                        Button { shiftMonth(1) } label: {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 14, weight: .semibold))
+                                .frame(width: 28, height: 28)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                    Spacer()
+                    if !options.contains(.hideTypeFilter) {
+                        Picker("", selection: $filterType) {
+                            Text("全部").tag(nil as TransactionType?)
+                            ForEach([TransactionType.expense, .income, .transfer, .lending], id: \.self) { t in
+                                Text(t.displayName).tag(t as TransactionType?)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                }
+                .padding(.leading, 32)
+                .padding(.trailing, 16)
+                .padding(.top, 24)
+
+                customCalendar
                 Divider()
             }
+
             ScrollView {
                 LazyVStack(spacing: 6) {
                     if transactions.isEmpty {
@@ -51,33 +94,12 @@ struct TransactionListContent: View {
                 }
                 .padding(12)
             }
-            .designScreen()
         }
+        .designScreen()
         .navigationDestination(for: Transaction.self) { t in
             TransactionDetailContent(transaction: t)
         }
-        .navigationTitle(filterCategory.map { LocalizedStringKey($0.name) } ?? "流水")
-        .toolbar {
-            if !options.contains(.hideTypeFilter) {
-                ToolbarItem(placement: .principal) {
-                    Picker("类型", selection: $filterType) {
-                        Text("全部").tag(nil as TransactionType?)
-                        ForEach([TransactionType.expense, .income, .transfer, .lending], id: \.self) { t in
-                            Text(t.displayName).tag(t as TransactionType?)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 300)
-                }
-            }
-            ToolbarItem(placement: .navigation) {
-                HStack(spacing: 4) {
-                    Button { shiftMonth(-1) } label: { Image(systemName: "chevron.left") }
-                    Text(selectedMonth.monthDisplay).font(.designHeadlineMedium)
-                    Button { shiftMonth(1) } label: { Image(systemName: "chevron.right") }
-                }
-            }
-        }
+        .navigationTitle("")
         .onAppear(perform: load)
         .onChange(of: filterType) { _, _ in load() }
         .onChange(of: selectedMonth) { _, _ in selectedDate = nil; load() }
@@ -85,15 +107,17 @@ struct TransactionListContent: View {
         .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in load() }
     }
 
-    private var miniCalendar: some View {
-        let cols = Array(repeating: GridItem(.fixed(cellSize), spacing: 1), count: 7)
+    // MARK: - Custom Calendar (pure SwiftUI, no AppKit)
+
+    private var customCalendar: some View {
+        let cols = Array(repeating: GridItem(.flexible(), spacing: 2), count: 7)
         return VStack(spacing: 0) {
-            LazyVGrid(columns: cols, spacing: 1) {
+            LazyVGrid(columns: cols, spacing: 2) {
                 ForEach(weekdaySymbols, id: \.self) { sym in
                     Text(sym)
-                        .font(.designLabelSmall)
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
                         .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
-                        .frame(width: cellSize, height: 16)
+                        .frame(maxWidth: .infinity)
                 }
                 ForEach(calendarDays) { d in
                     Button {
@@ -107,30 +131,31 @@ struct TransactionListContent: View {
                     } label: {
                         ZStack {
                             if let date = d.date, let sd = selectedDate, cal.isDate(date, inSameDayAs: sd) {
-                                Circle().fill(Color.designAccentGreen).frame(width: cellSize - 2, height: cellSize - 2)
+                                Circle().fill(Color.designAccentGreen).frame(height: 28)
                             }
                             if d.isToday, selectedDate == nil || (d.date != nil && !cal.isDate(d.date!, inSameDayAs: selectedDate!)) {
-                                Circle().stroke(Color.designAccentGreen, lineWidth: 1.5).frame(width: cellSize - 2, height: cellSize - 2)
+                                Circle().stroke(Color.designAccentGreen, lineWidth: 1.5).frame(height: 28)
                             }
                             VStack(spacing: 0) {
                                 Text(d.day > 0 ? "\(d.day)" : "")
-                                    .font(d.isToday ? .designBodyCaption.bold() : .designBodyCaption)
+                                    .font(d.isToday ? .designBodySmall.bold() : .designBodySmall)
                                     .foregroundStyle(
                                         d.date != nil && selectedDate != nil && cal.isDate(d.date!, inSameDayAs: selectedDate!)
                                             ? Color.white : d.day > 0 ? Color.designOnSurface : Color.clear
                                     )
                                 if d.hasTransactions, d.day > 0 {
-                                    Circle().fill(Color.designAccentGreen.opacity(0.5)).frame(width: 2, height: 2)
+                                    Circle().fill(Color.designAccentGreen.opacity(0.5)).frame(width: 3, height: 3)
                                 }
                             }
                         }
-                        .frame(width: cellSize, height: cellSize)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 34)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.borderless)
                     .disabled(d.day == 0)
                 }
             }
-            .padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 4)
+            .padding(.leading, 32).padding(.trailing, 16).padding(.top, 4).padding(.bottom, 4)
         }
     }
 

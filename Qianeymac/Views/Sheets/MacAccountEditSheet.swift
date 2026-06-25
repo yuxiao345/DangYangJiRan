@@ -25,7 +25,11 @@ struct MacAccountEditSheet: View {
     @State private var colorHex: String
     @State private var iconName: String
     @State private var isArchived: Bool
+    @State private var customTypeName: String
+    @State private var existingCustomTypes: [String] = []
     @State private var errorMessage: String?
+
+    private var effectiveLedger: Ledger { ledger }
 
     private let currencies = ["CNY", "USD", "EUR", "JPY", "GBP", "HKD", "AUD", "CAD", "KRW", "TWD", "SGD", "CHF", "NZD", "THB", "MYR", "INR"]
     private let billingDays = Array(1...28)
@@ -58,6 +62,7 @@ struct MacAccountEditSheet: View {
         _colorHex = State(initialValue: account?.colorHex ?? "#007AFF")
         _iconName = State(initialValue: account?.iconName ?? "creditcard")
         _isArchived = State(initialValue: account?.isArchived ?? false)
+        _customTypeName = State(initialValue: account?.customTypeName ?? "")
     }
 
     // MARK: - Body
@@ -68,11 +73,7 @@ struct MacAccountEditSheet: View {
                 // Icon + Color picker
                 iconColorSection
 
-                basicFields
-                if accountType == .creditCard {
-                    Divider()
-                    creditCardFields
-                }
+                allFieldsGrid
                 Divider()
             }
             .padding(32)
@@ -85,6 +86,8 @@ struct MacAccountEditSheet: View {
             ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
             ToolbarItem(placement: .confirmationAction) { Button("保存") { save() }.keyboardShortcut(.defaultAction) }
         }
+        .onAppear { loadExistingCustomTypes() }
+        .onChange(of: accountType) { _, _ in loadExistingCustomTypes() }
         .alert("保存失败", isPresented: .constant(errorMessage != nil)) {
             Button("好") { errorMessage = nil }
         } message: { Text(errorMessage ?? "") }
@@ -131,20 +134,38 @@ struct MacAccountEditSheet: View {
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
-    // MARK: - Basic Fields
+    // MARK: - All Fields Grid
 
-    private var basicFields: some View {
-        VStack(spacing: 10) {
-            LabeledContent("名称：") {
+    private var allFieldsGrid: some View {
+        Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
+            GridRow {
+                Text("名称：")
+                    .gridColumnAlignment(.trailing)
                 TextField("", text: $name).textFieldStyle(.roundedBorder)
             }
-            LabeledContent("类型：") {
+            GridRow {
+                Text("类型：")
                 Picker("", selection: $accountType) {
                     ForEach(AccountType.allCases, id: \.self) { t in Text(t.displayName).tag(t) }
                 }
                 .pickerStyle(.menu).labelsHidden()
             }
-            LabeledContent("币种：") {
+            if accountType == .other {
+                GridRow {
+                    Text("")
+                    HStack(spacing: 6) {
+                        TextField(String(localized: "创建或选择自定义类型名称"), text: $customTypeName)
+                        if !existingCustomTypes.isEmpty {
+                            Picker("已有类型", selection: $customTypeName) {
+                                ForEach(existingCustomTypes, id: \.self) { Text($0).tag($0) }
+                            }
+                            .pickerStyle(.menu).labelsHidden()
+                        }
+                    }
+                }
+            }
+            GridRow {
+                Text("币种：")
                 Picker("", selection: $currencyCode) {
                     ForEach(currencies, id: \.self) { code in
                         Text("\(code) \(CurrencyFormatter.currencySymbol(for: code))").tag(code)
@@ -152,60 +173,48 @@ struct MacAccountEditSheet: View {
                 }
                 .pickerStyle(.menu).labelsHidden()
             }
-            LabeledContent("余额：") {
-                HStack(spacing: 4) {
-                    Text(CurrencyFormatter.currencySymbol(for: currencyCode))
-                        .foregroundStyle(Color.designPrimaryFixedDim)
-                    TextField("0.00", text: $balanceString)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 120)
-                        .multilineTextAlignment(.trailing)
-                        .onChange(of: balanceString) { _, v in
-                            balanceString = v.filter { "0123456789.".contains($0) }
-                            initialBalance = Decimal(string: balanceString) ?? 0
-                        }
-                }
+            GridRow {
+                Text("余额：")
+                TextField("0.00", text: $balanceString)
+                    .textFieldStyle(.roundedBorder)
+                    .multilineTextAlignment(.trailing)
+                    .onChange(of: balanceString) { _, v in
+                        balanceString = v.filter { "0123456789.".contains($0) }
+                        initialBalance = Decimal(string: balanceString) ?? 0
+                    }
             }
             if isEditing {
-                LabeledContent("归档：") {
+                GridRow {
+                    Text("归档：")
                     Toggle("", isOn: $isArchived).labelsHidden()
                 }
             }
-        }
-        .buttonSizing(.flexible)
-        .frame(width: 350)
-        .frame(maxWidth: .infinity, alignment: .center)
-    }
-
-    // MARK: - Credit Card Fields
-
-    private var creditCardFields: some View {
-        VStack(spacing: 10) {
-            LabeledContent("信用额度：") {
-                HStack(spacing: 4) {
-                    Text(CurrencyFormatter.currencySymbol(for: currencyCode))
-                        .foregroundStyle(Color.designPrimaryFixedDim)
+            // Credit card fields — same Grid, same column alignment
+            if accountType == .creditCard {
+                GridRow {
+                    Text("信用额度：")
                     TextField("0.00", text: $creditLimitString)
                         .textFieldStyle(.roundedBorder)
-                        .frame(width: 120)
                         .multilineTextAlignment(.trailing)
                         .onChange(of: creditLimitString) { _, v in
                             creditLimitString = v.filter { "0123456789.".contains($0) }
                             creditLimit = Decimal(string: creditLimitString) ?? 0
                         }
                 }
-            }
-            LabeledContent("账单日：") {
-                Picker("", selection: $billingDay) {
-                    ForEach(billingDays, id: \.self) { d in Text("\(d)日").tag(d) }
+                GridRow {
+                    Text("账单日：")
+                    Picker("", selection: $billingDay) {
+                        ForEach(billingDays, id: \.self) { d in Text("\(d)日").tag(d) }
+                    }
+                    .pickerStyle(.menu).labelsHidden()
                 }
-                .pickerStyle(.menu).labelsHidden()
-            }
-            LabeledContent("还款日：") {
-                Picker("", selection: $dueDay) {
-                    ForEach(dueDays, id: \.self) { d in Text("\(d)日").tag(d) }
+                GridRow {
+                    Text("还款日：")
+                    Picker("", selection: $dueDay) {
+                        ForEach(dueDays, id: \.self) { d in Text("\(d)日").tag(d) }
+                    }
+                    .pickerStyle(.menu).labelsHidden()
                 }
-                .pickerStyle(.menu).labelsHidden()
             }
         }
         .buttonSizing(.flexible)
@@ -214,6 +223,17 @@ struct MacAccountEditSheet: View {
     }
 
     // MARK: - Save
+
+    private func loadExistingCustomTypes() {
+        guard accountType == .other else { existingCustomTypes = []; return }
+        let all = (try? appContainer.accountService.fetchAccounts(for: ledger, includeArchived: true, context: modelContext)) ?? []
+        let names = all.compactMap { $0.customTypeName }.filter { !$0.isEmpty }
+        if let editing, let current = editing.customTypeName, !current.isEmpty {
+            existingCustomTypes = [current] + Array(Set(names)).filter { $0 != current }.sorted()
+        } else {
+            existingCustomTypes = Array(Set(names)).sorted()
+        }
+    }
 
     private func save() {
         guard !name.trimmingCharacters(in: .whitespaces).isEmpty else {
@@ -231,6 +251,7 @@ struct MacAccountEditSheet: View {
                 account.colorHex = colorHex
                 account.iconName = iconName
                 account.isArchived = isArchived
+                account.customTypeName = accountType == .other ? (customTypeName.isEmpty ? nil : customTypeName) : nil
                 try appContainer.accountService.updateAccount(account, context: modelContext)
             } else {
                 let account = Account(name: name, currencyCode: currencyCode,
@@ -239,6 +260,7 @@ struct MacAccountEditSheet: View {
                     creditLimit: hasCreditLimit ? creditLimit : nil,
                     billingDay: billingDay, dueDay: dueDay,
                     context: modelContext)
+                if accountType == .other, !customTypeName.isEmpty { account.customTypeName = customTypeName }
                 try appContainer.accountService.createAccount(account, ledger: ledger, context: modelContext)
             }
             NotificationCenter.default.post(name: .transactionDidChange, object: nil)

@@ -75,7 +75,8 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
 
     func cumulativeSpending(for item: BudgetItem, context: NSManagedObjectContext) -> Decimal {
         guard let book = item.book else { return 0 }
-        return spending(in: book.startDate...Date(), category: item.category, book: book, context: context)
+        let end = max(book.startDate, Date())
+        return spending(in: book.startDate...end, category: item.category, book: book, context: context)
     }
 
     func totalBudget(for book: BudgetBook) -> Decimal {
@@ -83,7 +84,8 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
     }
 
     func totalCumulativeSpending(for book: BudgetBook, context: NSManagedObjectContext) -> Decimal {
-        return spending(in: book.startDate...Date(), category: nil, book: book, context: context)
+        let end = max(book.startDate, Date())
+        return spending(in: book.startDate...end, category: nil, book: book, context: context)
     }
 
     func totalCurrentPeriodSpending(for book: BudgetBook, context: NSManagedObjectContext) -> Decimal {

@@ -7,26 +7,18 @@ import SwiftUI
 /// Light: rgba(255,255,255,0.4)  + blur(20px) + subtle border + soft shadow
 struct GlassCardModifier: ViewModifier {
     let cornerRadius: CGFloat
-    let isModal: Bool
 
     func body(content: Content) -> some View {
         content
             .background(.ultraThinMaterial)
-            .background(isModal ? Color.designGlassBgModal : Color.designGlassBg)
+            .background(Color.designGlassBg)
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
             .overlay {
-                // Directional border: top = specular highlight, sides/bottom fade
                 RoundedRectangle(cornerRadius: cornerRadius)
                     .stroke(Color.designGlassBorderHighlight, lineWidth: 1)
             }
-            .shadow(
-                color: .black.opacity(0.08),
-                radius: 6, y: -1
-            )
-            .shadow(
-                color: .black.opacity(isModal ? 0.15 : 0.12),
-                radius: isModal ? 20 : 12, y: 4
-            )
+            .shadow(color: .black.opacity(0.08), radius: 6, y: -1)
+            .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
     }
 }
 
@@ -42,14 +34,12 @@ struct LiquidBackgroundModifier: ViewModifier {
                 ZStack {
                     Color.designBackground
 
-                    // Top-left green blob
                     Circle()
                         .fill(Color.designSurfaceTint.opacity(0.08))
                         .blur(radius: 80)
                         .offset(x: -80, y: -180)
                         .scaleEffect(1.3)
 
-                    // Bottom-right blob (red in dark, subtle green in light)
                     Circle()
                         .fill(Color.designTertiaryContainer.opacity(0.06))
                         .blur(radius: 80)
@@ -229,19 +219,40 @@ struct DesignScreenModifier: ViewModifier {
 // MARK: - View Extensions
 
 extension View {
-    /// Full-screen liquid background
+    /// Full-screen liquid background (macOS: plain bg to avoid beta crash)
     func designScreen() -> some View {
+        #if os(macOS)
+        self.background(Color.designBackground)
+        #else
         modifier(DesignScreenModifier())
+        #endif
     }
 
-    /// Glass card with 24px radius (design spec default)
-    func glassCard(cornerRadius: CGFloat = 24, isModal: Bool = false) -> some View {
-        modifier(GlassCardModifier(cornerRadius: cornerRadius, isModal: isModal))
+    /// Glass card (macOS: simple bordered bg to avoid beta crash)
+    func glassCard(cornerRadius: CGFloat = 24) -> some View {
+        #if os(macOS)
+        self
+            .background(Color.designSurfaceContainer.opacity(0.3))
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+            .overlay {
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(Color.designOutlineVariant.opacity(0.15), lineWidth: 1)
+            }
+        #else
+        modifier(GlassCardModifier(cornerRadius: cornerRadius))
+        #endif
     }
 
-    /// Glass section with 16px internal padding and 16px radius
+    /// Glass section (macOS: simple bg)
     func glassSection() -> some View {
+        #if os(macOS)
+        self
+            .padding(16)
+            .background(Color.designSurfaceContainer.opacity(0.3))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        #else
         modifier(GlassSectionModifier())
+        #endif
     }
 
     /// Internal glow blob for hero cards
