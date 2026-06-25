@@ -219,40 +219,19 @@ struct DesignScreenModifier: ViewModifier {
 // MARK: - View Extensions
 
 extension View {
-    /// Full-screen liquid background (macOS: plain bg to avoid beta crash)
+    /// Full-screen liquid background
     func designScreen() -> some View {
-        #if os(macOS)
-        self.background(Color.designBackground)
-        #else
         modifier(DesignScreenModifier())
-        #endif
     }
 
-    /// Glass card (macOS: simple bordered bg to avoid beta crash)
+    /// Glass card with blur + border + shadow
     func glassCard(cornerRadius: CGFloat = 24) -> some View {
-        #if os(macOS)
-        self
-            .background(Color.designSurfaceContainer.opacity(0.3))
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
-            .overlay {
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(Color.designOutlineVariant.opacity(0.15), lineWidth: 1)
-            }
-        #else
         modifier(GlassCardModifier(cornerRadius: cornerRadius))
-        #endif
     }
 
-    /// Glass section (macOS: simple bg)
+    /// Glass section with padding + blur
     func glassSection() -> some View {
-        #if os(macOS)
-        self
-            .padding(16)
-            .background(Color.designSurfaceContainer.opacity(0.3))
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-        #else
         modifier(GlassSectionModifier())
-        #endif
     }
 
     /// Internal glow blob for hero cards
