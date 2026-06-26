@@ -39,6 +39,7 @@ struct AccountDetailView: View {
             AddEditAccountView(editing: account)
         }
         .onAppear(perform: load)
+        .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in load() }
     }
 
     // MARK: - Hero Card

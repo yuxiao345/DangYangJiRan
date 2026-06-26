@@ -12,17 +12,22 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
         from sourceAccount: Account,
         to destAccount: Account,
         amount: Decimal,
+        destAmount: Decimal? = nil,
         date: Date,
         note: String?,
         ledger: Ledger,
         context: NSManagedObjectContext
     ) throws -> (Transaction, Transaction) {
         let groupID = UUID()
-        let absAmount = abs(amount)
+        let absSourceAmount = abs(amount)
+        let absDestAmount = destAmount.map { abs($0) } ?? absSourceAmount
+        let sourceCurrency = sourceAccount.currencyCode ?? "CNY"
+        let destCurrency = destAccount.currencyCode ?? "CNY"
 
         let outflow = Transaction(
             type: .transfer,
-            amount: -absAmount,
+            amount: -absSourceAmount,
+            currencyCode: sourceCurrency,
             note: note,
             date: date,
             transferGroupId: groupID,
@@ -34,7 +39,8 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
 
         let inflow = Transaction(
             type: .transfer,
-            amount: absAmount,
+            amount: absDestAmount,
+            currencyCode: destCurrency,
             note: note,
             date: date,
             transferGroupId: groupID,

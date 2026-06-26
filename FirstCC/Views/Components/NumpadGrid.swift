@@ -4,6 +4,7 @@ struct NumpadGrid: View {
     let onDigit: (Int) -> Void
     let onDot: () -> Void
     let onDelete: () -> Void
+    var onClear: (() -> Void)? = nil
 
     var body: some View {
         VStack(spacing: 8) {
@@ -23,6 +24,11 @@ struct NumpadGrid: View {
                 numpadButton("9") { onDigit(9) }
             }
             HStack(spacing: 8) {
+                if let onClear {
+                    numpadButton(action: onClear) {
+                        Text("CE").font(.system(size: 16, weight: .medium))
+                    }
+                }
                 numpadButton(".") { onDot() }
                 numpadButton("0") { onDigit(0) }
                 numpadButton(action: onDelete) {

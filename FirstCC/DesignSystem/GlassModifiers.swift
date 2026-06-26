@@ -34,6 +34,17 @@ struct LiquidBackgroundModifier: ViewModifier {
                 ZStack {
                     Color.designBackground
 
+                    #if os(macOS)
+                    Circle()
+                        .fill(Color.designSurfaceTint.opacity(0.03))
+                        .blur(radius: 120)
+                        .offset(x: -60, y: -20)
+
+                    Circle()
+                        .fill(Color.designTertiaryContainer.opacity(0.04))
+                        .blur(radius: 100)
+                        .offset(x: 80, y: 80)
+                    #else
                     Circle()
                         .fill(Color.designSurfaceTint.opacity(0.08))
                         .blur(radius: 80)
@@ -45,6 +56,7 @@ struct LiquidBackgroundModifier: ViewModifier {
                         .blur(radius: 80)
                         .offset(x: 120, y: 280)
                         .scaleEffect(1.2)
+                    #endif
                 }
                 #if os(iOS)
                 .ignoresSafeArea()

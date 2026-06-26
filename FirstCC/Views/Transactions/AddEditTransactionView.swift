@@ -39,6 +39,9 @@ struct AddEditTransactionView: View {
     @State private var amount: Decimal = 0
     @State private var amountString: String = ""
     @State private var showNumpad: Bool = false
+    @State private var destAmount: Decimal = 0
+    @State private var destAmountString: String = ""
+    @State private var editingDestAmount: Bool = false
     @State private var showTemplates: Bool = false
     @State private var note: String = ""
     @State private var date: Date = Date()
@@ -122,6 +125,12 @@ struct AddEditTransactionView: View {
 
     private var isViewing: Bool { displayMode && !isEditing }
 
+    private var isCrossCurrencyTransfer: Bool {
+        guard type == .transfer,
+              let src = selectedAccount, let dst = selectedToAccount else { return false }
+        return src.effectiveCurrencyCode != dst.effectiveCurrencyCode
+    }
+
     /// Whether the viewed transfer is an inflow record (account = destination, toAccount = source)
     private var isViewingTransferInflow: Bool {
         isViewing && type == .transfer && (editing?.amount ?? 0) >= 0
@@ -146,7 +155,7 @@ struct AddEditTransactionView: View {
             .onChange(of: pickerSheet) { _, newValue in
                 if newValue != nil { loadData() }
             }
-            .onChange(of: type) { _, _ in loadCategories(); loadPendingExpenses(); loadPendingLendingTransactions() }
+            .onChange(of: type) { _, _ in loadCategories(); loadPendingExpenses(); loadPendingLendingTransactions(); destAmount = 0; destAmountString = "" }
             .onChange(of: selectedAccount) { _, _ in
                 selectedLendingIDs = []
                 loadPendingLendingTransactions()
@@ -156,7 +165,12 @@ struct AddEditTransactionView: View {
                 exchangeRate = nil
                 if needsExchangeRate { fetchExchangeRate() }
             }
-            .onChange(of: selectedToAccount) { _, _ in selectedLendingIDs = []; loadPendingLendingTransactions() }
+            .onChange(of: selectedToAccount) { _, _ in
+                selectedLendingIDs = []
+                loadPendingLendingTransactions()
+                destAmount = 0; destAmountString = ""
+                if needsExchangeRate { fetchExchangeRate() }
+            }
             .onChange(of: selectedExpenseIDs) { _, _ in
                 guard !selectedExpenseIDs.isEmpty, editing == nil else { return }
                 amount = selectedReimbursementTotal
@@ -256,7 +270,14 @@ struct AddEditTransactionView: View {
 
                         // Amount display + toggles
                         amountSection
+                    }
 
+                    // Cross-currency transfer: dest amount
+                    if isCrossCurrencyTransfer {
+                        destAmountSection
+                    }
+
+                    Group {
                         // Account grid
                         if !accounts.isEmpty {
                             accountGridSection
@@ -812,8 +833,8 @@ struct AddEditTransactionView: View {
 
     private var amountSection: some View {
         // Amount centered, toggles overlay on the right
-        VStack(spacing: 4) {
-            Text("金额录入")
+        return VStack(spacing: 4) {
+            Text(isCrossCurrencyTransfer ? "转出金额" : "金额录入")
                 .font(.designLabel)
                 .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.7))
                 .tracking(1.0)
@@ -826,7 +847,7 @@ struct AddEditTransactionView: View {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(CurrencyFormatter.currencySymbol(for: selectedCurrencyCode))
                         .font(.custom("SpaceGrotesk-SemiBold", fixedSize: 24))
-                        .foregroundStyle(Color.designPrimaryContainer)
+                        .foregroundStyle(Color.designPrimary)
                     Text(amountString.isEmpty ? "0.00" : amountString)
                         .font(.custom("JetBrainsMono-Medium", fixedSize: 32))
                         .foregroundStyle(Color.designPrimary)
@@ -875,7 +896,68 @@ struct AddEditTransactionView: View {
                 .background(Color.designSurfaceContainer)
                 .clipShape(Capsule())
             }
+            .disabled(selectedAccount != nil && (type == .transfer || type == .lending))
             .offset(y: 12)
+        }
+    }
+
+    private var destAmountSection: some View {
+        let destCurrency = selectedToAccount?.currencyCode ?? "CNY"
+        return VStack(spacing: 4) {
+            // Exchange rate
+            if amount != 0, destAmount != 0 {
+                let srcCode = selectedAccount?.currencyCode ?? "CNY"
+                let rate = destAmount / amount
+                Text("1 \(srcCode) ≈ \(rate.formatted(.number.precision(.fractionLength(4)))) \(destCurrency)")
+                    .font(.custom("JetBrainsMono-Medium", fixedSize: 13))
+                    .foregroundStyle(Color.designOnSurfaceVariant)
+            }
+
+            Text("转入金额")
+                .font(.designLabel)
+                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.7))
+                .tracking(1.0)
+            Button {
+                withAnimation {
+                    if showNumpad && editingDestAmount { dismissNumpad() }
+                    else {
+                        editingDestAmount = true
+                        if destAmount != 0 {
+                            destAmountString = CurrencyFormatter.decimalFormatter.string(from: destAmount as NSDecimalNumber) ?? "\(destAmount)"
+                        } else { destAmountString = "" }
+                        showNumpad = true
+                    }
+                }
+            } label: {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(CurrencyFormatter.currencySymbol(for: destCurrency))
+                        .font(.custom("SpaceGrotesk-SemiBold", fixedSize: 24))
+                        .foregroundStyle(Color.designPrimary)
+                    Text(destAmountString.isEmpty ? "0.00" : destAmountString)
+                        .font(.custom("JetBrainsMono-Medium", fixedSize: 32))
+                        .foregroundStyle(Color.designPrimary)
+                        .tracking(-0.02)
+                    Image(systemName: showNumpad && editingDestAmount ? "keyboard_arrow_down" : "keyboard_arrow_up")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.designPrimaryContainer.opacity(0.5))
+                }
+            }
+            .buttonStyle(.plain)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .glassCard(cornerRadius: 24)
+        .overlay(alignment: .bottom) {
+            // Currency chip (non-interactive, locked to dest account)
+            Text(destCurrency)
+                .font(.designLabel)
+                .foregroundStyle(Color.designOnSurfaceVariant)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 3)
+                .background(Color.designSurfaceContainer)
+                .clipShape(Capsule())
+                .offset(y: 12)
         }
     }
 
@@ -1293,7 +1375,9 @@ struct AddEditTransactionView: View {
     // MARK: - Exchange Rate
 
     private var exchangeRateSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let rateFrom = (type == .transfer) ? transferExchangeFrom : selectedCurrencyCode
+        let rateTo = (type == .transfer) ? transferExchangeTo : ledgerCurrencyCode
+        return VStack(alignment: .leading, spacing: 8) {
             Text("跨币种换算")
                 .font(.designLabel)
                 .foregroundStyle(Color.designPrimary.opacity(0.8))
@@ -1301,13 +1385,13 @@ struct AddEditTransactionView: View {
             VStack(spacing: 12) {
                 HStack {
                     Text("汇率")
-                        .font(.designBodyMedium)
-                        .foregroundStyle(Color.designOnSurface)
+                        .font(.designBodyCaption)
+                        .foregroundStyle(Color.designOnSurfaceVariant)
                     Spacer()
                     if isFetchingRate {
                         ProgressView()
                     } else if let rate = exchangeRate {
-                        Text("1 \(selectedCurrencyCode) = \(rate.formatted(.number.precision(.fractionLength(4)))) \(ledgerCurrencyCode)")
+                        Text("1 \(rateFrom) = \(rate.formatted(.number.precision(.fractionLength(4)))) \(rateTo)")
                             .font(.custom("JetBrainsMono-Medium", fixedSize: 13))
                             .foregroundStyle(Color.designOnSurfaceVariant)
                     } else {
@@ -1319,10 +1403,10 @@ struct AddEditTransactionView: View {
                 if let converted = convertedAmountPreview {
                     HStack {
                         Text("换算金额")
-                            .font(.designBodyMedium)
-                            .foregroundStyle(Color.designOnSurface)
+                            .font(.designBodyCaption)
+                            .foregroundStyle(Color.designOnSurfaceVariant)
                         Spacer()
-                        CurrencyText(amount: converted, currencyCode: ledgerCurrencyCode, size: 17, foregroundColor: Color.designPrimaryFixedDim)
+                        CurrencyText(amount: converted, currencyCode: rateTo, size: 15, foregroundColor: Color.designPrimaryFixedDim)
                     }
                 }
             }
@@ -1520,7 +1604,14 @@ struct AddEditTransactionView: View {
     }
 
     private func appendDigit(_ digit: Int) {
-        if selectedSplitItemID != nil {
+        if editingDestAmount {
+            if let dotIndex = destAmountString.firstIndex(of: ".") {
+                let decimals = destAmountString[dotIndex...].dropFirst()
+                if decimals.count >= 2 { return }
+            }
+            if destAmountString == "0" || destAmountString == "0.00" { destAmountString = "\(digit)" }
+            else { destAmountString += "\(digit)" }
+        } else if selectedSplitItemID != nil {
             if let dotIndex = splitAmountString.firstIndex(of: ".") {
                 let decimals = splitAmountString[dotIndex...].dropFirst()
                 if decimals.count >= 2 { return }
@@ -1540,7 +1631,11 @@ struct AddEditTransactionView: View {
     }
 
     private func appendDot() {
-        if selectedSplitItemID != nil {
+        if editingDestAmount {
+            if destAmountString.contains(".") { return }
+            if destAmountString.isEmpty { destAmountString = "0." }
+            else { destAmountString += "." }
+        } else if selectedSplitItemID != nil {
             if splitAmountString.contains(".") { return }
             if splitAmountString.isEmpty { splitAmountString = "0." }
             else { splitAmountString += "." }
@@ -1554,7 +1649,10 @@ struct AddEditTransactionView: View {
     }
 
     private func backspace() {
-        if selectedSplitItemID != nil {
+        if editingDestAmount {
+            if destAmountString.count <= 1 { destAmountString = "0" }
+            else { destAmountString.removeLast() }
+        } else if selectedSplitItemID != nil {
             if splitAmountString.count <= 1 { splitAmountString = "0" }
             else { splitAmountString.removeLast() }
             syncSplitAmountToItem()
@@ -1566,7 +1664,9 @@ struct AddEditTransactionView: View {
     }
 
     private func clearAmount() {
-        if selectedSplitItemID != nil {
+        if editingDestAmount {
+            destAmountString = "0"
+        } else if selectedSplitItemID != nil {
             splitAmountString = "0"
             syncSplitAmountToItem()
         } else {
@@ -1576,6 +1676,11 @@ struct AddEditTransactionView: View {
     }
 
     private func dismissNumpad() {
+        if editingDestAmount {
+            destAmount = Decimal(string: destAmountString.replacingOccurrences(of: ",", with: "")) ?? 0
+            editingDestAmount = false
+            destAmountString = destAmount != 0 ? CurrencyFormatter.decimalFormatter.string(from: destAmount as NSDecimalNumber) ?? "\(destAmount)" : ""
+        }
         showNumpad = false
         syncSplitAmountToItem()
         selectedSplitItemID = nil
@@ -1861,8 +1966,9 @@ struct AddEditTransactionView: View {
             if let existing = editing {
                 try updateExisting(existing, ledger: ledger)
             } else if type == .transfer, let from = selectedAccount, let to = selectedToAccount {
+                let dAmount: Decimal? = (from.effectiveCurrencyCode != to.effectiveCurrencyCode) ? destAmount : nil
                 _ = try appContainer.transactionService.createTransfer(
-                    from: from, to: to, amount: amount, date: date,
+                    from: from, to: to, amount: amount, destAmount: dAmount, date: date,
                     note: note.isEmpty ? nil : note, ledger: ledger, context: modelContext
                 )
             } else if isSplit && !splitItems.isEmpty && type == .expense {
@@ -1953,11 +2059,22 @@ struct AddEditTransactionView: View {
     }
 
     private var needsExchangeRate: Bool {
-        selectedCurrencyCode != ledgerCurrencyCode
+        if type == .transfer { return isCrossCurrencyTransfer }
+        return selectedCurrencyCode != ledgerCurrencyCode
+    }
+
+    private var transferExchangeFrom: String {
+        selectedAccount?.effectiveCurrencyCode ?? "CNY"
+    }
+    private var transferExchangeTo: String {
+        selectedToAccount?.effectiveCurrencyCode ?? "CNY"
     }
 
     private var convertedAmountPreview: Decimal? {
         guard let rate = exchangeRate else { return nil }
+        if type == .transfer {
+            return abs(amount) * rate
+        }
         let signed = signingAmount()
         return signed * rate
     }
@@ -1965,9 +2082,19 @@ struct AddEditTransactionView: View {
     private func fetchExchangeRate() {
         guard let service = appContainer.exchangeRateService else { return }
         isFetchingRate = true
+        let from: String
+        let to: String
+        if type == .transfer,
+           let src = selectedAccount, let dst = selectedToAccount {
+            from = src.effectiveCurrencyCode
+            to = dst.effectiveCurrencyCode
+        } else {
+            from = selectedCurrencyCode
+            to = ledgerCurrencyCode
+        }
         Task {
             defer { isFetchingRate = false }
-            if let rate = try? await service.fetchRate(from: selectedCurrencyCode, to: ledgerCurrencyCode, context: modelContext) {
+            if let rate = try? await service.fetchRate(from: from, to: to, context: modelContext) {
                 exchangeRate = Decimal(string: "\(rate.rate)") ?? 0
             }
         }

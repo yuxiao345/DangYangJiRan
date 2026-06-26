@@ -91,3 +91,11 @@ final class Account: NSManagedObject,  Sendable {
 }
 
 extension Account: Identifiable {}
+
+extension Account {
+    /// Returns the effective currency code, falling back to "CNY" if nil or empty.
+    var effectiveCurrencyCode: String {
+        let code = currencyCode
+        return code.isEmpty ? "CNY" : code
+    }
+}

@@ -7,6 +7,7 @@ protocol TransactionServiceProtocol {
         from sourceAccount: Account,
         to destAccount: Account,
         amount: Decimal,
+        destAmount: Decimal?,
         date: Date,
         note: String?,
         ledger: Ledger,

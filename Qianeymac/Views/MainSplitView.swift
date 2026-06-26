@@ -26,6 +26,7 @@ struct MainSplitView: View {
         }
         .navigationTitle("")
         .toolbar { macToolbar }
+        .designScreen()
         .onAppear { loadLedgers() }
         .onChange(of: appContainer.currentLedger?.id) { _, _ in loadLedgers() }
         .onReceive(NotificationCenter.default.publisher(for: .macMenuNavigate)) { notif in
@@ -60,8 +61,7 @@ struct MainSplitView: View {
                     Label("新增账本", systemImage: "plus")
                 }
             } label: {
-                Text(appContainer.currentLedger?.name ?? String(localized: "小金库"))
-                    .padding(.leading, 2)
+                Text("  " + (appContainer.currentLedger?.name ?? String(localized: "小金库")))
                     .font(.custom("SpaceGrotesk-Bold", fixedSize: 18))
                     .padding(.horizontal, 12)
                     .padding(.vertical, 4)
