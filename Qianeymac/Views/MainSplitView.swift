@@ -1,6 +1,12 @@
 import SwiftUI
 @preconcurrency import CoreData
 
+/// Main window layout.
+/// Uses standard NavigationSplitView.
+/// Note: macOS 27 beta 2 had a NavigationSplitView click-interception bug
+/// (FB18201935, NSGlassContainerView), worked around in commit 224b58a with
+/// HStack + custom divider. That workaround was reverted after returning to
+/// macOS 26.5 / Xcode 26.5 release — the standard API works correctly here.
 struct MainSplitView: View {
     @Environment(AppContainer.self) private var appContainer
     @State private var selection: MacNavItem = .dashboard
@@ -54,7 +60,8 @@ struct MainSplitView: View {
                     Label("新增账本", systemImage: "plus")
                 }
             } label: {
-                Text("  " + (appContainer.currentLedger?.name ?? "小金库"))
+                Text(appContainer.currentLedger?.name ?? String(localized: "小金库"))
+                    .padding(.leading, 2)
                     .font(.custom("SpaceGrotesk-Bold", fixedSize: 18))
                     .padding(.horizontal, 12)
                     .padding(.vertical, 4)

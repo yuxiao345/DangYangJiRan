@@ -11,7 +11,6 @@ struct DashboardContentColumn: View {
     @State private var showBreakdown = false
     @State private var isBudgetHovered = false
 
-    @ViewBuilder
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {

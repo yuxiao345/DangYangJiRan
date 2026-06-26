@@ -141,7 +141,6 @@ struct MacAddTransactionSheet: View {
 
     private var isViewing: Bool { displayMode && !isEditing }
 
-    @ViewBuilder
     var body: some View {
         NavigationStack {
             ScrollView {

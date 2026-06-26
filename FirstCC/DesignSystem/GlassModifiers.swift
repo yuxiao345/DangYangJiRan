@@ -46,7 +46,9 @@ struct LiquidBackgroundModifier: ViewModifier {
                         .offset(x: 120, y: 280)
                         .scaleEffect(1.2)
                 }
+                #if os(iOS)
                 .ignoresSafeArea()
+                #endif
             }
     }
 }

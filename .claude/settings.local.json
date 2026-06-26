@@ -207,7 +207,8 @@
       "Bash(scutil --get ComputerName)",
       "Bash(scutil --get LocalHostName)",
       "Bash(rm -rf ~/Library/Developer/Xcode/DerivedData/FirstCC-*)",
-      "Bash(rm -rf /tmp/firstcc-build-mac)"
+      "Bash(rm -rf /tmp/firstcc-build-mac)",
+      "Bash(xxd ~/.lametric_key)"
     ]
   },
   "hooks": {
