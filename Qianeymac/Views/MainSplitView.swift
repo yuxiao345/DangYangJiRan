@@ -1,5 +1,7 @@
 import SwiftUI
 @preconcurrency import CoreData
+import CloudKit
+import Contacts
 
 /// Main window layout.
 /// Uses standard NavigationSplitView.
@@ -10,9 +12,14 @@ import SwiftUI
 struct MainSplitView: View {
     @Environment(AppContainer.self) private var appContainer
     @State private var selection: MacNavItem = .dashboard
+    @State private var selectedReportType: ReportType?
     @State private var showAddSheet = false
     @State private var allLedgers: [Ledger] = []
     @State private var showCreateLedgerSheet = false
+    @State private var isCreatingShare = false
+    @State private var shareParticipants: [User] = []
+    @State private var participantAvatars: [UUID: NSImage] = [:]
+    private let contactStore = CNContactStore()
 
     var body: some View {
         NavigationSplitView {
@@ -27,8 +34,8 @@ struct MainSplitView: View {
         .navigationTitle("")
         .toolbar { macToolbar }
         .designScreen()
-        .onAppear { loadLedgers() }
-        .onChange(of: appContainer.currentLedger?.id) { _, _ in loadLedgers() }
+        .onAppear { loadLedgers(); loadParticipants() }
+        .onChange(of: appContainer.currentLedger?.id) { _, _ in loadLedgers(); loadParticipants() }
         .onReceive(NotificationCenter.default.publisher(for: .macMenuNavigate)) { notif in
             if let item = notif.object as? MacNavItem {
                 selection = item
@@ -65,15 +72,26 @@ struct MainSplitView: View {
                     .font(.custom("SpaceGrotesk-Bold", fixedSize: 18))
                     .padding(.horizontal, 12)
                     .padding(.vertical, 4)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.designGlassBg.opacity(0.5))
-                    )
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
             }
             .menuStyle(.borderlessButton)
         }
+        ToolbarItem(placement: .principal) {
+            ShareBadgeView(
+                isShared: isShared,
+                isCreatingShare: isCreatingShare,
+                shareParticipants: shareParticipants,
+                participantAvatars: participantAvatars,
+                onTap: {
+                    if isShared { manageSharing() }
+                    else { createShareAndShow() }
+                }
+            )
+        }
         ToolbarItem(placement: .primaryAction) {
-            Button { showAddSheet = true } label: { Image(systemName: "plus") }
+            Button { showAddSheet = true } label: {
+                Image(systemName: "plus")
+            }
         }
     }
 
@@ -82,26 +100,50 @@ struct MainSplitView: View {
     private var sidebar: some View {
         List {
             ForEach(MacNavItem.allCases) { item in
-                HStack(spacing: 10) {
-                    Image(systemName: item.icon)
-                        .frame(width: 20)
-                    Text(item.rawValue)
-                }
-                .font(.designBodyMedium)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-                .padding(.vertical, 6)
-                .padding(.horizontal, 8)
-                .background(selection == item ? Color.accentColor.opacity(0.15) : Color.clear)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .onTapGesture {
-                    if selection != item {
-                        selection = item
+                if item == .reports {
+                    DisclosureGroup {
+                        ForEach(ReportType.allCases) { type in
+                            sidebarRow(icon: type.icon, label: type.rawValue,
+                                       selected: selection == .reports && selectedReportType == type,
+                                       isChild: true)
+                                .onTapGesture {
+                                    selection = .reports
+                                    selectedReportType = type
+                                }
+                        }
+                    } label: {
+                        sidebarRow(icon: item.icon, label: item.rawValue,
+                                   selected: selection == item)
                     }
+                } else {
+                    sidebarRow(icon: item.icon, label: item.rawValue,
+                               selected: selection == item)
+                        .onTapGesture {
+                            if selection != item {
+                                selection = item
+                                selectedReportType = nil
+                            }
+                        }
                 }
             }
         }
         .listStyle(.sidebar)
+    }
+
+    private func sidebarRow(icon: String, label: String, selected: Bool, isChild: Bool = false) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .frame(width: 20)
+            Text(label)
+        }
+        .font(.designBodyMedium)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .padding(.vertical, isChild ? 5 : 6)
+        .padding(.horizontal, 8)
+        .padding(.leading, isChild ? 8 : 0)
+        .background(selected ? Color.accentColor.opacity(0.15) : Color.clear)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 
     // MARK: - Main Column
@@ -116,7 +158,11 @@ struct MainSplitView: View {
         case .transactions:
             TransactionListContent()
         case .reports:
-            ReportTypeContent()
+            if selectedReportType == nil {
+                Color.clear.onAppear { selectedReportType = .trend }
+            } else {
+                ReportDetailContent()
+            }
         }
     }
 
@@ -126,4 +172,104 @@ struct MainSplitView: View {
         req.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
         allLedgers = (try? ctx.fetch(req)) ?? []
     }
+
+    // MARK: - Share
+
+    private var isShared: Bool {
+        appContainer.currentLedger?.isShared ?? false
+    }
+
+    private func loadParticipants() {
+        guard let ledger = appContainer.currentLedger, ledger.isShared else {
+            shareParticipants = []
+            participantAvatars = [:]
+            return
+        }
+        let users = (ledger.members as? Set<User>)?.sorted(by: { $0.joinedAt < $1.joinedAt }) ?? []
+        shareParticipants = users
+        let currentIDs = Set(users.map(\.id))
+        participantAvatars = participantAvatars.filter { currentIDs.contains($0.key) }
+        loadContactAvatars(for: users)
+    }
+
+    private func loadContactAvatars(for users: [User]) {
+        contactStore.requestAccess(for: .contacts) { granted, _ in
+            guard granted else { return }
+            let keys = [CNContactThumbnailImageDataKey] as [CNKeyDescriptor]
+            var avatars: [UUID: NSImage] = [:]
+            for user in users {
+                let predicate = CNContact.predicateForContacts(matchingName: user.displayName)
+                if let contacts = try? contactStore.unifiedContacts(matching: predicate, keysToFetch: keys),
+                   let imageData = contacts.first?.thumbnailImageData {
+                    avatars[user.id] = NSImage(data: imageData)
+                }
+            }
+            DispatchQueue.main.async { self.participantAvatars.merge(avatars) { _, new in new } }
+        }
+    }
+
+    // MARK: - Share Actions
+
+    private func createShareAndShow() {
+        guard let ledger = appContainer.currentLedger,
+              let syncService = appContainer.syncService as? SyncServiceImpl else { return }
+        guard let service = NSSharingService(named: .cloudSharing) else { return }
+        isCreatingShare = true
+        let itemProvider = NSItemProvider()
+        itemProvider.registerCKShare(container: CKContainer.default(), allowedSharingOptions: .standard) {
+            let share = try await syncService.createShare(for: ledger)
+            await MainActor.run {
+                ledger.isShared = true
+                ledger.shareRecordName = share.recordID.recordName
+                try? appContainer.viewContext.save()
+                isCreatingShare = false
+            }
+            Task { @MainActor in
+                try? await syncService.syncParticipants(share: share, for: ledger)
+                loadParticipants()
+            }
+            return share
+        }
+        service.perform(withItems: [itemProvider])
+    }
+
+    private func manageSharing() {
+        guard let ledger = appContainer.currentLedger,
+              let syncService = appContainer.syncService as? SyncServiceImpl else {
+            NSAlert(error: NSError(domain: "", code: 0, userInfo: [NSLocalizedDescriptionKey: "无法获取共享服务"])).runModal()
+            return
+        }
+        isCreatingShare = true
+        Task {
+            let share = try? await syncService.discoverShare(for: ledger)
+            await MainActor.run {
+                isCreatingShare = false
+                if let share {
+                    showSharingService(share: share)
+                } else {
+                    createShareAndShow()
+                }
+            }
+        }
+    }
+
+    private func showSharingService(share: CKShare) {
+        guard let service = NSSharingService(named: .cloudSharing) else {
+            NSAlert(error: NSError(domain: "CK", code: 0, userInfo: [NSLocalizedDescriptionKey: "CloudKit 共享服务不可用"])).runModal()
+            return
+        }
+        // Set metadata for proper collaboration UI
+        share[CKShare.SystemFieldKey.title] = appContainer.currentLedger?.name ?? "共享账本"
+        let itemProvider = NSItemProvider()
+        itemProvider.registerCloudKitShare(share, container: CKContainer.default())
+        service.delegate = CloudSharingDelegate(onStop: { [self] in
+            Task { @MainActor in
+                appContainer.currentLedger?.isShared = false
+                try? appContainer.viewContext.save()
+                loadParticipants()
+            }
+        })
+        service.perform(withItems: [itemProvider])
+    }
 }
+

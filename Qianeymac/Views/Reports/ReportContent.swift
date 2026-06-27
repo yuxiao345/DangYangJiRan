@@ -18,22 +18,6 @@ enum ReportType: String, CaseIterable, Identifiable {
     }
 }
 
-struct ReportTypeContent: View {
-    var body: some View {
-        List(ReportType.allCases) { report in
-            NavigationLink(value: report) {
-                Label(report.rawValue, systemImage: report.icon)
-                    .padding(.vertical, 4)
-            }
-        }
-        .scrollContentBackground(.hidden)
-        .designScreen()
-        .navigationDestination(for: ReportType.self) { _ in
-            ReportDetailContent()
-        }
-    }
-}
-
 struct ReportDetailContent: View {
     var body: some View {
         VStack(spacing: 16) {

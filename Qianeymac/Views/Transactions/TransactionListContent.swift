@@ -16,6 +16,8 @@ struct TransactionListContent: View {
     @State private var selectedMonth: Date = Date().startOfMonth
     @State private var selectedDate: Date?
     @State private var transactionDays: Set<Int> = []
+    @State private var monthSlideDirection: Edge = .trailing
+    @Namespace private var calendarNamespace
 
     var filterCategory: Category?
     var options: TransactionListOptions = []
@@ -23,54 +25,48 @@ struct TransactionListContent: View {
     private let cal = Calendar.current
     private let weekdaySymbols = ["一", "二", "三", "四", "五", "六", "日"]
 
-    private var typeFilterOptions: [(String, TransactionType?)] {
-        [("全部", nil), (TransactionType.expense.displayName, .expense),
-         (TransactionType.income.displayName, .income),
-         (TransactionType.transfer.displayName, .transfer),
-         (TransactionType.lending.displayName, .lending)]
-    }
-
     var body: some View {
         VStack(spacing: 0) {
-            // Header
+            // Header + Calendar in glass card
             if !options.contains(.hideCalendar) {
-                HStack(spacing: 12) {
-                    HStack(spacing: 4) {
-                        Button { shiftMonth(-1) } label: {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 14, weight: .semibold))
-                                .frame(width: 28, height: 28)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.borderless)
-                        Text(selectedMonth.monthDisplay)
-                            .font(.designHeadlineMedium)
-                            .frame(width: 120)
-                        Button { shiftMonth(1) } label: {
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 14, weight: .semibold))
-                                .frame(width: 28, height: 28)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.borderless)
-                    }
-                    Spacer()
-                    if !options.contains(.hideTypeFilter) {
-                        Picker("", selection: $filterType) {
-                            Text("全部").tag(nil as TransactionType?)
-                            ForEach([TransactionType.expense, .income, .transfer, .lending], id: \.self) { t in
-                                Text(t.displayName).tag(t as TransactionType?)
+                VStack(spacing: 0) {
+                    HStack(spacing: 12) {
+                        HStack(spacing: 4) {
+                            Button { shiftMonth(-1) } label: {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .frame(width: 28, height: 28)
+                                    .contentShape(Rectangle())
                             }
+                            .buttonStyle(.borderless)
+                            Text(selectedMonth.monthDisplay)
+                                .font(.designHeadlineMedium)
+                                .frame(width: 120)
+                            Button { shiftMonth(1) } label: {
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .frame(width: 28, height: 28)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.borderless)
                         }
-                        .pickerStyle(.segmented)
+                        Spacer()
+                        if !options.contains(.hideTypeFilter) {
+                            GlassSegmentedPicker(selection: $filterType)
+                        }
                     }
-                }
-                .padding(.leading, 32)
-                .padding(.trailing, 16)
-                .padding(.top, 24)
+                    .padding(.top, 6)
 
-                customCalendar
-                Divider()
+                    customCalendar
+                        .id(selectedMonth)
+                        .transition(.asymmetric(
+                            insertion: .move(edge: monthSlideDirection).combined(with: .opacity),
+                            removal: .move(edge: monthSlideDirection == .trailing ? .leading : .trailing).combined(with: .opacity)
+                        ))
+                }
+                .glassSection()
+                .padding(.horizontal, 12)
+                .padding(.top, 12)
             }
 
             ScrollView {
@@ -102,8 +98,14 @@ struct TransactionListContent: View {
         .navigationTitle("")
         .onAppear(perform: load)
         .onChange(of: filterType) { _, _ in load() }
-        .onChange(of: selectedMonth) { _, _ in selectedDate = nil; load() }
-        .onChange(of: selectedDate) { _, _ in load() }
+        .onChange(of: selectedMonth) { _, _ in
+            selectedDate = nil
+            load()
+        }
+        .onChange(of: selectedDate) { old, new in
+            guard old != new else { return }
+            load()
+        }
         .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in load() }
     }
 
@@ -122,16 +124,22 @@ struct TransactionListContent: View {
                 ForEach(calendarDays) { d in
                     Button {
                         if d.date != nil {
-                            if let cur = selectedDate, cal.isDate(d.date!, inSameDayAs: cur) {
-                                selectedDate = nil
-                            } else {
-                                selectedDate = d.date
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                if let cur = selectedDate, cal.isDate(d.date!, inSameDayAs: cur) {
+                                    selectedDate = nil
+                                } else {
+                                    selectedDate = d.date
+                                }
                             }
                         }
                     } label: {
                         ZStack {
                             if let date = d.date, let sd = selectedDate, cal.isDate(date, inSameDayAs: sd) {
-                                Circle().fill(Color.designAccentGreen).frame(height: 28)
+                                Circle()
+                                    .fill(.regularMaterial)
+                                    .background(Circle().fill(Color.designAccentGreen.opacity(0.3)))
+                                    .frame(height: 28)
+                                    .matchedGeometryEffect(id: "selectedDay", in: calendarNamespace)
                             }
                             if d.isToday, selectedDate == nil || (d.date != nil && !cal.isDate(d.date!, inSameDayAs: selectedDate!)) {
                                 Circle().stroke(Color.designAccentGreen, lineWidth: 1.5).frame(height: 28)
@@ -141,7 +149,7 @@ struct TransactionListContent: View {
                                     .font(d.isToday ? .designBodySmall.bold() : .designBodySmall)
                                     .foregroundStyle(
                                         d.date != nil && selectedDate != nil && cal.isDate(d.date!, inSameDayAs: selectedDate!)
-                                            ? Color.white : d.day > 0 ? Color.designOnSurface : Color.clear
+                                            ? Color.designOnSurface : d.day > 0 ? Color.designOnSurface : Color.clear
                                     )
                                 if d.hasTransactions, d.day > 0 {
                                     Circle().fill(Color.designAccentGreen.opacity(0.5)).frame(width: 3, height: 3)
@@ -155,7 +163,7 @@ struct TransactionListContent: View {
                     .disabled(d.day == 0)
                 }
             }
-            .padding(.leading, 32).padding(.trailing, 16).padding(.top, 4).padding(.bottom, 4)
+            .padding(.leading, 16).padding(.trailing, 0).padding(.top, 4).padding(.bottom, 4)
         }
     }
 
@@ -201,6 +209,74 @@ struct TransactionListContent: View {
     }
 
     private func shiftMonth(_ delta: Int) {
-        selectedMonth = cal.date(byAdding: .month, value: delta, to: selectedMonth)?.startOfMonth ?? selectedMonth
+        monthSlideDirection = delta > 0 ? .trailing : .leading
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            selectedMonth = cal.date(byAdding: .month, value: delta, to: selectedMonth)?.startOfMonth ?? selectedMonth
+        }
+    }
+}
+
+// MARK: - Glass Segmented Picker
+
+private struct GlassSegmentedPicker: View {
+    @Binding var selection: TransactionType?
+    @Namespace private var animation
+
+    private let options: [(label: String, type: TransactionType?)] = {
+        [(String(localized: "全部"), nil)]
+        + TransactionType.allCases.map { ($0.displayName, $0) }
+    }()
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(options, id: \.label) { option in
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        selection = option.type
+                    }
+                } label: {
+                    Text(option.label)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(
+                            selection == option.type
+                                ? Color.designOnSurface
+                                : Color.designOnSurfaceVariant.opacity(0.7)
+                        )
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .contentShape(Rectangle())
+                        .background {
+                            if selection == option.type {
+                                Capsule()
+                                    .fill(Color.white.opacity(0.06))
+                                    .background(.regularMaterial, in: Capsule())
+                                    .overlay {
+                                        Capsule()
+                                            .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                                    }
+                                    .matchedGeometryEffect(id: "glassPill", in: animation)
+                                    .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
+                            }
+                        }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(4)
+        .background {
+            Capsule()
+                .fill(Color.designGlassBg)
+        }
+        .background(.regularMaterial, in: Capsule())
+        .overlay {
+            Capsule()
+                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+        }
+        .overlay {
+            Capsule()
+                .stroke(Color.white.opacity(0.04), lineWidth: 1)
+                .padding(1)
+        }
+        .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
     }
 }

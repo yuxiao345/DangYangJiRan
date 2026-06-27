@@ -73,7 +73,7 @@ struct BudgetBookDetailMacView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("关闭") { dismiss() }
+                    Button("关闭") { dismiss() }.glassTextButton()
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button { showAddSheet = true } label: {
@@ -265,14 +265,14 @@ private struct BudgetItemRowView: View {
                             Image(systemName: "pencil")
                                 .font(.system(size: 11))
                         }
-                        .buttonStyle(.borderless)
+                        .buttonStyle(DesignGlassCircleButton())
                         .help("编辑")
 
                         Button { deleteCandidate = item } label: {
                             Image(systemName: "trash")
                                 .font(.system(size: 11))
                         }
-                        .buttonStyle(.borderless)
+                        .buttonStyle(DesignGlassCircleButton())
                         .help("删除")
                     }
                 } else {

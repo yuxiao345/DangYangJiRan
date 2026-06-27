@@ -53,9 +53,9 @@ struct MacAddEditBudgetBookView: View {
         .frame(minWidth: 400, idealWidth: 420, minHeight: 300)
         .navigationTitle(isEditing ? "编辑预算计划" : "新建预算计划")
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
+            ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() }.glassTextButton() }
             ToolbarItem(placement: .confirmationAction) {
-                Button("保存") { save() }.disabled(name.isEmpty)
+                Button("保存") { save() }.disabled(name.isEmpty).glassTextButton()
             }
         }
         .alert("保存失败", isPresented: .constant(errorMessage != nil)) {

@@ -36,10 +36,11 @@ struct AddEditBudgetBookView: View {
             .navigationTitle(editing != nil ? "编辑预算计划" : "新建预算计划")
             .errorAlert("保存失败", message: $errorMessage)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() }.glassTextButton() }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("保存") { save() }
                         .disabled(name.isEmpty)
+                        .glassTextButton()
                 }
             }
             .onAppear {

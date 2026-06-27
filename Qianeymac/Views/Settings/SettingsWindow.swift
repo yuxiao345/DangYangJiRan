@@ -455,10 +455,12 @@ private struct LedgerSettingsContent: View {
 
     private func showSharingService(share: CKShare) {
         if let service = NSSharingService(named: .cloudSharing) {
-            service.delegate = ShareDelegate(onStop: { [self] in
+            let itemProvider = NSItemProvider()
+            itemProvider.registerCloudKitShare(share, container: CKContainer.default())
+            service.delegate = CloudSharingDelegate(onStop: { [self] in
                 Task { @MainActor in await handleStopSharing() }
             })
-            service.perform(withItems: [share])
+            service.perform(withItems: [itemProvider])
         }
     }
 
@@ -698,18 +700,6 @@ struct MacAccountListView: View {
     }
 }
 
-// MARK: - Share Delegate
-
-private class ShareDelegate: NSObject, NSSharingServiceDelegate {
-    let onStop: () -> Void
-    init(onStop: @escaping () -> Void) { self.onStop = onStop }
-
-    func sharingService(_ sharingService: NSSharingService, didShareItems items: [Any]) {}
-    func sharingService(_ sharingService: NSSharingService, didFailToShareItems items: [Any], error: any Error) {}
-    func sharingService(_ sharingService: NSSharingService, sourceWindowForShareItems items: [Any], sharingContentScope: UnsafeMutablePointer<NSSharingService.SharingContentScope>) -> NSWindow? {
-        NSApp.keyWindow
-    }
-}
 
 // MARK: - Notification Names
 

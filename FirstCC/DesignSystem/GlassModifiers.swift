@@ -128,12 +128,11 @@ struct DesignPrimaryButton: ButtonStyle {
                 color: Color.designPrimaryFixedDim.opacity(configuration.isPressed ? 0.15 : 0.35),
                 radius: configuration.isPressed ? 4 : 14
             )
-            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
-            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+            .pressEffect(isPressed: configuration.isPressed, scale: 0.98)
     }
 }
 
-/// Glass secondary/ghost button: semi-transparent bg + subtle border.
+/// Glass secondary/ghost button: material blur + glass bg + subtle border.
 struct DesignSecondaryButton: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -142,13 +141,53 @@ struct DesignSecondaryButton: ButtonStyle {
             .padding(.horizontal, 24)
             .padding(.vertical, 14)
             .background(Color.designGlassBg)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
             .overlay {
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color.designOutline.opacity(0.2), lineWidth: 1)
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
             }
-            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
-            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+            .pressEffect(isPressed: configuration.isPressed, scale: 0.98)
+    }
+}
+
+/// Glass circle icon button: material blur + subtle border.
+/// Minimum size 32pt per macOS HIG (30pt minimum, 44pt recommended for accessibility).
+struct DesignGlassCircleButton: ButtonStyle {
+    var size: CGFloat = 32
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 13, weight: .semibold))
+            .frame(width: size, height: size)
+            .contentShape(Circle())
+            .background(.regularMaterial, in: Circle())
+            .overlay(Circle().stroke(Color.white.opacity(configuration.isPressed ? 0.18 : 0.10), lineWidth: 1))
+            .pressEffect(isPressed: configuration.isPressed, scale: 0.95)
+    }
+}
+
+/// Glass text button: material blur + subtle border. Replaces system styling entirely.
+/// Use `.destructive` variant for delete/remove actions.
+struct DesignGlassTextButton: ButtonStyle {
+    enum Variant { case normal, destructive }
+
+    var variant: Variant = .normal
+
+    private var strokeColor: Color {
+        variant == .destructive ? .red : .white
+    }
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(variant == .destructive ? .red : .primary)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 6)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+            .overlay {
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(strokeColor.opacity(configuration.isPressed ? 0.22 : 0.08), lineWidth: 1)
+            }
+            .pressEffect(isPressed: configuration.isPressed, scale: 0.97)
     }
 }
 
@@ -218,6 +257,7 @@ struct GlassSectionModifier: ViewModifier {
                 RoundedRectangle(cornerRadius: 16)
                     .stroke(Color.designGlassBorderHighlight, lineWidth: 1)
             }
+            .shadow(color: .black.opacity(0.12), radius: 10, y: 4)
     }
 }
 
@@ -233,6 +273,12 @@ struct DesignScreenModifier: ViewModifier {
 // MARK: - View Extensions
 
 extension View {
+    /// Shared press animation for all glass button styles.
+    func pressEffect(isPressed: Bool, scale: CGFloat = 0.97) -> some View {
+        self.scaleEffect(isPressed ? scale : 1.0)
+            .animation(.easeOut(duration: 0.15), value: isPressed)
+    }
+
     /// Full-screen liquid background
     func designScreen() -> some View {
         modifier(DesignScreenModifier())
@@ -246,6 +292,16 @@ extension View {
     /// Glass section with padding + blur
     func glassSection() -> some View {
         modifier(GlassSectionModifier())
+    }
+
+    /// Glass text button: material bg + subtle border, replaces system style entirely.
+    func glassTextButton() -> some View {
+        self.buttonStyle(DesignGlassTextButton())
+    }
+
+    /// Glass destructive button: red-tinted glass for delete/remove actions.
+    func glassDestructiveButton() -> some View {
+        self.buttonStyle(DesignGlassTextButton(variant: .destructive))
     }
 
     /// Internal glow blob for hero cards

@@ -21,7 +21,7 @@ struct MacBudgetBookListView: View {
                 Button { showAddSheet = true } label: {
                     Image(systemName: "plus").fontWeight(.semibold)
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(DesignGlassCircleButton())
             }
             .padding(.horizontal, 24)
             .padding(.top, 24)
