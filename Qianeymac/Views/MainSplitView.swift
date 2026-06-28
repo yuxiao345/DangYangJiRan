@@ -158,10 +158,10 @@ struct MainSplitView: View {
         case .transactions:
             TransactionListContent()
         case .reports:
-            if selectedReportType == nil {
-                Color.clear.onAppear { selectedReportType = .trend }
+            if let type = selectedReportType {
+                ReportDetailContent(reportType: type)
             } else {
-                ReportDetailContent()
+                Color.clear.onAppear { selectedReportType = .trend }
             }
         }
     }

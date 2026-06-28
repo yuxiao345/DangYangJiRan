@@ -5,18 +5,24 @@ enum ReportPeriod: Hashable {
     case thisMonth
     case last3Months
     case last6Months
+    case last12Months
+    case last18Months
     case lastYear
     case last2Years
     case last3Years
+    case customRange(start: Date, end: Date)
 
     var label: String {
         switch self {
         case .thisMonth: String(localized: "本月")
         case .last3Months: String(localized: "近3月")
         case .last6Months: String(localized: "近6月")
+        case .last12Months: String(localized: "近12月")
+        case .last18Months: String(localized: "近18月")
         case .lastYear: String(localized: "近1年")
         case .last2Years: String(localized: "近2年")
         case .last3Years: String(localized: "近3年")
+        case .customRange: String(localized: "自定义")
         }
     }
 
@@ -33,6 +39,12 @@ enum ReportPeriod: Hashable {
         case .last6Months:
             guard let start = cal.date(byAdding: .month, value: -6, to: now)?.startOfMonth else { return nil }
             return start..<end
+        case .last12Months:
+            guard let start = cal.date(byAdding: .month, value: -12, to: now)?.startOfMonth else { return nil }
+            return start..<end
+        case .last18Months:
+            guard let start = cal.date(byAdding: .month, value: -18, to: now)?.startOfMonth else { return nil }
+            return start..<end
         case .lastYear:
             guard let start = cal.date(byAdding: .year, value: -1, to: now)?.startOfMonth else { return nil }
             return start..<end
@@ -41,6 +53,8 @@ enum ReportPeriod: Hashable {
             return start..<end
         case .last3Years:
             guard let start = cal.date(byAdding: .year, value: -3, to: now)?.startOfYear else { return nil }
+            return start..<end
+        case .customRange(let start, let end):
             return start..<end
         }
     }
@@ -365,79 +379,139 @@ final class ReportViewModel {
     // MARK: - Test data seeding (DEBUG only)
 
     #if DEBUG
+    /// Self-contained: creates categories + account if missing, then generates realistic transaction data.
     func seedTestData(
         ledger: Ledger,
         context: NSManagedObjectContext
     ) {
         let ledgerID = ledger.id
+        let cal = Calendar.current
 
-        // Category names
-        let catNames: [String] = ["三餐", "停车", "娱乐", "物业", "通讯"]
+        // ── Ensure categories ──
+        let catDefs: [(name: String, icon: String, hex: String, children: [(String, String, String)])] = [
+            ("餐饮", "fork.knife", "#FF6B6B", [("三餐", "takeoutbag", "#FF8E8E"), ("外卖", "bicycle", "#FFA5A5")]),
+            ("交通", "car", "#4ECDC4", [("停车", "parkingsign", "#6EE7DE"), ("打车", "car.2", "#45B7AA")]),
+            ("购物", "bag", "#FFD93D", [("日用品", "basket", "#FFE566"), ("服饰", "tshirt", "#FFCC00")]),
+            ("娱乐", "gamecontroller", "#6C5CE7", [("电影", "film", "#8B7FEA"), ("游戏", "dpad", "#5A4BD1")]),
+            ("居住", "house", "#A8E6CF", [("物业", "building.2", "#BFF5DF"), ("水电", "bolt", "#8FD5B5")]),
+            ("通讯", "phone", "#74B9FF", [("话费", "antenna.radiowaves.left.and.right", "#8ECAFF"), ("宽带", "wifi", "#5AA8E7")]),
+            ("医疗", "cross.case", "#FF8A80", []),
+            ("教育", "book", "#B388FF", []),
+        ]
+
         let catFetch = NSFetchRequest<Category>(entityName: "Category")
         catFetch.predicate = NSPredicate(format: "ledger.id == %@", ledgerID as CVarArg)
-        let allCats = (try? context.fetch(catFetch)) ?? []
-        let catByName: [String: Category] = Dictionary(uniqueKeysWithValues: allCats.compactMap { c in
-            catNames.contains(c.name) ? (c.name, c) : nil
-        })
-        guard catByName.count == 5 else {
-            print("Seed: missing categories, found \(catByName.keys.sorted())")
-            return
-        }
+        var allCats = (try? context.fetch(catFetch)) ?? []
+        var catByName = Dictionary(uniqueKeysWithValues: allCats.map { ($0.name, $0) })
 
-        // Get 微信支付 account
+        for def in catDefs {
+            let parent: Category
+            if let existing = catByName[def.name] {
+                parent = existing
+            } else {
+                parent = Category(name: def.name, iconName: def.icon, colorHex: def.hex, type: .expense, context: context)
+                parent.ledger = ledger
+                allCats.append(parent)
+                catByName[def.name] = parent
+            }
+            for childDef in def.children {
+                if catByName[childDef.0] == nil {
+                    let child = Category(name: childDef.0, iconName: childDef.1, colorHex: childDef.2, type: .expense, context: context)
+                    child.ledger = ledger
+                    child.parent = parent
+                    allCats.append(child)
+                    catByName[childDef.0] = child
+                }
+            }
+        }
+        try? context.save()
+
+        // ── Ensure account ──
         let acctFetch = NSFetchRequest<Account>(entityName: "Account")
         acctFetch.predicate = NSPredicate(format: "ledger.id == %@", ledgerID as CVarArg)
-        guard let allAccounts = try? context.fetch(acctFetch) else { return }
-        guard let account = allAccounts.first(where: { $0.name == "微信支付" }) else {
-            print("Seed: 微信支付 account not found")
-            return
+        let allAccounts = (try? context.fetch(acctFetch)) ?? []
+        let account: Account
+        if let existing = allAccounts.first(where: { $0.name == "微信支付" }) {
+            account = existing
+        } else {
+            account = Account(name: "微信支付", currencyCode: ledger.defaultCurrencyCode, type: .eWallet, context: context)
+            account.ledger = ledger
+            try? context.save()
         }
 
-        let cal = Calendar.current
+        // ── Generate 18 months of transactions ──
         guard var date = cal.date(from: DateComponents(year: 2025, month: 1, day: 1)),
-              let endDate = cal.date(from: DateComponents(year: 2026, month: 5, day: 1)) else {
+              let endDate = cal.date(from: DateComponents(year: 2026, month: 7, day: 1)) else {
             print("Seed: date creation failed")
             return
         }
 
         var count = 0
         while date < endDate {
-            // 3x 餐饮 30 each
-            for _ in 0..<3 {
-                let t = Transaction(type: .expense, amount: -30, date: date, account: account, category: catByName["三餐"], context: context)
-                t.ledger = ledger
-                count += 1
-            }
-            // 1x 停车 20
-            let p = Transaction(type: .expense, amount: -20, date: date, account: account, category: catByName["停车"], context: context)
-            p.ledger = ledger
-            count += 1
+            let dow = cal.component(.weekday, from: date)
+            let dom = cal.component(.day, from: date)
 
-            // Weekly 娱乐 on Sundays
-            if cal.component(.weekday, from: date) == 1 {
-                let e = Transaction(type: .expense, amount: -100, date: date, account: account, category: catByName["娱乐"], context: context)
-                e.ledger = ledger
-                count += 1
+            // Daily: 三餐 35±10
+            let meals = catByName["三餐"]!
+            for _ in 0..<Int.random(in: 2...4) {
+                let t = Transaction(type: .expense, amount: Decimal(-35 + Int.random(in: -10...15)), date: date, account: account, category: meals, context: context)
+                t.ledger = ledger; count += 1
+            }
+            // Daily: 交通 (parking or taxi)
+            if Int.random(in: 1...10) <= 7 {
+                let transportCat = Bool.random() ? catByName["停车"]! : catByName["打车"]!
+                let t = Transaction(type: .expense, amount: Decimal(-15 + Int.random(in: -5...25)), date: date, account: account, category: transportCat, context: context)
+                t.ledger = ledger; count += 1
+            }
+            // 2-3x/week: 外卖
+            if Int.random(in: 1...10) <= 4 {
+                let t = Transaction(type: .expense, amount: Decimal(-25 + Int.random(in: -10...20)), date: date, account: account, category: catByName["外卖"]!, context: context)
+                t.ledger = ledger; count += 1
+            }
+            // Weekend: 娱乐 boost
+            if dow == 1 || dow == 7 {
+                for _ in 0..<Int.random(in: 1...3) {
+                    let entCat = Bool.random() ? catByName["电影"]! : catByName["游戏"]!
+                    let t = Transaction(type: .expense, amount: Decimal(-40 + Int.random(in: -20...80)), date: date, account: account, category: entCat, context: context)
+                    t.ledger = ledger; count += 1
+                }
+            }
+            // Twice a week: 购物
+            if Int.random(in: 1...10) <= 3 {
+                let shopCat = Bool.random() ? catByName["日用品"]! : catByName["服饰"]!
+                let t = Transaction(type: .expense, amount: Decimal(-50 + Int.random(in: -30...150)), date: date, account: account, category: shopCat, context: context)
+                t.ledger = ledger; count += 1
+            }
+            // Monthly 1st: 物业, 通讯, 话费, 宽带
+            if dom == 1 {
+                for catName in ["物业", "通讯", "话费", "宽带"] {
+                    let cat = catByName[catName]!
+                    let amt: Int = catName == "物业" ? -700 + Int.random(in: -100...100) : -150 + Int.random(in: -30...30)
+                    let t = Transaction(type: .expense, amount: Decimal(amt), date: date, account: account, category: cat, context: context)
+                    t.ledger = ledger; count += 1
+                }
+            }
+            // Monthly 5th: 工资 (income!)
+            if dom == 5 {
+                let t = Transaction(type: .income, amount: Decimal(12000 + Int.random(in: -2000...3000)), date: date, account: account, category: nil, context: context)
+                t.ledger = ledger; count += 1
+                // Side income sometimes
+                if Int.random(in: 1...10) <= 3 {
+                    let t2 = Transaction(type: .income, amount: Decimal(1500 + Int.random(in: -500...2000)), date: date, account: account, category: nil, context: context)
+                    t2.ledger = ledger; count += 1
+                }
+            }
+            // Occasional: 医疗, 教育
+            if dom == 15 && Int.random(in: 1...10) <= 3 {
+                let cat = catByName[Int.random(in: 1...10) <= 5 ? "医疗" : "教育"]!
+                let t = Transaction(type: .expense, amount: Decimal(-200 + Int.random(in: -300...500)), date: date, account: account, category: cat, context: context)
+                t.ledger = ledger; count += 1
             }
 
-            // Monthly on 1st
-            if cal.component(.day, from: date) == 1 {
-                let prop = Transaction(type: .expense, amount: -700, date: date, account: account, category: catByName["物业"], context: context)
-                prop.ledger = ledger
-                count += 1
-                let tel = Transaction(type: .expense, amount: -199, date: date, account: account, category: catByName["通讯"], context: context)
-                tel.ledger = ledger
-                count += 1
-            }
-
-            guard let nextDate = cal.date(byAdding: .day, value: 1, to: date) else {
-                print("Seed: date iteration failed at \(date)")
-                break
-            }
+            guard let nextDate = cal.date(byAdding: .day, value: 1, to: date) else { break }
             date = nextDate
 
-            // Save in batches
-            if count % 200 == 0 {
+            if count % 500 == 0 {
                 try? context.save()
                 print("Seed: \(count) transactions...")
             }

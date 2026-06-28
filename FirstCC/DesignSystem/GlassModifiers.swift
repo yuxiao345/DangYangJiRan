@@ -333,4 +333,61 @@ extension View {
     func designListRow(isLast: Bool = false) -> some View {
         modifier(DesignListRowModifier(isLast: isLast))
     }
+
+    /// Liquid Glass grain texture overlay — subtle noise for material depth
+    func designGrain() -> some View {
+        modifier(GrainTextureModifier())
+    }
+}
+
+// MARK: - Grain Texture Modifier
+
+/// Subtle noise grain that enhances the "Liquid Glass" material feel.
+/// Uses a pre-seeded randomized dot pattern, rasterized once via drawingGroup.
+struct GrainTextureModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .overlay {
+                GrainCanvas()
+                    .allowsHitTesting(false)
+            }
+    }
+}
+
+private struct GrainCanvas: View {
+    // Pre-computed points so they don't regenerate every frame
+    private let points: [CGPoint] = {
+        var rng = SystemRandomNumberGenerator()
+        var pts: [CGPoint] = []
+        for _ in 0..<400 {
+            pts.append(CGPoint(
+                x: CGFloat.random(in: 0...1, using: &rng),
+                y: CGFloat.random(in: 0...1, using: &rng)
+            ))
+        }
+        return pts
+    }()
+
+    var body: some View {
+        Canvas { context, size in
+            for pt in points {
+                let rect = CGRect(
+                    x: pt.x * size.width,
+                    y: pt.y * size.height,
+                    width: 1.5,
+                    height: 1.5
+                )
+                context.fill(
+                    Path(ellipseIn: rect),
+                    with: .color(.white.opacity(0.025))
+                )
+                // Slightly larger, more transparent halo for softness
+                context.fill(
+                    Path(ellipseIn: rect.insetBy(dx: -0.5, dy: -0.5)),
+                    with: .color(.white.opacity(0.01))
+                )
+            }
+        }
+        .drawingGroup()  // rasterize once, not every frame
+    }
 }

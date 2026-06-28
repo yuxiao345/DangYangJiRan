@@ -208,7 +208,22 @@
       "Bash(scutil --get LocalHostName)",
       "Bash(rm -rf ~/Library/Developer/Xcode/DerivedData/FirstCC-*)",
       "Bash(rm -rf /tmp/firstcc-build-mac)",
-      "Bash(xxd ~/.lametric_key)"
+      "Bash(xxd ~/.lametric_key)",
+      "Read(//Users/gyu/.claude/**)",
+      "Bash(/tmp/firstcc-mac-build/Build/Products/Debug/Qianeymac.app/Contents/MacOS/Qianeymac)",
+      "Bash(sed -i '' '/9AB5F8D42FCD51C700F5044E \\\\*\\\\/ Debug/,/name = Debug;/{s/GENERATE_INFOPLIST_FILE = YES;/GENERATE_INFOPLIST_FILE = YES;\\\\n\\\\t\\\\t\\\\t\\\\tINFOPLIST_KEY_NSContactsUsageDescription = \"Qianeymac uses your contacts to show participant avatars in shared ledgers.\";/;}' FirstCC.xcodeproj/project.pbxproj)",
+      "Bash(sed -i '' '/9AB5F8D52FCD51C700F5044E \\\\*\\\\/ Release/,/name = Release;/{s/GENERATE_INFOPLIST_FILE = YES;/GENERATE_INFOPLIST_FILE = YES;\\\\n\\\\t\\\\t\\\\t\\\\tINFOPLIST_KEY_NSContactsUsageDescription = \"Qianeymac uses your contacts to show participant avatars in shared ledgers.\";/;}' FirstCC.xcodeproj/project.pbxproj)",
+      "Bash(sed -i '' 's|try? msg2.write\\(to: URL\\(fileURLWithPath: \"/tmp/qianeymac-avatar.log\"|try? msg2.write\\(to: URL\\(fileURLWithPath: avatarLogPath\\)|' /Users/gyu/Documents/AI/10-FirstCC/Qianeymac/Views/MainSplitView.swift)",
+      "Bash(sed -i '' 's|let logPath = \"/tmp/qianeymac-avatar.log\"|let logPath = avatarLogPath|' /Users/gyu/Documents/AI/10-FirstCC/Qianeymac/Views/MainSplitView.swift)",
+      "Bash(swift /tmp/test-share.swift)",
+      "WebFetch(domain:www.techqa.club)",
+      "mcp__figma__whoami",
+      "mcp__figma__get_metadata",
+      "mcp__figma__get_design_context",
+      "mcp__figma__get_screenshot",
+      "Bash(curl -s -o /tmp/macos27-cover.png \"https://www.figma.com/api/mcp/asset/47e24a43-d935-46d1-ab16-7b13d449946d\")",
+      "WebFetch(domain:juejin.cn)",
+      "WebFetch(domain:swiftwithmajid.com)"
     ]
   },
   "hooks": {

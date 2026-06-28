@@ -18,8 +18,8 @@ struct PixelProgressBar: View {
                     .fill(blockColor(at: i))
                     .frame(height: 12)
                     .shadow(
-                        color: i < filledCount ? tint.opacity(0.4) : .clear,
-                        radius: i < filledCount ? 4 : 0
+                        color: blockGlowColor(at: i),
+                        radius: blockGlowOpacity(at: i) > 0 ? 4 : 0
                     )
             }
         }
@@ -36,15 +36,35 @@ struct PixelProgressBar: View {
 
     private var blockGap: CGFloat { 1.5 }
 
-    private var filledCount: Int {
-        Int((progress * Double(totalBlocks)).rounded())
+    /// How many full blocks (integer count) based on current progress
+    private var fullBlocks: Int {
+        Int(progress * Double(totalBlocks))
+    }
+
+    /// Fractional part of the currently-filling block (0…1)
+    private var fillFraction: Double {
+        (progress * Double(totalBlocks)) - Double(fullBlocks)
     }
 
     private func blockColor(at index: Int) -> Color {
-        if index < filledCount {
-            return tint
+        if index < fullBlocks {
+            return tint  // fully filled
         }
-        return Color.designOnSurfaceVariant.opacity(0.2)
+        if index == fullBlocks {
+            return tint.opacity(fillFraction)  // filling now
+        }
+        return Color.designOnSurfaceVariant.opacity(0.2)  // empty
+    }
+
+    private func blockGlowOpacity(at index: Int) -> Double {
+        if index < fullBlocks { return 1 }
+        if index == fullBlocks { return fillFraction }
+        return 0
+    }
+
+    private func blockGlowColor(at index: Int) -> Color {
+        let o = blockGlowOpacity(at: index)
+        return o > 0 ? tint.opacity(0.4 * o) : .clear
     }
 }
 
