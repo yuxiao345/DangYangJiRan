@@ -10531,6 +10531,23 @@
           }
         }
       }
+    },
+    "暂无资产数据": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂无资产数据"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Asset Data"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

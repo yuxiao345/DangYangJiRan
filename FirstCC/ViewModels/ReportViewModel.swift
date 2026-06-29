@@ -80,6 +80,15 @@ struct TrendDataPoint: Identifiable {
     let expense: Decimal
 }
 
+struct AssetDataPoint: Identifiable {
+    let id = UUID()
+    let label: String       // "6月"
+    let yearMonth: String   // "2026-06" for stable identity
+    let totalAssets: Decimal
+    let totalLiabilities: Decimal
+    var netWorth: Decimal { totalAssets - totalLiabilities }
+}
+
 @MainActor
 @Observable
 final class ReportViewModel {
@@ -94,6 +103,7 @@ final class ReportViewModel {
     var txByCategory: [UUID: [Transaction]] = [:]
     var txByIncomeCategory: [UUID: [Transaction]] = [:]
     var trendData: [TrendDataPoint] = []
+    var assetData: [AssetDataPoint] = []
     var categoryType: TransactionType = .expense
 
     private var currentCategories: [CategoryExpenseItem] {
@@ -422,6 +432,88 @@ final class ReportViewModel {
             }
 
         }
+    }
+
+    // MARK: - Assets Data
+
+    func loadAssetsData(
+        ledger: Ledger,
+        accountService: AccountServiceProtocol,
+        context: NSManagedObjectContext
+    ) {
+        guard let range = selectedPeriod.dateRange else { return }
+        let accounts = (try? accountService.fetchAccounts(for: ledger, includeArchived: false, context: context)) ?? []
+        guard !accounts.isEmpty else { assetData = []; return }
+
+        let cal = Calendar.current
+        var current = cal.date(from: cal.dateComponents([.year, .month], from: range.lowerBound)) ?? range.lowerBound
+        let endDate = range.upperBound
+
+        // Pre-fetch all transactions to avoid per-month fetches
+        let ledgerID = ledger.id
+        let fetch = NSFetchRequest<Transaction>(entityName: "Transaction")
+        fetch.predicate = NSPredicate(format: "ledger.id == %@ AND date < %@", ledgerID as CVarArg, endDate as CVarArg)
+        let allTx = (try? context.fetch(fetch)) ?? []
+
+        // Group transactions by account
+        var txByAccount: [UUID: [Transaction]] = [:]
+        for t in allTx {
+            guard let accountID = t.account?.id else { continue }
+            txByAccount[accountID, default: []].append(t)
+        }
+
+        var dataPoints: [AssetDataPoint] = []
+
+        while current < endDate {
+            guard let monthEnd = cal.date(byAdding: .month, value: 1, to: current) else { break }
+
+            var totalAssets: Decimal = 0
+            var totalLiabilities: Decimal = 0
+
+            for account in accounts {
+                let balance = computeBalance(
+                    account: account,
+                    upTo: monthEnd,
+                    transactions: txByAccount[account.id] ?? []
+                )
+                if account.type == .creditCard || account.type == .loan {
+                    totalLiabilities += abs(balance)
+                } else {
+                    totalAssets += balance
+                }
+            }
+
+            let year = cal.component(.year, from: current)
+            let month = cal.component(.month, from: current)
+            let label = String(format: "%02d年%d月", year % 100, month)
+            let yearMonth = String(format: "%04d-%02d", year, month)
+            dataPoints.append(AssetDataPoint(
+                label: label,
+                yearMonth: yearMonth,
+                totalAssets: totalAssets,
+                totalLiabilities: totalLiabilities
+            ))
+
+            current = monthEnd
+        }
+
+        assetData = dataPoints
+    }
+
+    /// Compute account balance up to a specific date: initial + sum of amounts before cutoff
+    private func computeBalance(account: Account, upTo cutoff: Date, transactions: [Transaction]) -> Decimal {
+        var balance = account.initialBalance
+        for t in transactions where t.date < cutoff {
+            if account.type == .lending,
+               let dir = t.lendingDirection,
+               dir == .borrowIn,
+               t.lendingStatus == .pending {
+                balance += -t.amount
+            } else {
+                balance += ledgerAmount(t)
+            }
+        }
+        return balance
     }
 
     // MARK: - Test data seeding (DEBUG only)

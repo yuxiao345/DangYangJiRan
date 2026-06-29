@@ -78,7 +78,7 @@ struct ReportDetailContent: View {
                     onSelectTransaction: nil
                 )
             case .assets:
-                placeholderView(title: String(localized: "资产变化"), icon: "chart.bar")
+                MacAssetChartView(dataPoints: viewModel.assetData)
             case .budget:
                 placeholderView(title: String(localized: "预算执行"), icon: "gauge.with.dots.needle.33percent")
             }
@@ -282,7 +282,13 @@ struct ReportDetailContent: View {
                 categoryService: appContainer.categoryService,
                 context: modelContext
             )
-        case .assets, .budget:
+        case .assets:
+            viewModel.loadAssetsData(
+                ledger: ledger,
+                accountService: appContainer.accountService,
+                context: modelContext
+            )
+        case .budget:
             break // placeholder for now
         }
     }
