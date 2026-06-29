@@ -51,7 +51,7 @@ struct DashboardContentColumn: View {
             transactionService: appContainer.transactionService,
             ledger: ledger
         )
-        vm.load(context: modelContext)
+        vm.load(context: modelContext, budgetService: appContainer.budgetService)
         vm.loadBudget(context: modelContext, budgetService: appContainer.budgetService)
         viewModel.copyFrom(vm)
     }

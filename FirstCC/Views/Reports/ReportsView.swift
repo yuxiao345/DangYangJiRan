@@ -121,22 +121,6 @@ struct ReportsView: View {
         .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in
             loadData()
         }
-        .overlay(alignment: .bottomTrailing) {
-            #if DEBUG
-            Button {
-                guard let ledger = appContainer.currentLedger else { return }
-                viewModel.seedTestData(ledger: ledger, context: modelContext)
-                loadData()
-            } label: {
-                Image(systemName: "ant.fill")
-                    .font(.title3)
-                    .foregroundStyle(.white)
-                    .padding(12)
-                    .background(Circle().fill(Color.orange.opacity(0.8)))
-            }
-            .padding(20)
-            #endif
-        }
     }
 
     @ViewBuilder

@@ -8,6 +8,10 @@ struct DashboardView: View {
     @State private var showAddSheet = false
     @State private var editingTransaction: Transaction?
     @State private var showBreakdown = false
+    // Progress bar animated values (0→target on appear/data load)
+    @State private var displayBudgetFraction: Double = 0
+    @State private var displayIncomeFrac: Double = 0
+    @State private var displayExpenseFrac: Double = 0
 
     init() {
         _viewModel = State(initialValue: DashboardViewModel(
@@ -184,17 +188,19 @@ struct DashboardView: View {
             metricCard(
                 label: "本月收入",
                 amount: viewModel.monthlyIncome,
+                progress: displayIncomeFrac,
                 color: Color.designPrimaryFixedDim
             )
             metricCard(
                 label: "本月支出",
                 amount: viewModel.monthlyExpense,
+                progress: displayExpenseFrac,
                 color: Color.designAccentRed
             )
         }
     }
 
-    private func metricCard(label: String, amount: Decimal, color: Color) -> some View {
+    private func metricCard(label: String, amount: Decimal, progress: Double, color: Color) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(LocalizedStringKey(label))
                 .font(.designLabelSmall)
@@ -203,9 +209,7 @@ struct DashboardView: View {
 
             CurrencyText(amount: abs(amount), currencyCode: ledgerCurrency, showSign: false, size: 22, foregroundColor: color, fractionDigits: 0)
 
-            let maxRef = max(abs(viewModel.monthlyIncome), abs(viewModel.monthlyExpense))
-            let frac = maxRef > 0 ? Double(truncating: (abs(amount) / maxRef) as NSNumber) : 0
-            PixelProgressBar(progress: frac, tint: color.opacity(0.6), totalBlocks: 20)
+            PixelProgressBar(progress: progress, tint: color.opacity(0.6), totalBlocks: 20)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
@@ -237,7 +241,7 @@ struct DashboardView: View {
                     }
 
                     PixelProgressBar(
-                        progress: viewModel.budgetFraction,
+                        progress: displayBudgetFraction,
                         tint: budgetProgressColor(viewModel.budgetFraction),
                         totalBlocks: 20
                     )
@@ -311,7 +315,22 @@ struct DashboardView: View {
 
     private func refresh() {
         guard let ledger = appContainer.currentLedger else { return }
-        viewModel.load(ledger: ledger, context: modelContext)
+        viewModel.load(ledger: ledger, context: modelContext, budgetService: appContainer.budgetService)
         viewModel.loadBudget(context: modelContext, budgetService: appContainer.budgetService)
+        // 先重置到 0，等一帧再用 spring 驱动 Animatable progress 从左到右填充
+        displayBudgetFraction = 0
+        displayIncomeFrac = 0
+        displayExpenseFrac = 0
+        let maxRef = max(abs(viewModel.monthlyIncome), abs(viewModel.monthlyExpense))
+        let bFrac = viewModel.budgetFraction
+        let iFrac = maxRef > 0 ? Double(truncating: (abs(viewModel.monthlyIncome) / maxRef) as NSNumber) : 0
+        let eFrac = maxRef > 0 ? Double(truncating: (abs(viewModel.monthlyExpense) / maxRef) as NSNumber) : 0
+        DispatchQueue.main.async {
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.65)) {
+                self.displayBudgetFraction = bFrac
+                self.displayIncomeFrac = iFrac
+                self.displayExpenseFrac = eFrac
+            }
+        }
     }
 }

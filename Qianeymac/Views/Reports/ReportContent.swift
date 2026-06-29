@@ -80,7 +80,7 @@ struct ReportDetailContent: View {
             case .assets:
                 MacAssetChartView(dataPoints: viewModel.assetData)
             case .budget:
-                placeholderView(title: String(localized: "预算执行"), icon: "gauge.with.dots.needle.33percent")
+                MacBudgetChartView(items: viewModel.budgetItems, books: viewModel.budgetBooks, selectedBookID: $viewModel.selectedBudgetBookID)
             }
         }
         .frame(maxHeight: .infinity, alignment: .top)
@@ -90,6 +90,7 @@ struct ReportDetailContent: View {
             loadData()
         }
         .onChange(of: viewModel.selectedPeriod) { _, _ in loadData() }
+        .onChange(of: viewModel.selectedBudgetBookID) { _, _ in loadData() }
         .onChange(of: appContainer.currentLedger?.id) { _, _ in loadData() }
         .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in loadData() }
         #if DEBUG
@@ -289,7 +290,11 @@ struct ReportDetailContent: View {
                 context: modelContext
             )
         case .budget:
-            break // placeholder for now
+            viewModel.loadBudgetData(
+                ledger: ledger,
+                budgetService: appContainer.budgetService,
+                context: modelContext
+            )
         }
     }
 }

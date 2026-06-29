@@ -14,6 +14,7 @@ struct AddEditBudgetBookView: View {
     @State private var startDate: Date = Date()
     @State private var endDate: Date = Calendar.current.date(byAdding: .year, value: 1, to: Date()) ?? Date()
     @State private var isActive: Bool = true
+    @State private var matchBudgetItems: Bool = false
     @State private var errorMessage: String?
 
     init(editing: BudgetBook? = nil, ledger: Ledger? = nil) {
@@ -27,6 +28,7 @@ struct AddEditBudgetBookView: View {
                 Section("基本信息") {
                     TextField("计划名称", text: $name)
                     Toggle("启用", isOn: $isActive)
+                    Toggle("匹配预算项", isOn: $matchBudgetItems)
                 }
                 Section("预算周期") {
                     DatePickerButton(title: "开始日期", date: $startDate)
@@ -36,11 +38,10 @@ struct AddEditBudgetBookView: View {
             .navigationTitle(editing != nil ? "编辑预算计划" : "新建预算计划")
             .errorAlert("保存失败", message: $errorMessage)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() }.glassTextButton() }
+                ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("保存") { save() }
                         .disabled(name.isEmpty)
-                        .glassTextButton()
                 }
             }
             .onAppear {
@@ -49,6 +50,7 @@ struct AddEditBudgetBookView: View {
                     startDate = b.startDate
                     endDate = b.endDate
                     isActive = b.isActive
+                    matchBudgetItems = b.matchBudgetItems
                 }
             }
         }
@@ -66,9 +68,10 @@ struct AddEditBudgetBookView: View {
             b.startDate = startDate
             b.endDate = endDate
             b.isActive = isActive
+            b.matchBudgetItems = matchBudgetItems
             try? appContainer.budgetService.updateBook(b, context: modelContext)
         } else {
-            let book = BudgetBook(name: name, startDate: startDate, endDate: endDate, isActive: isActive, context: modelContext)
+            let book = BudgetBook(name: name, startDate: startDate, endDate: endDate, isActive: isActive, matchBudgetItems: matchBudgetItems, context: modelContext)
             try? appContainer.budgetService.createBook(book, ledger: ledger, context: modelContext)
         }
         dismiss()

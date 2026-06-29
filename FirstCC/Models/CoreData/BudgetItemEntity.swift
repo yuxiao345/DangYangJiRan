@@ -45,6 +45,9 @@ final class BudgetItem: NSManagedObject,  Sendable {
         NSDecimalNumber(value: periodCount).decimalValue * amount
     }
 
+    /// 本期预算：按真实周期，但如果书覆盖不全则钳到累计
+    var periodBudget: Decimal { min(amount, totalBudget) }
+
     override func awakeFromInsert() {
         super.awakeFromInsert()
         id = UUID()

@@ -44,12 +44,12 @@ final class DashboardViewModel {
         activeBudgetBook = other.activeBudgetBook
     }
 
-    func load(ledger: Ledger, context: NSManagedObjectContext) {
+    func load(ledger: Ledger, context: NSManagedObjectContext, budgetService: BudgetServiceProtocol) {
         self.ledger = ledger
-        load(context: context)
+        load(context: context, budgetService: budgetService)
     }
 
-    func load(context: NSManagedObjectContext) {
+    func load(context: NSManagedObjectContext, budgetService: BudgetServiceProtocol) {
         guard let ledger else { return }
         let calendar = Calendar.current
         let now = Date()
@@ -70,14 +70,17 @@ final class DashboardViewModel {
 
         let settlementIncomeIDs = Set(allTransactions.compactMap(\.reimbursedById))
         let normalTransactions = allTransactions.filter { t in
-            guard t.refundGroupId == nil else { return false }
             if t.type == .expense, t.isReimbursable { return false }
             if t.type == .income, settlementIncomeIDs.contains(t.id) { return false }
             return true
         }
 
         monthlyIncome = normalTransactions.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
-        monthlyExpense = normalTransactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
+        let cal = Calendar.current
+        let rangeStart = cal.startOfDay(for: monthStart)
+        let rangeEnd = cal.endOfDay(for: cal.date(byAdding: DateComponents(month: 1, day: -1), to: monthStart) ?? monthStart)
+        let monthRange = rangeStart...rangeEnd
+        monthlyExpense = -(budgetService.totalExpense(in: monthRange, ledger: ledger, context: context))
 
         recentTransactions = Array(allTransactions.deduplicatingTransfers().sorted(by: { $0.date > $1.date }).prefix(20))
 

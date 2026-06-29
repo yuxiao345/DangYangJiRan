@@ -36,11 +36,10 @@ struct AddEditBudgetItemView: View {
             contentView
                 .navigationTitle(editing != nil ? "编辑预算项" : "新建预算项")
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() }.glassTextButton() }
+                ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("保存") { save() }
                         .disabled(amount <= 0 || selectedCategory == nil)
-                        .glassTextButton()
                 }
             }
             .onAppear {

@@ -16,6 +16,10 @@ struct CategoryPieChartView: View {
     @State private var barFillStep: Double = 0
     @State private var barAnimID = UUID()
     @State private var hasAppeared = false
+    @State private var animationTask: Task<Void, Never>?
+    /// 稳定后才更新给 Chart 的数据，避免快速切换时 Charts 收到变化中的数据触发断言
+    @State private var stableCategories: [CategoryExpenseItem] = []
+    @State private var chartID = UUID()
 
     var body: some View {
         VStack(spacing: 12) {
@@ -25,6 +29,9 @@ struct CategoryPieChartView: View {
                 donutCard
                 categoryList
             }
+        }
+        .onAppear {
+            if stableCategories.isEmpty { stableCategories = categories }
         }
     }
 
@@ -42,13 +49,14 @@ struct CategoryPieChartView: View {
 
     private var donutChart: some View {
         DonutChartContent(
-            categories: categories,
+            categories: stableCategories,
             animationProgress: animationProgress,
             selectedAngle: $selectedAngle,
             gradientLookup: gradientLookup,
             fallbackGradient: fallbackGradient,
             onCategoryTap: { onCategoryTap($0) }
         )
+        .id(chartID)
         .frame(height: 240)
         .shadow(color: .black.opacity(0.12), radius: 20, y: 8)
         .chartOverlay { proxy in
@@ -61,11 +69,23 @@ struct CategoryPieChartView: View {
         .onChange(of: categories.map(\.id)) { _, _ in
             gradientLookup = buildGradientLookup()
             guard hasAppeared else { return }
-            animationProgress = 0
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                animationProgress = 1.0
+            animationTask?.cancel()
+            animationTask = Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(100))
+                guard !Task.isCancelled else { return }
+                // 先更新数据源，等一个 runloop 确保 Chart 拿到完整数据
+                stableCategories = categories
+                chartID = UUID()
+                try? await Task.sleep(for: .milliseconds(1))
+                guard !Task.isCancelled else { return }
+                // 再播动画
+                animationProgress = 0
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                    animationProgress = 1.0
+                }
+                guard !Task.isCancelled else { return }
+                runBarAnimation(delay: 0.1)
             }
-            runBarAnimation(delay: 0.1)
         }
         .onAppear {
             gradientLookup = buildGradientLookup()

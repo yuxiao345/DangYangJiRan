@@ -82,11 +82,24 @@ struct TrendDataPoint: Identifiable {
 
 struct AssetDataPoint: Identifiable {
     let id = UUID()
-    let label: String       // "6月"
-    let yearMonth: String   // "2026-06" for stable identity
+    let label: String       // "25年6月"
+    let yearMonth: String   // "2026-06"
     let totalAssets: Decimal
     let totalLiabilities: Decimal
     var netWorth: Decimal { totalAssets - totalLiabilities }
+}
+
+struct BudgetItemData: Identifiable {
+    let id: UUID
+    let name: String
+    let colorHex: String
+    let budgetAmount: Decimal
+    let spentAmount: Decimal
+    var remaining: Decimal { budgetAmount - spentAmount }
+    var percentage: Double {
+        budgetAmount > 0 ? min(1.0, Double(truncating: (abs(spentAmount) / budgetAmount) as NSNumber)) : 0
+    }
+    var isOverBudget: Bool { spentAmount > budgetAmount }
 }
 
 @MainActor
@@ -104,6 +117,10 @@ final class ReportViewModel {
     var txByIncomeCategory: [UUID: [Transaction]] = [:]
     var trendData: [TrendDataPoint] = []
     var assetData: [AssetDataPoint] = []
+    var budgetItems: [BudgetItemData] = []
+    var budgetBooks: [BudgetBook] = []
+    var selectedBudgetBookID: UUID?
+    var budgetBookName: String { budgetBooks.first(where: { $0.id == selectedBudgetBookID })?.name ?? "" }
     var categoryType: TransactionType = .expense
 
     private var currentCategories: [CategoryExpenseItem] {
@@ -514,6 +531,55 @@ final class ReportViewModel {
             }
         }
         return balance
+    }
+
+    // MARK: - Budget Data
+
+    func loadBudgetData(
+        ledger: Ledger,
+        budgetService: BudgetServiceProtocol,
+        context: NSManagedObjectContext
+    ) {
+        guard let range = selectedPeriod.dateRange else { return }
+        let books = (try? budgetService.fetchBooks(for: ledger, context: context)) ?? []
+        budgetBooks = books
+
+        // Select active book, or first book, or previously selected
+        if selectedBudgetBookID == nil || !books.contains(where: { $0.id == selectedBudgetBookID }) {
+            selectedBudgetBookID = books.first(where: { $0.isActive })?.id ?? books.first?.id
+        }
+
+        guard let bookID = selectedBudgetBookID,
+              let book = books.first(where: { $0.id == bookID }) else {
+            budgetItems = []
+            return
+        }
+
+        let items = (try? budgetService.fetchItems(for: book, context: context)) ?? []
+        let categorySpending = budgetService.categorySpending(in: range.lowerBound...range.upperBound, for: book, context: context)
+
+        budgetItems = items.compactMap { item in
+            guard let cat = item.category else { return nil }
+            let spent = categorySpending[cat.id] ?? 0
+
+            let budget: Decimal
+            switch selectedPeriod {
+            case .thisMonth:
+                budget = item.amount
+            case .last3Months:
+                budget = item.amount * 3
+            default:
+                budget = item.amount
+            }
+
+            return BudgetItemData(
+                id: item.id,
+                name: cat.name,
+                colorHex: cat.colorHex ?? "#999999",
+                budgetAmount: budget,
+                spentAmount: abs(spent)
+            )
+        }.sorted { ($0.spentAmount - $0.budgetAmount) > ($1.spentAmount - $1.budgetAmount) }
     }
 
     // MARK: - Test data seeding (DEBUG only)

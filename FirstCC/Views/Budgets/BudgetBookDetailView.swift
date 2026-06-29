@@ -13,6 +13,9 @@ struct BudgetBookDetailView: View {
     @State private var unbudgetedCategories: [(Category, Decimal)] = []
     @State private var totalUnbudgeted: Decimal = 0
     @State private var preselectedCategory: Category?
+    // Animated progress values for summary card
+    @State private var animTotalCumulative: Decimal = 0
+    @State private var animTotalPeriod: Decimal = 0
     @State private var navCategory: Category?
     @State private var deleteCandidate: BudgetItem?
 
@@ -106,21 +109,19 @@ struct BudgetBookDetailView: View {
 
     private var summaryCard: some View {
         let totalBudget = appContainer.budgetService.totalBudget(for: book)
-        let totalCumulative = appContainer.budgetService.totalCumulativeSpending(for: book, context: modelContext)
-        let totalPeriod = appContainer.budgetService.totalCurrentPeriodSpending(for: book, context: modelContext)
         let periodBudget = appContainer.budgetService.totalCurrentPeriodBudget(for: book)
 
         return VStack(spacing: 12) {
             budgetSummaryBlock(
                 label: "本期支出",
-                spent: totalPeriod,
+                spent: animTotalPeriod,
                 budget: periodBudget,
                 currency: currency
             )
             Divider()
             budgetSummaryBlock(
                 label: "累计支出",
-                spent: totalCumulative,
+                spent: animTotalCumulative,
                 budget: totalBudget,
                 currency: currency
             )
@@ -158,6 +159,7 @@ struct BudgetBookDetailView: View {
         let cumSpent = cumulativeSpent[item.id] ?? 0
         let perSpent = periodSpent[item.id] ?? 0
         let totalBgt = item.totalBudget
+        let periodBgt = item.periodBudget
 
         let rowContent = VStack(alignment: .leading, spacing: 4) {
             HStack {
@@ -175,7 +177,7 @@ struct BudgetBookDetailView: View {
                     .font(.designBodySmall)
                     .foregroundStyle(.secondary)
             }
-            budgetSpendingLine(label: "本期", spent: perSpent, budget: item.amount, currency: currency)
+            budgetSpendingLine(label: "本期", spent: perSpent, budget: periodBgt, currency: currency)
             budgetSpendingLine(label: "累计", spent: cumSpent, budget: totalBgt, currency: currency)
         }
         .padding(.vertical, 2)
@@ -236,17 +238,43 @@ struct BudgetBookDetailView: View {
         let now = Date()
         let monthStart = cal.date(from: cal.dateComponents([.year, .month], from: now)) ?? now
         let monthEnd = cal.date(byAdding: DateComponents(month: 1, day: -1), to: monthStart) ?? now
-        let monthRange = cal.startOfDay(for: monthStart)...cal.endOfDay(for: monthEnd)
+        let rangeStart = max(cal.startOfDay(for: monthStart), cal.startOfDay(for: book.startDate))
+        let rangeEnd = max(rangeStart, cal.endOfDay(for: monthEnd))
+        let monthRange = rangeStart...rangeEnd
 
-        items = (try? appContainer.budgetService.fetchItems(for: book, context: modelContext)) ?? []
-        let cumDict = appContainer.budgetService.categorySpending(in: book.startDate...Date(), for: book, context: modelContext)
+        let newItems = (try? appContainer.budgetService.fetchItems(for: book, context: modelContext)) ?? []
+        let cumDict = appContainer.budgetService.categorySpending(in: cal.startOfDay(for: book.startDate)...Date(), for: book, context: modelContext)
         let perDict = appContainer.budgetService.categorySpending(in: monthRange, for: book, context: modelContext)
-        for item in items {
+        var newCumulative: [UUID: Decimal] = [:]
+        var newPeriod: [UUID: Decimal] = [:]
+        for item in newItems {
             let catID = item.category?.id
-            cumulativeSpent[item.id] = catID.flatMap { cumDict[$0] } ?? 0
-            periodSpent[item.id] = catID.flatMap { perDict[$0] } ?? 0
+            newCumulative[item.id] = catID.flatMap { cumDict[$0] } ?? 0
+            newPeriod[item.id] = catID.flatMap { perDict[$0] } ?? 0
         }
-        unbudgetedCategories = appContainer.budgetService.unbudgetedCategorySpending(for: book, context: modelContext)
-        totalUnbudgeted = unbudgetedCategories.reduce(0) { $0 + $1.1 }
+        let newUnbudgeted = appContainer.budgetService.unbudgetedCategorySpending(for: book, context: modelContext)
+        let newTotalUnbudgeted = newUnbudgeted.reduce(0) { $0 + $1.1 }
+        // 从 categorySpending 结果直接求和，避免重复 fetch
+        let newTotalCumulative = cumDict.values.reduce(0, +)
+        let newTotalPeriod = perDict.values.reduce(0, +)
+
+        // 先渲染 0 状态列表，下一帧用 spring 驱动 Animatable 进度条
+        items = newItems
+        cumulativeSpent = [:]
+        periodSpent = [:]
+        animTotalCumulative = 0
+        animTotalPeriod = 0
+        unbudgetedCategories = []
+        totalUnbudgeted = 0
+        DispatchQueue.main.async {
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.65)) {
+                self.cumulativeSpent = newCumulative
+                self.periodSpent = newPeriod
+                self.animTotalCumulative = newTotalCumulative
+                self.animTotalPeriod = newTotalPeriod
+                self.unbudgetedCategories = newUnbudgeted
+                self.totalUnbudgeted = newTotalUnbudgeted
+            }
+        }
     }
 }

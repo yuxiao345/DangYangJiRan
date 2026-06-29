@@ -10,6 +10,7 @@ final class BudgetBook: NSManagedObject,  Sendable {
     @NSManaged var isActive: Bool
     @NSManaged var sortOrder: Int64
     @NSManaged var createdAt: Date
+    @NSManaged var matchBudgetItems: Bool
 
     @NSManaged var items: Set<BudgetItem>?
     @NSManaged var ledger: Ledger?
@@ -18,6 +19,7 @@ final class BudgetBook: NSManagedObject,  Sendable {
         super.awakeFromInsert()
         id = UUID()
         createdAt = Date()
+        matchBudgetItems = false
         startDate = Date()
         endDate = Calendar.current.date(byAdding: .year, value: 1, to: Date()) ?? Date()
     }
@@ -27,6 +29,7 @@ final class BudgetBook: NSManagedObject,  Sendable {
         startDate: Date = Date(),
         endDate: Date? = nil,
         isActive: Bool = true,
+        matchBudgetItems: Bool = false,
         context: NSManagedObjectContext
     ) {
         self.init(context: context)
@@ -34,6 +37,7 @@ final class BudgetBook: NSManagedObject,  Sendable {
         self.startDate = startDate
         self.endDate = endDate ?? (Calendar.current.date(byAdding: .year, value: 1, to: Date()) ?? Date())
         self.isActive = isActive
+        self.matchBudgetItems = matchBudgetItems
     }
 }
 

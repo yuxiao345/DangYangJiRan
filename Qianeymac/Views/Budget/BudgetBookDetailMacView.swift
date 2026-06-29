@@ -282,7 +282,7 @@ private struct BudgetItemRowView: View {
                 }
             }
 
-            BudgetSpendingLine(label: "本期", spent: perSpent, budget: item.amount, currency: currency)
+            BudgetSpendingLine(label: "本期", spent: perSpent, budget: item.periodBudget, currency: currency)
             BudgetSpendingLine(label: "累计", spent: cumSpent, budget: item.totalBudget, currency: currency)
         }
         .padding(.vertical, 2)

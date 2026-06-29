@@ -25,4 +25,7 @@ protocol BudgetServiceProtocol {
     func totalCurrentPeriodBudget(for book: BudgetBook) -> Decimal
     func unbudgetedCategorySpending(for book: BudgetBook, context: NSManagedObjectContext) -> [(Category, Decimal)]
     func categorySpending(in range: ClosedRange<Date>, for book: BudgetBook, context: NSManagedObjectContext) -> [UUID: Decimal]
+
+    /// 通用本月支出（不依赖预算书），和各项内部计算使用完全一致的筛选逻辑
+    func totalExpense(in range: ClosedRange<Date>, ledger: Ledger, context: NSManagedObjectContext) -> Decimal
 }

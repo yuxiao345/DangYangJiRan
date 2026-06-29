@@ -69,14 +69,16 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
     func currentPeriodSpending(for item: BudgetItem, context: NSManagedObjectContext) -> Decimal {
         guard let book = item.book else { return 0 }
         let now = Date()
-        let range = currentPeriodRange(for: item, now: now)
+        let range = clippedRange(currentPeriodRange(for: item, now: now), to: book)
         return spending(in: range, category: item.category, book: book, context: context)
     }
 
     func cumulativeSpending(for item: BudgetItem, context: NSManagedObjectContext) -> Decimal {
         guard let book = item.book else { return 0 }
-        let end = max(book.startDate, Date())
-        return spending(in: book.startDate...end, category: item.category, book: book, context: context)
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: book.startDate)
+        let end = max(start, Date())
+        return spending(in: start...end, category: item.category, book: book, context: context)
     }
 
     func totalBudget(for book: BudgetBook) -> Decimal {
@@ -84,34 +86,37 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
     }
 
     func totalCumulativeSpending(for book: BudgetBook, context: NSManagedObjectContext) -> Decimal {
-        let end = max(book.startDate, Date())
-        return spending(in: book.startDate...end, category: nil, book: book, context: context)
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: book.startDate)
+        let end = max(start, Date())
+        return spending(in: start...end, category: nil, book: book, context: context)
     }
 
     func totalCurrentPeriodSpending(for book: BudgetBook, context: NSManagedObjectContext) -> Decimal {
-        return spending(in: currentMonthRange(), category: nil, book: book, context: context)
+        return spending(in: clippedRange(currentMonthRange(), to: book), category: nil, book: book, context: context)
     }
 
     func totalCurrentPeriodBudget(for book: BudgetBook) -> Decimal {
         guard let items = book.items else { return 0 }
         return items.reduce(into: Decimal(0)) { total, item in
-            total += item.amount.normalizedToMonthly(period: item.period)
+            // 本期按真实周期，但如果书覆盖不全则钳到累计
+            total += item.periodBudget
         }
     }
 
     func unbudgetedCategorySpending(for book: BudgetBook, context: NSManagedObjectContext) -> [(Category, Decimal)] {
+        // 匹配模式下，没有"非预算项"的概念——所有未匹配分类的支出都不计入本预算
+        guard !book.matchBudgetItems else { return [] }
         guard let ledger = book.ledger else { return [] }
 
-        let budgetedIDs = Set((book.items as? Set<BudgetItem> ?? [])
-            .compactMap { $0.category?.id })
+        let budgetedIDs = budgetedCategoryIDs(for: book)
         let catRequest = NSFetchRequest<Category>(entityName: "Category")
         catRequest.predicate = NSPredicate(format: "ledger.id == %@ AND typeRaw == %@",
             ledger.id as CVarArg, TransactionType.expense.rawValue)
         let allExpenseCategories = (try? context.fetch(catRequest)) ?? []
         let unbudgeted = allExpenseCategories.filter { !budgetedIDs.contains($0.id) }
 
-        // Single fetch — partition by category in memory
-        let spendingByCategory = categorySpending(in: currentMonthRange(), for: book, context: context)
+        let spendingByCategory = categorySpending(in: clippedRange(currentMonthRange(), to: book), for: book, context: context)
 
         return unbudgeted
             .compactMap { cat -> (Category, Decimal)? in
@@ -152,43 +157,59 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
         return cal.startOfDay(for: start)...cal.endOfDay(for: end)
     }
 
+    // MARK: - 共用查询引擎（所有支出统计的单一入口）
+
+    /// 按日期范围查询支出交易，统一筛选规则：排除拆分父交易、排除报销交易。
+    /// 退款交易（type=expense, amount 为正）包含在结果中，调用方通过原始金额累加自动抵消。
+    private func fetchExpenseTransactions(in range: ClosedRange<Date>, ledgerID: UUID, context: NSManagedObjectContext) -> [Transaction] {
+        let request = NSFetchRequest<Transaction>(entityName: "Transaction")
+        request.predicate = NSPredicate(format: "date >= %@ AND date <= %@ AND isSplitParent == false AND ledger.id == %@ AND typeRaw == %@",
+            range.lowerBound as CVarArg, range.upperBound as CVarArg, ledgerID as CVarArg, TransactionType.expense.rawValue)
+        let transactions = (try? context.fetch(request)) ?? []
+        return transactions.filter { !$0.isReimbursable }
+    }
+
+    func totalExpense(in range: ClosedRange<Date>, ledger: Ledger, context: NSManagedObjectContext) -> Decimal {
+        let txs = fetchExpenseTransactions(in: range, ledgerID: ledger.id, context: context)
+        return abs(txs.reduce(Decimal(0)) { $0 + $1.amount })
+    }
+
     func categorySpending(in range: ClosedRange<Date>, for book: BudgetBook, context: NSManagedObjectContext) -> [UUID: Decimal] {
         guard let ledgerID = book.ledger?.id else { return [:] }
-        let lower = range.lowerBound
-        let upper = range.upperBound
-        let request = NSFetchRequest<Transaction>(entityName: "Transaction")
-        request.predicate = NSPredicate(format: "date >= %@ AND date <= %@ AND parentTransaction == nil AND ledger.id == %@ AND typeRaw == %@",
-            lower as CVarArg, upper as CVarArg, ledgerID as CVarArg, TransactionType.expense.rawValue)
-        let transactions = (try? context.fetch(request)) ?? []
-        return transactions.reduce(into: [:]) { dict, t in
-            guard t.refundGroupId == nil,
-                  !t.isReimbursable,
-                  let catID = t.category?.id else { return }
-            dict[catID, default: 0] += abs(t.amount)
-        }
+        return fetchExpenseTransactions(in: range, ledgerID: ledgerID, context: context)
+            .reduce(into: [:]) { dict, t in
+                guard let catID = t.category?.id else { return }
+                dict[catID, default: 0] += t.amount
+            }
+            .mapValues { abs($0) }
     }
 
     private func spending(in range: ClosedRange<Date>, category: Category?, book: BudgetBook, context: NSManagedObjectContext) -> Decimal {
         guard let ledgerID = book.ledger?.id else { return 0 }
-
-        let lower = range.lowerBound
-        let upper = range.upperBound
-        var fmt = "date >= %@ AND date <= %@ AND parentTransaction == nil AND ledger.id == %@ AND typeRaw == %@"
-        var args: [CVarArg] = [lower as CVarArg, upper as CVarArg, ledgerID as CVarArg, TransactionType.expense.rawValue]
+        var txs = fetchExpenseTransactions(in: range, ledgerID: ledgerID, context: context)
         if let cat = category {
-            fmt += " AND category.id == %@"
-            args.append(cat.id as CVarArg)
-        }
-        let request = NSFetchRequest<Transaction>(entityName: "Transaction")
-        request.predicate = NSPredicate(format: fmt, argumentArray: args)
-        let transactions = (try? context.fetch(request)) ?? []
-        return transactions
-            .filter { t in
-                guard t.refundGroupId == nil else { return false }
-                guard !t.isReimbursable else { return false }
-                return true
+            txs = txs.filter { $0.category?.id == cat.id }
+        } else if book.matchBudgetItems {
+            let ids = budgetedCategoryIDs(for: book)
+            guard !ids.isEmpty else { return 0 }
+            txs = txs.filter { t in
+                guard let cid = t.category?.id else { return false }
+                return ids.contains(cid)
             }
-            .reduce(into: Decimal(0)) { $0 += abs($1.amount) }
+        }
+        return abs(txs.reduce(Decimal(0)) { $0 + $1.amount })
+    }
+
+    private func budgetedCategoryIDs(for book: BudgetBook) -> Set<UUID> {
+        Set((book.items as? Set<BudgetItem> ?? []).compactMap { $0.category?.id })
+    }
+
+    /// 将日期范围裁剪到预算书起始日（按自然日），保护后续计算不出界
+    private func clippedRange(_ range: ClosedRange<Date>, to book: BudgetBook) -> ClosedRange<Date> {
+        let cal = Calendar.current
+        let start = max(range.lowerBound, cal.startOfDay(for: book.startDate))
+        let end = max(start, range.upperBound)
+        return start...end
     }
 }
 

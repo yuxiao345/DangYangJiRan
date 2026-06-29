@@ -14,6 +14,7 @@ struct MacAddEditBudgetBookView: View {
     @State private var startDate: Date = Date()
     @State private var endDate: Date = Calendar.current.date(byAdding: .year, value: 1, to: Date()) ?? Date()
     @State private var isActive: Bool = true
+    @State private var matchBudgetItems: Bool = false
     @State private var errorMessage: String?
 
     private var isEditing: Bool { editing != nil }
@@ -41,6 +42,10 @@ struct MacAddEditBudgetBookView: View {
                         Text("状态：")
                         Toggle("启用", isOn: $isActive)
                     }
+                    GridRow {
+                        Text("匹配预算项：")
+                        Toggle("匹配预算项", isOn: $matchBudgetItems)
+                    }
                 }
                 .buttonSizing(.flexible)
                 .frame(width: 320)
@@ -67,6 +72,7 @@ struct MacAddEditBudgetBookView: View {
                 startDate = b.startDate
                 endDate = b.endDate
                 isActive = b.isActive
+                matchBudgetItems = b.matchBudgetItems
             }
         }
     }
@@ -86,11 +92,12 @@ struct MacAddEditBudgetBookView: View {
             b.startDate = startDate
             b.endDate = endDate
             b.isActive = isActive
+            b.matchBudgetItems = matchBudgetItems
             try? appContainer.budgetService.updateBook(b, context: modelContext)
         } else {
             let book = BudgetBook(
                 name: name, startDate: startDate, endDate: endDate,
-                isActive: isActive, context: modelContext
+                isActive: isActive, matchBudgetItems: matchBudgetItems, context: modelContext
             )
             try? appContainer.budgetService.createBook(book, ledger: l, context: modelContext)
         }

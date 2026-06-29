@@ -1,9 +1,15 @@
 import SwiftUI
 
-struct PixelProgressBar: View {
-    let progress: Double  // 0...1
+struct PixelProgressBar: View, Animatable {
+    /// 动画目标值，SwiftUI 通过 Animatable 协议自动插值
+    var progress: Double  // 0...1
     let totalBlocks: Int
     let tint: Color
+
+    var animatableData: Double {
+        get { progress }
+        set { progress = newValue }
+    }
 
     init(progress: Double, tint: Color, totalBlocks: Int = 20) {
         self.progress = max(0, min(1, progress))
@@ -36,24 +42,22 @@ struct PixelProgressBar: View {
 
     private var blockGap: CGFloat { 1.5 }
 
-    /// How many full blocks (integer count) based on current progress
     private var fullBlocks: Int {
         Int(progress * Double(totalBlocks))
     }
 
-    /// Fractional part of the currently-filling block (0…1)
     private var fillFraction: Double {
         (progress * Double(totalBlocks)) - Double(fullBlocks)
     }
 
     private func blockColor(at index: Int) -> Color {
         if index < fullBlocks {
-            return tint  // fully filled
+            return tint
         }
         if index == fullBlocks {
-            return tint.opacity(fillFraction)  // filling now
+            return tint.opacity(fillFraction)
         }
-        return Color.designOnSurfaceVariant.opacity(0.2)  // empty
+        return Color.designOnSurfaceVariant.opacity(0.2)
     }
 
     private func blockGlowOpacity(at index: Int) -> Double {
