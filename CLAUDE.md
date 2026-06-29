@@ -153,6 +153,8 @@ Do NOT use `CKShareTransferRepresentation` / `ShareLink` — that approach ties 
 
 **Sharing changes:** Keep it simple. Use `container.share([rootObject], to: nil)`. Do not introduce raw CKShare APIs, `CKShareTransferRepresentation`, or multi-step workarounds unless proven necessary after exhausting all standard-API debugging (schema deployment, store state, actor isolation).
 
+**New UI component:** Every distinct UI component gets its own file. Do not accumulate multiple independent views/subviews in a single file. If a view grows beyond ~150 lines or hosts multiple logical sub-components (ring-chart, bar-list, detail-list), split each sub-component into its own file in the same directory. The orchestrator view should be thin — compose components, manage state/animations, pass callbacks. Example: `MacCategoryChartView.swift` (85 lines) orchestrates `DonutChart.swift` + `CategoryBarList.swift` + `TransactionDetailList`.
+
 ## i18n / 多语言规范
 
 **这是强制性规范。所有新增/修改代码必须遵循，不允许硬编码中文。**
