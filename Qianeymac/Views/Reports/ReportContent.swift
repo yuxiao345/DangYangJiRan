@@ -65,7 +65,18 @@ struct ReportDetailContent: View {
             case .trend:
                 MacTrendChartView(dataPoints: viewModel.trendData)
             case .category:
-                placeholderView(title: String(localized: "分类占比"), icon: "chart.pie")
+                MacCategoryChartView(
+                    categories: viewModel.displayCategories,
+                    totalExpense: viewModel.displayTotal,
+                    centerTitle: viewModel.displayTitle,
+                    isDrilledDown: viewModel.selectedCategoryID != nil,
+                    isShowingTransactions: viewModel.isShowingTransactions,
+                    transactions: viewModel.displayTransactions,
+                    categoryType: $viewModel.categoryType,
+                    onCategoryTap: { viewModel.selectCategory($0) },
+                    onCenterTap: { viewModel.goBack() },
+                    onSelectTransaction: nil
+                )
             case .assets:
                 placeholderView(title: String(localized: "资产变化"), icon: "chart.bar")
             case .budget:
@@ -74,7 +85,7 @@ struct ReportDetailContent: View {
         }
         .frame(maxHeight: .infinity, alignment: .top)
         .designScreen()
-        .task {
+        .task(id: reportType) {
             viewModel.selectedPeriod = reportType.defaultPeriod
             loadData()
         }

@@ -189,45 +189,6 @@ struct CategoryPieChartView: View {
         .padding(.horizontal, 12)
     }
 
-    // MARK: - Donut Chart Content (separated to avoid type-checker timeout)
-
-    private struct DonutChartContent: View {
-        let categories: [CategoryExpenseItem]
-        let animationProgress: Double
-        @Binding var selectedAngle: Double?
-        let gradientLookup: [String: LinearGradient]
-        let fallbackGradient: LinearGradient
-        let onCategoryTap: (UUID) -> Void
-
-        var body: some View {
-            Chart(categories) { item in
-                SectorMark(
-                    angle: .value("金额", abs(Double(truncating: item.amount as NSNumber)) * animationProgress),
-                    innerRadius: .ratio(0.5),
-                    angularInset: 2.5
-                )
-                .cornerRadius(6, style: .continuous)
-                .foregroundStyle(by: .value("Category", item.name))
-            }
-            .chartForegroundStyleScale { gradientLookup[$0] ?? fallbackGradient }
-            .chartAngleSelection(value: $selectedAngle)
-            .onChange(of: selectedAngle) { _, angle in
-                guard let angle, animationProgress >= 1.0 else { return }
-                var cumulative: Double = 0
-                for item in categories {
-                    cumulative += Double(truncating: item.amount as NSNumber)
-                    if angle <= cumulative {
-                        onCategoryTap(item.id)
-                        selectedAngle = nil
-                        return
-                    }
-                }
-            }
-            .chartXAxis(.hidden)
-            .chartYAxis(.hidden)
-        }
-    }
-
     // MARK: - Bar Animation
 
     /// Steps through blocks one-by-one: 1 → 2 → 3 → ... → N, with a partial fill on the last block.

@@ -88,16 +88,25 @@ final class ReportViewModel {
     var selectedPeriod: ReportPeriod = .thisMonth
     var categoryExpenses: [CategoryExpenseItem] = []
     var totalExpense: Decimal = 0
+    var categoryIncomes: [CategoryExpenseItem] = []
+    var totalIncome: Decimal = 0
     var selectedCategoryID: UUID?
     var txByCategory: [UUID: [Transaction]] = [:]
+    var txByIncomeCategory: [UUID: [Transaction]] = [:]
     var trendData: [TrendDataPoint] = []
+    var categoryType: TransactionType = .expense
+
+    private var currentCategories: [CategoryExpenseItem] {
+        categoryType == .expense ? categoryExpenses : categoryIncomes
+    }
 
     var displayCategories: [CategoryExpenseItem] {
-        guard let id = selectedCategoryID else { return categoryExpenses }
-        if let parent = categoryExpenses.first(where: { $0.id == id }), !parent.children.isEmpty {
+        let source = currentCategories
+        guard let id = selectedCategoryID else { return source }
+        if let parent = source.first(where: { $0.id == id }), !parent.children.isEmpty {
             return parent.children
         }
-        for top in categoryExpenses {
+        for top in source {
             if let child = top.children.first(where: { $0.id == id }), !child.children.isEmpty {
                 return child.children
             }
@@ -108,7 +117,7 @@ final class ReportViewModel {
     var isShowingTransactions: Bool {
         guard let id = selectedCategoryID else { return false }
         if id == Self.uncategorizedUUID { return true }
-        for top in categoryExpenses {
+        for top in currentCategories {
             if top.id == id { return top.children.isEmpty }
             if let child = top.children.first(where: { $0.id == id }) {
                 return child.children.isEmpty
@@ -118,26 +127,31 @@ final class ReportViewModel {
     }
 
     var displayTitle: String {
-        guard let id = selectedCategoryID else { return String(localized: "支出分类") }
-        for top in categoryExpenses {
+        guard let id = selectedCategoryID else {
+            return categoryType == .expense ? String(localized: "支出分类") : String(localized: "收入分类")
+        }
+        for top in currentCategories {
             if top.id == id { return top.name }
             if let child = top.children.first(where: { $0.id == id }) { return child.name }
         }
         if id == Self.uncategorizedUUID { return String(localized: "未分类") }
-        return String(localized: "支出分类")
+        return categoryType == .expense ? String(localized: "支出分类") : String(localized: "收入分类")
     }
 
     var displayTotal: Decimal {
+        if isShowingTransactions {
+            return displayTransactions.reduce(0) { $0 + (categoryType == .expense ? netAmount($1) : abs(ledgerAmount($1))) }
+        }
         if selectedCategoryID != nil {
             return displayCategories.map(\.amount).reduce(0, +)
         }
-        return totalExpense
+        return categoryType == .expense ? totalExpense : totalIncome
     }
 
     var displayTransactions: [Transaction] {
         guard let id = selectedCategoryID else { return [] }
-        if id == Self.uncategorizedUUID { return txByCategory[id] ?? [] }
-        return txByCategory[id] ?? []
+        let txMap = categoryType == .expense ? txByCategory : txByIncomeCategory
+        return txMap[id] ?? []
     }
 
     func load(
@@ -156,18 +170,57 @@ final class ReportViewModel {
         fetch.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
         let all = (try? context.fetch(fetch)) ?? []
 
-        let transactions = all.filter { t in
-            guard t.type == .expense else { return false }
+        // Load expense categories
+        let expenseResult = buildCategoryItems(
+            from: all,
+            type: .expense,
+            categoryService: categoryService,
+            ledger: ledger,
+            context: context
+        )
+        categoryExpenses = expenseResult.items
+        totalExpense = expenseResult.total
+        txByCategory = expenseResult.txMap
+
+        // Load income categories
+        let incomeResult = buildCategoryItems(
+            from: all,
+            type: .income,
+            categoryService: categoryService,
+            ledger: ledger,
+            context: context
+        )
+        categoryIncomes = incomeResult.items
+        totalIncome = incomeResult.total
+        txByIncomeCategory = incomeResult.txMap
+
+        // Validate selection
+        let activeCategories = categoryType == .expense ? categoryExpenses : categoryIncomes
+        if selectedCategoryID != nil, !activeCategories.contains(where: { $0.id == selectedCategoryID }) {
+            selectedCategoryID = nil
+        }
+    }
+
+    private typealias CategoryBuildResult = (items: [CategoryExpenseItem], total: Decimal, txMap: [UUID: [Transaction]])
+
+    private func buildCategoryItems(
+        from allTransactions: [Transaction],
+        type: TransactionType,
+        categoryService: CategoryServiceProtocol,
+        ledger: Ledger,
+        context: NSManagedObjectContext
+    ) -> CategoryBuildResult {
+        let transactions = allTransactions.filter { t in
+            guard t.type == type else { return false }
             guard !t.isSplitParent else { return false }
-            guard !t.isReimbursable else { return false }
+            if type == .expense, t.isReimbursable { return false }
             return true
         }
 
-        let allCategories = (try? categoryService.fetchAllCategories(for: ledger, type: .expense, context: context)) ?? []
+        let allCategories = (try? categoryService.fetchAllCategories(for: ledger, type: type, context: context)) ?? []
         let categoryLookup = Dictionary(uniqueKeysWithValues: allCategories.map { ($0.id, $0) })
 
-        txByCategory = [:]
-
+        var txMap: [UUID: [Transaction]] = [:]
         var rootMap: [UUID: (cat: Category, total: Decimal, directAmount: Decimal, children: [UUID: Decimal])] = [:]
         var directTXByRoot: [UUID: [Transaction]] = [:]
         var uncategorizedTotal: Decimal = 0
@@ -175,12 +228,12 @@ final class ReportViewModel {
 
         for t in transactions {
             guard let cat = t.category else {
-                uncategorizedTotal += netAmount(t)
+                uncategorizedTotal += type == .expense ? netAmount(t) : abs(ledgerAmount(t))
                 uncategorizedTxs.append(t)
                 continue
             }
             let rootCat = rootCategory(for: cat)
-            let amt = netAmount(t)
+            let amt = type == .expense ? netAmount(t) : abs(ledgerAmount(t))
 
             var entry = rootMap[rootCat.id] ?? (rootCat, 0, 0, [:])
             entry.total += amt
@@ -189,20 +242,20 @@ final class ReportViewModel {
                 directTXByRoot[rootCat.id, default: []].append(t)
             } else {
                 entry.children[cat.id, default: 0] += amt
-                txByCategory[cat.id, default: []].append(t)
+                txMap[cat.id, default: []].append(t)
             }
             rootMap[rootCat.id] = entry
         }
 
-        totalExpense = rootMap.values.map(\.total).reduce(0, +) + uncategorizedTotal
+        let total = rootMap.values.map(\.total).reduce(0, +) + uncategorizedTotal
 
-        categoryExpenses = rootMap.map { id, entry in
+        var items = rootMap.map { id, entry in
             let parentTotal = entry.total
             var childItems: [CategoryExpenseItem] = []
 
             if entry.directAmount > 0 {
                 let directID = UUID()
-                txByCategory[directID] = directTXByRoot[id] ?? []
+                txMap[directID] = directTXByRoot[id] ?? []
                 childItems.append(CategoryExpenseItem(
                     id: directID,
                     name: String(localized: "本分类"),
@@ -237,31 +290,29 @@ final class ReportViewModel {
                 iconName: entry.cat.iconName,
                 colorHex: entry.cat.colorHex,
                 amount: entry.total,
-                percentage: totalExpense > 0 ? Double(truncating: (entry.total / totalExpense) as NSNumber) : 0,
+                percentage: total > 0 ? Double(truncating: (entry.total / total) as NSNumber) : 0,
                 parentID: nil,
                 children: childItems
             )
         }.sorted { $0.amount > $1.amount }
 
         if uncategorizedTotal > 0 {
-            txByCategory[Self.uncategorizedUUID] = uncategorizedTxs
+            txMap[Self.uncategorizedUUID] = uncategorizedTxs
             let uncategorizedItem = CategoryExpenseItem(
                 id: Self.uncategorizedUUID,
-                name: "未分类",
+                name: String(localized: "未分类"),
                 iconName: "questionmark.circle",
                 colorHex: "#AAAAAA",
                 amount: uncategorizedTotal,
-                percentage: totalExpense > 0 ? Double(truncating: (uncategorizedTotal / totalExpense) as NSNumber) : 0,
+                percentage: total > 0 ? Double(truncating: (uncategorizedTotal / total) as NSNumber) : 0,
                 parentID: nil,
                 children: []
             )
-            categoryExpenses.append(uncategorizedItem)
-            categoryExpenses.sort { $0.amount > $1.amount }
+            items.append(uncategorizedItem)
+            items.sort { $0.amount > $1.amount }
         }
 
-        if selectedCategoryID != nil, !categoryExpenses.contains(where: { $0.id == selectedCategoryID }) {
-            selectedCategoryID = nil
-        }
+        return (items, total, txMap)
     }
 
     func loadTrendData(
@@ -276,7 +327,6 @@ final class ReportViewModel {
         let endDate = range.upperBound
         let fetch = NSFetchRequest<Transaction>(entityName: "Transaction")
         fetch.predicate = NSPredicate(format: "ledger.id == %@ AND date >= %@ AND date < %@", ledgerID as CVarArg, startDate as CVarArg, endDate as CVarArg)
-        fetch.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
         let all = (try? context.fetch(fetch)) ?? []
 
         let settlementIDs = Set(all.compactMap(\.reimbursedById))
@@ -287,8 +337,6 @@ final class ReportViewModel {
             if t.type == .income, settlementIDs.contains(t.id) { return false }
             return true
         }
-
-        let cal = Calendar.current
 
         switch selectedPeriod {
         case .last3Years:

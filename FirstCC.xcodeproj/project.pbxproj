@@ -306,6 +306,8 @@
 		FD2C9721768BC0DECAFBD9EA /* LedgerRole.swift in Sources */ = {isa = PBXBuildFile; fileRef = 123B9066865398E03B8DD922 /* LedgerRole.swift */; };
 		FD91B103255DEB923850049C /* CloudKitConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FD37181CF946710701C84CD /* CloudKitConfig.swift */; };
 		FFD3CC4FA09133AB7E0CFC53 /* AccountDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89DBFB59681FF75B16E21478 /* AccountDetailView.swift */; };
+		D367EDF85D804F7D8DFE1399 /* DonutChartContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C66C0A248C949A08F849676 /* DonutChartContent.swift */; };
+		9B863D6EE456400A886BF4FE /* DonutChartContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C66C0A248C949A08F849676 /* DonutChartContent.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -330,6 +332,7 @@
 		017F172F8DFF42798BFA46D6 /* Font+Design.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Font+Design.swift"; sourceTree = "<group>"; };
 		01D75752123DF42AB96E4272 /* DateFormatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormatters.swift; sourceTree = "<group>"; };
 		02618A1A7BA344EB800D6115 /* CloudSharingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSharingView.swift; sourceTree = "<group>"; };
+		4C66C0A248C949A08F849676 /* DonutChartContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DonutChartContent.swift; sourceTree = "<group>"; };
 		02DDC5F77A2F4F6B8F12D87F /* TrendChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendChartView.swift; sourceTree = "<group>"; };
 		03FE1058B68F4875A03E6FD3 /* CoreDataStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataStack.swift; sourceTree = "<group>"; };
 		0570382A1B9150D0FE63C273 /* AddEditCategoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEditCategoryView.swift; sourceTree = "<group>"; };
@@ -905,6 +908,7 @@
 				1FD60ED36414C665A9E3DF7F /* ReportsView.swift */,
 				02DDC5F77A2F4F6B8F12D87F /* TrendChartView.swift */,
 				372597A22CA245B898D21D6F /* CategoryPieChartView.swift */,
+					4C66C0A248C949A08F849676 /* DonutChartContent.swift */,
 			);
 			path = Reports;
 			sourceTree = "<group>";
@@ -1002,6 +1006,9 @@
 		9AB5F8AF2FCD51C400F5044E /* Qianeymac */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 9AB5F8D32FCD51C700F5044E /* Build configuration list for PBXNativeTarget "Qianeymac" */;
+			packageProductDependencies = (
+				5F4A3C9E2B8D4716A0E1C7D9 /* SwiftUICharts */,
+			);
 			buildPhases = (
 				9AB5F8AC2FCD51C400F5044E /* Sources */,
 				9AB5F8AD2FCD51C400F5044E /* Frameworks */,
@@ -1015,8 +1022,6 @@
 				9AB5F8B12FCD51C400F5044E /* Qianeymac */,
 			);
 			name = Qianeymac;
-			packageProductDependencies = (
-			);
 			productName = Qianeymac;
 			productReference = 9AB5F8B02FCD51C400F5044E /* Qianeymac.app */;
 			productType = "com.apple.product-type.application";
@@ -1106,6 +1111,9 @@
 			productRefGroup = 0E67BE8D2A5AA9DFE4D9A3C1 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
+			packageReferences = (
+				0AC8E3B2A4714F2D9B7C1D6F /* XCRemoteSwiftPackageReference "SwiftUICharts" */,
+			);
 			targets = (
 				730950AD798A77AD508AA9E2 /* 钱伲 */,
 				9AB5F8AF2FCD51C400F5044E /* Qianeymac */,
@@ -1298,6 +1306,7 @@
 				983508D08B644FDE87DF33CA /* TrendChartView.swift in Sources */,
 				56025E3F889643DE9F32DCC7 /* ReportViewModel.swift in Sources */,
 				A44361F54D4542FE908424FE /* CategoryPieChartView.swift in Sources */,
+					9B863D6EE456400A886BF4FE /* DonutChartContent.swift in Sources */,
 				DE7AC17290274739B1858192 /* CalendarStripView.swift in Sources */,
 				85DD12DBCBCD4B9AAD4EA49D /* CalendarDayCell.swift in Sources */,
 				2760B2289D5E47E78D2DA298 /* Color+Expense.swift in Sources */,
@@ -1461,6 +1470,7 @@
 				49274ACA807A4AF2BB340ABE /* MultiSelectChipRow.swift in Sources */,
 				5D29496A598040738908E53E /* MultiSelectPickerView.swift in Sources */,
 				CB716F7C99D248469ACE0A1E /* AdvancedFilterPanel.swift in Sources */,
+					D367EDF85D804F7D8DFE1399 /* DonutChartContent.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1924,6 +1934,25 @@
 			versionGroupType = wrapper.xcdatamodel;
 		};
 /* End XCVersionGroup section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		0AC8E3B2A4714F2D9B7C1D6F /* XCRemoteSwiftPackageReference "SwiftUICharts" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/willdale/SwiftUICharts.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.10.4;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		5F4A3C9E2B8D4716A0E1C7D9 /* SwiftUICharts */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0AC8E3B2A4714F2D9B7C1D6F /* XCRemoteSwiftPackageReference "SwiftUICharts" */;
+			productName = SwiftUICharts;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 1781F676DEDF5767F3243DB0 /* Project object */;
 }
