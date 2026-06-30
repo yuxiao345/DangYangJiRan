@@ -59,7 +59,7 @@ struct ReportDetailContent: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            periodPicker
+            reportPickerBar
 
             switch reportType {
             case .trend:
@@ -80,7 +80,12 @@ struct ReportDetailContent: View {
             case .assets:
                 MacAssetChartView(dataPoints: viewModel.assetData)
             case .budget:
-                MacBudgetChartView(items: viewModel.budgetItems, books: viewModel.budgetBooks, selectedBookID: $viewModel.selectedBudgetBookID)
+                MacBudgetChartView(
+                    items: viewModel.budgetItems,
+                    books: viewModel.budgetBooks,
+                    selectedBookID: $viewModel.selectedBudgetBookID,
+                    dimension: $viewModel.budgetViewDimension
+                )
             }
         }
         .frame(maxHeight: .infinity, alignment: .top)
@@ -91,6 +96,7 @@ struct ReportDetailContent: View {
         }
         .onChange(of: viewModel.selectedPeriod) { _, _ in loadData() }
         .onChange(of: viewModel.selectedBudgetBookID) { _, _ in loadData() }
+        .onChange(of: viewModel.budgetViewDimension) { _, _ in loadData() }
         .onChange(of: appContainer.currentLedger?.id) { _, _ in loadData() }
         .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in loadData() }
         #if DEBUG
@@ -109,55 +115,60 @@ struct ReportDetailContent: View {
         #endif
     }
 
-    // MARK: - Period Picker
+    // MARK: - Report Picker Bar (period or dimension)
 
-    @Namespace private var periodAnim
+    @Namespace private var pillAnim
 
-    private var periodPicker: some View {
+    /// 通用顶部选择器：预算→维度，其他报表→时间周期。UI 完全统一。
+    private var reportPickerBar: some View {
         HStack(spacing: 0) {
-            ForEach(reportType.supportedPeriods, id: \.self) { period in
+            if reportType == .budget {
+                ForEach(BudgetViewDimension.allCases, id: \.self) { dim in
+                    pickerButton(
+                        label: dim.label,
+                        isActive: viewModel.budgetViewDimension == dim,
+                        action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                viewModel.budgetViewDimension = dim
+                            }
+                        }
+                    )
+                }
+            } else {
+                ForEach(reportType.supportedPeriods, id: \.self) { period in
+                    pickerButton(
+                        label: period.label,
+                        isActive: viewModel.selectedPeriod == period && !isCustomPeriod,
+                        action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                viewModel.selectedPeriod = period
+                            }
+                        }
+                    )
+                }
+
                 Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        viewModel.selectedPeriod = period
-                    }
+                    showCustomRange = true
                 } label: {
-                    Text(period.label)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(
-                            viewModel.selectedPeriod == period && !isCustomPeriod
-                                ? Color.designOnSurface
-                                : Color.designOnSurfaceVariant.opacity(0.7)
-                        )
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 5)
-                        .contentShape(Rectangle())
-                        .background(periodPillBackground(active: viewModel.selectedPeriod == period && !isCustomPeriod))
+                    HStack(spacing: 4) {
+                        Image(systemName: "calendar")
+                        if isCustomPeriod {
+                            Text(customRangeLabel)
+                        }
+                    }
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(
+                        isCustomPeriod ? Color.designOnSurface : Color.designOnSurfaceVariant.opacity(0.7)
+                    )
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 5)
+                    .contentShape(Rectangle())
+                    .background(pillBackground(active: isCustomPeriod))
                 }
                 .buttonStyle(.plain)
-            }
-
-            // Custom range button
-            Button {
-                showCustomRange = true
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "calendar")
-                    if isCustomPeriod {
-                        Text(customRangeLabel)
-                    }
+                .popover(isPresented: $showCustomRange) {
+                    customRangePopover
                 }
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(
-                    isCustomPeriod ? Color.designOnSurface : Color.designOnSurfaceVariant.opacity(0.7)
-                )
-                .padding(.horizontal, 12)
-                .padding(.vertical, 5)
-                .contentShape(Rectangle())
-                .background(periodPillBackground(active: isCustomPeriod))
-            }
-            .buttonStyle(.plain)
-            .popover(isPresented: $showCustomRange) {
-                customRangePopover
             }
         }
         .padding(4)
@@ -174,14 +185,29 @@ struct ReportDetailContent: View {
         .padding(.bottom, 6)
     }
 
+    private func pickerButton(label: String, isActive: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(
+                    isActive ? Color.designOnSurface : Color.designOnSurfaceVariant.opacity(0.7)
+                )
+                .padding(.horizontal, 12)
+                .padding(.vertical, 5)
+                .contentShape(Rectangle())
+                .background(pillBackground(active: isActive))
+        }
+        .buttonStyle(.plain)
+    }
+
     @ViewBuilder
-    private func periodPillBackground(active: Bool) -> some View {
+    private func pillBackground(active: Bool) -> some View {
         if active {
             Capsule()
                 .fill(Color.white.opacity(0.06))
                 .background(.regularMaterial, in: Capsule())
                 .overlay { Capsule().stroke(Color.white.opacity(0.15), lineWidth: 1) }
-                .matchedGeometryEffect(id: "periodPill", in: periodAnim)
+                .matchedGeometryEffect(id: "reportPill", in: pillAnim)
                 .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
         }
     }

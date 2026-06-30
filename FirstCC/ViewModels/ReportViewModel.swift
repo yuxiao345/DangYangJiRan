@@ -93,13 +93,70 @@ struct BudgetItemData: Identifiable {
     let id: UUID
     let name: String
     let colorHex: String
+    let period: BudgetPeriod
     let budgetAmount: Decimal
     let spentAmount: Decimal
+    /// 是否为累计数据（非本维度原生周期项）
+    let isCumulative: Bool
     var remaining: Decimal { budgetAmount - spentAmount }
     var percentage: Double {
         budgetAmount > 0 ? min(1.0, Double(truncating: (abs(spentAmount) / budgetAmount) as NSNumber)) : 0
     }
     var isOverBudget: Bool { spentAmount > budgetAmount }
+}
+
+enum BudgetViewDimension: CaseIterable {
+    case overall
+    case yearly
+    case quarterly
+    case monthly
+    case weekly
+
+    var label: String {
+        switch self {
+        case .overall:   String(localized: "整体预算")
+        case .yearly:    String(localized: "年度")
+        case .quarterly: String(localized: "季度")
+        case .monthly:   String(localized: "月度")
+        case .weekly:    String(localized: "每周")
+        }
+    }
+
+    /// 本维度对应的「原生」周期
+    var nativePeriod: BudgetPeriod? {
+        switch self {
+        case .overall:   nil
+        case .yearly:    .yearly
+        case .quarterly: .quarterly
+        case .monthly:   .monthly
+        case .weekly:    .weekly
+        }
+    }
+
+    /// 当前维度的时间窗口（用于计算支出）
+    func dateRange(bookStart: Date) -> ClosedRange<Date> {
+        let cal = Calendar.current
+        let today = Date()
+        let start: Date
+        switch self {
+        case .overall:
+            start = cal.startOfDay(for: bookStart)
+        case .yearly:
+            start = cal.date(from: cal.dateComponents([.year], from: today)) ?? today
+        case .quarterly:
+            let month = cal.component(.month, from: today)
+            let qStart = ((month - 1) / 3) * 3 + 1
+            start = cal.date(from: DateComponents(year: cal.component(.year, from: today), month: qStart, day: 1)) ?? today
+        case .monthly:
+            start = cal.date(from: cal.dateComponents([.year, .month], from: today)) ?? today
+        case .weekly:
+            start = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)) ?? today
+        }
+        return cal.startOfDay(for: start)...max(cal.startOfDay(for: start), today)
+    }
+
+    /// 是否需要按周期分组显示
+    var groupByPeriod: Bool { self == .overall }
 }
 
 @MainActor
@@ -120,6 +177,7 @@ final class ReportViewModel {
     var budgetItems: [BudgetItemData] = []
     var budgetBooks: [BudgetBook] = []
     var selectedBudgetBookID: UUID?
+    var budgetViewDimension: BudgetViewDimension = .overall
     var budgetBookName: String { budgetBooks.first(where: { $0.id == selectedBudgetBookID })?.name ?? "" }
     var categoryType: TransactionType = .expense
 
@@ -540,7 +598,6 @@ final class ReportViewModel {
         budgetService: BudgetServiceProtocol,
         context: NSManagedObjectContext
     ) {
-        guard let range = selectedPeriod.dateRange else { return }
         let books = (try? budgetService.fetchBooks(for: ledger, context: context)) ?? []
         budgetBooks = books
 
@@ -556,31 +613,42 @@ final class ReportViewModel {
         }
 
         let items = (try? budgetService.fetchItems(for: book, context: context)) ?? []
-        let categorySpending = budgetService.categorySpending(in: range.lowerBound...range.upperBound, for: book, context: context)
+        let dim = budgetViewDimension
+        let dimRange = dim.dateRange(bookStart: book.startDate)
+        let categorySpending = budgetService.categorySpending(in: dimRange, for: book, context: context)
 
         budgetItems = items.compactMap { item in
             guard let cat = item.category else { return nil }
             let spent = categorySpending[cat.id] ?? 0
+            let period = item.period
 
-            let budget: Decimal
-            switch selectedPeriod {
-            case .thisMonth:
-                budget = item.amount
-            case .last3Months:
-                budget = item.amount * 3
-            default:
-                budget = item.amount
+            guard let target = dim.nativePeriod else {
+                // 整体：所有项原样显示
+                return BudgetItemData(
+                    id: item.id, name: cat.name, colorHex: cat.colorHex ?? "#999999",
+                    period: period, budgetAmount: item.amount, spentAmount: abs(spent),
+                    isCumulative: false
+                )
             }
 
+            // 过滤：仅显示原生周期项 + 更小周期项的累计
+            let isNative = period == target
+            let isSmaller = period < target
+
+            guard isNative || isSmaller else { return nil }
+
+            let budget = isNative
+                ? item.amount
+                : item.amount.normalized(from: period, to: target)
+
             return BudgetItemData(
-                id: item.id,
-                name: cat.name,
-                colorHex: cat.colorHex ?? "#999999",
-                budgetAmount: budget,
-                spentAmount: abs(spent)
+                id: item.id, name: cat.name, colorHex: cat.colorHex ?? "#999999",
+                period: period, budgetAmount: budget, spentAmount: abs(spent),
+                isCumulative: !isNative
             )
         }.sorted { ($0.spentAmount - $0.budgetAmount) > ($1.spentAmount - $1.budgetAmount) }
     }
+
 
     // MARK: - Test data seeding (DEBUG only)
 

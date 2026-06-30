@@ -99,8 +99,8 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
     func totalCurrentPeriodBudget(for book: BudgetBook) -> Decimal {
         guard let items = book.items else { return 0 }
         return items.reduce(into: Decimal(0)) { total, item in
-            // 本期按真实周期，但如果书覆盖不全则钳到累计
-            total += item.periodBudget
+            // 统一归一到月口径，避免周/月/季/年混加
+            total += item.periodBudget.normalizedToMonthly(period: item.period)
         }
     }
 
@@ -210,17 +210,6 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
         let start = max(range.lowerBound, cal.startOfDay(for: book.startDate))
         let end = max(start, range.upperBound)
         return start...end
-    }
-}
-
-private extension Decimal {
-    func normalizedToMonthly(period: BudgetPeriod) -> Decimal {
-        switch period {
-        case .weekly:   return self * 52 / 12
-        case .monthly:  return self
-        case .quarterly: return self / 3
-        case .yearly:   return self / 12
-        }
     }
 }
 

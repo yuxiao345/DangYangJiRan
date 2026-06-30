@@ -36,71 +36,72 @@ struct ReportsView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                HStack(spacing: 0) {
-                    ForEach(ReportType.allCases, id: \.self) { type in
-                        Button {
-                            selectedReport = type
-                        } label: {
-                            Text(type.label)
-                                .font(.designLabel)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 10)
-                                .background(
-                                    selectedReport == type
-                                        ? Color.designPrimaryContainer.opacity(0.25)
-                                        : Color.clear
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
+            ScrollView {
+                VStack(spacing: 0) {
+                    HStack(spacing: 0) {
+                        ForEach(ReportType.allCases, id: \.self) { type in
+                            Button {
+                                selectedReport = type
+                            } label: {
+                                Text(type.label)
+                                    .font(.designLabel)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                                    .background(
+                                        selectedReport == type
+                                            ? Color.designPrimaryContainer.opacity(0.25)
+                                            : Color.clear
+                                    )
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                            }
+                            .foregroundStyle(
+                                selectedReport == type
+                                    ? Color.designOnSurface
+                                    : Color.designOnSurfaceVariant
+                            )
+                            .buttonStyle(.plain)
                         }
-                        .foregroundStyle(
-                            selectedReport == type
-                                ? Color.designOnSurface
-                                : Color.designOnSurfaceVariant
-                        )
-                        .buttonStyle(.plain)
                     }
-                }
-                .padding(4)
-                .glassCard(cornerRadius: 14)
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
+                    .padding(4)
+                    .glassCard(cornerRadius: 14)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
 
-                HStack(spacing: 8) {
-                    ForEach(selectedReport.supportedPeriods, id: \.self) { period in
-                        Button {
-                            viewModel.selectedPeriod = period
-                        } label: {
-                            Text(period.label)
-                                .font(.custom("JetBrainsMono-Medium", fixedSize: 12))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 8)
-                                .background(
-                                    viewModel.selectedPeriod == period
-                                        ? Color.designPrimaryContainer.opacity(0.2)
-                                        : Color.designSurfaceContainer.opacity(0.6)
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                    HStack(spacing: 8) {
+                        ForEach(selectedReport.supportedPeriods, id: \.self) { period in
+                            Button {
+                                viewModel.selectedPeriod = period
+                            } label: {
+                                Text(period.label)
+                                    .font(.custom("JetBrainsMono-Medium", fixedSize: 12))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 8)
+                                    .background(
+                                        viewModel.selectedPeriod == period
+                                            ? Color.designPrimaryContainer.opacity(0.2)
+                                            : Color.designSurfaceContainer.opacity(0.6)
+                                    )
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                            }
+                            .foregroundStyle(
+                                viewModel.selectedPeriod == period
+                                    ? Color.designOnSurface
+                                    : Color.designOnSurfaceVariant
+                            )
+                            .buttonStyle(.plain)
                         }
-                        .foregroundStyle(
-                            viewModel.selectedPeriod == period
-                                ? Color.designOnSurface
-                                : Color.designOnSurfaceVariant
-                        )
-                        .buttonStyle(.plain)
                     }
-                }
-                .padding(4)
-                .glassCard(cornerRadius: 14)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                    .padding(4)
+                    .glassCard(cornerRadius: 14)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
 
-                switch selectedReport {
-                case .category:
-                    categoryReport
-                case .trend:
-                    trendReport
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    switch selectedReport {
+                    case .category:
+                        categoryContent
+                    case .trend:
+                        trendReport
+                    }
                 }
             }
             .navigationTitle("报表")
@@ -108,6 +109,7 @@ struct ReportsView: View {
                 TransactionDetailView(transaction: tx)
             }
         }
+        .simultaneousGesture(backSwipe)
         .designScreen()
         .onAppear { loadData() }
         .onChange(of: viewModel.selectedPeriod) { _, _ in loadData() }
@@ -123,10 +125,26 @@ struct ReportsView: View {
         }
     }
 
+    // MARK: - Swipe Back Gesture
+
+    /// 从屏幕左边缘右滑返回上一级（仅在下钻状态下生效）
+    private var backSwipe: some Gesture {
+        DragGesture(minimumDistance: 40, coordinateSpace: .global)
+            .onEnded { value in
+                guard viewModel.selectedCategoryID != nil else { return }
+                // 仅响应从左边缘发起的水平右滑
+                let isFromLeftEdge = value.startLocation.x < 44
+                let isRightSwipe = value.translation.width > 80
+                let isHorizontal = abs(value.translation.width) > abs(value.translation.height)
+                if isFromLeftEdge && isRightSwipe && isHorizontal {
+                    viewModel.goBack()
+                }
+            }
+    }
+
     @ViewBuilder
-    private var categoryReport: some View {
+    private var categoryContent: some View {
         if viewModel.categoryExpenses.isEmpty {
-            Spacer()
             VStack(spacing: 8) {
                 Image(systemName: "chart.pie")
                     .font(.largeTitle)
@@ -135,21 +153,20 @@ struct ReportsView: View {
                     .font(.designBodyMedium)
                     .foregroundStyle(Color.designOnSurfaceVariant)
             }
-            Spacer()
+            .frame(maxWidth: .infinity)
+            .padding(.top, 120)
         } else {
-            ScrollView {
-                CategoryPieChartView(
-                    categories: viewModel.displayCategories,
-                    totalExpense: viewModel.displayTotal,
-                    centerTitle: viewModel.displayTitle,
-                    isDrilledDown: viewModel.selectedCategoryID != nil,
-                    onCategoryTap: { viewModel.selectCategory($0) },
-                    onCenterTap: { viewModel.goBack() },
-                    onSelectTransaction: { tx in selectedTransaction = tx },
-                    transactions: viewModel.isShowingTransactions ? viewModel.displayTransactions : nil
-                )
-                .padding(.vertical, 8)
-            }
+            CategoryPieChartView(
+                categories: viewModel.displayCategories,
+                totalExpense: viewModel.displayTotal,
+                centerTitle: viewModel.displayTitle,
+                isDrilledDown: viewModel.selectedCategoryID != nil,
+                onCategoryTap: { viewModel.selectCategory($0) },
+                onCenterTap: { viewModel.goBack() },
+                onSelectTransaction: { tx in selectedTransaction = tx },
+                transactions: viewModel.isShowingTransactions ? viewModel.displayTransactions : nil
+            )
+            .padding(.vertical, 8)
         }
     }
 

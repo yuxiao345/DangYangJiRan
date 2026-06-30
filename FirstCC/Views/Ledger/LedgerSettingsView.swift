@@ -22,6 +22,9 @@ struct LedgerSettingsView: View {
     @State private var shareError: String?
     @State private var shareDetected: Bool? = nil  // nil=检测中, true=共享存在, false=无共享
     @State private var shareZoneIDForPurge: CKRecordZone.ID?
+    #if DEBUG
+    @State private var isSeeding = false
+    #endif
 
     private var isOwner: Bool {
         // 优先用 CKShare.currentUserParticipant 判断（基于当前 iCloud 账户，最可靠）
@@ -104,7 +107,8 @@ struct LedgerSettingsView: View {
                     } else if isShared {
 #if DEBUG
                         let diag = "currentUser: \(appContainer.currentUserRecordID ?? "nil")\nownerRID: \(ledger.ownerUserRecordID ?? "nil")"
-                        Text((isOwner ? "此账本已开启共享，其他用户可加入协作记账" : "你正在参与此共享账本，仅拥有者可管理成员") + "\n\n[诊断] \(diag)")
+                        let sharedMsg = isOwner ? "此账本已开启共享，其他用户可加入协作记账" : "你正在参与此共享账本，仅拥有者可管理成员"
+                        Text(sharedMsg + "\n\n[诊断] \(diag)")
 #else
                         Text(isOwner ? "此账本已开启共享，其他用户可加入协作记账" : "你正在参与此共享账本，仅拥有者可管理成员")
 #endif
@@ -142,6 +146,30 @@ struct LedgerSettingsView: View {
                     ExportView()
                 }
             }
+
+            #if DEBUG
+            Section {
+                Button {
+                    isSeeding = true
+                    Task {
+                        DummyDataSeeder.seed(context: modelContext, ledger: ledger)
+                        NotificationCenter.default.post(name: .transactionDidChange, object: nil)
+                        isSeeding = false
+                    }
+                } label: {
+                    HStack {
+                        Label("生成3年测试数据", systemImage: "ladybug")
+                        if isSeeding {
+                            Spacer()
+                            ProgressView()
+                        }
+                    }
+                }
+                .disabled(isSeeding)
+            } footer: {
+                Text("仅在 DEBUG 模式可用。在当前账本中创建约2000-3000笔随机支出和每月收入记录，覆盖过去3年。")
+            }
+            #endif
 
             if !isShared || isOwner {
                 Section {
@@ -432,3 +460,171 @@ struct LedgerSettingsView: View {
         }
     }
 }
+
+#if DEBUG
+// MARK: - DummyDataSeeder
+
+private enum DummyDataSeeder {
+    /// 生成 3 年模拟交易数据（支出为负数，含每月收入）
+    static func seed(context: NSManagedObjectContext, ledger: Ledger) {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        guard let threeYearsAgo = cal.date(byAdding: .year, value: -3, to: today) else { return }
+
+        let accounts = fetchAccounts(ledger: ledger, context: context)
+        let expenseCategories = fetchCategories(type: .expense, ledger: ledger, context: context)
+        let incomeCategories = fetchCategories(type: .income, ledger: ledger, context: context)
+        let merchants = fetchMerchants(ledger: ledger, context: context)
+
+        guard !accounts.isEmpty, !expenseCategories.isEmpty else {
+            print("[DummyDataSeeder] 缺少账户或支出分类，跳过生成。")
+            return
+        }
+
+        let categoryWeights: [(category: Category, dailyChance: Double, amountRange: ClosedRange<Double>)] = {
+            let catByName: [String: Category] = Dictionary(
+                uniqueKeysWithValues: expenseCategories.map { ($0.name, $0) }
+            )
+            let specs: [(String, Double, ClosedRange<Double>)] = [
+                ("餐饮饮食", 0.85, 10...80),
+                ("交通出行", 0.55, 5...120),
+                ("购物消费", 0.40, 20...600),
+                ("娱乐休闲", 0.30, 30...300),
+                ("住房居家", 0.20, 50...3000),
+                ("医疗健康", 0.15, 20...500),
+                ("教育学习", 0.12, 30...800),
+                ("通讯网络", 0.25, 20...200),
+                ("人情往来", 0.10, 100...2000),
+                ("金融服务", 0.08, 5...200),
+                ("其他杂项", 0.15, 5...150),
+            ]
+            return specs.compactMap { name, chance, range in
+                guard let cat = catByName[name] ?? expenseCategories.first(where: { $0.name.hasPrefix(name) }) else {
+                    return nil
+                }
+                return (cat, chance, range)
+            }
+        }()
+
+        var totalExpenseCount = 0
+        var totalIncomeCount = 0
+        let batchSize = 200
+
+        var currentDate = threeYearsAgo
+        while currentDate <= today {
+            let expenseCount = Int.random(in: 1...4)
+            for _ in 0..<expenseCount {
+                guard let spec = Self.weightedRandom(from: categoryWeights, by: \.dailyChance) else { continue }
+
+                let amount = Decimal(Double.random(in: spec.amountRange))
+                let negAmount = -amount
+
+                let hour = Int.random(in: 6...22)
+                let minute = Int.random(in: 0...59)
+                let txnDate = cal.date(bySettingHour: hour, minute: minute, second: 0, of: currentDate) ?? currentDate
+
+                let note: String? = {
+                    let n: [String] = switch spec.category.name {
+                    case "餐饮饮食": ["午餐", "晚餐", "外卖", "买菜", "早点", "零食"]
+                    case "交通出行": ["通勤", "打车", "加油", "高铁"]
+                    case "购物消费": ["日用品", "衣服", "数码", "护肤品"]
+                    default: []
+                    }
+                    return n.randomElement()
+                }()
+
+                let t = Transaction(
+                    type: .expense,
+                    amount: negAmount,
+                    note: note,
+                    date: txnDate,
+                    account: accounts.randomElement()!,
+                    category: spec.category,
+                    merchant: merchants.randomElement(),
+                    context: context
+                )
+                t.ledger = ledger
+                totalExpenseCount += 1
+            }
+
+            if totalExpenseCount % batchSize == 0 {
+                try? context.save()
+            }
+
+            currentDate = cal.date(byAdding: .day, value: 1, to: currentDate) ?? today
+        }
+
+        // 每月 1-2 笔收入
+        var monthCursor = threeYearsAgo
+        while monthCursor <= today {
+            let incomeCount = Int.random(in: 1...2)
+            for _ in 0..<incomeCount {
+                guard let cat = incomeCategories.randomElement() else { continue }
+                let isSalary = cat.name.contains("工资") || cat.name.contains("薪金")
+                let amountRange: ClosedRange<Double> = isSalary ? 8000...35000 : 500...8000
+                let amount = Decimal(Double.random(in: amountRange))
+
+                let day = Int.random(in: 1...min(28, cal.range(of: .day, in: .month, for: monthCursor)?.count ?? 28))
+                let txnDate = cal.date(bySetting: .day, value: day, of: monthCursor) ?? monthCursor
+                let finalDate = cal.date(bySettingHour: Int.random(in: 8...18), minute: 0, second: 0, of: txnDate) ?? txnDate
+
+                let t = Transaction(
+                    type: .income,
+                    amount: amount,
+                    note: isSalary ? "工资" : nil,
+                    date: finalDate,
+                    account: accounts.randomElement()!,
+                    category: cat,
+                    context: context
+                )
+                t.ledger = ledger
+                totalIncomeCount += 1
+            }
+
+            monthCursor = cal.date(byAdding: .month, value: 1, to: monthCursor) ?? today
+        }
+
+        try? context.save()
+
+        print("[DummyDataSeeder] 完成：支出 \(totalExpenseCount) 笔，收入 \(totalIncomeCount) 笔")
+    }
+
+    // MARK: Helpers
+
+    private static func fetchAccounts(ledger: Ledger, context: NSManagedObjectContext) -> [Account] {
+        let request = NSFetchRequest<Account>(entityName: "Account")
+        request.predicate = NSPredicate(format: "ledger.id == %@", ledger.id as CVarArg)
+        return (try? context.fetch(request)) ?? []
+    }
+
+    private static func fetchCategories(type: TransactionType, ledger: Ledger, context: NSManagedObjectContext) -> [Category] {
+        let request = NSFetchRequest<Category>(entityName: "Category")
+        request.predicate = NSPredicate(format: "ledger.id == %@ AND typeRaw == %@",
+            ledger.id as CVarArg, type.rawValue)
+        return (try? context.fetch(request)) ?? []
+    }
+
+    private static func fetchMerchants(ledger: Ledger, context: NSManagedObjectContext) -> [Merchant] {
+        let request = NSFetchRequest<Merchant>(entityName: "Merchant")
+        request.predicate = NSPredicate(format: "ledger.id == %@", ledger.id as CVarArg)
+        return (try? context.fetch(request)) ?? []
+    }
+
+    private static func weightedRandom<T>(
+        from items: [T],
+        by weight: (T) -> Double
+    ) -> T? {
+        guard !items.isEmpty else { return nil }
+        let weights = items.map(weight)
+        let total = weights.reduce(0, +)
+        guard total > 0 else { return items.randomElement() }
+        let r = Double.random(in: 0..<total)
+        var cumulative: Double = 0
+        for (i, w) in weights.enumerated() {
+            cumulative += w
+            if r < cumulative { return items[i] }
+        }
+        return items.last
+    }
+}
+#endif

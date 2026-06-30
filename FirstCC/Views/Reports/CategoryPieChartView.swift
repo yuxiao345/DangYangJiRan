@@ -267,17 +267,16 @@ struct CategoryPieChartView: View {
             .padding(.bottom, 8)
 
             Divider()
+                .padding(.bottom, 12)
 
-            ForEach(txs.sorted(by: { $0.date > $1.date }), id: \.id) { tx in
-                Button {
-                    onSelectTransaction?(tx)
-                } label: {
-                    TransactionRowView(transaction: tx)
-                }
-                .buttonStyle(.plain)
-
-                if tx.id != txs.last?.id {
-                    Divider().padding(.leading, 16)
+            VStack(spacing: 12) {
+                ForEach(txs.sorted(by: { $0.date > $1.date }), id: \.id) { tx in
+                    Button {
+                        onSelectTransaction?(tx)
+                    } label: {
+                        TransactionRowView(transaction: tx)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }

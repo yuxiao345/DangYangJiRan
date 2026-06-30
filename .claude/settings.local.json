@@ -223,7 +223,17 @@
       "mcp__figma__get_screenshot",
       "Bash(curl -s -o /tmp/macos27-cover.png \"https://www.figma.com/api/mcp/asset/47e24a43-d935-46d1-ab16-7b13d449946d\")",
       "WebFetch(domain:juejin.cn)",
-      "WebFetch(domain:swiftwithmajid.com)"
+      "WebFetch(domain:swiftwithmajid.com)",
+      "WebFetch(domain:github.com)",
+      "Skill(simplify)",
+      "Bash(system_profiler SPUSBDataType)",
+      "Bash(/Users/gyu/Library/Python/3.9/bin/pymobiledevice3 apps *)",
+      "Bash(/Users/gyu/Library/Python/3.9/bin/pymobiledevice3 list *)",
+      "Bash(/Users/gyu/Library/Python/3.9/bin/pymobiledevice3 usbmux *)",
+      "Bash(/Users/gyu/Library/Python/3.9/bin/pymobiledevice3 developer *)",
+      "Bash(/Users/gyu/Library/Python/3.9/bin/pymobiledevice3 start-tunnel *)",
+      "Bash(/Users/gyu/Library/Python/3.9/bin/pymobiledevice3 lockdown *)",
+      "Bash(echo \"Tunnel PID: $!\")"
     ]
   },
   "hooks": {

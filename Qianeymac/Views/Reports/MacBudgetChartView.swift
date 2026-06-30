@@ -4,6 +4,9 @@ struct MacBudgetChartView: View {
     let items: [BudgetItemData]
     let books: [BudgetBook]
     @Binding var selectedBookID: UUID?
+    @Binding var dimension: BudgetViewDimension
+
+    private var groupByPeriod: Bool { dimension == .overall }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -22,14 +25,14 @@ struct MacBudgetChartView: View {
                         .padding(.top, 12)
 
                     ScrollView {
-                        VStack(spacing: 8) {
-                            ForEach(items) { item in
-                                budgetRow(item)
-                            }
+                        if groupByPeriod {
+                            groupedItemList
+                        } else {
+                            flatItemList
                         }
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 12)
                     }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
                 }
             }
         }
@@ -79,16 +82,20 @@ struct MacBudgetChartView: View {
 
     // MARK: - Computed
 
-    private var totalBudget: Decimal { items.reduce(0) { $0 + $1.budgetAmount } }
-    private var totalSpent: Decimal { items.reduce(0) { $0 + $1.spentAmount } }
-    private var totalRemaining: Decimal { totalBudget - totalSpent }
+    private var totals: (budget: Decimal, spent: Decimal) {
+        items.reduce(into: (Decimal(0), Decimal(0))) { acc, item in
+            acc.0 += item.budgetAmount
+            acc.1 += item.spentAmount
+        }
+    }
+    private var totalRemaining: Decimal { totals.budget - totals.spent }
 
     // MARK: - Summary Card
 
     private var summaryCard: some View {
         HStack(spacing: 16) {
-            summaryCell(label: String(localized: "总预算"), amount: totalBudget, color: Color.designPrimaryFixedDim)
-            summaryCell(label: String(localized: "已花费"), amount: totalSpent, color: Color.designAccentRed)
+            summaryCell(label: String(localized: "总预算"), amount: totals.budget, color: Color.designPrimaryFixedDim)
+            summaryCell(label: String(localized: "已花费"), amount: totals.spent, color: Color.designAccentRed)
             summaryCell(label: String(localized: "剩余"), amount: totalRemaining, color: totalRemaining >= 0 ? .blue : Color.designAccentRed)
         }
     }
@@ -106,6 +113,43 @@ struct MacBudgetChartView: View {
         .glassCard(cornerRadius: 12)
     }
 
+    // MARK: - Item Lists
+
+    /// 整体模式：按周期分组（周/月/季/年）
+    private var groupedItemList: some View {
+        let grouped = Dictionary(grouping: items) { $0.period }
+        let order: [BudgetPeriod] = BudgetPeriod.allCases.sorted(by: >)
+
+        return VStack(spacing: 12) {
+            ForEach(order, id: \.self) { period in
+                if let sectionItems = grouped[period], !sectionItems.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        sectionHeader(period)
+                        ForEach(sectionItems) { item in
+                            budgetRow(item)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// 非整体模式：平铺列表
+    private var flatItemList: some View {
+        VStack(spacing: 8) {
+            ForEach(items) { item in
+                budgetRow(item)
+            }
+        }
+    }
+
+    private func sectionHeader(_ period: BudgetPeriod) -> some View {
+        Text(period.displayName)
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
+            .padding(.leading, 4)
+    }
+
     // MARK: - Budget Row
 
     private func budgetRow(_ item: BudgetItemData) -> some View {
@@ -115,9 +159,16 @@ struct MacBudgetChartView: View {
                     .fill(Color(hex: item.colorHex) ?? .gray)
                     .frame(width: 12, height: 12)
 
-                Text(item.name)
-                    .font(.designBodyMedium)
-                    .foregroundStyle(Color.designOnSurface)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(item.name)
+                        .font(.designBodyMedium)
+                        .foregroundStyle(Color.designOnSurface)
+                    if item.isCumulative {
+                        Text("累计 (\(item.period.displayName))")
+                            .font(.system(size: 9))
+                            .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+                    }
+                }
 
                 Spacer()
 
