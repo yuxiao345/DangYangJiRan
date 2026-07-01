@@ -115,12 +115,22 @@ struct TransactionListView: View {
         .sheet(isPresented: $showAddSheet) {
             AddEditTransactionView(prefillDate: resolvedSelectedDate)
         }
-        .onAppear(perform: loadCalendarData)
-        .onChange(of: selectedMonth) { _, _ in loadCalendarData() }
-        .onChange(of: filterType) { _, _ in loadCalendarData() }
+        .onAppear {
+            loadCalendarData()
+            applyFilters()
+        }
+        .onChange(of: selectedMonth) { _, _ in
+            loadCalendarData()
+            applyFilters()
+        }
+        .onChange(of: filterType) { _, _ in
+            loadCalendarData()
+            applyFilters()
+        }
         .onChange(of: selectedDay) { _, _ in applyFilters() }
         .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in
             loadCalendarData()
+            applyFilters()
         }
     }
 
@@ -223,8 +233,6 @@ struct TransactionListView: View {
         monthlyIncome = totalIncome
         monthlyExpense = totalExpense
         monthTransactions = all.deduplicatingTransfers()
-
-        applyFilters()
     }
 
     private func applyFilters() {

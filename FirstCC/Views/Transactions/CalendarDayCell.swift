@@ -1,5 +1,11 @@
 import SwiftUI
 
+/// Single day cell in the calendar strip.
+///
+/// - Important: Callers must handle `!isCurrentMonth` taps in their `onTap` closure —
+///   the cell itself does not guard against non-current-month interaction.
+///   When `isCurrentMonth` is `false`, tapping the cell should navigate to the
+///   corresponding adjacent month rather than toggling `selectedDay` in the current month.
 struct CalendarDayCell: View {
     let day: Int
     let hasTransaction: Bool
@@ -46,7 +52,7 @@ struct CalendarDayCell: View {
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(.plain)
-        .disabled(!isCurrentMonth)
         .opacity(isCurrentMonth ? 1 : 0.35)
+        .accessibilityHint(isCurrentMonth ? "" : String(localized: "点击切换到对应月份"))
     }
 }

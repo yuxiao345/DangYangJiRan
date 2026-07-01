@@ -159,8 +159,19 @@ struct CalendarStripView: View {
                     isSelected: isSel,
                     isCurrentMonth: inMonth,
                     onTap: {
-                        if selectedDay == d { selectedDay = nil }
-                        else { selectedDay = d }
+                        if inMonth {
+                            handleDayTap(day: d, isCurrentMonth: true, targetMonth: selectedMonth)
+                        } else {
+                            let comps = DateComponents(year: dy, month: dm, day: 1)
+                            if let target = cal.date(from: comps) {
+                                handleDayTap(day: d, isCurrentMonth: false, targetMonth: target)
+                            } else {
+                                // Fallback: navigate via relative month offset from selectedMonth
+                                let offset = dm >= selMonth ? 1 : -1
+                                let target = selectedMonth.adding(.month, value: offset).startOfMonth
+                                handleDayTap(day: d, isCurrentMonth: false, targetMonth: target)
+                            }
+                        }
                     }
                 )
             }
@@ -174,6 +185,7 @@ struct CalendarStripView: View {
         let id: String
         let day: Int
         let isCurrentMonth: Bool
+        let monthOffset: Int  // -1 prev, 0 current, +1 next
     }
 
     private var monthCells: [GridCell] {
@@ -190,15 +202,15 @@ struct CalendarStripView: View {
         // Leading padding: show actual dates from previous month
         for i in 0..<offset {
             let day = prevDays - offset + i + 1
-            cells.append(GridCell(id: "pad-\(i)", day: day, isCurrentMonth: false))
+            cells.append(GridCell(id: "pad-\(i)", day: day, isCurrentMonth: false, monthOffset: -1))
         }
         // Current month
         for d in 1...days {
-            cells.append(GridCell(id: "d-\(d)", day: d, isCurrentMonth: true))
+            cells.append(GridCell(id: "d-\(d)", day: d, isCurrentMonth: true, monthOffset: 0))
         }
         // Trailing padding: show sequential dates from next month
         for i in 0..<trailing {
-            cells.append(GridCell(id: "trail-\(i)", day: i + 1, isCurrentMonth: false))
+            cells.append(GridCell(id: "trail-\(i)", day: i + 1, isCurrentMonth: false, monthOffset: 1))
         }
         return cells
     }
@@ -224,22 +236,41 @@ struct CalendarStripView: View {
                     isToday: isTodayDate,
                     isSelected: cell.isCurrentMonth && selectedDay == cell.day,
                     isCurrentMonth: cell.isCurrentMonth,
-                    onTap: cell.isCurrentMonth ? {
-                        if selectedDay == cell.day {
-                            selectedDay = nil
-                        } else {
-                            selectedDay = cell.day
-                            withAnimation(.easeInOut(duration: 0.25)) {
-                                isExpanded = false
+                    onTap: {
+                        if cell.isCurrentMonth {
+                            let wasSelected = (selectedDay == cell.day)
+                            handleDayTap(day: cell.day, isCurrentMonth: true, targetMonth: selectedMonth)
+                            if !wasSelected {
+                                withAnimation(.easeInOut(duration: 0.25)) {
+                                    isExpanded = false
+                                }
                             }
+                        } else {
+                            // Adjacent-month tap: navigate to that month.
+                            // Grid stays expanded so the user can continue browsing the new month.
+                            // (Current-month taps collapse to weekStrip — that asymmetry is intentional.)
+                            let target = selectedMonth.adding(.month, value: cell.monthOffset).startOfMonth
+                            handleDayTap(day: cell.day, isCurrentMonth: false, targetMonth: target)
                         }
-                    } : {}
+                    }
                 )
             }
         }
     }
 
     // MARK: - Helpers
+
+    /// Shared tap handler for both weekStrip and monthGrid.
+    private func handleDayTap(day: Int, isCurrentMonth: Bool, targetMonth: Date) {
+        if isCurrentMonth {
+            selectedDay = (selectedDay == day) ? nil : day
+        } else {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                selectedMonth = targetMonth
+                selectedDay = day
+            }
+        }
+    }
 
     private var displayWeekDates: [Date] {
         let cal = Calendar.current
