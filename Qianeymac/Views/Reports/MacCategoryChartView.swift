@@ -44,6 +44,10 @@ struct MacCategoryChartView: View {
                     explodedIndex: $explodedIndex,
                     hoveredIndex: $hoveredIndex
                 )
+                .glassCard(cornerRadius: 20)
+                .padding(.horizontal, 24)
+                .padding(.top, 4)
+                .padding(.bottom, 20)
                 ScrollView {
                     CategoryBarList(
                         categories: categories,

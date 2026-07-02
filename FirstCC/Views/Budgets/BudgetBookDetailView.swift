@@ -98,6 +98,7 @@ struct BudgetBookDetailView: View {
         .confirmationDialog("确定删除此预算项？", isPresented: showDeleteConfirm) {
             Button("删除", role: .destructive) {
                 if let item = deleteCandidate {
+                    items = []  // 先清空数组，防止 ForEach 在布局更新时访问已删除的 CoreData 对象导致 crash
                     try? appContainer.budgetService.deleteItem(item, context: modelContext)
                     loadData()
                 }

@@ -8,7 +8,10 @@ import SwiftUI
 ///   corresponding adjacent month rather than toggling `selectedDay` in the current month.
 struct CalendarDayCell: View {
     let day: Int
-    let hasTransaction: Bool
+    /// 0…1 expense heatmap intensity. 0 = no expense.
+    let expenseIntensity: Double
+    /// 0…1 income heatmap intensity. 0 = no income.
+    let incomeIntensity: Double
     let isToday: Bool
     let isSelected: Bool
     let isCurrentMonth: Bool
@@ -39,12 +42,42 @@ struct CalendarDayCell: View {
                         )
                         .frame(height: 28)
 
-                    if isCurrentMonth && hasTransaction {
-                        RoundedRectangle(cornerRadius: 1)
-                            .fill(Color.designPrimaryContainer)
-                            .frame(width: 4, height: 4)
+                    // Dual mini progress bars — fixed 1/3 cell width, centered below the date.
+                    // Red bar (top) = income; green bar (bottom) = expense.
+                    if isCurrentMonth {
+                        GeometryReader { geo in
+                            let trackW = geo.size.width / 3
+                            VStack(spacing: 2) {
+                                // Income bar (red)
+                                ZStack(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: 1.5)
+                                        .fill(Color.designOnSurfaceVariant.opacity(0.12))
+                                        .frame(width: trackW, height: 2.5)
+                                    if incomeIntensity > 0 {
+                                        RoundedRectangle(cornerRadius: 1.5)
+                                            .fill(Color.designAccentRed.opacity(0.7))
+                                            .frame(width: trackW * incomeIntensity, height: 2.5)
+                                    }
+                                }
+                                .frame(width: trackW, height: 2.5)
+                                // Expense bar (green)
+                                ZStack(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: 1.5)
+                                        .fill(Color.designOnSurfaceVariant.opacity(0.12))
+                                        .frame(width: trackW, height: 2.5)
+                                    if expenseIntensity > 0 {
+                                        RoundedRectangle(cornerRadius: 1.5)
+                                            .fill(Color.designAccentGreen.opacity(0.75))
+                                            .frame(width: trackW * expenseIntensity, height: 2.5)
+                                    }
+                                }
+                                .frame(width: trackW, height: 2.5)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .frame(height: 7)
                     } else {
-                        Color.clear.frame(height: 4)
+                        Color.clear.frame(height: 7)
                     }
                 }
             }

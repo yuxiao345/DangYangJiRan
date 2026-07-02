@@ -34,6 +34,7 @@ struct DonutChart: View {
     let totalExpense: Decimal
     let centerTitle: String
     let isDrilledDown: Bool
+    var showTopBar: Bool = true
     @Binding var categoryType: TransactionType
     let onCategoryTap: (UUID) -> Void
     let onCenterTap: () -> Void
@@ -46,7 +47,7 @@ struct DonutChart: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            topBar
+            if showTopBar { topBar }
             GeometryReader { geo in
                 let size = geo.size
                 let center = CGPoint(x: size.width / 2, y: size.height / 2)
@@ -70,10 +71,6 @@ struct DonutChart: View {
             .padding(.horizontal, 12)
             .padding(.bottom, 16)
         }
-        .glassCard(cornerRadius: 20)
-        .padding(.horizontal, 24)
-        .padding(.top, 4)
-        .padding(.bottom, 20)
         .animation(.spring(response: 0.45, dampingFraction: 0.65), value: explodedIndex)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: hoveredIndex)
     }
@@ -99,7 +96,7 @@ struct DonutChart: View {
             Spacer()
         }
         .padding(.horizontal, 20)
-        .padding(.top, 12)
+        .padding(.top, 17)
     }
 
     // MARK: - Slice

@@ -8,6 +8,7 @@ struct CalendarStripView: View {
     @Binding var dailyExpense: [Int: Decimal]
     @Binding var dailyIncome: [Int: Decimal]
     @Binding var maxDailyExpense: Decimal
+    @Binding var maxDailyIncome: Decimal
     @Binding var monthlyIncome: Decimal
     @Binding var monthlyExpense: Decimal
 
@@ -150,11 +151,19 @@ struct CalendarStripView: View {
                 let inMonth = (dm == selMonth && dy == selYear)
                 let isTodayDate = isSelCurrentMonth && d == today && inMonth
                 let isSel = selectedDay == d && inMonth
-                let hasTx = inMonth && ((dailyExpense[d] ?? 0) > 0 || (dailyIncome[d] ?? 0) > 0)
+                let expAmt = dailyExpense[d] ?? 0
+                let incAmt = dailyIncome[d] ?? 0
+                let expIntensity = inMonth && maxDailyExpense > 0
+                    ? Double(truncating: (expAmt / maxDailyExpense) as NSNumber)
+                    : 0
+                let incIntensity = inMonth && maxDailyIncome > 0
+                    ? Double(truncating: (incAmt / maxDailyIncome) as NSNumber)
+                    : 0
 
                 CalendarDayCell(
                     day: d,
-                    hasTransaction: hasTx,
+                    expenseIntensity: expIntensity,
+                    incomeIntensity: incIntensity,
                     isToday: isTodayDate,
                     isSelected: isSel,
                     isCurrentMonth: inMonth,
@@ -227,12 +236,20 @@ struct CalendarStripView: View {
 
         return LazyVGrid(columns: columns, spacing: 2) {
             ForEach(cells) { cell in
-                let hasTx = cell.isCurrentMonth && ((dailyExpense[cell.day] ?? 0) > 0 || (dailyIncome[cell.day] ?? 0) > 0)
+                let expAmt = dailyExpense[cell.day] ?? 0
+                let incAmt = dailyIncome[cell.day] ?? 0
+                let expIntensity = cell.isCurrentMonth && maxDailyExpense > 0
+                    ? Double(truncating: (expAmt / maxDailyExpense) as NSNumber)
+                    : 0
+                let incIntensity = cell.isCurrentMonth && maxDailyIncome > 0
+                    ? Double(truncating: (incAmt / maxDailyIncome) as NSNumber)
+                    : 0
                 let isTodayDate = cell.isCurrentMonth && isSelCurrentMonth && cell.day == today
 
                 CalendarDayCell(
                     day: cell.day,
-                    hasTransaction: hasTx,
+                    expenseIntensity: expIntensity,
+                    incomeIntensity: incIntensity,
                     isToday: isTodayDate,
                     isSelected: cell.isCurrentMonth && selectedDay == cell.day,
                     isCurrentMonth: cell.isCurrentMonth,

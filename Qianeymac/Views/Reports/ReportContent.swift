@@ -6,6 +6,7 @@ enum ReportType: String, CaseIterable, Identifiable {
     case category = "分类占比"
     case assets = "资产变化"
     case budget = "预算执行"
+    case allocation = "资产配置"
 
     var id: String { rawValue }
     var icon: String {
@@ -14,6 +15,7 @@ enum ReportType: String, CaseIterable, Identifiable {
         case .category: "chart.pie"
         case .assets: "chart.bar"
         case .budget: "gauge.with.dots.needle.33percent"
+        case .allocation: "wallet.pass"
         }
     }
 
@@ -23,6 +25,7 @@ enum ReportType: String, CaseIterable, Identifiable {
         case .category:  [.thisMonth, .last3Months, .last6Months]
         case .assets:    [.lastYear, .last2Years, .last3Years]
         case .budget:    [.thisMonth, .last3Months]
+        case .allocation: [.thisMonth]
         }
     }
 
@@ -32,6 +35,7 @@ enum ReportType: String, CaseIterable, Identifiable {
         case .category:  .thisMonth
         case .assets:    .lastYear
         case .budget:    .thisMonth
+        case .allocation: .thisMonth
         }
     }
 }
@@ -46,6 +50,7 @@ struct ReportDetailContent: View {
 
     @State private var viewModel = ReportViewModel()
     @State private var showCustomRange = false
+    @State private var bookPickerHighlighted = false
 
     // Custom range: year + month state
     @State private var startYear = Calendar.current.component(.year, from: Self.defaultStartDate)
@@ -83,8 +88,17 @@ struct ReportDetailContent: View {
                 MacBudgetChartView(
                     items: viewModel.budgetItems,
                     books: viewModel.budgetBooks,
+                    overviewSummary: viewModel.overviewSummary,
+                    dailyTrendByCategory: viewModel.dailyTrendByCategory,
+                    burnRateData: viewModel.burnRateData,
                     selectedBookID: $viewModel.selectedBudgetBookID,
                     dimension: $viewModel.budgetViewDimension
+                )
+            case .allocation:
+                MacAssetAllocationView(
+                    items: viewModel.allocationData,
+                    netWorth: viewModel.totalAllocationNetWorth,
+                    filter: $viewModel.allocationFilter
                 )
             }
         }
@@ -119,10 +133,22 @@ struct ReportDetailContent: View {
 
     @Namespace private var pillAnim
 
-    /// 通用顶部选择器：预算→维度，其他报表→时间周期。UI 完全统一。
+    /// 通用顶部选择器：预算→维度，资产配置→筛选器，其他报表→时间周期。UI 完全统一。
     private var reportPickerBar: some View {
         HStack(spacing: 0) {
-            if reportType == .budget {
+            if reportType == .allocation {
+                ForEach(AllocationFilter.allCases, id: \.self) { option in
+                    pickerButton(
+                        label: option.label,
+                        isActive: viewModel.allocationFilter == option,
+                        action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                viewModel.allocationFilter = option
+                            }
+                        }
+                    )
+                }
+            } else if reportType == .budget {
                 ForEach(BudgetViewDimension.allCases, id: \.self) { dim in
                     pickerButton(
                         label: dim.label,
@@ -133,6 +159,58 @@ struct ReportDetailContent: View {
                             }
                         }
                     )
+                }
+
+                // 预算计划选择器（pill 最右端）
+                if !viewModel.budgetBooks.isEmpty {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.1))
+                        .frame(width: 1, height: 16)
+                        .padding(.horizontal, 4)
+
+                    Menu {
+                        ForEach(viewModel.budgetBooks, id: \.id) { book in
+                            Button {
+                                bookPickerHighlighted = true
+                                viewModel.selectedBudgetBookID = book.id
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    viewModel.budgetViewDimension = .overall
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                        bookPickerHighlighted = false
+                                    }
+                                }
+                            } label: {
+                                HStack {
+                                    Text(book.name)
+                                    if book.id == viewModel.selectedBudgetBookID {
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
+                            }
+                        }
+                    } label: {
+                        Text(viewModel.budgetBookName)
+                            .lineLimit(1)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(
+                                bookPickerHighlighted ? Color.designOnSurface : Color.designOnSurfaceVariant.opacity(0.7)
+                            )
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 5)
+                            .contentShape(Rectangle())
+                            .background {
+                                if bookPickerHighlighted {
+                                    Capsule()
+                                        .fill(Color.white.opacity(0.06))
+                                        .background(.regularMaterial, in: Capsule())
+                                        .overlay { Capsule().stroke(Color.white.opacity(0.15), lineWidth: 1) }
+                                }
+                            }
+                    }
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
                 }
             } else {
                 ForEach(reportType.supportedPeriods, id: \.self) { period in
@@ -182,6 +260,7 @@ struct ReportDetailContent: View {
         }
         .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
         .padding(.horizontal, 24)
+        .padding(.top, 18)
         .padding(.bottom, 6)
     }
 
@@ -232,29 +311,17 @@ struct ReportDetailContent: View {
 
             // Start row
             HStack(spacing: 10) {
-                Picker(selection: $startYear) {
-                    ForEach(years, id: \.self) { y in Text(String(y)).tag(y) }
-                } label: { EmptyView() }
-                .pickerStyle(.menu)
-                .frame(width: 100)
-                Picker(selection: $startMonth) {
-                    ForEach(1...12, id: \.self) { m in Text(months[m-1]).tag(m) }
-                } label: { EmptyView() }
-                .pickerStyle(.menu)
-                .frame(width: 90)
+                dateMenu(title: String(startYear), items: years.map { (String($0), $0) }, selection: $startYear)
+                    .frame(width: 100)
+                dateMenu(title: months[startMonth - 1], items: Array(zip(months, 1...12)), selection: $startMonth)
+                    .frame(width: 90)
             }
             // End row
             HStack(spacing: 10) {
-                Picker(selection: $endYear) {
-                    ForEach(years, id: \.self) { y in Text(String(y)).tag(y) }
-                } label: { EmptyView() }
-                .pickerStyle(.menu)
-                .frame(width: 100)
-                Picker(selection: $endMonth) {
-                    ForEach(1...12, id: \.self) { m in Text(months[m-1]).tag(m) }
-                } label: { EmptyView() }
-                .pickerStyle(.menu)
-                .frame(width: 90)
+                dateMenu(title: String(endYear), items: years.map { (String($0), $0) }, selection: $endYear)
+                    .frame(width: 100)
+                dateMenu(title: months[endMonth - 1], items: Array(zip(months, 1...12)), selection: $endMonth)
+                    .frame(width: 90)
             }
 
             HStack {
@@ -276,6 +343,32 @@ struct ReportDetailContent: View {
             }
         }
         .padding()
+    }
+
+    /// 带标签样式的日期选择 Menu，浅色/深色模式均可读
+    private func dateMenu<T: Hashable>(title: String, items: [(String, T)], selection: Binding<T>) -> some View {
+        Menu {
+            ForEach(items, id: \.1) { label, value in
+                Button(label) { selection.wrappedValue = value }
+            }
+        } label: {
+            HStack {
+                Text(title)
+                    .foregroundStyle(Color.designOnSurface)
+                Spacer()
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.designSurfaceContainer)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color.designGlassBorderHighlight, lineWidth: 1)
+                    }
+            }
+        }
+        .menuStyle(.borderlessButton)
     }
 
     // MARK: - Placeholder
@@ -319,6 +412,12 @@ struct ReportDetailContent: View {
             viewModel.loadBudgetData(
                 ledger: ledger,
                 budgetService: appContainer.budgetService,
+                context: modelContext
+            )
+        case .allocation:
+            viewModel.loadAllocationData(
+                ledger: ledger,
+                accountService: appContainer.accountService,
                 context: modelContext
             )
         }

@@ -188,8 +188,33 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
                     }
                 }
             }
-            // 删除借出/借入时，settledByLendingTransactionId 指向的收款交易不受影响
-            // （收款交易没有反向引用，直接删除即可）
+        }
+
+        // 报销关联清理：删除报销收入时，还原被关联的支出为待报销
+        if transaction.type == .income {
+            let req = NSFetchRequest<Transaction>(entityName: "Transaction")
+            req.predicate = NSPredicate(format: "reimbursedById == %@", transaction.id as CVarArg)
+            if let reimbursed = try? context.fetch(req) {
+                for exp in reimbursed {
+                    exp.reimbursementStatus = .pending
+                    exp.reimbursedById = nil
+                }
+            }
+        }
+
+        // 退款关联清理：删除原交易时，清除退款记录的 refundGroupId
+        let refundReq = NSFetchRequest<Transaction>(entityName: "Transaction")
+        refundReq.predicate = NSPredicate(format: "refundGroupId == %@", transaction.id as CVarArg)
+        if let refunds = try? context.fetch(refundReq) {
+            for refund in refunds {
+                refund.refundGroupId = nil
+                refund.refundAmount = nil
+            }
+        }
+
+        // SplitGroup 清理：删除拆分父交易时，删除关联的 SplitGroup 避免孤儿数据
+        if transaction.isSplitParent, let group = transaction.splitGroup {
+            context.delete(group)
         }
 
         context.delete(transaction)

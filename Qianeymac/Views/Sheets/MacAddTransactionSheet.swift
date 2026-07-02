@@ -14,6 +14,7 @@ struct MacAddTransactionSheet: View {
 
     let editing: Transaction?
     let displayMode: Bool
+    let refundingOriginal: Transaction?
 
     @State private var isEditing: Bool
     @State private var deleteTarget: Transaction?
@@ -72,6 +73,11 @@ struct MacAddTransactionSheet: View {
         let initMerchant: Merchant?
         let initProject: Project?
         let initLendingDirection: LendingDirection
+        let initCurrencyCode: String
+        let initIsSplit: Bool
+        let initSplitItems: [SplitItemDraft]
+        let initIsReimbursable: Bool
+        let initPhotoDataList: [Data]
 
         if let t = refunding {
             initEditing = nil; initDisplayMode = false
@@ -82,6 +88,9 @@ struct MacAddTransactionSheet: View {
             initCategory = t.category; initMember = nil
             initMerchant = nil; initProject = nil
             initLendingDirection = .lendOut
+            initCurrencyCode = t.currencyCode ?? "CNY"
+            initIsSplit = false; initSplitItems = []
+            initIsReimbursable = false; initPhotoDataList = []
         } else if let t = editing {
             initEditing = t; initDisplayMode = displayMode
             initType = t.type; initAmount = abs(t.amount)
@@ -91,6 +100,19 @@ struct MacAddTransactionSheet: View {
             initCategory = t.category; initMember = t.member
             initMerchant = t.merchant; initProject = t.project
             initLendingDirection = t.lendingDirection ?? .lendOut
+            initCurrencyCode = t.currencyCode ?? t.account?.currencyCode ?? "CNY"
+            initIsSplit = t.isSplitParent
+            if t.isSplitParent, let children = t.splitChildren {
+                initSplitItems = Array(children).map { child in
+                    SplitItemDraft(amount: abs(child.amount), category: child.category,
+                                   note: child.note ?? "", member: child.member,
+                                   merchant: child.merchant, project: child.project)
+                }
+            } else { initSplitItems = [] }
+            initIsReimbursable = t.isReimbursable
+            if let paths = t.photoURLs, !paths.isEmpty {
+                initPhotoDataList = PhotoStorage.load(paths: paths)
+            } else { initPhotoDataList = [] }
         } else {
             initEditing = nil; initDisplayMode = false
             initType = .expense; initAmount = 0
@@ -99,10 +121,14 @@ struct MacAddTransactionSheet: View {
             initCategory = nil; initMember = nil
             initMerchant = nil; initProject = nil
             initLendingDirection = .lendOut
+            initCurrencyCode = "CNY"
+            initIsSplit = false; initSplitItems = []
+            initIsReimbursable = false; initPhotoDataList = []
         }
 
         self.editing = initEditing
         self.displayMode = initDisplayMode
+        self.refundingOriginal = refunding
         _type = State(initialValue: initType)
         _amount = State(initialValue: initAmount)
         _amountString = State(initialValue: initAmountString)
@@ -125,14 +151,14 @@ struct MacAddTransactionSheet: View {
         _selectedLendingIDs = State(initialValue: [])
         _templates = State(initialValue: [])
         _showTemplates = State(initialValue: false)
-        _isSplit = State(initialValue: false)
-        _splitItems = State(initialValue: [])
-        _isReimbursable = State(initialValue: false)
+        _isSplit = State(initialValue: initIsSplit)
+        _splitItems = State(initialValue: initSplitItems)
+        _isReimbursable = State(initialValue: initIsReimbursable)
         _pendingExpenses = State(initialValue: [])
         _selectedExpenseIDs = State(initialValue: [])
-        _selectedCurrencyCode = State(initialValue: "CNY")
+        _selectedCurrencyCode = State(initialValue: initCurrencyCode)
         _selectedPhotos = State(initialValue: [])
-        _photoDataList = State(initialValue: [])
+        _photoDataList = State(initialValue: initPhotoDataList)
         _showRefundSheet = State(initialValue: false)
     }
 
@@ -189,10 +215,101 @@ struct MacAddTransactionSheet: View {
                 categoryAndExtrasRows
                 reimbursementAndLendingRows
                 dateNoteRow
+                if isViewing, let t = editing {
+                    displayOnlySections(for: t)
+                }
             }
         }
         .disabled(isViewing)
         .designScreen()
+    }
+
+    // MARK: - Display-Only Sections
+
+    @ViewBuilder
+    private func displayOnlySections(for t: Transaction) -> some View {
+        // Split children
+        if t.isSplitParent, let children = t.splitChildren, !children.isEmpty {
+            Divider().padding(.horizontal, 24)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("拆分明细").font(.designLabel).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                ForEach(Array(children), id: \.objectID) { child in
+                    HStack {
+                        if let cat = child.category {
+                            Image(systemName: cat.iconName)
+                                .foregroundStyle(Color(hex: cat.colorHex ?? "#999999"))
+                                .frame(width: 20)
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(child.category?.name ?? "未分类").font(.designBodyMedium)
+                            if let m = child.member { Text(m.name).font(.designBodyCaption).foregroundStyle(.secondary) }
+                        }
+                        Spacer()
+                        CurrencyText(amount: abs(child.amount), currencyCode: t.currencyCode, size: 13, foregroundColor: .secondary)
+                    }
+                }
+            }
+            .padding(.horizontal, 24).padding(.vertical, 10)
+        }
+
+        // Refund linking
+        if t.refundGroupId != nil {
+            Divider().padding(.horizontal, 24)
+            HStack {
+                Image(systemName: "arrow.uturn.backward").foregroundStyle(.orange)
+                Text("已关联退款").font(.designBodyMedium).foregroundStyle(.secondary)
+                Spacer()
+            }
+            .padding(.horizontal, 24).padding(.vertical, 10)
+        }
+
+        // Reimbursement status
+        if t.isReimbursable {
+            Divider().padding(.horizontal, 24)
+            HStack {
+                Image(systemName: t.reimbursementStatus == .reimbursed ? "checkmark.shield.fill" : "hourglass")
+                    .foregroundStyle(t.reimbursementStatus == .reimbursed ? .green : .orange)
+                Text(t.reimbursementStatus == .reimbursed ? "已报销" : "待报销").font(.designBodyMedium)
+                Spacer()
+            }
+            .padding(.horizontal, 24).padding(.vertical, 10)
+        }
+
+        // Lending status
+        if let dir = t.lendingDirection {
+            Divider().padding(.horizontal, 24)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Image(systemName: "arrow.left.arrow.right").foregroundStyle(.orange)
+                    Text("借贷: \(dir.displayName)").font(.designBodyMedium)
+                    Spacer()
+                    let status = t.lendingStatus
+                    if status != .none {
+                        Text(status.displayName).font(.designBodyCaption)
+                            .foregroundStyle(status == .settled ? .green : .orange)
+                    }
+                }
+            }
+            .padding(.horizontal, 24).padding(.vertical, 10)
+        }
+
+        // Photos
+        if !photoDataList.isEmpty {
+            Divider().padding(.horizontal, 24)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(Array(photoDataList.enumerated()), id: \.offset) { _, data in
+                        if let nsImg = NSImage(data: data) {
+                            Image(nsImage: nsImg).resizable().scaledToFit()
+                                .frame(height: 120).clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+            }
+            .padding(.vertical, 10)
+        }
     }
 
     @ViewBuilder
@@ -235,46 +352,41 @@ struct MacAddTransactionSheet: View {
     private var amountSection: some View {
         let currencies = ["CNY", "USD", "EUR", "JPY", "GBP", "HKD", "AUD", "CAD", "KRW", "TWD", "SGD", "CHF", "NZD", "THB", "MYR", "INR"]
         return VStack(spacing: 4) {
-            ZStack {
-                // Centered amount
-                Button {
-                    numpadText = amount != 0 ? amountString : ""
-                    withAnimation(.easeInOut(duration: 0.2)) { showNumpad.toggle() }
-                } label: {
-                    HStack(spacing: 4) {
-                        Text(CurrencyFormatter.currencySymbol(for: selectedCurrencyCode.isEmpty ? ledgerCurrencyCode : selectedCurrencyCode))
-                            .font(.custom("JetBrainsMono-Medium", fixedSize: 28))
-                            .foregroundStyle(Color.designPrimaryFixedDim)
-                        if showNumpad {
-                            Text(numpadText.isEmpty ? "0.00" : numpadText)
-                                .font(.custom("JetBrainsMono-Medium", fixedSize: 36))
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Text(amount == 0 ? "0.00" : CurrencyFormatter.formatDecimal(amount: amount, fractionDigits: 2))
-                                .font(.custom("JetBrainsMono-Medium", fixedSize: 36))
-                                .foregroundStyle(amount == 0 ? .secondary : .primary)
-                        }
+            // Amount display
+            Button {
+                numpadText = amount != 0 ? amountString : ""
+                withAnimation(.easeInOut(duration: 0.2)) { showNumpad.toggle() }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(CurrencyFormatter.currencySymbol(for: selectedCurrencyCode.isEmpty ? ledgerCurrencyCode : selectedCurrencyCode))
+                        .font(.custom("JetBrainsMono-Medium", fixedSize: 28))
+                        .foregroundStyle(Color.designPrimaryFixedDim)
+                    if showNumpad {
+                        Text(numpadText.isEmpty ? "0.00" : numpadText)
+                            .font(.custom("JetBrainsMono-Medium", fixedSize: 36))
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text(amount == 0 ? "0.00" : CurrencyFormatter.formatDecimal(amount: amount, fractionDigits: 2))
+                            .font(.custom("JetBrainsMono-Medium", fixedSize: 36))
+                            .foregroundStyle(amount == 0 ? .secondary : .primary)
                     }
-                    .padding(.vertical, 8).padding(.horizontal, 12)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.designSurfaceContainer.opacity(showNumpad ? 0.3 : 0)))
                 }
-                .buttonStyle(.plain)
+                .padding(.vertical, 8).padding(.horizontal, 12)
+                .background(RoundedRectangle(cornerRadius: 8).fill(Color.designSurfaceContainer.opacity(showNumpad ? 0.3 : 0)))
+            }
+            .buttonStyle(.plain)
+            .frame(maxWidth: .infinity)
 
-                // Currency picker - absolutely left
-                HStack {
-                    Picker("", selection: $selectedCurrencyCode) {
-                        ForEach(currencies, id: \.self) { code in
-                            Text("\(code) \(currencyName(code))").tag(code)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
-                    .disabled(selectedAccount != nil)
-                    .onChange(of: selectedCurrencyCode) { _, _ in fetchExchangeRate() }
-                    Spacer()
+            // Currency picker - below amount
+            Picker("", selection: $selectedCurrencyCode) {
+                ForEach(currencies, id: \.self) { code in
+                    Text("\(code) \(currencyName(code))").tag(code)
                 }
             }
-            .frame(maxWidth: .infinity)
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .disabled(selectedAccount != nil)
+            .onChange(of: selectedCurrencyCode) { _, _ in fetchExchangeRate() }
 
             // Numpad
             if showNumpad {
@@ -361,12 +473,12 @@ struct MacAddTransactionSheet: View {
             formPicker(label: (type == .transfer || type == .lending) ? "转出账户" : "账户",
                        selection: $selectedAccount, items: accounts,
                        icon: { $0.iconName ?? "creditcard" }, name: { $0.name },
-                       color: { Color(hex: $0.colorHex ?? "#007AFF") })
+                       color: { Color(hex: $0.colorHex ?? "#007AFF") }, recentKey: "recent_account")
             if type == .transfer || type == .lending {
                 formPicker(label: "转入账户", selection: $selectedToAccount,
                            items: accounts.filter { $0.id != selectedAccount?.id },
                            icon: { $0.iconName ?? "creditcard" }, name: { $0.name },
-                           color: { Color(hex: $0.colorHex ?? "#007AFF") })
+                           color: { Color(hex: $0.colorHex ?? "#007AFF") }, recentKey: "recent_toaccount")
             }
             Divider().padding(.horizontal, 24)
         }
@@ -379,13 +491,14 @@ struct MacAddTransactionSheet: View {
                 formPicker(label: "分类", selection: $selectedCategory,
                            items: categories, icon: { $0.iconName }, name: { $0.name },
                            color: { Color(hex: $0.colorHex) },
-                           indent: { var d = 0; var p = $0.parent; while p != nil { d += 1; p = p?.parent }; return d })
+                           indent: { var d = 0; var p = $0.parent; while p != nil { d += 1; p = p?.parent }; return d },
+                           recentKey: "recent_category")
                 formPicker(label: "成员", selection: $selectedMember,
-                           items: members, icon: { $0.avatar }, name: { $0.name })
+                           items: members, icon: { $0.avatar }, name: { $0.name }, recentKey: "recent_member")
                 formPicker(label: "商家", selection: $selectedMerchant,
-                           items: merchants, icon: { _ in "bag" }, name: { $0.name })
+                           items: merchants, icon: { _ in "bag" }, name: { $0.name }, recentKey: "recent_merchant")
                 formPicker(label: "项目", selection: $selectedProject,
-                           items: projects, icon: { _ in "folder" }, name: { $0.name })
+                           items: projects, icon: { _ in "folder" }, name: { $0.name }, recentKey: "recent_project")
                 Divider().padding(.horizontal, 24)
             }
         }
@@ -394,7 +507,7 @@ struct MacAddTransactionSheet: View {
     @ViewBuilder
     private var toggleAndSplitRows: some View {
         Group {
-            if type == .expense && editing == nil {
+            if type == .expense {
                 toggleSection
                 if isSplit { splitDetailSection }
                 Divider().padding(.horizontal, 24)
@@ -436,34 +549,92 @@ struct MacAddTransactionSheet: View {
         .padding(.horizontal, 24).padding(.vertical, 12)
     }
 
-    // MARK: - Form Picker (Mac-native Menu style)
+    // MARK: - Form Picker (Mac-native Menu style, with optional recent-item tracking)
 
     private func formPicker<T: Identifiable & Hashable>(
         label: String, selection: Binding<T?>, items: [T],
         icon: @escaping (T) -> String, name: @escaping (T) -> String,
-        color: @escaping (T) -> Color = { _ in .secondary }, indent: ((T) -> Int)? = nil
+        color: @escaping (T) -> Color = { _ in .secondary }, indent: ((T) -> Int)? = nil,
+        recentKey: String? = nil
     ) -> some View {
-        HStack(spacing: 12) {
+        let ordered = recentKey.map { recentFirst(items, key: $0) } ?? items
+        let recentIDs: Set<String> = recentKey.map { key in
+            Set(UserDefaults.standard.stringArray(forKey: key) ?? [])
+        } ?? []
+
+        return HStack(spacing: 12) {
             Text(label)
                 .font(.designBodyMedium)
                 .foregroundStyle(.secondary)
                 .frame(width: 60, alignment: .trailing)
             Picker("", selection: selection) {
                 Text("无").tag(nil as T?)
-                ForEach(items, id: \.self) { item in
-                    HStack {
-                        Image(systemName: icon(item)).foregroundStyle(color(item))
-                        Text(name(item))
+                if !recentIDs.isEmpty {
+                    Section {
+                        ForEach(ordered.filter { recentIDs.contains(String(describing: $0.id)) }, id: \.self) { item in
+                            HStack {
+                                Image(systemName: icon(item)).foregroundStyle(color(item))
+                                Text(name(item))
+                            }
+                            .tag(item as T?)
+                        }
+                    } header: {
+                        Text("最近使用")
                     }
-                    .padding(.leading, CGFloat(indent?(item) ?? 0) * 16)
-                    .tag(item as T?)
+                    Section {
+                        ForEach(ordered.filter { !recentIDs.contains(String(describing: $0.id)) }, id: \.self) { item in
+                            HStack {
+                                Image(systemName: icon(item)).foregroundStyle(color(item))
+                                Text(name(item))
+                            }
+                            .padding(.leading, CGFloat(indent?(item) ?? 0) * 16)
+                            .tag(item as T?)
+                        }
+                    } header: {
+                        Text("全部")
+                    }
+                } else {
+                    ForEach(ordered, id: \.self) { item in
+                        HStack {
+                            Image(systemName: icon(item)).foregroundStyle(color(item))
+                            Text(name(item))
+                        }
+                        .padding(.leading, CGFloat(indent?(item) ?? 0) * 16)
+                        .tag(item as T?)
+                    }
                 }
             }
             .pickerStyle(.menu)
             .labelsHidden()
             .frame(minWidth: 220, maxWidth: 220, alignment: .leading)
+            .onChange(of: selection.wrappedValue) { _, newValue in
+                if let key = recentKey, let item = newValue {
+                    recordRecent(item, key: key)
+                }
+            }
         }
         .padding(.horizontal, 24).padding(.vertical, 8)
+    }
+
+    private func recentFirst<T: Identifiable>(_ items: [T], key: String) -> [T] {
+        let recentIDs = UserDefaults.standard.stringArray(forKey: key) ?? []
+        var ordered: [T] = []
+        var remaining = items
+        for idStr in recentIDs {
+            if let idx = remaining.firstIndex(where: { String(describing: $0.id) == idStr }) {
+                ordered.append(remaining.remove(at: idx))
+            }
+        }
+        ordered.append(contentsOf: remaining)
+        return ordered
+    }
+
+    private func recordRecent<T: Identifiable>(_ item: T, key: String) {
+        var ids = UserDefaults.standard.stringArray(forKey: key) ?? []
+        let idStr = String(describing: item.id)
+        ids.removeAll { $0 == idStr }
+        ids.insert(idStr, at: 0)
+        UserDefaults.standard.set(Array(ids.prefix(4)), forKey: key)
     }
 
     // MARK: - Template Section
@@ -503,6 +674,8 @@ struct MacAddTransactionSheet: View {
 
     // MARK: - Split Detail
 
+    @State private var editingSplitIndex: Int?
+
     private var splitDetailSection: some View {
         VStack(spacing: 8) {
             HStack {
@@ -516,28 +689,64 @@ struct MacAddTransactionSheet: View {
                 }.buttonStyle(.plain)
             }
             ForEach(Array(splitItems.enumerated()), id: \.offset) { i, item in
-                HStack(spacing: 8) {
-                    Button { splitItems.remove(at: i) } label: {
-                        Image(systemName: "minus.circle.fill").foregroundStyle(.red)
-                    }.buttonStyle(.plain)
-                    TextField("金额", text: Binding(
-                        get: { item.amount == 0 ? "" : String(describing: item.amount) },
-                        set: { splitItems[i].amount = Decimal(string: $0) ?? 0 }
-                    )).frame(width: 80)
-                    Picker("分类", selection: Binding(get: { item.category }, set: { splitItems[i].category = $0 })) {
-                        Text("无").tag(nil as Category?)
-                        ForEach(categories.filter { ($0.children?.count ?? 0) == 0 }) { c in
-                            Text(c.name).tag(c as Category?)
-                        }
-                    }.frame(width: 120)
-                    Picker("成员", selection: Binding(get: { item.member }, set: { splitItems[i].member = $0 })) {
-                        Text("无").tag(nil as Member?)
-                        ForEach(members) { m in Text(m.name).tag(m as Member?) }
-                    }.frame(width: 100)
-                    Picker("商家", selection: Binding(get: { item.merchant }, set: { splitItems[i].merchant = $0 })) {
-                        Text("无").tag(nil as Merchant?)
-                        ForEach(merchants) { m in Text(m.name).tag(m as Merchant?) }
-                    }.frame(width: 100)
+                VStack(spacing: 4) {
+                    HStack(spacing: 8) {
+                        Button { splitItems.remove(at: i) } label: {
+                            Image(systemName: "minus.circle.fill").foregroundStyle(.red)
+                        }.buttonStyle(.plain)
+                        // Numpad-triggered amount button
+                        Button {
+                            if editingSplitIndex == i { editingSplitIndex = nil }
+                            else { editingSplitIndex = i }
+                        } label: {
+                            Text(item.amount == 0 ? "金额" : CurrencyFormatter.formatDecimal(amount: item.amount, fractionDigits: 2))
+                                .font(.designBodySmall.weight(.medium))
+                                .foregroundStyle(item.amount == 0 ? .secondary : Color.designOnSurface)
+                                .frame(width: 80)
+                        }.buttonStyle(.plain)
+                        Picker("分类", selection: Binding(get: { item.category }, set: { splitItems[i].category = $0 })) {
+                            Text("无").tag(nil as Category?)
+                            ForEach(categories.filter { ($0.children?.count ?? 0) == 0 }) { c in
+                                Text(c.name).tag(c as Category?)
+                            }
+                        }.frame(width: 100)
+                        Picker("成员", selection: Binding(get: { item.member }, set: { splitItems[i].member = $0 })) {
+                            Text("无").tag(nil as Member?)
+                            ForEach(members) { m in Text(m.name).tag(m as Member?) }
+                        }.frame(width: 80)
+                        Picker("商家", selection: Binding(get: { item.merchant }, set: { splitItems[i].merchant = $0 })) {
+                            Text("无").tag(nil as Merchant?)
+                            ForEach(merchants) { m in Text(m.name).tag(m as Merchant?) }
+                        }.frame(width: 80)
+                        Picker("项目", selection: Binding(get: { item.project }, set: { splitItems[i].project = $0 })) {
+                            Text("无").tag(nil as Project?)
+                            ForEach(projects) { p in Text(p.name).tag(p as Project?) }
+                        }.frame(width: 80)
+                    }
+                    // Note field + numpad inline
+                    HStack(spacing: 8) {
+                        Image(systemName: "text.justify").foregroundStyle(.secondary).font(.system(size: 10))
+                        TextField("备注", text: Binding(get: { item.note }, set: { splitItems[i].note = $0 }))
+                            .textFieldStyle(.roundedBorder).font(.designBodySmall)
+                    }
+                    .padding(.leading, 28)
+
+                    if editingSplitIndex == i {
+                        macNumpadPopover(
+                            text: Binding(
+                                get: { item.amount == 0 ? "" : String(describing: item.amount) },
+                                set: {
+                                    if let d = Decimal(string: $0) { splitItems[i].amount = d }
+                                }
+                            ),
+                            amount: Binding(get: { item.amount }, set: { splitItems[i].amount = $0 }),
+                            amountString: Binding(
+                                get: { item.amount == 0 ? "" : CurrencyFormatter.formatDecimal(amount: item.amount, fractionDigits: 2) },
+                                set: { _ in }
+                            ),
+                            show: Binding(get: { editingSplitIndex == i }, set: { if !$0 { editingSplitIndex = nil } })
+                        )
+                    }
                 }
             }
         }
@@ -702,6 +911,19 @@ struct MacAddTransactionSheet: View {
             note = t.note ?? ""; date = t.date; selectedAccount = t.account; selectedToAccount = t.toAccount
             selectedCategory = t.category; selectedMember = t.member; selectedMerchant = t.merchant
             selectedProject = t.project; lendingDirection = t.lendingDirection ?? .lendOut
+            selectedCurrencyCode = t.currencyCode ?? t.account?.currencyCode ?? ledgerCurrencyCode
+            isReimbursable = t.isReimbursable
+            isSplit = t.isSplitParent
+            if t.isSplitParent, let children = t.splitChildren {
+                splitItems = Array(children).map { child in
+                    SplitItemDraft(amount: abs(child.amount), category: child.category,
+                                   note: child.note ?? "", member: child.member,
+                                   merchant: child.merchant, project: child.project)
+                }
+            } else { splitItems = [] }
+            if let paths = t.photoURLs, !paths.isEmpty {
+                photoDataList = PhotoStorage.load(paths: paths)
+            } else { photoDataList = [] }
         }
         withAnimation(.easeInOut(duration: 0.2)) { isEditing = false }
     }
@@ -762,6 +984,7 @@ struct MacAddTransactionSheet: View {
     }
 
     private func deleteTx(_ t: Transaction) {
+        if let paths = t.photoURLs, !paths.isEmpty { PhotoStorage.delete(paths: paths) }
         do { try appContainer.transactionService.deleteTransaction(t, context: modelContext); dismiss() }
         catch { errorMessage = error.localizedDescription }
     }
@@ -831,19 +1054,91 @@ struct MacAddTransactionSheet: View {
         guard let ledger = appContainer.currentLedger, amount != 0 else { return }
         if isSplit { guard splitTotal == amount else { errorMessage = "拆分合计与总额不一致"; return } }
         if let existing = editing {
-            existing.type = type; existing.amount = signingAmount(); existing.note = note.isEmpty ? nil : note
-            existing.date = date; existing.account = selectedAccount; existing.toAccount = selectedToAccount
-            existing.category = selectedCategory; existing.member = selectedMember; existing.merchant = selectedMerchant
-            existing.project = selectedProject
-            if type == .lending { existing.lendingDirection = lendingDirection }
-            do { try appContainer.transactionService.updateTransaction(existing, context: modelContext); isEditing = false }
+            // Re-fetch to ensure we're working within the correct context
+            let req = NSFetchRequest<Transaction>(entityName: "Transaction")
+            req.predicate = NSPredicate(format: "id == %@", existing.id as CVarArg)
+            req.fetchLimit = 1
+            guard let t = (try? modelContext.fetch(req))?.first else { errorMessage = String(localized: "交易未找到"); return }
+
+            // Basic fields
+            t.type = type; t.amount = signingAmount(); t.note = note.isEmpty ? nil : note
+            t.date = date; t.account = selectedAccount; t.toAccount = selectedToAccount
+            t.category = selectedCategory; t.member = selectedMember; t.merchant = selectedMerchant
+            t.project = selectedProject; t.modifiedAt = Date()
+
+            // Currency + exchange rate
+            t.currencyCode = activeCurrency
+            if activeCurrency != ledgerCurrencyCode, let rate = exchangeRate {
+                t.exchangeRate = NSDecimalNumber(decimal: rate).doubleValue
+                t.convertedAmount = convertedAmount
+            } else { t.exchangeRate = 0; t.convertedAmount = nil }
+
+            // Split: delete old children, recreate
+            if type == .expense {
+                if let oldChildren = t.splitChildren {
+                    for child in Array(oldChildren) { modelContext.delete(child) }
+                }
+                t.isSplitParent = isSplit
+                if isSplit {
+                    for item in splitItems {
+                        let child = Transaction(type: .expense, amount: -abs(item.amount),
+                            note: item.note.isEmpty ? nil : item.note, date: date, account: selectedAccount,
+                            category: item.category, member: item.member, merchant: item.merchant,
+                            project: item.project, parentTransaction: t, context: modelContext)
+                        child.ledger = t.ledger
+                    }
+                }
+                t.reimbursementStatus = isReimbursable ? .pending : .none
+            }
+
+            // Lending: unlink old settled, relink new
+            if type == .lending {
+                t.lendingDirection = lendingDirection
+                // Unlink previously settled lending
+                let settledReq = NSFetchRequest<Transaction>(entityName: "Transaction")
+                settledReq.predicate = NSPredicate(format: "settledByLendingTransactionId == %@", t.id as CVarArg)
+                if let settled = try? modelContext.fetch(settledReq) {
+                    for s in settled {
+                        s.settledByLendingTransactionId = nil
+                        s.settledAmount = 0; s.lendingStatus = .pending
+                    }
+                }
+                if (lendingDirection == .collect || lendingDirection == .repay) && !selectedLendingIDs.isEmpty {
+                    try? linkSettled(txID: t.id)
+                }
+            }
+
+            // Income: unlink old reimbursed, relink new
+            if type == .income {
+                let reimbursedReq = NSFetchRequest<Transaction>(entityName: "Transaction")
+                reimbursedReq.predicate = NSPredicate(format: "reimbursedById == %@", t.id as CVarArg)
+                if let reimbursed = try? modelContext.fetch(reimbursedReq) {
+                    for exp in reimbursed { exp.reimbursementStatus = .pending; exp.reimbursedById = nil }
+                }
+                if !selectedExpenseIDs.isEmpty { try? linkReimbursed(txID: t.id) }
+            }
+
+            // Photos: delete old, save new
+            if let oldPaths = t.photoURLs, !oldPaths.isEmpty {
+                PhotoStorage.delete(paths: oldPaths)
+            }
+            t.photoURLs = photoDataList.isEmpty ? nil : PhotoStorage.save(photoDataList, transactionId: t.id)
+
+            do { try modelContext.save(); isEditing = false }
             catch { errorMessage = error.localizedDescription }
+        } else if let refundOriginal = refundingOriginal {
+            // Refund: use the dedicated service method
+            do {
+                _ = try appContainer.transactionService.createRefund(for: refundOriginal, amount: amount, context: modelContext)
+                dismiss()
+            } catch { errorMessage = error.localizedDescription }
         } else {
             let signed = signingAmount()
             if isSplit {
                 let parent = Transaction(type: .expense, amount: signed, note: note.isEmpty ? nil : note,
                     date: date, account: selectedAccount, isSplitParent: true, context: modelContext)
                 if isReimbursable { parent.reimbursementStatus = .pending }; parent.ledger = ledger
+                if !photoDataList.isEmpty { parent.photoURLs = PhotoStorage.save(photoDataList, transactionId: parent.id) }
                 for item in splitItems {
                     let child = Transaction(type: .expense, amount: -abs(item.amount), note: item.note.isEmpty ? nil : item.note,
                         date: date, account: selectedAccount, category: item.category, member: item.member,
@@ -869,6 +1164,7 @@ struct MacAddTransactionSheet: View {
                 if activeCurrency != ledgerCurrencyCode, let rate = exchangeRate { tx.exchangeRate = NSDecimalNumber(decimal: rate).doubleValue; tx.convertedAmount = convertedAmount }
                 if type == .expense && isReimbursable { tx.reimbursementStatus = .pending }
                 if type == .lending { tx.lendingDirection = lendingDirection; if lendingDirection == .lendOut || lendingDirection == .borrowIn { tx.lendingStatus = .pending } }
+                if !photoDataList.isEmpty { tx.photoURLs = PhotoStorage.save(photoDataList, transactionId: tx.id) }
                 do {
                     try appContainer.transactionService.createTransaction(tx, ledger: ledger, context: modelContext)
                     if type == .lending && (lendingDirection == .collect || lendingDirection == .repay) && !selectedLendingIDs.isEmpty { try linkSettled(txID: tx.id) }

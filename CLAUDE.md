@@ -155,6 +155,34 @@ Do NOT use `CKShareTransferRepresentation` / `ShareLink` — that approach ties 
 
 **New UI component:** Every distinct UI component gets its own file. Do not accumulate multiple independent views/subviews in a single file. If a view grows beyond ~150 lines or hosts multiple logical sub-components (ring-chart, bar-list, detail-list), split each sub-component into its own file in the same directory. The orchestrator view should be thin — compose components, manage state/animations, pass callbacks. Example: `MacCategoryChartView.swift` (85 lines) orchestrates `DonutChart.swift` + `CategoryBarList.swift` + `TransactionDetailList`.
 
+**Mac ScrollView + glassCard 布局规范（强制）：** 玻璃卡片在 ScrollView 内时，**水平 padding 必须放在 ScrollView 内部内容上，不能放在 ScrollView 本身**。ScrollView 默认裁剪内容，阴影需要 24px 呼吸空间。同时必须加 `.scrollClipDisabled()` 防止 SwiftUI 裁剪阴影。标准模板：
+
+```swift
+ScrollView {
+    VStack(spacing: 8) {
+        ForEach(items) { item in
+            rowContent(item)
+                .padding(.horizontal, 12)   // 内部间距先加
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity)  // 约束宽度，防止 GeometryReader 撑开
+                .glassCard(cornerRadius: 10)
+        }
+    }
+    .padding(.horizontal, 24)  // ← 水平 padding 在内部内容上，不在 ScrollView 上
+}
+.scrollClipDisabled()  // ← 必须，防止 ScrollView 裁剪卡片阴影
+.padding(.vertical, 12)
+```
+
+**错误示范（禁止使用）：**
+```swift
+// ❌ padding 在 ScrollView 上 → 内部无间距，阴影被裁剪
+ScrollView { content }
+    .padding(.horizontal, 24)
+```
+
+参考正确实现：`CategoryBarList.swift` → `MacCategoryChartView.swift`。
+
 ## i18n / 多语言规范
 
 **这是强制性规范。所有新增/修改代码必须遵循，不允许硬编码中文。**

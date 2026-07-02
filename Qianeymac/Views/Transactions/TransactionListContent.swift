@@ -16,6 +16,11 @@ struct TransactionListContent: View {
     @State private var selectedMonth: Date = Date().startOfMonth
     @State private var selectedDate: Date?
     @State private var transactionDays: Set<Int> = []
+    @State private var dailyExpense: [Int: Decimal] = [:]
+    @State private var dailyIncome: [Int: Decimal] = [:]
+    @State private var maxDailyExpense: Decimal = 0
+    @State private var maxDailyIncome: Decimal = 0
+    @State private var hoveredDayID: String? = nil
     @State private var monthSlideDirection: Edge = .trailing
     @Namespace private var calendarNamespace
 
@@ -122,6 +127,15 @@ struct TransactionListContent: View {
                         .frame(maxWidth: .infinity)
                 }
                 ForEach(calendarDays) { d in
+                    let expIntensity = maxDailyExpense > 0
+                        ? Double(truncating: (d.expenseAmount / maxDailyExpense) as NSNumber)
+                        : 0
+                    let incIntensity = maxDailyIncome > 0
+                        ? Double(truncating: (d.incomeAmount / maxDailyIncome) as NSNumber)
+                        : 0
+                    let isSelected = d.date != nil && selectedDate != nil && cal.isDate(d.date!, inSameDayAs: selectedDate!)
+                    let currency = appContainer.currentLedger?.defaultCurrencyCode ?? "CNY"
+
                     Button {
                         if d.date != nil {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -134,25 +148,76 @@ struct TransactionListContent: View {
                         }
                     } label: {
                         ZStack {
-                            if let date = d.date, let sd = selectedDate, cal.isDate(date, inSameDayAs: sd) {
-                                Circle()
-                                    .fill(.regularMaterial)
-                                    .background(Circle().fill(Color.designAccentGreen.opacity(0.3)))
-                                    .frame(height: 28)
-                                    .matchedGeometryEffect(id: "selectedDay", in: calendarNamespace)
+                            // Today / selected fill — light green tint
+                            if isSelected || d.isToday {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.designAccentGreen.opacity(0.12))
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 30)
                             }
-                            if d.isToday, selectedDate == nil || (d.date != nil && !cal.isDate(d.date!, inSameDayAs: selectedDate!)) {
-                                Circle().stroke(Color.designAccentGreen, lineWidth: 1.5).frame(height: 28)
+
+                            // Hover / selected outline — green, matching progress bar fill
+                            if (hoveredDayID == d.id || isSelected) && d.day > 0 {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(Color.designAccentGreen, lineWidth: 1.5)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 30)
                             }
-                            VStack(spacing: 0) {
-                                Text(d.day > 0 ? "\(d.day)" : "")
-                                    .font(d.isToday ? .designBodySmall.bold() : .designBodySmall)
-                                    .foregroundStyle(
-                                        d.date != nil && selectedDate != nil && cal.isDate(d.date!, inSameDayAs: selectedDate!)
-                                            ? Color.designOnSurface : d.day > 0 ? Color.designOnSurface : Color.clear
-                                    )
-                                if d.hasTransactions, d.day > 0 {
-                                    Circle().fill(Color.designAccentGreen.opacity(0.5)).frame(width: 3, height: 3)
+
+                            // Day number (centered)
+                            Text(d.day > 0 ? "\(d.day)" : "")
+                                .font(d.isToday ? .designBodySmall.bold() : .designBodySmall)
+                                .foregroundStyle(
+                                    d.day > 0 ? Color.designOnSurface : Color.clear
+                                )
+
+                            // Hover amount — positioned top‑left inside the cell, no background
+                            if hoveredDayID == d.id, d.expenseAmount > 0 {
+                                Text(CurrencyFormatter.formatAdaptive(amount: d.expenseAmount, currencyCode: currency))
+                                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                                    .foregroundStyle(Color.designOnSurface)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                                    .padding(.leading, 3)
+                                    .padding(.top, 1)
+                            }
+
+                            // Dual mini progress bars at the bottom — 1/6 cell width.
+                            // Red bar (top) = income; green bar (bottom) = expense.
+                            if d.day > 0 {
+                                VStack {
+                                    Spacer()
+                                    GeometryReader { geo in
+                                        let trackW = geo.size.width / 6
+                                        VStack(spacing: 1.5) {
+                                            // Income bar (red)
+                                            ZStack(alignment: .leading) {
+                                                RoundedRectangle(cornerRadius: 1)
+                                                    .fill(Color.designOnSurfaceVariant.opacity(0.12))
+                                                    .frame(width: trackW, height: 2)
+                                                if incIntensity > 0 {
+                                                    RoundedRectangle(cornerRadius: 1)
+                                                        .fill(Color.designAccentRed.opacity(0.7))
+                                                        .frame(width: trackW * incIntensity, height: 2)
+                                                }
+                                            }
+                                            .frame(width: trackW, height: 2)
+                                            // Expense bar (green)
+                                            ZStack(alignment: .leading) {
+                                                RoundedRectangle(cornerRadius: 1)
+                                                    .fill(Color.designOnSurfaceVariant.opacity(0.12))
+                                                    .frame(width: trackW, height: 2)
+                                                if expIntensity > 0 {
+                                                    RoundedRectangle(cornerRadius: 1)
+                                                        .fill(Color.designAccentGreen.opacity(0.75))
+                                                        .frame(width: trackW * expIntensity, height: 2)
+                                                }
+                                            }
+                                            .frame(width: trackW, height: 2)
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                    }
+                                    .frame(height: 5.5)
+                                    .padding(.bottom, 2)
                                 }
                             }
                         }
@@ -161,6 +226,9 @@ struct TransactionListContent: View {
                     }
                     .buttonStyle(.borderless)
                     .disabled(d.day == 0)
+                    .onHover { hovering in
+                        hoveredDayID = hovering ? d.id : nil
+                    }
                 }
             }
             .padding(.leading, 16).padding(.trailing, 0).padding(.top, 4).padding(.bottom, 4)
@@ -168,11 +236,15 @@ struct TransactionListContent: View {
     }
 
     private struct CalendarDay: Identifiable {
-        let id = UUID()
+        /// Stable ID: year-month-day (or "pad-<N>" for padding cells).
+        /// Must NOT use UUID() — causes infinite re-render loop with .onHover.
+        let id: String
         let day: Int
         let date: Date?
         let isToday: Bool
         let hasTransactions: Bool
+        let expenseAmount: Decimal
+        let incomeAmount: Decimal
     }
 
     private var calendarDays: [CalendarDay] {
@@ -181,10 +253,12 @@ struct TransactionListContent: View {
         let firstWeekday = cal.component(.weekday, from: start)
         let offset = (firstWeekday + 5) % 7
         var days: [CalendarDay] = []
-        for _ in 0..<offset { days.append(CalendarDay(day: 0, date: nil, isToday: false, hasTransactions: false)) }
+        for i in 0..<offset { days.append(CalendarDay(id: "pad-\(i)", day: 0, date: nil, isToday: false, hasTransactions: false, expenseAmount: 0, incomeAmount: 0)) }
         for day in range {
             let date = cal.date(byAdding: .day, value: day - 1, to: start)!
-            days.append(CalendarDay(day: day, date: date, isToday: cal.isDateInToday(date), hasTransactions: transactionDays.contains(day)))
+            let y = cal.component(.year, from: date)
+            let m = cal.component(.month, from: date)
+            days.append(CalendarDay(id: "\(y)-\(m)-\(day)", day: day, date: date, isToday: cal.isDateInToday(date), hasTransactions: transactionDays.contains(day), expenseAmount: dailyExpense[day] ?? 0, incomeAmount: dailyIncome[day] ?? 0))
         }
         return days
     }
@@ -202,6 +276,25 @@ struct TransactionListContent: View {
         let all = (try? appContainer.transactionService.fetchTransactions(for: ledger, context: modelContext, filters: filters)) ?? []
         var result = all.deduplicatingTransfers()
         transactionDays = Set(result.filter { $0.type != .transfer }.map { cal.component(.day, from: $0.date) })
+
+        // 每日热力图数据（排除转账）
+        var expenseSum: [Int: Decimal] = [:]
+        var incomeSum: [Int: Decimal] = [:]
+        for t in result {
+            let day = cal.component(.day, from: t.date)
+            switch t.type {
+            case .expense:
+                expenseSum[day, default: 0] += abs(t.amount)
+            case .income:
+                incomeSum[day, default: 0] += t.amount
+            default:
+                break
+            }
+        }
+        dailyExpense = expenseSum
+        dailyIncome = incomeSum
+        maxDailyExpense = expenseSum.values.max() ?? 0
+        maxDailyIncome = incomeSum.values.max() ?? 0
         if let type = filterType { result = result.filter { $0.type == type } }
         if let date = selectedDate { result = result.filter { cal.isDate($0.date, inSameDayAs: date) } }
         if let cat = filterCategory { result = result.filter { $0.category?.id == cat.id } }

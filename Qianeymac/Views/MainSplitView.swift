@@ -13,6 +13,7 @@ struct MainSplitView: View {
     @Environment(AppContainer.self) private var appContainer
     @State private var selection: MacNavItem = .dashboard
     @State private var selectedReportType: ReportType?
+    @State private var navigationPath = NavigationPath()
     @State private var showAddSheet = false
     @State private var allLedgers: [Ledger] = []
     @State private var showCreateLedgerSheet = false
@@ -26,8 +27,13 @@ struct MainSplitView: View {
             sidebar
                 .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 240)
         } detail: {
-            NavigationStack {
+            NavigationStack(path: $navigationPath) {
                 mainColumnContent
+                    .onChange(of: selection) { _, _ in
+                        // 切换侧边栏时清空导航路径，防止残留的 pushed view（如账户明细）
+                        // 在新 root view 中找不到匹配的 .navigationDestination 而产生运行时警告
+                        navigationPath = NavigationPath()
+                    }
             }
             .navigationSplitViewColumnWidth(min: 400, ideal: 600)
         }
@@ -107,6 +113,7 @@ struct MainSplitView: View {
                                        selected: selection == .reports && selectedReportType == type,
                                        isChild: true)
                                 .onTapGesture {
+                                    navigationPath = NavigationPath()
                                     selection = .reports
                                     selectedReportType = type
                                 }
@@ -120,6 +127,7 @@ struct MainSplitView: View {
                                selected: selection == item)
                         .onTapGesture {
                             if selection != item {
+                                navigationPath.removeLast(navigationPath.count)
                                 selection = item
                                 selectedReportType = nil
                             }
@@ -152,7 +160,10 @@ struct MainSplitView: View {
     private var mainColumnContent: some View {
         switch selection {
         case .dashboard:
-            DashboardContentColumn()
+            DashboardContentColumn(onNavigate: { type in
+                selection = .reports
+                selectedReportType = type
+            })
         case .accounts:
             AccountListContent()
         case .transactions:

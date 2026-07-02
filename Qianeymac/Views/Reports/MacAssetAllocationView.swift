@@ -1,0 +1,617 @@
+import SwiftUI
+import Charts
+
+// MARK: - Waterfall Item
+
+private struct WaterfallItem: Identifiable {
+    let id = UUID()
+    let label: String
+    let amount: Decimal
+    let runningStart: Decimal
+    let runningEnd: Decimal
+    let isAsset: Bool
+    let isSummary: Bool
+}
+
+// MARK: - Main View
+
+struct MacAssetAllocationView: View {
+    let items: [AccountAllocationItem]
+    let netWorth: Decimal
+    @Binding var filter: AllocationFilter
+
+    @State private var animTrigger = false
+    @State private var barProgress: Double = 0
+    @State private var selectedBar: String?
+
+    private var currencyCode: String { "CNY" }
+
+    private var listItems: [AccountAllocationItem] {
+        switch filter {
+        case .all:     return items
+        case .assets:  return items.filter { !$0.isLiability }
+        case .liabilities: return items.filter { $0.isLiability }
+        }
+    }
+
+    private var totalAssets: Decimal {
+        items.filter { !$0.isLiability }.reduce(0) { $0 + $1.balance }
+    }
+
+    private var totalLiabilities: Decimal {
+        items.filter { $0.isLiability }.reduce(0) { $0 + abs($1.balance) }
+    }
+
+    // MARK: - Waterfall Data
+
+    private var waterfallData: [WaterfallItem] {
+        switch filter {
+        case .all: return buildAllWaterfall()
+        case .assets: return buildAssetsWaterfall()
+        case .liabilities: return buildLiabilitiesWaterfall()
+        }
+    }
+
+    /// Minimum visual bar height to keep tiny amounts (e.g. ¥105 next to ¥500,000) visible
+    private var minBarHeight: Decimal {
+        let maxVal = max(totalAssets, totalLiabilities, netWorth,
+                         items.map { abs($0.balance) }.max() ?? 0)
+        return maxVal > 0 ? maxVal / 50 : 0
+    }
+
+    /// Clamp small bars to a visible height; the logical `end` is returned separately
+    private func clampedVisual(start: Decimal, logicalEnd: Decimal) -> (visualEnd: Decimal, logical: Decimal) {
+        let height = abs(logicalEnd - start)
+        if height > 0 && height < minBarHeight {
+            return (logicalEnd > start ? start + minBarHeight : start - minBarHeight, logicalEnd)
+        }
+        return (logicalEnd, logicalEnd)
+    }
+
+    private func buildAllWaterfall() -> [WaterfallItem] {
+        var result: [WaterfallItem] = []
+        let assets = items.filter { !$0.isLiability }
+        let liabilities = items.filter { $0.isLiability }
+
+        // 1. Build up: each asset account accumulates left → right
+        var running = Decimal.zero
+        for item in assets {
+            let logicalEnd = running + item.balance
+            let (visual, _) = clampedVisual(start: running, logicalEnd: logicalEnd)
+            result.append(WaterfallItem(
+                label: item.name, amount: item.balance,
+                runningStart: running, runningEnd: visual,
+                isAsset: true, isSummary: false
+            ))
+            running = logicalEnd
+        }
+
+        // 2. Total assets summary bar
+        result.append(WaterfallItem(
+            label: String(localized: "总资产"), amount: totalAssets,
+            runningStart: 0, runningEnd: totalAssets,
+            isAsset: true, isSummary: true
+        ))
+
+        // 3. Deduct each liability from running total
+        running = totalAssets
+        for item in liabilities {
+            let absBal = abs(item.balance)
+            let logicalEnd = running - absBal
+            let (visual, _) = clampedVisual(start: running, logicalEnd: logicalEnd)
+            result.append(WaterfallItem(
+                label: item.name, amount: -absBal,
+                runningStart: running, runningEnd: visual,
+                isAsset: false, isSummary: false
+            ))
+            running = logicalEnd
+        }
+
+        // 4. Net worth summary
+        result.append(WaterfallItem(
+            label: String(localized: "净资产"), amount: netWorth,
+            runningStart: 0, runningEnd: netWorth,
+            isAsset: netWorth >= 0, isSummary: true
+        ))
+
+        return result
+    }
+
+    private func buildAssetsWaterfall() -> [WaterfallItem] {
+        var result: [WaterfallItem] = []
+        let assets = items.filter { !$0.isLiability }
+
+        var running = Decimal.zero
+        for item in assets {
+            let logicalEnd = running + item.balance
+            let (visual, _) = clampedVisual(start: running, logicalEnd: logicalEnd)
+            result.append(WaterfallItem(
+                label: item.name, amount: item.balance,
+                runningStart: running, runningEnd: visual,
+                isAsset: true, isSummary: false
+            ))
+            running = logicalEnd
+        }
+
+        result.append(WaterfallItem(
+            label: String(localized: "总资产"), amount: totalAssets,
+            runningStart: 0, runningEnd: totalAssets,
+            isAsset: true, isSummary: true
+        ))
+
+        return result
+    }
+
+    private func buildLiabilitiesWaterfall() -> [WaterfallItem] {
+        var result: [WaterfallItem] = []
+        let liabilities = items.filter { $0.isLiability }
+
+        // Cascading waterfall: each liability starts from where the previous one ended
+        var running = Decimal.zero
+        for item in liabilities {
+            let absBal = abs(item.balance)
+            let logicalEnd = running - absBal
+            let (visual, _) = clampedVisual(start: running, logicalEnd: logicalEnd)
+            result.append(WaterfallItem(
+                label: item.name, amount: -absBal,
+                runningStart: running, runningEnd: visual,
+                isAsset: false, isSummary: false
+            ))
+            running = logicalEnd
+        }
+
+        result.append(WaterfallItem(
+            label: String(localized: "总负债"), amount: totalLiabilities,
+            runningStart: 0, runningEnd: -totalLiabilities,
+            isAsset: false, isSummary: true
+        ))
+
+        return result
+    }
+
+    /// Thin dashed connector line data — traces the running total across non-summary bars
+    private struct ConnectorPoint: Identifiable {
+        let id = UUID()
+        let label: String
+        let value: Decimal
+    }
+
+    private var connectorData: [ConnectorPoint] {
+        waterfallData.filter { !$0.isSummary }.map {
+            ConnectorPoint(label: $0.label, value: $0.runningEnd)
+        }
+    }
+
+    // MARK: - Body
+
+    var body: some View {
+        VStack(spacing: 0) {
+            if items.isEmpty {
+                emptyView
+            } else {
+                waterfallSection
+                treemapSection
+            }
+        }
+        .onAppear(perform: triggerAnimations)
+        .onChange(of: items.map(\.id)) { _, _ in triggerAnimations() }
+        .onChange(of: filter) { _, _ in triggerAnimations() }
+    }
+
+    private var emptyView: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "chart.bar.fill")
+                .font(.system(size: 40))
+                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
+            Text(String(localized: "暂无账户数据"))
+                .font(.designBodyMedium)
+                .foregroundStyle(Color.designOnSurfaceVariant)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    // MARK: - Waterfall Chart
+
+    private var waterfallSection: some View {
+        VStack(spacing: 0) {
+            summaryBar
+                .padding(.horizontal, 24)
+                .padding(.bottom, 8)
+
+            Chart {
+                ForEach(Array(waterfallData.enumerated()), id: \.element.id) { i, item in
+                    waterfallBar(i: i, item: item)
+                }
+
+                // Connector: dashed brand-colored running-total trace
+                ForEach(connectorData) { point in
+                    LineMark(
+                        x: .value("", point.label),
+                        y: .value("", point.value)
+                    )
+                }
+                .foregroundStyle(Color.designPrimaryFixedDim.opacity(0.25))
+                .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [3, 6]))
+
+                // Zero baseline: thicker anchor line to ground the waterfall
+                RuleMark(y: .value("Zero", 0))
+                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.35))
+                    .lineStyle(StrokeStyle(lineWidth: 1.5))
+            }
+            .chartXSelection(value: $selectedBar)
+            .chartBackground { _ in
+                LinearGradient(
+                    stops: [
+                        .init(color: Color.designOnSurfaceVariant.opacity(0.04), location: 0),
+                        .init(color: .clear, location: 0.5)
+                    ],
+                    startPoint: .bottom, endPoint: .top
+                )
+            }
+            .chartXAxis {
+                AxisMarks(values: .automatic) { _ in
+                    AxisValueLabel()
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.designOnSurfaceVariant)
+                }
+            }
+            .chartYAxis {
+                AxisMarks(values: .automatic) { value in
+                    AxisGridLine()
+                        .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.15))
+                    AxisValueLabel {
+                        if let decimal = value.as(Decimal.self) {
+                            Text(CurrencyFormatter.formatAdaptive(amount: decimal, currencyCode: currencyCode))
+                                .font(.system(size: 10, design: .monospaced))
+                                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
+                        }
+                    }
+                }
+            }
+            .frame(height: 240)
+            .padding(20)
+            .glassCard(cornerRadius: 20)
+            .designGrain()
+            .overlay(alignment: .topLeading) {
+                if totalAssets > 0, totalLiabilities > 0 {
+                    let ratio = Double(truncating: (totalLiabilities / totalAssets) as NSNumber)
+                    let ratioColor: Color = ratio < 0.3 ? .designPrimaryFixedDim
+                        : ratio < 0.6 ? .orange
+                        : .designAccentRed
+                    let gaugeW: CGFloat = 56
+                    let gaugeH: CGFloat = 6
+                    let fillW = max(gaugeH, gaugeW * CGFloat(ratio))
+                    HStack(spacing: 5) {
+                        ZStack(alignment: .leading) {
+                            Capsule()
+                                .fill(Color.designOnSurfaceVariant.opacity(0.15))
+                                .frame(width: gaugeW, height: gaugeH)
+                            Capsule()
+                                .fill(ratioColor)
+                                .frame(width: fillW, height: gaugeH)
+                        }
+                        Text(String(format: "%.1f%%", ratio * 100))
+                            .font(.system(size: 9, weight: .bold, design: .monospaced))
+                            .foregroundStyle(ratioColor)
+                    }
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 4)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(.ultraThinMaterial))
+                    .padding(10)
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 12)
+        }
+    }
+
+    private var summaryBar: some View {
+        HStack(spacing: 24) {
+            summaryCell(
+                label: String(localized: "总资产"), amount: totalAssets,
+                color: Color.designPrimaryFixedDim
+            )
+            summaryCell(
+                label: String(localized: "总负债"), amount: totalLiabilities,
+                color: Color.designAccentRed
+            )
+            summaryCell(
+                label: String(localized: "净资产"), amount: netWorth,
+                color: netWorth >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed
+            )
+        }
+    }
+
+    private func barColor(_ item: WaterfallItem) -> Color {
+        item.isAsset ? Color.designPrimaryFixedDim : Color.designAccentRed
+    }
+
+    /// "+¥20,610" or "−¥3,200" for change annotations
+    @ChartContentBuilder
+    private func waterfallBar(i: Int, item: WaterfallItem) -> some ChartContent {
+        let end = animTrigger ? item.runningEnd : item.runningStart
+        BarMark(
+            x: .value("", item.label),
+            yStart: .value("Start", item.runningStart),
+            yEnd: .value("End", end),
+            width: .fixed(item.isSummary ? 44 : 24)
+        )
+        .foregroundStyle(barFill(for: item))
+        .cornerRadius(4)
+        .shadow(color: item.isSummary ? barColor(item).opacity(0.35) : .clear, radius: 6, y: 2)
+        .annotation(position: item.isSummary ? .top : .automatic) {
+            annotationText(for: item)
+        }
+    }
+
+    private func annotationText(for item: WaterfallItem) -> some View {
+        if item.isSummary {
+            Text(CurrencyFormatter.formatAdaptive(amount: item.runningEnd, currencyCode: currencyCode))
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .foregroundStyle(Color.designOnSurfaceVariant)
+        } else {
+            Text(amountLabel(item.amount))
+                .font(.system(size: 9, design: .monospaced))
+                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.7))
+        }
+    }
+
+    private func amountLabel(_ amount: Decimal) -> String {
+        let prefix = amount >= 0 ? "+" : ""
+        return prefix + CurrencyFormatter.formatAdaptive(amount: amount, currencyCode: currencyCode)
+    }
+
+    private func barFill(for item: WaterfallItem) -> AnyShapeStyle {
+        if item.isSummary {
+            let c = barColor(item)
+            return AnyShapeStyle(LinearGradient(
+                stops: [
+                    .init(color: c.opacity(1.0), location: 0),
+                    .init(color: c.opacity(0.55), location: 1)
+                ],
+                startPoint: .top, endPoint: .bottom
+            ))
+        }
+        return AnyShapeStyle(barColor(item).opacity(0.7))
+    }
+
+    private func summaryCell(label: String, amount: Decimal, color: Color) -> some View {
+        VStack(spacing: 2) {
+            Text(label)
+                .font(.designBodyCaption)
+                .foregroundStyle(Color.designOnSurfaceVariant)
+            CurrencyText(amount: amount, currencyCode: currencyCode)
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(color)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .glassCard(cornerRadius: 12)
+    }
+
+    // MARK: - Treemap
+
+    /// Lightweight squarified-layout treemap showing asset distribution by area.
+    private struct TreemapRect: Identifiable {
+        let id = UUID()
+        let item: AccountAllocationItem
+        var frame: CGRect  // normalized 0…1
+    }
+
+    private var treemapRects: [TreemapRect] {
+        let items = listItems.sorted { abs($0.balance) > abs($1.balance) }
+        guard !items.isEmpty else { return [] }
+
+        // "全部" mode: split into assets (left) + liabilities (right), sized by total
+        if filter == .all {
+            let assetItems = items.filter { !$0.isLiability }
+            let liabilityItems = items.filter { $0.isLiability }
+            let totalAll = totalAssets + totalLiabilities
+            guard totalAll > 0 else { return [] }
+
+            let assetFrac = CGFloat(truncating: (totalAssets / totalAll) as NSNumber)
+            let dividerW: CGFloat = 0.012  // thin divider between zones
+
+            var result: [TreemapRect] = []
+            if !assetItems.isEmpty {
+                let zone = CGRect(x: 0, y: 0, width: max(0, assetFrac - dividerW / 2), height: 1)
+                result += squarify(items: assetItems, in: zone)
+            }
+            if !liabilityItems.isEmpty {
+                let zone = CGRect(x: min(1, assetFrac + dividerW / 2), y: 0, width: max(0, 1 - assetFrac - dividerW / 2), height: 1)
+                result += squarify(items: liabilityItems, in: zone)
+            }
+            return result
+        }
+
+        return squarify(items: items, in: CGRect(x: 0, y: 0, width: 1, height: 1))
+    }
+
+    /// X position of the divider between assets and liabilities (normalized 0…1), nil if single zone
+    private var dividerX: CGFloat? {
+        guard filter == .all, totalAssets + totalLiabilities > 0 else { return nil }
+        let assetFrac = CGFloat(truncating: (totalAssets / (totalAssets + totalLiabilities)) as NSNumber)
+        if assetFrac < 0.08 || assetFrac > 0.92 { return nil }
+        return assetFrac
+    }
+
+    /// Simple squarified treemap: recursively subdivide, alternating horizontal/vertical.
+    private func squarify(items: [AccountAllocationItem], in rect: CGRect) -> [TreemapRect] {
+        guard !items.isEmpty else { return [] }
+        let total = items.reduce(Decimal.zero) { $0 + abs($1.balance) }
+        guard total > 0 else { return [] }
+
+        // Choose orientation: split along the longer side
+        let horizontal = rect.width >= rect.height
+
+        if items.count == 1 {
+            return [TreemapRect(item: items[0], frame: rect)]
+        }
+
+        // Find the best split point: minimize worst aspect ratio
+        var bestSplit = 1
+        var bestRatio = CGFloat.greatestFiniteMagnitude
+        var cumulative = Decimal.zero
+
+        for i in 0..<(items.count - 1) {
+            cumulative += abs(items[i].balance)
+            let fraction = CGFloat(truncating: (cumulative / total) as NSNumber)
+            let size1 = horizontal ? CGSize(width: rect.width * fraction, height: rect.height) : CGSize(width: rect.width, height: rect.height * fraction)
+            let size2 = horizontal ? CGSize(width: rect.width * (1 - fraction), height: rect.height) : CGSize(width: rect.width, height: rect.height * (1 - fraction))
+            let ratio = max(aspectRatio(size1), aspectRatio(size2))
+            if ratio < bestRatio {
+                bestRatio = ratio
+                bestSplit = i + 1
+            }
+        }
+
+        let head = Array(items[0..<bestSplit])
+        let tail = Array(items[bestSplit...])
+        let headTotal = head.reduce(Decimal.zero) { $0 + abs($1.balance) }
+        let fraction = CGFloat(truncating: (headTotal / total) as NSNumber)
+
+        let headRect: CGRect
+        let tailRect: CGRect
+
+        if horizontal {
+            headRect = CGRect(x: rect.minX, y: rect.minY, width: rect.width * fraction, height: rect.height)
+            tailRect = CGRect(x: rect.minX + rect.width * fraction, y: rect.minY, width: rect.width * (1 - fraction), height: rect.height)
+        } else {
+            headRect = CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: rect.height * fraction)
+            tailRect = CGRect(x: rect.minX, y: rect.minY + rect.height * fraction, width: rect.width, height: rect.height * (1 - fraction))
+        }
+
+        return squarify(items: head, in: headRect) + squarify(items: tail, in: tailRect)
+    }
+
+    private func aspectRatio(_ size: CGSize) -> CGFloat {
+        guard size.width > 0, size.height > 0 else { return .greatestFiniteMagnitude }
+        return max(size.width / size.height, size.height / size.width)
+    }
+
+    private var treemapSection: some View {
+        GeometryReader { geo in
+            let size = geo.size.width > 0 && geo.size.height > 0 ? geo.size : CGSize(width: 400, height: 300)
+            let padding: CGFloat = 4
+
+            ZStack(alignment: .topLeading) {
+                // Vertical divider line between assets / liabilities
+                if let divX = dividerX {
+                    let divXpx = divX * size.width
+                    Rectangle()
+                        .fill(Color.designOnSurfaceVariant.opacity(0.15))
+                        .frame(width: 1, height: size.height * 0.9)
+                        .position(x: divXpx, y: size.height / 2)
+                }
+
+                // Treemap cells
+                ForEach(treemapRects) { rect in
+                    treemapCell(rect: rect, containerSize: size, padding: padding)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(height: 260)
+        .padding(12)
+        .glassCard(cornerRadius: 20)
+        .designGrain()
+        .padding(.horizontal, 24)
+        .padding(.top, 12)
+    }
+
+    /// Per-category percentage (asset % of totalAssets, liability % of totalLiabilities)
+    private func categoryPercentage(for item: AccountAllocationItem) -> Double {
+        let total = item.isLiability ? totalLiabilities : totalAssets
+        guard total > 0 else { return 0 }
+        return Double(truncating: (abs(item.balance) / total) as NSNumber)
+    }
+
+    /// Apple HIG: single hue per category, saturation = weight → larger blocks more saturated
+    private func treemapColor(for item: AccountAllocationItem) -> Color {
+        let pct = categoryPercentage(for: item)
+        let opacity = 0.35 + pct * 0.55
+        if item.isLiability {
+            return Color.designAccentRed.opacity(opacity)
+        }
+        return Color.designPrimaryFixedDim.opacity(opacity)
+    }
+
+    private func treemapCell(rect: TreemapRect, containerSize: CGSize, padding: CGFloat) -> some View {
+        let item = rect.item
+        let fill = treemapColor(for: item)
+        let x = rect.frame.minX * containerSize.width + padding
+        let y = rect.frame.minY * containerSize.height + padding
+        let w = max(0, rect.frame.width * containerSize.width - padding * 2)
+        let h = max(0, rect.frame.height * containerSize.height - padding * 2)
+
+        return ZStack {
+            RoundedRectangle(cornerRadius: 6)
+                .fill(fill)
+                .shadow(color: .black.opacity(0.25), radius: 3, y: 2)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(Color.white.opacity(0.25), lineWidth: 0.5)
+                )
+
+            if w > 60, h > 36 {
+                // Asymmetric layout: name top-left, amount+% bottom-right
+                let pad = min(8, w * 0.06, h * 0.08)
+                VStack(spacing: 0) {
+                    HStack(alignment: .top) {
+                        HStack(spacing: 3) {
+                            Image(systemName: item.iconName)
+                                .font(.system(size: min(12, h * 0.35)))
+                                .foregroundStyle(.white.opacity(0.9))
+                            Text(item.name)
+                                .font(.system(size: min(11, w * 0.07), weight: .medium))
+                                .foregroundStyle(.white)
+                                .lineLimit(1)
+                        }
+                        Spacer()
+                    }
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 1) {
+                            CurrencyText(amount: abs(item.balance), currencyCode: currencyCode)
+                                .font(.system(size: min(13, w * 0.08), weight: .bold, design: .monospaced))
+                                .foregroundStyle(.white)
+                            Text(String(format: "%.1f%%", categoryPercentage(for: item) * 100))
+                                .font(.system(size: min(10, w * 0.06), design: .monospaced))
+                                .foregroundStyle(.white.opacity(0.7))
+                        }
+                    }
+                }
+                .padding(pad)
+            } else if w > 36, h > 20 {
+                Text(String(format: "%.0f%%", categoryPercentage(for: item) * 100))
+                    .font(.system(size: min(10, w * 0.15), weight: .bold, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.8))
+            }
+        }
+        .frame(width: w, height: h)
+        .position(x: x + w / 2, y: y + h / 2)
+        .opacity(barProgress > 0 ? 1 : 0)
+        .animation(.spring(response: 0.6, dampingFraction: 0.65).delay(Double(treemapRects.firstIndex(where: { $0.id == rect.id }) ?? 0) * 0.05), value: barProgress)
+    }
+
+    // MARK: - Animation
+
+    private func triggerAnimations() {
+        animTrigger = false
+        barProgress = 0
+        selectedBar = nil
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                animTrigger = true
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.65)) {
+                barProgress = 1
+            }
+        }
+    }
+}

@@ -22,6 +22,7 @@ struct TransactionListView: View {
     @State private var dailyExpense: [Int: Decimal] = [:]
     @State private var dailyIncome: [Int: Decimal] = [:]
     @State private var maxDailyExpense: Decimal = 0
+    @State private var maxDailyIncome: Decimal = 0
     @State private var monthlyIncome: Decimal = 0
     @State private var monthlyExpense: Decimal = 0
     @State private var monthTransactions: [Transaction] = []
@@ -37,6 +38,7 @@ struct TransactionListView: View {
                         dailyExpense: $dailyExpense,
                         dailyIncome: $dailyIncome,
                         maxDailyExpense: $maxDailyExpense,
+                        maxDailyIncome: $maxDailyIncome,
                         monthlyIncome: $monthlyIncome,
                         monthlyExpense: $monthlyExpense
                     )
@@ -230,6 +232,7 @@ struct TransactionListView: View {
         dailyExpense = expenseByDay
         dailyIncome = incomeByDay
         maxDailyExpense = expenseByDay.values.max() ?? 0
+        maxDailyIncome = incomeByDay.values.max() ?? 0
         monthlyIncome = totalIncome
         monthlyExpense = totalExpense
         monthTransactions = all.deduplicatingTransfers()

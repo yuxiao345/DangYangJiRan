@@ -211,6 +211,27 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
         let end = max(start, range.upperBound)
         return start...end
     }
+
+    // MARK: - Daily Trend
+
+    func dailySpending(in range: ClosedRange<Date>, categoryID: UUID?, ledgerID: UUID, context: NSManagedObjectContext) -> [DailySpendingPoint] {
+        let cal = Calendar.current
+        let txs = fetchExpenseTransactions(in: range, ledgerID: ledgerID, context: context)
+        let filtered = categoryID.map { cid in txs.filter { $0.category?.id == cid } } ?? txs
+        var byDay: [Date: Decimal] = [:]
+        for t in filtered {
+            let day = cal.startOfDay(for: t.date)
+            byDay[day, default: 0] += t.amount
+        }
+        var current = cal.startOfDay(for: range.lowerBound)
+        let end = min(cal.startOfDay(for: range.upperBound), cal.startOfDay(for: Date()))
+        var points: [DailySpendingPoint] = []
+        while current <= end {
+            points.append(DailySpendingPoint(date: current, amount: abs(byDay[current] ?? 0)))
+            current = cal.date(byAdding: .day, value: 1, to: current) ?? current.addingTimeInterval(86400)
+        }
+        return points
+    }
 }
 
 extension Calendar {

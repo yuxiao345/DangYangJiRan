@@ -84,35 +84,17 @@ private struct CategoryBarRow: View {
         .onHover(perform: onHover)
     }
 
-    // MARK: Thermometer Bar
+    // MARK: Pixel Progress Bar
 
     private var thermometerBar: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.designOnSurfaceVariant.opacity(0.1))
-                    .frame(height: 6)
-                Capsule()
-                    .fill(Color(hex: item.colorHex) ?? .gray)
-                    .frame(height: 6)
-                    .frame(width: max(6, geo.size.width * item.percentage))
-                    .overlay(alignment: .top) {
-                        Capsule()
-                            .fill(Color.white.opacity(0.18))
-                            .frame(height: 2)
-                            .padding(.horizontal, 2)
-                    }
-                    .mask(alignment: .leading) {
-                        Rectangle()
-                            .scaleEffect(x: barProgress, anchor: .leading)
-                    }
-                    .animation(
-                        .spring(response: 0.7, dampingFraction: 0.55)
-                        .delay(Double(index) * 0.09),
-                        value: barProgress
-                    )
-            }
-        }
-        .frame(height: 6)
+        PixelProgressBar(
+            progress: barProgress * item.percentage,
+            tint: Color(hex: item.colorHex) ?? .gray
+        )
+        .animation(
+            .spring(response: 0.7, dampingFraction: 0.55)
+            .delay(Double(index) * 0.09),
+            value: barProgress
+        )
     }
 }

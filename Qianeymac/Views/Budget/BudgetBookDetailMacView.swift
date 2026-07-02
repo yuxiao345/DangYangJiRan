@@ -9,6 +9,8 @@ private struct BudgetSpendingLine: View {
     let budget: Decimal
     let currency: String
 
+    @State private var animRatio: Double = 0
+
     var body: some View {
         let ratio = budget > 0 ? NSDecimalNumber(decimal: spent / budget).doubleValue : 0
         let pct = ratio * 100
@@ -22,7 +24,17 @@ private struct BudgetSpendingLine: View {
                 Text("\(Int(pct))%").font(.designBodySmall).foregroundStyle(progressColor(ratio))
             }
             if budget > 0 {
-                PixelProgressBar(progress: min(ratio, 1.0), tint: progressColor(ratio))
+                PixelProgressBar(progress: min(animRatio, 1.0), tint: progressColor(ratio))
+            }
+        }
+        .task {
+            withAnimation(.spring(response: 0.7, dampingFraction: 0.65)) {
+                animRatio = ratio
+            }
+        }
+        .onChange(of: ratio) { _, new in
+            withAnimation(.spring(response: 0.7, dampingFraction: 0.65)) {
+                animRatio = new
             }
         }
     }
@@ -96,6 +108,7 @@ struct BudgetBookDetailMacView: View {
         .confirmationDialog("确定删除此预算项？", isPresented: showDeleteConfirm) {
             Button("删除", role: .destructive) {
                 if let item = deleteCandidate {
+                    items = []
                     do {
                         try appContainer.budgetService.deleteItem(item, context: modelContext)
                         loadData()
@@ -194,21 +207,7 @@ struct BudgetBookDetailMacView: View {
     // MARK: - Helpers
 
     private func budgetLine(label: String, spent: Decimal, budget: Decimal, currency: String) -> some View {
-        let ratio = budget > 0 ? NSDecimalNumber(decimal: spent / budget).doubleValue : 0
-        let pct = ratio * 100
-        return VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(label).font(.designBodyMedium)
-                Spacer()
-                CurrencyText(amount: spent, currencyCode: currency, size: 15, foregroundColor: ratio > 1.0 ? .designAccentRed : Color.designOnSurface)
-                Text("/").font(.designBodySmall).foregroundStyle(.secondary)
-                CurrencyText(amount: budget, currencyCode: currency, size: 12, foregroundColor: .secondary)
-                Text("\(Int(pct))%").font(.designBodySmall).foregroundStyle(progressColor(ratio))
-            }
-            if budget > 0 {
-                PixelProgressBar(progress: min(ratio, 1.0), tint: progressColor(ratio))
-            }
-        }
+        BudgetSpendingLine(label: label, spent: spent, budget: budget, currency: currency)
     }
 
     private func loadData() {

@@ -1,5 +1,4 @@
 import Foundation
-import UIKit
 
 enum PhotoStorage {
     static func save(_ dataList: [Data], transactionId: UUID) -> [String] {

@@ -2244,8 +2244,14 @@ struct AddEditTransactionView: View {
                 }
             }
         }
-        if t.type == .income, !selectedExpenseIDs.isEmpty {
-            try linkReimbursedExpenses(to: t.id)
+        // Unlink previously reimbursed expenses before re-linking
+        if t.type == .income {
+            let reimbursedReq = NSFetchRequest<Transaction>(entityName: "Transaction")
+            reimbursedReq.predicate = NSPredicate(format: "reimbursedById == %@", t.id as CVarArg)
+            if let reimbursed = try? modelContext.fetch(reimbursedReq) {
+                for exp in reimbursed { exp.reimbursementStatus = .pending; exp.reimbursedById = nil }
+            }
+            if !selectedExpenseIDs.isEmpty { try linkReimbursedExpenses(to: t.id) }
         }
         if let oldPaths = t.photoURLs, !oldPaths.isEmpty {
             PhotoStorage.delete(paths: oldPaths)

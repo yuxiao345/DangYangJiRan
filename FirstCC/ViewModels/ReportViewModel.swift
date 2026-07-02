@@ -89,6 +89,49 @@ struct AssetDataPoint: Identifiable {
     var netWorth: Decimal { totalAssets - totalLiabilities }
 }
 
+/// 每日支出趋势数据点
+struct DailySpendingPoint: Identifiable {
+    var id: Date { date }
+    let date: Date
+    let amount: Decimal
+}
+
+// MARK: - Asset Allocation
+
+enum AllocationFilter: String, CaseIterable {
+    case all
+    case assets
+    case liabilities
+
+    var label: String {
+        switch self {
+        case .all: String(localized: "全部")
+        case .assets: String(localized: "资产")
+        case .liabilities: String(localized: "负债")
+        }
+    }
+}
+
+struct AccountAllocationItem: Identifiable {
+    let id: UUID
+    let name: String
+    let accountType: AccountType
+    let iconName: String
+    let balance: Decimal
+    let percentage: Double
+    let isLiability: Bool
+}
+
+/// 消耗速率分桶（固定12柱，粒度自适应）
+struct BurnRateBucket: Identifiable {
+    let id = UUID()
+    let index: Int
+    let startDate: Date
+    let endDate: Date
+    let amount: Decimal
+    let maxAmount: Decimal
+}
+
 struct BudgetItemData: Identifiable {
     let id: UUID
     let name: String
@@ -96,13 +139,102 @@ struct BudgetItemData: Identifiable {
     let period: BudgetPeriod
     let budgetAmount: Decimal
     let spentAmount: Decimal
+    /// 原始每期金额（用于展示参照）
+    let periodAmount: Decimal
+    /// 全周期数
+    let periodCount: Double
     /// 是否为累计数据（非本维度原生周期项）
     let isCumulative: Bool
+    /// 本维度时间进度
+    let timeProgress: Double
+    let elapsedDays: Int
+    let totalPeriodDays: Int
+
     var remaining: Decimal { budgetAmount - spentAmount }
     var percentage: Double {
-        budgetAmount > 0 ? min(1.0, Double(truncating: (abs(spentAmount) / budgetAmount) as NSNumber)) : 0
+        budgetAmount > 0 ? min(1.0, Double(truncating: (spentAmount / budgetAmount) as NSNumber)) : 0
     }
     var isOverBudget: Bool { spentAmount > budgetAmount }
+
+    var remainingDays: Int { max(0, totalPeriodDays - elapsedDays) }
+    var isOnTrack: Bool { percentage <= timeProgress }
+
+    var dailyAvailable: Double {
+        guard remainingDays > 0 else { return 0 }
+        return Double(truncating: ((budgetAmount - spentAmount) / Decimal(remainingDays)) as NSNumber)
+    }
+
+    var paceLabel: String {
+        if spentAmount == 0 { return String(localized: "尚未开始花费") }
+        let diff = percentage - timeProgress
+        if abs(diff) < 0.02 { return String(localized: "节奏持平") }
+        return diff > 0 ? String(localized: "超前花费") : String(localized: "落后于时间")
+    }
+
+    var suggestionText: String {
+        if remainingDays <= 0 { return String(localized: "预算周期已结束") }
+
+        // 已超支：无论怎么控制都无法挽回
+        if isOverBudget || dailyAvailable < 0 {
+            return String(localized: "预算已超支，请调整预算")
+        }
+
+        // 超前花费：剩余日均预算低于原计划的 50%，大概率控制不住
+        if !isOnTrack {
+            let avgDailyBudget = totalPeriodDays > 0 ? budgetAmount / Decimal(totalPeriodDays) : 0
+            let halfAvg = Double(truncating: (avgDailyBudget / 2) as NSNumber)
+            if dailyAvailable < halfAvg {
+                return String(localized: "预计会超支，请调整预算并严格控制支出")
+            }
+        }
+
+        let n = Int(dailyAvailable)
+        if n < 1 { return String(localized: "建议平均日花费控制在 ¥1 以内") }
+        return String(localized: "建议平均日花费控制在 ¥\(n) 以内")
+    }
+}
+
+/// 整体预算全景汇总（仅 .overall 维度使用）
+struct BudgetOverviewSummary {
+    let totalBudget: Decimal
+    let totalSpent: Decimal
+    let timeProgress: Double
+    let budgetProgress: Double
+    let dailyBudget: Decimal
+    let dailyAvailable: Double
+    let totalDays: Int
+    let elapsedDays: Int
+    let remainingDays: Int
+
+    var remainingBudget: Decimal { totalBudget - totalSpent }
+    var isOnTrack: Bool { budgetProgress <= timeProgress }
+
+    var paceLabel: String {
+        if totalSpent == 0 { return String(localized: "尚未开始花费") }
+        let diff = budgetProgress - timeProgress
+        if abs(diff) < 0.02 { return String(localized: "节奏持平") }
+        return diff > 0 ? String(localized: "超前花费") : String(localized: "落后于时间")
+    }
+
+    var suggestionText: String {
+        if remainingDays <= 0 { return String(localized: "预算周期已结束") }
+
+        // 已超支
+        if totalSpent > totalBudget || dailyAvailable < 0 {
+            return String(localized: "预算已超支，请调整预算")
+        }
+
+        // 超前花费：剩余日均预算低于原计划 50%
+        if !isOnTrack {
+            let halfAvg = Double(truncating: (dailyBudget / 2) as NSNumber)
+            if dailyAvailable < halfAvg {
+                return String(localized: "预计会超支，请调整预算并严格控制支出")
+            }
+        }
+
+        if dailyAvailable < 1 && dailyAvailable > 0 { return String(localized: "建议平均日花费控制在 ¥1 以内") }
+        return String(localized: "建议平均日花费控制在 ¥\(Int(dailyAvailable)) 以内")
+    }
 }
 
 enum BudgetViewDimension: CaseIterable {
@@ -155,8 +287,60 @@ enum BudgetViewDimension: CaseIterable {
         return cal.startOfDay(for: start)...max(cal.startOfDay(for: start), today)
     }
 
+    /// 计算本维度的时间进度（所有预算项共享）
+    func timeProgress(bookStart: Date, bookEnd: Date) -> (progress: Double, elapsed: Int, total: Int) {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let start: Date
+        let end: Date
+        switch self {
+        case .overall:
+            start = cal.startOfDay(for: bookStart)
+            end = max(cal.startOfDay(for: bookEnd), today)
+        case .yearly:
+            start = cal.date(from: cal.dateComponents([.year], from: today)) ?? today
+            end = cal.date(byAdding: DateComponents(year: 1, day: -1), to: start) ?? today
+        case .quarterly:
+            let month = cal.component(.month, from: today)
+            let qStart = ((month - 1) / 3) * 3 + 1
+            start = cal.date(from: DateComponents(year: cal.component(.year, from: today), month: qStart, day: 1)) ?? today
+            end = cal.date(byAdding: DateComponents(month: 3, day: -1), to: start) ?? today
+        case .monthly:
+            start = cal.date(from: cal.dateComponents([.year, .month], from: today)) ?? today
+            end = cal.date(byAdding: DateComponents(month: 1, day: -1), to: start) ?? today
+        case .weekly:
+            start = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)) ?? today
+            end = cal.date(byAdding: .day, value: 6, to: start) ?? today
+        }
+        let total = max(1, (cal.dateComponents([.day], from: start, to: end).day ?? 0) + 1)
+        let elapsed = min(max(0, cal.dateComponents([.day], from: start, to: today).day ?? 0), total)
+        return (Double(elapsed) / Double(total), elapsed, total)
+    }
+
     /// 是否需要按周期分组显示
     var groupByPeriod: Bool { self == .overall }
+
+    /// 消耗速率图的时间轴起点：取预算开始日期与维度周期起点的较晚者
+    func burnRateStart(bookStart: Date) -> Date {
+        let cal = Calendar.current
+        let today = Date()
+        let dimStart: Date
+        switch self {
+        case .overall:
+            dimStart = bookStart
+        case .yearly:
+            dimStart = cal.date(from: cal.dateComponents([.year], from: today)) ?? today
+        case .quarterly:
+            let month = cal.component(.month, from: today)
+            let qStart = ((month - 1) / 3) * 3 + 1
+            dimStart = cal.date(from: DateComponents(year: cal.component(.year, from: today), month: qStart, day: 1)) ?? today
+        case .monthly:
+            dimStart = cal.date(from: cal.dateComponents([.year, .month], from: today)) ?? today
+        case .weekly:
+            dimStart = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)) ?? today
+        }
+        return max(cal.startOfDay(for: bookStart), cal.startOfDay(for: dimStart))
+    }
 }
 
 @MainActor
@@ -179,6 +363,11 @@ final class ReportViewModel {
     var selectedBudgetBookID: UUID?
     var budgetViewDimension: BudgetViewDimension = .overall
     var budgetBookName: String { budgetBooks.first(where: { $0.id == selectedBudgetBookID })?.name ?? "" }
+    var dailyTrendByCategory: [UUID: [DailySpendingPoint]] = [:]
+    var burnRateData: [BurnRateBucket] = []
+    var allocationData: [AccountAllocationItem] = []
+    var totalAllocationNetWorth: Decimal = 0
+    var allocationFilter: AllocationFilter = .all
     var categoryType: TransactionType = .expense
 
     private var currentCategories: [CategoryExpenseItem] {
@@ -591,6 +780,63 @@ final class ReportViewModel {
         return balance
     }
 
+    // MARK: - Overall Budget Helpers
+
+    /// 预算全景汇总（所有维度通用）
+    var overviewSummary: BudgetOverviewSummary? {
+        guard let bookID = selectedBudgetBookID,
+              let book = budgetBooks.first(where: { $0.id == bookID }) else { return nil }
+
+        let dim = budgetViewDimension
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let start = cal.startOfDay(for: dim.burnRateStart(bookStart: book.startDate))
+
+        // 计算维度的结束日期
+        let dimEnd: Date
+        switch dim {
+        case .overall:
+            dimEnd = max(cal.startOfDay(for: book.endDate), today)
+        case .yearly:
+            let yearStart = cal.date(from: cal.dateComponents([.year], from: today)) ?? today
+            dimEnd = cal.date(byAdding: DateComponents(year: 1, day: -1), to: yearStart) ?? today
+        case .quarterly:
+            let month = cal.component(.month, from: today)
+            let qStart = ((month - 1) / 3) * 3 + 1
+            let qs = cal.date(from: DateComponents(year: cal.component(.year, from: today), month: qStart, day: 1)) ?? today
+            dimEnd = cal.date(byAdding: DateComponents(month: 3, day: -1), to: qs) ?? today
+        case .monthly:
+            let ms = cal.date(from: cal.dateComponents([.year, .month], from: today)) ?? today
+            dimEnd = cal.date(byAdding: DateComponents(month: 1, day: -1), to: ms) ?? today
+        case .weekly:
+            let ws = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)) ?? today
+            dimEnd = cal.date(byAdding: .day, value: 6, to: ws) ?? today
+        }
+        let end = max(dimEnd, today)
+
+        let totalDays = max(1, (cal.dateComponents([.day], from: start, to: end).day ?? 0) + 1)
+        let elapsed = min(max(0, cal.dateComponents([.day], from: start, to: today).day ?? 0), totalDays)
+        let remainingDays = max(0, totalDays - elapsed)
+
+        let totalBudget = budgetItems.reduce(Decimal(0)) { $0 + $1.budgetAmount }
+        let totalSpent = budgetItems.reduce(Decimal(0)) { $0 + $1.spentAmount }
+
+        let timeProgress = totalDays > 0 ? Double(elapsed) / Double(totalDays) : 0
+        let budgetProgress = totalBudget > 0 ? Double(truncating: (totalSpent / totalBudget) as NSNumber) : 0
+
+        let dailyBudget = totalDays > 0 ? totalBudget / Decimal(totalDays) : 0
+        let dailyAvailable: Double = remainingDays > 0
+            ? Double(truncating: ((totalBudget - totalSpent) / Decimal(remainingDays)) as NSNumber)
+            : 0
+
+        return BudgetOverviewSummary(
+            totalBudget: totalBudget, totalSpent: totalSpent,
+            timeProgress: timeProgress, budgetProgress: budgetProgress,
+            dailyBudget: dailyBudget, dailyAvailable: dailyAvailable,
+            totalDays: totalDays, elapsedDays: elapsed, remainingDays: remainingDays
+        )
+    }
+
     // MARK: - Budget Data
 
     func loadBudgetData(
@@ -616,20 +862,26 @@ final class ReportViewModel {
         let dim = budgetViewDimension
         let dimRange = dim.dateRange(bookStart: book.startDate)
         let categorySpending = budgetService.categorySpending(in: dimRange, for: book, context: context)
+        let tp = dim.timeProgress(bookStart: book.startDate, bookEnd: book.endDate)
 
         budgetItems = items.compactMap { item in
             guard let cat = item.category else { return nil }
-            let spent = categorySpending[cat.id] ?? 0
             let period = item.period
 
             guard let target = dim.nativePeriod else {
-                // 整体：所有项原样显示
+                // 整体：periodCount × amount + 累计支出
+                let totalBudget = item.totalBudget
+                let cumulativeSpent = abs(budgetService.cumulativeSpending(for: item, context: context))
                 return BudgetItemData(
                     id: item.id, name: cat.name, colorHex: cat.colorHex ?? "#999999",
-                    period: period, budgetAmount: item.amount, spentAmount: abs(spent),
-                    isCumulative: false
+                    period: period, budgetAmount: totalBudget, spentAmount: cumulativeSpent,
+                    periodAmount: item.amount, periodCount: Double(item.periodCount),
+                    isCumulative: false,
+                    timeProgress: tp.progress, elapsedDays: tp.elapsed, totalPeriodDays: tp.total
                 )
             }
+
+            let spent = categorySpending[cat.id] ?? 0
 
             // 过滤：仅显示原生周期项 + 更小周期项的累计
             let isNative = period == target
@@ -644,13 +896,114 @@ final class ReportViewModel {
             return BudgetItemData(
                 id: item.id, name: cat.name, colorHex: cat.colorHex ?? "#999999",
                 period: period, budgetAmount: budget, spentAmount: abs(spent),
-                isCumulative: !isNative
+                periodAmount: item.amount, periodCount: 1,
+                isCumulative: !isNative,
+                timeProgress: tp.progress, elapsedDays: tp.elapsed, totalPeriodDays: tp.total
             )
-        }.sorted { ($0.spentAmount - $0.budgetAmount) > ($1.spentAmount - $1.budgetAmount) }
+        }.sorted {
+            // Sort by overspend ratio; zero-budget items (unplanned spending) surface at top
+            let r0 = $0.budgetAmount > 0 ? $0.spentAmount / $0.budgetAmount : Decimal.greatestFiniteMagnitude
+            let r1 = $1.budgetAmount > 0 ? $1.spentAmount / $1.budgetAmount : Decimal.greatestFiniteMagnitude
+            if r0 != r1 { return r0 > r1 }
+            return $0.spentAmount > $1.spentAmount
+        }
+
+        // 加载每日支出趋势（维度感知的时间轴起点）
+        let trendStart = Calendar.current.startOfDay(for: dim.burnRateStart(bookStart: book.startDate))
+        let trendEnd = Calendar.current.startOfDay(for: Date())
+
+        // Per-category trend: only meaningful when matchBudgetItems is true
+        if book.matchBudgetItems {
+            var trendByCat: [UUID: [DailySpendingPoint]] = [:]
+            for item in items {
+                guard let cid = item.category?.id else { continue }
+                trendByCat[item.id] = budgetService.dailySpending(in: trendStart...trendEnd, categoryID: cid, ledgerID: ledger.id, context: context)
+            }
+            dailyTrendByCategory = trendByCat
+        } else {
+            dailyTrendByCategory = [:]
+        }
+
+        // 消耗速率：matchBudgetItems 决定范围
+        let burnPoints: [DailySpendingPoint]
+        if book.matchBudgetItems {
+            var dailyAggregate: [Date: Decimal] = [:]
+            for (_, points) in dailyTrendByCategory {
+                for point in points {
+                    dailyAggregate[point.date, default: 0] += point.amount
+                }
+            }
+            burnPoints = dailyAggregate.map { DailySpendingPoint(date: $0.key, amount: $0.value) }
+                .sorted { $0.date < $1.date }
+        } else {
+            burnPoints = budgetService.dailySpending(in: trendStart...trendEnd, categoryID: nil, ledgerID: ledger.id, context: context)
+        }
+
+        let totalDays = max(1, Calendar.current.dateComponents([.day], from: trendStart, to: trendEnd).day ?? 0)
+        let bucketDays = max(1, totalDays / 24)
+        var buckets: [BurnRateBucket] = []
+        let cal = Calendar.current
+        for i in 0..<24 {
+            let bucketStart = cal.date(byAdding: .day, value: i * bucketDays, to: trendStart) ?? trendStart
+            let bucketEnd = min(cal.date(byAdding: .day, value: bucketDays - 1, to: bucketStart) ?? bucketStart, trendEnd)
+            var sum: Decimal = 0
+            for point in burnPoints {
+                if point.date >= bucketStart && point.date <= bucketEnd { sum += point.amount }
+            }
+            buckets.append(BurnRateBucket(index: i, startDate: bucketStart, endDate: bucketEnd, amount: sum, maxAmount: 0))
+        }
+        let maxAmt = buckets.map(\.amount).max() ?? 1
+        burnRateData = buckets.map { b in
+            BurnRateBucket(index: b.index, startDate: b.startDate, endDate: b.endDate, amount: b.amount, maxAmount: maxAmt)
+        }
     }
 
 
-    // MARK: - Test data seeding (DEBUG only)
+// MARK: - Test data seeding (DEBUG only)
+
+    // MARK: - Asset Allocation
+
+    /// Loads ALL non-archived accounts regardless of `allocationFilter`.
+    /// Filtering is a view-level concern — the full dataset is always available
+    /// so the "全部" tab can show assets-only in the donut while listing all accounts.
+    func loadAllocationData(
+        ledger: Ledger,
+        accountService: AccountServiceProtocol,
+        context: NSManagedObjectContext
+    ) {
+        guard let accounts = try? accountService.fetchAccounts(for: ledger, includeArchived: false, context: context) else {
+            allocationData = []
+            totalAllocationNetWorth = 0
+            return
+        }
+
+        let accountsWithBalance: [(Account, Decimal)] = accounts.map { account in
+            let bal = accountService.calculateBalance(for: account, context: context)
+            return (account, bal)
+        }
+
+        // Exclude zero-balance accounts
+        let nonZero = accountsWithBalance.filter { $0.1 != 0 }
+        let totalPositive = nonZero.filter { $0.1 > 0 }.reduce(Decimal.zero) { $0 + $1.1 }
+        let totalNegative = nonZero.filter { $0.1 < 0 }.reduce(Decimal.zero) { $0 + abs($1.1) }
+        totalAllocationNetWorth = totalPositive - totalNegative
+
+        // Sort by absolute balance descending, assets first then liabilities
+        let sorted = nonZero.sorted { abs($0.1) > abs($1.1) }
+        let totalAbs = sorted.reduce(Decimal.zero) { $0 + abs($1.1) }
+
+        allocationData = sorted.map { account, bal in
+            AccountAllocationItem(
+                id: account.id,
+                name: account.name,
+                accountType: account.type,
+                iconName: account.iconName ?? account.type.systemIcon,
+                balance: bal,
+                percentage: totalAbs > 0 ? Double(truncating: (abs(bal) / totalAbs) as NSNumber) : 0,
+                isLiability: bal < 0
+            )
+        }
+    }
 
     #if DEBUG
     /// Self-contained: creates categories + account if missing, then generates realistic transaction data.

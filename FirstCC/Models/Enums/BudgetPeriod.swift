@@ -8,6 +8,26 @@ enum BudgetPeriod: String, Codable, CaseIterable, Comparable {
 
     var displayName: String { NSLocalizedString(rawValue, comment: "") }
 
+    /// 对应的 Calendar.Component，用于日期迭代
+    var calendarComponent: Calendar.Component {
+        switch self {
+        case .weekly:    .weekOfYear
+        case .monthly:   .month
+        case .quarterly: .month  // 特殊处理：通过 month * 3 实现
+        case .yearly:    .year
+        }
+    }
+
+    /// 每次迭代的步长值（quarterly 用 3 个月代替）
+    var calendarStep: Int {
+        switch self {
+        case .weekly:    1
+        case .monthly:   1
+        case .quarterly: 3
+        case .yearly:    1
+        }
+    }
+
     private var rank: Int {
         switch self {
         case .weekly: 0

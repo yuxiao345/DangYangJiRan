@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 @preconcurrency import CoreData
 
 struct DashboardContentColumn: View {
@@ -8,26 +9,55 @@ struct DashboardContentColumn: View {
         accountService: AccountServiceImpl(), transactionService: TransactionServiceImpl()
     )
     @State private var showBudgetDetail = false
-    @State private var showBreakdown = false
     @State private var isBudgetHovered = false
+    @State private var animIncomeFrac: Double = 0
+    @State private var animExpenseFrac: Double = 0
+    @State private var animBalanceFrac: Double = 0
+    @State private var animBudgetPercent: Double = 0
+
+    /// 导航回调：点击驾驶舱卡片跳转到对应报表
+    var onNavigate: ((ReportType) -> Void)?
+
+    // MARK: - Category Card State
+    @State private var categoryPieProgress: Double = 0
+    @State private var categoryExplodedIndex: Int? = 0
+    @State private var categoryHoveredIndex: Int?
+
+    // MARK: - Layout
+    @State private var leftColumnHeight: CGFloat = 0
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
                 netWorthCard
+                allocationCard
                 incomeExpenseRow
                 if viewModel.hasBudget {
-                    budgetSummaryCard
-                        .contentShape(RoundedRectangle(cornerRadius: 16))
-                        .onHover { inside in
-                            withAnimation(.easeOut(duration: 0.15)) { isBudgetHovered = inside }
-                            if inside { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+                    HStack(alignment: .top, spacing: 12) {
+                        // Left: budget + burn rate + category overview
+                        VStack(spacing: 12) {
+                            budgetSummaryCard
+                            burnRateCard
+                            categoryOverviewCard
                         }
-                        .onTapGesture { showBudgetDetail = true }
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            GeometryReader { geo in
+                                Color.clear
+                                    .onAppear { leftColumnHeight = geo.size.height }
+                                    .onChange(of: geo.size.height) { _, new in leftColumnHeight = new }
+                            }
+                        )
+                        // Right: recent transactions, height-matched to left column
+                        recentTransactionsCard
+                            .frame(maxWidth: .infinity)
+                            .frame(minHeight: max(0, leftColumnHeight))
+                    }
                 } else {
                     emptyBudgetCard
+                    categoryOverviewCard
+                        .frame(maxWidth: 360)
                 }
-                recentTransactionsSection
             }
             .padding(24)
         }
@@ -53,7 +83,32 @@ struct DashboardContentColumn: View {
         )
         vm.load(context: modelContext, budgetService: appContainer.budgetService)
         vm.loadBudget(context: modelContext, budgetService: appContainer.budgetService)
+        vm.loadBudgetBurnRate(context: modelContext, budgetService: appContainer.budgetService)
+        vm.loadCategoryOverview(
+            ledger: ledger,
+            transactionService: appContainer.transactionService,
+            categoryService: appContainer.categoryService,
+            context: modelContext
+        )
         viewModel.copyFrom(vm)
+
+        let maxRef = max(abs(viewModel.monthlyIncome), abs(viewModel.monthlyExpense))
+        let anim = Animation.spring(response: 0.8, dampingFraction: 0.65)
+        withAnimation(anim) {
+            animIncomeFrac = maxRef > 0 ? Double(truncating: (abs(viewModel.monthlyIncome) / maxRef) as NSNumber) : 0
+            animExpenseFrac = maxRef > 0 ? Double(truncating: (abs(viewModel.monthlyExpense) / maxRef) as NSNumber) : 0
+            animBalanceFrac = maxRef > 0 ? Double(truncating: (abs(viewModel.monthlyIncome + viewModel.monthlyExpense) / maxRef) as NSNumber) : 0
+            let limit = viewModel.budgetLimit
+            animBudgetPercent = limit > 0 ? Double(truncating: (viewModel.budgetSpent / limit) as NSNumber) : 0
+        }
+
+        // Animate category pie
+        categoryPieProgress = 0
+        categoryExplodedIndex = 0
+        Task {
+            try? await Task.sleep(nanoseconds: 50_000_000)
+            withAnimation(.easeOut(duration: 0.9)) { categoryPieProgress = 1 }
+        }
     }
 
     private var currencyCode: String {
@@ -63,9 +118,7 @@ struct DashboardContentColumn: View {
     // MARK: - 净资产
 
     private var netWorthCard: some View {
-        let assets = viewModel.accountBalances.values.filter { $0 > 0 }.reduce(Decimal.zero, +)
-        let liabilities = abs(viewModel.accountBalances.values.filter { $0 < 0 }.reduce(Decimal.zero, +))
-        return VStack(spacing: 8) {
+        VStack(spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("净资产")
@@ -83,21 +136,9 @@ struct DashboardContentColumn: View {
                     }
                 }
                 Spacer()
-                if showBreakdown {
-                    VStack(alignment: .trailing, spacing: 6) {
-                        HStack(spacing: 8) {
-                            Text("总资产").font(.designBodyCaption).foregroundStyle(Color.designOnSurfaceVariant).fixedSize()
-                            CurrencyText(amount: assets, currencyCode: currencyCode, size: 13, foregroundColor: Color.designPrimaryFixedDim)
-                                .frame(width: 82, alignment: .trailing)
-                        }
-                        HStack(spacing: 8) {
-                            Text("总负债").font(.designBodyCaption).foregroundStyle(Color.designOnSurfaceVariant).fixedSize()
-                            CurrencyText(amount: liabilities, currencyCode: currencyCode, size: 13, foregroundColor: Color.designAccentRed)
-                                .frame(width: 82, alignment: .trailing)
-                        }
-                    }
-                    .transition(.opacity.combined(with: .move(edge: .trailing)))
-                }
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
             }
             if let change = viewModel.balanceChange, let pct = viewModel.balanceChangePercent {
                 HStack(spacing: 4) {
@@ -122,9 +163,10 @@ struct DashboardContentColumn: View {
         .padding(20)
         .glassCard(cornerRadius: 24)
         .contentShape(RoundedRectangle(cornerRadius: 24))
-        .onTapGesture {
-            withAnimation(.easeInOut(duration: 0.25)) { showBreakdown.toggle() }
+        .onHover { inside in
+            if inside { NSCursor.pointingHand.push() } else { NSCursor.pop() }
         }
+        .onTapGesture { onNavigate?(.assets) }
         .overlay(alignment: .topTrailing) {
             Circle()
                 .fill(Color.designPrimaryFixedDim.opacity(0.15))
@@ -138,23 +180,21 @@ struct DashboardContentColumn: View {
 
     private var incomeExpenseRow: some View {
         let balance = viewModel.monthlyIncome + viewModel.monthlyExpense
-        let maxRef = max(abs(viewModel.monthlyIncome), abs(viewModel.monthlyExpense))
         return HStack(spacing: 12) {
-            metricCell(label: "本月收入", amount: viewModel.monthlyIncome, maxRef: maxRef, color: Color.designPrimaryFixedDim)
-            metricCell(label: "本月支出", amount: abs(viewModel.monthlyExpense), maxRef: maxRef, color: Color.designAccentRed)
-            metricCell(label: "本月结余", amount: balance, maxRef: maxRef, color: balance >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed)
+            metricCell(label: "本月收入", amount: viewModel.monthlyIncome, frac: animIncomeFrac, color: Color.designPrimaryFixedDim)
+            metricCell(label: "本月支出", amount: abs(viewModel.monthlyExpense), frac: animExpenseFrac, color: Color.designAccentRed)
+            metricCell(label: "本月结余", amount: balance, frac: animBalanceFrac, color: balance >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed)
         }
     }
 
-    private func metricCell(label: String, amount: Decimal, maxRef: Decimal, color: Color) -> some View {
-        let frac = maxRef > 0 ? CGFloat(truncating: (abs(amount) / maxRef) as NSNumber) : 0
-        return VStack(alignment: .leading, spacing: 6) {
+    private func metricCell(label: String, amount: Decimal, frac: Double, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
             Text(label)
                 .font(.designLabelSmall)
                 .foregroundStyle(Color.designOnSurfaceVariant)
                 .tracking(1.0)
             CurrencyText(amount: amount, currencyCode: currencyCode, showSign: false, size: 22, foregroundColor: color, fractionDigits: 0)
-            PixelProgressBar(progress: Double(frac), tint: color.opacity(0.6), totalBlocks: 20)
+            PixelProgressBar(progress: frac, tint: color.opacity(0.6), totalBlocks: 20)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
@@ -179,7 +219,7 @@ struct DashboardContentColumn: View {
                     .foregroundStyle(isBudgetHovered ? Color.designAccentGreen : Color.secondary)
                     .offset(x: isBudgetHovered ? 2 : 0)
             }
-            PixelProgressBar(progress: min(percent, 1), tint: progressColor(percent), totalBlocks: 20)
+            PixelProgressBar(progress: min(animBudgetPercent, 1), tint: progressColor(animBudgetPercent), totalBlocks: 20)
             HStack {
                 Text("已支出 \(CurrencyFormatter.formatDecimal(amount: spent, fractionDigits: 0, showAbs: true))")
                     .font(.designBodyCaption)
@@ -193,6 +233,12 @@ struct DashboardContentColumn: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .glassCard(cornerRadius: 16)
+        .contentShape(RoundedRectangle(cornerRadius: 16))
+        .onHover { inside in
+            withAnimation(.easeOut(duration: 0.15)) { isBudgetHovered = inside }
+            if inside { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+        }
+        .onTapGesture { showBudgetDetail = true }
     }
 
     private var emptyBudgetCard: some View {
@@ -222,54 +268,243 @@ struct DashboardContentColumn: View {
         .onTapGesture { showBudgetDetail = true }
     }
 
+    // MARK: - 资产配置瀑布
+
+    private var allocationCard: some View {
+        let assets = viewModel.allocationItems.filter { !$0.isLiability }
+        let liabilities = viewModel.allocationItems.filter { $0.isLiability }
+        let totalAssets = assets.reduce(Decimal.zero) { $0 + $1.balance }
+
+        return VStack(alignment: .leading, spacing: 8) {
+            Button {
+                onNavigate?(.allocation)
+            } label: {
+                HStack {
+                    Text("资产配置")
+                        .font(.designBodyMedium.weight(.bold))
+                        .foregroundStyle(Color.designOnSurface)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if viewModel.allocationItems.isEmpty {
+                Text("暂无账户数据")
+                    .font(.designBodyCaption)
+                    .foregroundStyle(Color.designOnSurfaceVariant)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 24)
+            } else {
+                waterfallChart(assets: assets, liabilities: liabilities, totalAssets: totalAssets)
+            }
+        }
+        .padding(16)
+        .glassCard(cornerRadius: 20)
+    }
+
+    private func waterfallChart(assets: [AccountAllocationItem], liabilities: [AccountAllocationItem], totalAssets: Decimal) -> some View {
+        // Pre-compute waterfall segments with stable index-based IDs
+        struct Segment: Identifiable {
+            let id: Int
+            let label: String
+            let yStart: Decimal
+            let yEnd: Decimal
+            let isSummary: Bool
+            let isAsset: Bool
+        }
+
+        var segments: [Segment] = []
+        var idx = 0
+        var running = Decimal.zero
+        for item in assets {
+            let end = running + item.balance
+            segments.append(Segment(id: idx, label: item.name, yStart: running, yEnd: end, isSummary: false, isAsset: true))
+            idx += 1; running = end
+        }
+        segments.append(Segment(id: idx, label: String(localized: "总资产"), yStart: 0, yEnd: totalAssets, isSummary: true, isAsset: true))
+        idx += 1; running = totalAssets
+        for item in liabilities {
+            let absBal = abs(item.balance)
+            let end = running - absBal
+            segments.append(Segment(id: idx, label: item.name, yStart: running, yEnd: end, isSummary: false, isAsset: false))
+            idx += 1; running = end
+        }
+        segments.append(Segment(id: idx, label: String(localized: "净资产"), yStart: 0, yEnd: viewModel.totalBalance, isSummary: true, isAsset: viewModel.totalBalance >= 0))
+
+        // Connector: dashed line tracing running total across non-summary bars
+        struct ConnectorPoint: Identifiable {
+            let id: Int
+            let label: String
+            let value: Decimal
+        }
+        let connectorData = segments.filter { !$0.isSummary }.map { ConnectorPoint(id: $0.id, label: $0.label, value: $0.yEnd) }
+
+        return Chart {
+            ForEach(segments) { seg in
+                BarMark(
+                    x: .value("", seg.label),
+                    yStart: .value("Start", seg.yStart),
+                    yEnd: .value("End", seg.yEnd),
+                    width: .fixed(seg.isSummary ? 36 : 20)
+                )
+                .foregroundStyle(seg.isAsset ? Color.designPrimaryFixedDim.opacity(seg.isSummary ? 0.9 : 0.65) : Color.designAccentRed.opacity(seg.isSummary ? 0.9 : 0.65))
+                .cornerRadius(seg.isSummary ? 4 : 3)
+            }
+
+            // Dashed connector line
+            ForEach(connectorData) { point in
+                LineMark(
+                    x: .value("", point.label),
+                    y: .value("", point.value)
+                )
+            }
+            .foregroundStyle(Color.designPrimaryFixedDim.opacity(0.25))
+            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [3, 6]))
+
+            RuleMark(y: .value("Zero", 0))
+                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.2))
+                .lineStyle(StrokeStyle(lineWidth: 1))
+        }
+        .chartXAxis {
+            AxisMarks { _ in
+                AxisValueLabel()
+                    .font(.system(size: 9))
+                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
+            }
+        }
+        .chartYAxis(.hidden)
+        .frame(height: 100)
+    }
+
+    // MARK: - 预算消耗速率
+
+    private var burnRateCard: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Button {
+                onNavigate?(.budget)
+            } label: {
+                HStack {
+                    Text("消耗速率")
+                        .font(.designBodyMedium.weight(.bold))
+                        .foregroundStyle(Color.designOnSurface)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if viewModel.burnRateData.isEmpty {
+                Text("暂无数据")
+                    .font(.designBodyCaption)
+                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 12)
+            } else {
+                BurnRateBarChart(data: viewModel.burnRateData, progress: 1)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .glassCard(cornerRadius: 16)
+    }
+
+    // MARK: - 支出分类总览
+
+    private var categoryOverviewCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                onNavigate?(.category)
+            } label: {
+                HStack {
+                    Text("支出分类")
+                        .font(.designBodyMedium.weight(.bold))
+                        .foregroundStyle(Color.designOnSurface)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 14)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .onHover { inside in
+                if inside { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+            }
+
+            if viewModel.categoryOverviewItems.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "chart.pie.fill")
+                        .font(.system(size: 28))
+                        .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.3))
+                    Text("本月暂无支出")
+                        .font(.designBodyMedium)
+                        .foregroundStyle(Color.designOnSurfaceVariant)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+            } else {
+                DonutChart(
+                    categories: viewModel.categoryOverviewItems,
+                    totalExpense: viewModel.categoryOverviewTotal,
+                    centerTitle: String(localized: "本月支出"),
+                    isDrilledDown: false,
+                    showTopBar: false,
+                    categoryType: .constant(.expense),
+                    onCategoryTap: { _ in },
+                    onCenterTap: { },
+                    pieProgress: $categoryPieProgress,
+                    explodedIndex: $categoryExplodedIndex,
+                    hoveredIndex: $categoryHoveredIndex
+                )
+            }
+        }
+        .glassCard(cornerRadius: 20)
+    }
+
     // MARK: - 最近交易
 
-    private var recentTransactionsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("最近交易")
-                .font(.designBodyMedium.weight(.bold))
-                .foregroundStyle(Color.designOnSurface)
+    private var recentTransactionsCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header
+            HStack {
+                Text("最近交易")
+                    .font(.designBodyMedium.weight(.bold))
+                    .foregroundStyle(Color.designOnSurface)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 6)
 
             if viewModel.recentTransactions.isEmpty {
                 Text("本月暂无交易记录")
-                    .font(.designBodyMedium)
+                    .font(.designBodyCaption)
                     .foregroundStyle(Color.designOnSurfaceVariant)
-                    .padding(.vertical, 40)
                     .frame(maxWidth: .infinity)
+                    .padding(.vertical, 32)
             } else {
-                LazyVStack(spacing: 8) {
-                    ForEach(viewModel.recentTransactions.prefix(10), id: \.objectID) { t in
-                        TransactionRowView(transaction: t)
+                ScrollView {
+                    VStack(spacing: 4) {
+                        ForEach(viewModel.recentTransactions.prefix(15), id: \.objectID) { t in
+                            TransactionRowView(transaction: t)
+                        }
                     }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
                 }
             }
         }
+        .glassCard(cornerRadius: 20)
     }
 
-    struct OverflowLayout: Layout {
-        var spacing: CGFloat = 12
-        func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-            layout(proposal: proposal, subviews: subviews).size
-        }
-        func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-            let result = layout(proposal: proposal, subviews: subviews)
-            for (i, subview) in subviews.enumerated() {
-                subview.place(at: CGPoint(x: bounds.minX + result.positions[i].x, y: bounds.minY + result.positions[i].y), proposal: proposal)
-            }
-        }
-        func layout(proposal: ProposedViewSize, subviews: Subviews) -> (size: CGSize, positions: [CGPoint]) {
-            let maxWidth = proposal.width ?? .infinity
-            var x: CGFloat = 0, y: CGFloat = 0, rowHeight: CGFloat = 0
-            var positions: [CGPoint] = []
-            for sub in subviews {
-                let size = sub.sizeThatFits(proposal)
-                if x + size.width > maxWidth && x > 0 { x = 0; y += rowHeight + spacing; rowHeight = 0 }
-                positions.append(CGPoint(x: x, y: y))
-                x += size.width + spacing
-                rowHeight = max(rowHeight, size.height)
-            }
-            return (CGSize(width: maxWidth, height: y + rowHeight), positions)
-        }
-    }
 }
 
