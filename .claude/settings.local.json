@@ -233,7 +233,26 @@
       "Bash(/Users/gyu/Library/Python/3.9/bin/pymobiledevice3 developer *)",
       "Bash(/Users/gyu/Library/Python/3.9/bin/pymobiledevice3 start-tunnel *)",
       "Bash(/Users/gyu/Library/Python/3.9/bin/pymobiledevice3 lockdown *)",
-      "Bash(echo \"Tunnel PID: $!\")"
+      "Bash(echo \"Tunnel PID: $!\")",
+      "Bash(pkill -9 -f \"Qianeymac\")",
+      "Bash(xxd \"/private/tmp/firstcc-mac-build/Index.noindex/DataStore/v5/records/C8/BudgetServiceImpl.swift-5J87A62FT4C8\")",
+      "Bash(osascript -e ' *)",
+      "Bash(nm -anU \"/private/tmp/firstcc-mac-build/Build/Intermediates.noindex/FirstCC.build/Debug/Qianeymac.build/Objects-normal/arm64/BudgetServiceImpl.o\")",
+      "Bash(swift demangle *)",
+      "Bash(gunzip -c \"/private/tmp/firstcc-mac-build/Logs/Build/3F8DCAED-71E6-4B95-8FEC-833329F1EDEB.xcactivitylog\")",
+      "Bash(mdls \"/Users/gyu/Documents/AI/10-FirstCC/FirstCC/Models/CoreData/BudgetItemEntity.swift\")",
+      "Bash(mdls \"/Users/gyu/Documents/AI/10-FirstCC/FirstCC/Models/CoreData/BudgetBookEntity.swift\")",
+      "Bash(otool -l \"/private/tmp/firstcc-mac-build/Build/Products/Debug/Qianeymac.app/Contents/MacOS/Qianeymac\")",
+      "Bash(otool -l \"/private/tmp/firstcc-mac-build/Build/Intermediates.noindex/FirstCC.build/Debug/Qianeymac.build/Objects-normal/arm64/BudgetServiceImpl.o\")",
+      "Bash(otool *)",
+      "Bash(dd if=\"/Users/gyu/Documents/AI/10-FirstCC/FirstCC/Models/CoreData/BudgetItemEntity.swift\" bs=2243 count=1)",
+      "Bash(dd if=\"/Users/gyu/Documents/AI/10-FirstCC/FirstCC/Models/CoreData/BudgetBookEntity.swift\" bs=1314 count=1)",
+      "Bash(xxd -r -p)",
+      "Bash(/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-ide-test -print-module -module-to-print=Qianeymac -source-filename=x -I /private/tmp/firstcc-mac-build/Build/Products/Debug/)",
+      "Bash(file *)",
+      "Bash(pymobiledevice3 developer *)",
+      "Bash(/Users/gyu/Library/Python/3.9/bin/pymobiledevice3 --help)",
+      "Bash(xxd)"
     ]
   },
   "hooks": {

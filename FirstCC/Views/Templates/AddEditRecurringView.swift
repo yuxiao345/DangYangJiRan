@@ -298,7 +298,7 @@ struct AddEditRecurringView: View {
                 endDate: end,
                 context: modelContext
             )
-            try? appContainer.recurringService.processDueRecurring(context: modelContext)
+            try? appContainer.recurringService.processAndDeduplicate(context: modelContext)
         } else {
             let template = TransactionTemplate(
                 name: name,
@@ -323,7 +323,7 @@ struct AddEditRecurringView: View {
                 endDate: end,
                 context: modelContext
             )
-            try? appContainer.recurringService.processDueRecurring(context: modelContext)
+            try? appContainer.recurringService.processAndDeduplicate(context: modelContext)
         }
         dismiss()
     }

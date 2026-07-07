@@ -42,7 +42,16 @@ struct RootView: View {
 
     private func processRecurring() {
         guard appContainer.currentLedger != nil else { return }
-        do { try appContainer.recurringService.processDueRecurring(context: modelContext) }
+        do {
+            try appContainer.recurringService.processDueRecurring(context: modelContext)
+            // 跨设备去重每天最多执行一次（前台事件），远程变化观察者不受限
+            let lastKey = "lastRecurringDedup"
+            let last = UserDefaults.standard.object(forKey: lastKey) as? Date ?? .distantPast
+            if Date().timeIntervalSince(last) >= 86400 {
+                try appContainer.recurringService.deduplicateRecurringTransactions(context: modelContext)
+                UserDefaults.standard.set(Date(), forKey: lastKey)
+            }
+        }
         catch { DiagnosticLog.log("processRecurring FAILED: \(error.localizedDescription)") }
     }
 }

@@ -484,12 +484,13 @@ final class ReportViewModel {
         ledger: Ledger,
         context: NSManagedObjectContext
     ) -> CategoryBuildResult {
-        let transactions = allTransactions.filter { t in
-            guard t.type == type else { return false }
-            guard !t.isSplitParent else { return false }
-            if type == .expense, t.isReimbursable { return false }
-            return true
-        }
+        let transactions = allTransactions
+            .excludingReimbursementTransactions()
+            .filter { t in
+                guard t.type == type else { return false }
+                guard !t.isSplitParent else { return false }
+                return true
+            }
 
         let allCategories = (try? categoryService.fetchAllCategories(for: ledger, type: type, context: context)) ?? []
         let categoryLookup = Dictionary(uniqueKeysWithValues: allCategories.map { ($0.id, $0) })
@@ -603,14 +604,13 @@ final class ReportViewModel {
         fetch.predicate = NSPredicate(format: "ledger.id == %@ AND date >= %@ AND date < %@", ledgerID as CVarArg, startDate as CVarArg, endDate as CVarArg)
         let all = (try? context.fetch(fetch)) ?? []
 
-        let settlementIDs = Set(all.compactMap(\.reimbursedById))
-        let filtered = all.filter { t in
-            guard t.type == .expense || t.type == .income else { return false }
-            guard !t.isSplitParent else { return false }
-            if t.type == .expense, t.isReimbursable { return false }
-            if t.type == .income, settlementIDs.contains(t.id) { return false }
-            return true
-        }
+        let filtered = all
+            .excludingReimbursementTransactions()
+            .filter { t in
+                guard t.type == .expense || t.type == .income else { return false }
+                guard !t.isSplitParent else { return false }
+                return true
+            }
 
         switch selectedPeriod {
         case .last3Years:

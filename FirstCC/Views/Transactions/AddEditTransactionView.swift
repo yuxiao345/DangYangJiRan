@@ -412,7 +412,7 @@ struct AddEditTransactionView: View {
                         HStack(spacing: 8) {
                             Text(editing != nil ? "更新账单" : "保存账单")
                                 .font(.designBodyMedium.weight(.bold))
-                            Image(systemName: "send")
+                            Image(systemName: "paperplane")
                                 .font(.system(size: 16))
                         }
                         .frame(maxWidth: .infinity)
@@ -852,7 +852,7 @@ struct AddEditTransactionView: View {
                         .font(.custom("JetBrainsMono-Medium", fixedSize: 32))
                         .foregroundStyle(Color.designPrimary)
                         .tracking(-0.02)
-                    Image(systemName: showNumpad ? "keyboard_arrow_down" : "keyboard_arrow_up")
+                    Image(systemName: showNumpad ? "keyboard.arrow.down" : "keyboard.arrow.up")
                         .font(.system(size: 14))
                         .foregroundStyle(Color.designPrimaryContainer.opacity(0.5))
                 }
@@ -937,7 +937,7 @@ struct AddEditTransactionView: View {
                         .font(.custom("JetBrainsMono-Medium", fixedSize: 32))
                         .foregroundStyle(Color.designPrimary)
                         .tracking(-0.02)
-                    Image(systemName: showNumpad && editingDestAmount ? "keyboard_arrow_down" : "keyboard_arrow_up")
+                    Image(systemName: showNumpad && editingDestAmount ? "keyboard.arrow.down" : "keyboard.arrow.up")
                         .font(.system(size: 14))
                         .foregroundStyle(Color.designPrimaryContainer.opacity(0.5))
                 }
@@ -2258,6 +2258,25 @@ struct AddEditTransactionView: View {
         }
         t.photoURLs = photoDataList.isEmpty ? nil : PhotoStorage.save(photoDataList, transactionId: t.id)
         t.modifiedAt = Date()
+
+        // Update paired transfer record (transfers create two linked records)
+        if t.type == .transfer, let gid = t.transferGroupId {
+            let pairedReq = NSFetchRequest<Transaction>(entityName: "Transaction")
+            pairedReq.predicate = NSPredicate(format: "transferGroupId == %@ AND id != %@", gid as CVarArg, t.id as CVarArg)
+            if let paired = try? modelContext.fetch(pairedReq).first {
+                paired.amount = abs(t.amount)  // opposite sign: main is negative, paired is positive
+                paired.date = date
+                paired.note = note.isEmpty ? nil : note
+                paired.account = selectedToAccount
+                paired.toAccount = selectedAccount
+                if let oldPaths = paired.photoURLs, !oldPaths.isEmpty {
+                    PhotoStorage.delete(paths: oldPaths)
+                }
+                paired.photoURLs = photoDataList.isEmpty ? nil : PhotoStorage.save(photoDataList, transactionId: paired.id)
+                paired.modifiedAt = Date()
+            }
+        }
+
         try modelContext.save()
     }
 

@@ -32,6 +32,16 @@ extension Array where Element == Transaction {
         return result
     }
 
+    /// 排除可报销支出及其关联的报销结算收入，用于统计/报表等非流水口径。
+    func excludingReimbursementTransactions() -> [Transaction] {
+        let settlementIDs = Set(compactMap(\.reimbursedById))
+        return filter { t in
+            if t.type == .expense, t.isReimbursable { return false }
+            if t.type == .income, settlementIDs.contains(t.id) { return false }
+            return true
+        }
+    }
+
     /// Keep only one side of each transfer (outflow, amount < 0). Other types pass through unchanged.
     func deduplicatingTransfers() -> [Transaction] {
         var seen = Set<UUID>()
@@ -60,6 +70,8 @@ func signedAmount(amount: Decimal, type: TransactionType, direction: LendingDire
         case .borrowIn, .collect: return abs(amount)
         case .none: return abs(amount)
         }
+    case .transfer: return -abs(amount)
+    case .adjustment: return amount
     default: return abs(amount)
     }
 }

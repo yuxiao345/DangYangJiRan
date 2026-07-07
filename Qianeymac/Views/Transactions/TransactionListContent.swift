@@ -277,10 +277,11 @@ struct TransactionListContent: View {
         var result = all.deduplicatingTransfers()
         transactionDays = Set(result.filter { $0.type != .transfer }.map { cal.component(.day, from: $0.date) })
 
-        // 每日热力图数据（排除转账）
+        // 每日热力图数据（排除转账、可报销支出、报销结算收入）
+        let heatmapTransactions = result.excludingReimbursementTransactions()
         var expenseSum: [Int: Decimal] = [:]
         var incomeSum: [Int: Decimal] = [:]
-        for t in result {
+        for t in heatmapTransactions {
             let day = cal.component(.day, from: t.date)
             switch t.type {
             case .expense:

@@ -58,8 +58,9 @@ struct TransactionListView: View {
                         }
                         .padding(.top, 60)
                     } else {
+                        let fullSettlementIDs = Set(transactions.compactMap(\.reimbursedById))
                         ForEach(groupedByDate, id: \.key) { group in
-                            dateSectionHeader(dateKey: group.key, transactions: group.value)
+                            dateSectionHeader(dateKey: group.key, transactions: group.value, fullMonthSettlementIDs: fullSettlementIDs)
                             ForEach(group.value, id: \.objectID) { transaction in
                                 NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
                                     TransactionRowView(transaction: transaction)
@@ -138,8 +139,13 @@ struct TransactionListView: View {
 
     // MARK: - Date Section Header
 
-    private func dateSectionHeader(dateKey: String, transactions: [Transaction]) -> some View {
-        let nonTransfer = transactions.filter { $0.type != .transfer }
+    private func dateSectionHeader(dateKey: String, transactions: [Transaction], fullMonthSettlementIDs: Set<UUID>) -> some View {
+        let nonTransfer = transactions.filter { t in
+            guard t.type != .transfer else { return false }
+            if t.type == .expense, t.isReimbursable { return false }
+            if t.type == .income, fullMonthSettlementIDs.contains(t.id) { return false }
+            return true
+        }
         let total = nonTransfer.reduce(Decimal.zero) { $0 + $1.amount }
         let currencyCode = transactions.first?.currencyCode ?? "CNY"
 
@@ -199,13 +205,12 @@ struct TransactionListView: View {
         filters.dateRange = start..<end
         let all = (try? appContainer.transactionService.fetchTransactions(for: ledger, context: modelContext, filters: filters)) ?? []
 
-        let settlementIDs = Set(all.compactMap(\.reimbursedById))
-        let normal = all.filter { t in
-            guard t.refundGroupId == nil else { return false }
-            if t.type == .expense, t.isReimbursable { return false }
-            if t.type == .income, settlementIDs.contains(t.id) { return false }
-            return true
-        }
+        let normal = all
+            .excludingReimbursementTransactions()
+            .filter { t in
+                guard t.refundGroupId == nil else { return false }
+                return true
+            }
 
         let calData = filterCategory.map { cat in normal.filter { $0.category?.id == cat.id } } ?? normal
 

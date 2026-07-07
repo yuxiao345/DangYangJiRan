@@ -57,7 +57,7 @@ struct RefundSheetView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("确认退款") { save() }
                         .fontWeight(.bold)
-                        .disabled(amount <= 0 || amountString.isEmpty)
+                        .disabled(amount <= 0 || amountString.isEmpty || amount > maxRefund)
                 }
             }
             .onAppear {
@@ -141,7 +141,7 @@ struct RefundSheetView: View {
                                 .foregroundStyle(Color.designOnSurface)
                                 .tracking(-0.02)
                             Spacer()
-                            Image(systemName: showNumpad ? "keyboard_arrow_down" : "keyboard_arrow_up")
+                            Image(systemName: showNumpad ? "keyboard.arrow.down" : "keyboard.arrow.up")
                                 .font(.system(size: 14))
                                 .foregroundStyle(Color.designPrimaryContainer.opacity(0.5))
                         }

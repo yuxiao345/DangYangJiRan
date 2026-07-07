@@ -101,12 +101,7 @@ final class DashboardViewModel {
         filters.dateRange = monthStart..<monthEnd
         let allTransactions = (try? transactionService.fetchTransactions(for: ledger, context: context, filters: filters)) ?? []
 
-        let settlementIncomeIDs = Set(allTransactions.compactMap(\.reimbursedById))
-        let normalTransactions = allTransactions.filter { t in
-            if t.type == .expense, t.isReimbursable { return false }
-            if t.type == .income, settlementIncomeIDs.contains(t.id) { return false }
-            return true
-        }
+        let normalTransactions = allTransactions.excludingReimbursementTransactions()
 
         monthlyIncome = normalTransactions.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
         let cal = Calendar.current

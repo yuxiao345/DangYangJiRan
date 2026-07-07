@@ -29,16 +29,30 @@ struct CategoryServiceImpl: CategoryServiceProtocol {
             request.predicate = NSPredicate(format: "ledger.id == %@", ledgerID as CVarArg)
         }
         let all = try context.fetch(request)
-        // Sort hierarchically: parent categories first, then children grouped under their parent
-        return all.sorted { a, b in
-            let aGroup = a.parent?.sortOrder ?? a.sortOrder
-            let bGroup = b.parent?.sortOrder ?? b.sortOrder
-            if aGroup != bGroup { return aGroup < bGroup }
-            // Within same group: parent before children
-            if a.parent == nil && b.parent != nil { return true }
-            if a.parent != nil && b.parent == nil { return false }
-            return a.sortOrder < b.sortOrder
+        // Sort hierarchically: group children under their specific parent, not just by parent sortOrder
+        // When multiple parents share the same sortOrder (e.g. 0 for system defaults),
+        // we must use parent identity to keep families together.
+        // Build lookup: parentID → children, one-pass O(n)
+        var childrenByParent: [UUID: [Category]] = [:]
+        for cat in all where cat.parent != nil {
+            childrenByParent[cat.parent!.id, default: []].append(cat)
         }
+        let rootCats = all.filter { $0.parent == nil }.sorted { $0.sortOrder < $1.sortOrder }
+        var result: [Category] = []
+        var accountedParentIDs = Set<UUID>()
+        for root in rootCats {
+            result.append(root)
+            accountedParentIDs.insert(root.id)
+            let children = (childrenByParent[root.id] ?? []).sorted { $0.sortOrder < $1.sortOrder }
+            result.append(contentsOf: children)
+        }
+        // Orphans: children whose parent was filtered out (e.g., hidden or type mismatch)
+        let orphans = childrenByParent
+            .filter { !accountedParentIDs.contains($0.key) }
+            .flatMap { $0.value }
+            .sorted { $0.sortOrder < $1.sortOrder }
+        result.append(contentsOf: orphans)
+        return result
     }
 
     func updateCategory(_ category: Category, context: NSManagedObjectContext) throws {

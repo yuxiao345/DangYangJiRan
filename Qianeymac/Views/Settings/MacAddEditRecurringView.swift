@@ -272,7 +272,7 @@ struct MacAddEditRecurringView: View {
                 template: t, frequency: frequency, interval: interval,
                 startDate: startDate, endDate: end, context: modelContext
             )
-            try? appContainer.recurringService.processDueRecurring(context: modelContext)
+            try? appContainer.recurringService.processAndDeduplicate(context: modelContext)
         } else {
             let template = TransactionTemplate(
                 name: name, type: type, amount: amount,
@@ -288,7 +288,7 @@ struct MacAddEditRecurringView: View {
                 template: template, frequency: frequency, interval: interval,
                 startDate: startDate, endDate: end, context: modelContext
             )
-            try? appContainer.recurringService.processDueRecurring(context: modelContext)
+            try? appContainer.recurringService.processAndDeduplicate(context: modelContext)
         }
         dismiss()
     }

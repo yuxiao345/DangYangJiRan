@@ -17,6 +17,7 @@
 		0E9292C7F22D51456D1CDEC9 /* CreditCardStatementPeriod.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87BA27190A7360DB8F2A60EC /* CreditCardStatementPeriod.swift */; };
 		105BC98E03DBAAF350FEC455 /* AddEditBudgetBookView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDAEED1A1D8033C2FECF73C8 /* AddEditBudgetBookView.swift */; };
 		11C32B4A866111B67D69E0A8 /* CreditCardStatementServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13D9E06705B9451A1658F4EA /* CreditCardStatementServiceImpl.swift */; };
+		1264E870146AA37B64B947A8 /* PhotoStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D09B8E37F1973C7B325B97 /* PhotoStorage.swift */; };
 		17469B250263A15F7E5A9CA7 /* TransactionRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C11EDFBC7413BA6F31DD4A4 /* TransactionRowView.swift */; };
 		17B543C80095054EE83DB87E /* MerchantListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09771EB93D882023220E07CC /* MerchantListView.swift */; };
 		192AEE797967B2C812C6D7AC /* AddEditAccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0717F2FADE0D27C070224E90 /* AddEditAccountView.swift */; };
@@ -308,7 +309,6 @@
 		FD2C9721768BC0DECAFBD9EA /* LedgerRole.swift in Sources */ = {isa = PBXBuildFile; fileRef = 123B9066865398E03B8DD922 /* LedgerRole.swift */; };
 		FD91B103255DEB923850049C /* CloudKitConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FD37181CF946710701C84CD /* CloudKitConfig.swift */; };
 		FFD3CC4FA09133AB7E0CFC53 /* AccountDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89DBFB59681FF75B16E21478 /* AccountDetailView.swift */; };
-		1264E870146AA37B64B947A8 /* PhotoStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D09B8E37F1973C7B325B97 /* PhotoStorage.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */

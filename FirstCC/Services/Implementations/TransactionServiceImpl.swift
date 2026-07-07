@@ -202,6 +202,16 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
             }
         }
 
+        // 报销关联清理：删除可报销支出时，同步删除关联的结算收入（该收入已失去关联源）
+        if transaction.type == .expense && transaction.isReimbursable, let incomeID = transaction.reimbursedById {
+            let incomeReq = NSFetchRequest<Transaction>(entityName: "Transaction")
+            incomeReq.predicate = NSPredicate(format: "id == %@", incomeID as CVarArg)
+            incomeReq.fetchLimit = 1
+            if let income = try? context.fetch(incomeReq).first {
+                context.delete(income)
+            }
+        }
+
         // 退款关联清理：删除原交易时，清除退款记录的 refundGroupId
         let refundReq = NSFetchRequest<Transaction>(entityName: "Transaction")
         refundReq.predicate = NSPredicate(format: "refundGroupId == %@", transaction.id as CVarArg)

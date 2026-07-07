@@ -204,17 +204,27 @@ struct MacAddTransactionSheet: View {
     }
 
     private var contentScroll: some View {
-        ScrollView {
+        let showTemplateDivider = editing == nil && !templates.isEmpty
+
+        return ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                amountSection
-                Divider().padding(.horizontal, 24)
-                toggleAndSplitRows
+                // ── Layer 1: Templates (new transactions only) ──
                 templateRow
-                lendingRow
-                accountRows
-                categoryAndExtrasRows
-                reimbursementAndLendingRows
+
+                // ── Layer 2: Amount (core input) ──
+                if showTemplateDivider {
+                    Divider().padding(.horizontal, 24)
+                }
+                amountSection
+
+                // ── Layer 3: Detail fields ──
+                Divider().padding(.horizontal, 24)
+                detailRows
+
+                // ── Layer 4: Metadata ──
+                Divider().padding(.horizontal, 24)
                 dateNoteRow
+
                 if isViewing, let t = editing {
                     displayOnlySections(for: t)
                 }
@@ -404,6 +414,12 @@ struct MacAddTransactionSheet: View {
                 }
             }
 
+            // Toggles (expense only)
+            if type == .expense {
+                toggleSection
+                if isSplit { splitDetailSection }
+            }
+
             // Cross-currency transfer: dest amount + exchange rate
             if isCrossCurrencyTransfer {
                 VStack(spacing: 4) {
@@ -455,7 +471,6 @@ struct MacAddTransactionSheet: View {
     private var templateRow: some View {
         if editing == nil && !templates.isEmpty {
             templateSection
-            Divider().padding(.horizontal, 24)
         }
     }
 
@@ -463,7 +478,6 @@ struct MacAddTransactionSheet: View {
     private var lendingRow: some View {
         if type == .lending {
             lendingSection
-            Divider().padding(.horizontal, 24)
         }
     }
 
@@ -480,7 +494,6 @@ struct MacAddTransactionSheet: View {
                            icon: { $0.iconName ?? "creditcard" }, name: { $0.name },
                            color: { Color(hex: $0.colorHex ?? "#007AFF") }, recentKey: "recent_toaccount")
             }
-            Divider().padding(.horizontal, 24)
         }
     }
 
@@ -492,14 +505,19 @@ struct MacAddTransactionSheet: View {
                            items: categories, icon: { $0.iconName }, name: { $0.name },
                            color: { Color(hex: $0.colorHex) },
                            indent: { var d = 0; var p = $0.parent; while p != nil { d += 1; p = p?.parent }; return d },
+                           parentId: { $0.parent?.id },
                            recentKey: "recent_category")
+                if let cat = selectedCategory, (cat.children?.count ?? 0) > 0 {
+                    Text("已选择上级分类「\(cat.name)」，可展开选择更具体的子分类")
+                        .font(.caption).foregroundStyle(.orange)
+                        .padding(.horizontal, 24)
+                }
                 formPicker(label: "成员", selection: $selectedMember,
                            items: members, icon: { $0.avatar }, name: { $0.name }, recentKey: "recent_member")
                 formPicker(label: "商家", selection: $selectedMerchant,
                            items: merchants, icon: { _ in "bag" }, name: { $0.name }, recentKey: "recent_merchant")
                 formPicker(label: "项目", selection: $selectedProject,
                            items: projects, icon: { _ in "folder" }, name: { $0.name }, recentKey: "recent_project")
-                Divider().padding(.horizontal, 24)
             }
         }
     }
@@ -510,7 +528,6 @@ struct MacAddTransactionSheet: View {
             if type == .expense {
                 toggleSection
                 if isSplit { splitDetailSection }
-                Divider().padding(.horizontal, 24)
             }
         }
     }
@@ -520,13 +537,19 @@ struct MacAddTransactionSheet: View {
         Group {
             if type == .income && !pendingExpenses.isEmpty {
                 reimbursementSection
-                Divider().padding(.horizontal, 24)
             }
             if type == .lending && (lendingDirection == .collect || lendingDirection == .repay) && !pendingLendingTransactions.isEmpty {
                 lendingSettleSection
-                Divider().padding(.horizontal, 24)
             }
         }
+    }
+
+    @ViewBuilder
+    private var detailRows: some View {
+        lendingRow
+        accountRows
+        categoryAndExtrasRows
+        reimbursementAndLendingRows
     }
 
     @ViewBuilder
@@ -555,78 +578,31 @@ struct MacAddTransactionSheet: View {
         label: String, selection: Binding<T?>, items: [T],
         icon: @escaping (T) -> String, name: @escaping (T) -> String,
         color: @escaping (T) -> Color = { _ in .secondary }, indent: ((T) -> Int)? = nil,
-        recentKey: String? = nil
+        parentId: ((T) -> T.ID?)? = nil, recentKey: String? = nil
     ) -> some View {
-        let ordered = recentKey.map { recentFirst(items, key: $0) } ?? items
-        let recentIDs: Set<String> = recentKey.map { key in
-            Set(UserDefaults.standard.stringArray(forKey: key) ?? [])
-        } ?? []
-
         return HStack(spacing: 12) {
             Text(label)
                 .font(.designBodyMedium)
                 .foregroundStyle(.secondary)
                 .frame(width: 60, alignment: .trailing)
-            Picker("", selection: selection) {
-                Text("无").tag(nil as T?)
-                if !recentIDs.isEmpty {
-                    Section {
-                        ForEach(ordered.filter { recentIDs.contains(String(describing: $0.id)) }, id: \.self) { item in
-                            HStack {
-                                Image(systemName: icon(item)).foregroundStyle(color(item))
-                                Text(name(item))
-                            }
-                            .tag(item as T?)
-                        }
-                    } header: {
-                        Text("最近使用")
-                    }
-                    Section {
-                        ForEach(ordered.filter { !recentIDs.contains(String(describing: $0.id)) }, id: \.self) { item in
-                            HStack {
-                                Image(systemName: icon(item)).foregroundStyle(color(item))
-                                Text(name(item))
-                            }
-                            .padding(.leading, CGFloat(indent?(item) ?? 0) * 16)
-                            .tag(item as T?)
-                        }
-                    } header: {
-                        Text("全部")
-                    }
-                } else {
-                    ForEach(ordered, id: \.self) { item in
-                        HStack {
-                            Image(systemName: icon(item)).foregroundStyle(color(item))
-                            Text(name(item))
-                        }
-                        .padding(.leading, CGFloat(indent?(item) ?? 0) * 16)
-                        .tag(item as T?)
+            MacPopupPicker(
+                selection: selection,
+                items: items,
+                icon: icon,
+                name: name,
+                color: color,
+                indent: indent,
+                parentId: parentId,
+                recentKey: recentKey,
+                onSelect: { item in
+                    if let key = recentKey {
+                        recordRecent(item, key: key)
                     }
                 }
-            }
-            .pickerStyle(.menu)
-            .labelsHidden()
-            .frame(minWidth: 220, maxWidth: 220, alignment: .leading)
-            .onChange(of: selection.wrappedValue) { _, newValue in
-                if let key = recentKey, let item = newValue {
-                    recordRecent(item, key: key)
-                }
-            }
+            )
+            .frame(width: 250)
         }
         .padding(.horizontal, 24).padding(.vertical, 8)
-    }
-
-    private func recentFirst<T: Identifiable>(_ items: [T], key: String) -> [T] {
-        let recentIDs = UserDefaults.standard.stringArray(forKey: key) ?? []
-        var ordered: [T] = []
-        var remaining = items
-        for idStr in recentIDs {
-            if let idx = remaining.firstIndex(where: { String(describing: $0.id) == idStr }) {
-                ordered.append(remaining.remove(at: idx))
-            }
-        }
-        ordered.append(contentsOf: remaining)
-        return ordered
     }
 
     private func recordRecent<T: Identifiable>(_ item: T, key: String) {
@@ -639,21 +615,45 @@ struct MacAddTransactionSheet: View {
 
     // MARK: - Template Section
 
+    private let templateMaxVisible = 3
+
     private var templateSection: some View {
-        HStack(spacing: 12) {
+        let visible = Array(templates.prefix(templateMaxVisible))
+        let overflow = templates.count > templateMaxVisible
+
+        return HStack(spacing: 12) {
             Text("模板").font(.designBodyMedium).foregroundStyle(.secondary)
                 .frame(width: 60, alignment: .trailing)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(templates) { tpl in
-                        Button { applyTemplate(tpl) } label: {
-                            Text(tpl.name).font(.designBodyCaption)
-                                .padding(.horizontal, 10).padding(.vertical, 4)
-                                .background(Capsule().fill(Color.designSurfaceContainer.opacity(0.5)))
-                                .overlay(Capsule().stroke(Color.designOutlineVariant, lineWidth: 0.5))
-                        }
-                        .buttonStyle(.plain)
+            HStack(spacing: 8) {
+                ForEach(visible) { tpl in
+                    Button { applyTemplate(tpl) } label: {
+                        Text(tpl.name).font(.designBodyCaption)
+                            .padding(.horizontal, 10).padding(.vertical, 4)
+                            .background(Capsule().fill(Color.designSurfaceContainer.opacity(0.5)))
+                            .overlay(Capsule().stroke(Color.designOutlineVariant, lineWidth: 0.5))
                     }
+                    .buttonStyle(.plain)
+                }
+                if overflow {
+                    Menu {
+                        ForEach(Array(templates.dropFirst(templateMaxVisible))) { tpl in
+                            Button { applyTemplate(tpl) } label: {
+                                if let cat = tpl.category {
+                                    Label(tpl.name, systemImage: cat.iconName)
+                                } else {
+                                    Text(tpl.name)
+                                }
+                            }
+                        }
+                    } label: {
+                        Text("+\(templates.count - templateMaxVisible)")
+                            .font(.designBodyCaption)
+                            .padding(.horizontal, 10).padding(.vertical, 4)
+                            .background(Capsule().fill(Color.designAccentGreen.opacity(0.15)))
+                            .overlay(Capsule().stroke(Color.designAccentGreen, lineWidth: 0.5))
+                            .foregroundStyle(Color.designAccentGreen)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -758,25 +758,30 @@ struct MacAddTransactionSheet: View {
     // MARK: - Reimbursement
 
     private var reimbursementSection: some View {
-        VStack(spacing: 8) {
-            Text("关联待报销").font(.designLabel).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
-            ForEach(pendingExpenses) { exp in
-                Button {
-                    if selectedExpenseIDs.contains(exp.id) { selectedExpenseIDs.remove(exp.id) }
-                    else { selectedExpenseIDs.insert(exp.id) }
-                } label: {
-                    HStack {
-                        Image(systemName: selectedExpenseIDs.contains(exp.id) ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(selectedExpenseIDs.contains(exp.id) ? Color.designPrimaryFixedDim : .secondary)
-                        Text(exp.category?.name ?? "未分类").font(.designBodySmall)
-                        Spacer()
-                        Text(CurrencyFormatter.formatDecimal(amount: abs(exp.amount), fractionDigits: 0))
-                            .font(.designBodySmall).foregroundStyle(.secondary)
-                    }
-                }.buttonStyle(.plain)
-            }
-            if !selectedExpenseIDs.isEmpty {
-                HStack { Spacer(); Text("合计: \(CurrencyFormatter.formatDecimal(amount: pendingExpenses.filter { selectedExpenseIDs.contains($0.id) }.reduce(0) { $0 + abs($1.amount) }, fractionDigits: 2))").font(.designBodySmall).foregroundStyle(Color.designPrimaryFixedDim) }
+        HStack(alignment: .top, spacing: 12) {
+            Text("待报销")
+                .font(.designBodyMedium)
+                .foregroundStyle(.secondary)
+                .frame(width: 60, alignment: .trailing)
+            VStack(spacing: 8) {
+                ForEach(pendingExpenses) { exp in
+                    Button {
+                        if selectedExpenseIDs.contains(exp.id) { selectedExpenseIDs.remove(exp.id) }
+                        else { selectedExpenseIDs.insert(exp.id) }
+                    } label: {
+                        HStack {
+                            Image(systemName: selectedExpenseIDs.contains(exp.id) ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(selectedExpenseIDs.contains(exp.id) ? Color.designPrimaryFixedDim : .secondary)
+                            Text(exp.category?.name ?? "未分类").font(.designBodySmall)
+                            Spacer()
+                            Text(CurrencyFormatter.formatDecimal(amount: abs(exp.amount), fractionDigits: 0))
+                                .font(.designBodySmall).foregroundStyle(.secondary)
+                        }
+                    }.buttonStyle(.plain)
+                }
+                if !selectedExpenseIDs.isEmpty {
+                    HStack { Spacer(); Text("合计: \(CurrencyFormatter.formatDecimal(amount: pendingExpenses.filter { selectedExpenseIDs.contains($0.id) }.reduce(0) { $0 + abs($1.amount) }, fractionDigits: 2))").font(.designBodySmall).foregroundStyle(Color.designPrimaryFixedDim) }
+                }
             }
         }
         .padding(.horizontal, 24).padding(.vertical, 8)
@@ -807,28 +812,32 @@ struct MacAddTransactionSheet: View {
     }
 
     private var lendingSettleSection: some View {
-        VStack(spacing: 8) {
+        HStack(alignment: .top, spacing: 12) {
             Text(lendingDirection == .collect ? "关联待收" : "关联待还")
-                .font(.designLabel).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
-            ForEach(pendingLendingTransactions) { item in
-                Button {
-                    if selectedLendingIDs.contains(item.id) { selectedLendingIDs.remove(item.id) }
-                    else { selectedLendingIDs.insert(item.id) }
-                } label: {
-                    HStack {
-                        Image(systemName: selectedLendingIDs.contains(item.id) ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(selectedLendingIDs.contains(item.id) ? Color.designPrimaryFixedDim : .secondary)
-                        VStack(alignment: .leading) {
-                            Text(item.lendingDirection?.displayName ?? "").font(.designBodySmall)
-                            Text(item.date.formatted(date: .abbreviated, time: .omitted)).font(.designBodyCaption).foregroundStyle(.secondary)
+                .font(.designBodyMedium)
+                .foregroundStyle(.secondary)
+                .frame(width: 60, alignment: .trailing)
+            VStack(spacing: 8) {
+                ForEach(pendingLendingTransactions) { item in
+                    Button {
+                        if selectedLendingIDs.contains(item.id) { selectedLendingIDs.remove(item.id) }
+                        else { selectedLendingIDs.insert(item.id) }
+                    } label: {
+                        HStack {
+                            Image(systemName: selectedLendingIDs.contains(item.id) ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(selectedLendingIDs.contains(item.id) ? Color.designPrimaryFixedDim : .secondary)
+                            VStack(alignment: .leading) {
+                                Text(item.lendingDirection?.displayName ?? "").font(.designBodySmall)
+                                Text(item.date.formatted(date: .abbreviated, time: .omitted)).font(.designBodyCaption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            CurrencyText(amount: abs(item.amount), currencyCode: item.currencyCode, size: 13, foregroundColor: .secondary)
                         }
-                        Spacer()
-                        CurrencyText(amount: abs(item.amount), currencyCode: item.currencyCode, size: 13, foregroundColor: .secondary)
-                    }
-                }.buttonStyle(.plain)
-            }
-            if !selectedLendingIDs.isEmpty {
-                HStack { Spacer(); Text("已选: \(CurrencyFormatter.formatDecimal(amount: pendingLendingTransactions.filter { selectedLendingIDs.contains($0.id) }.reduce(0) { $0 + abs($1.amount) }, fractionDigits: 2))").font(.designBodySmall).foregroundStyle(Color.designPrimaryFixedDim) }
+                    }.buttonStyle(.plain)
+                }
+                if !selectedLendingIDs.isEmpty {
+                    HStack { Spacer(); Text("已选: \(CurrencyFormatter.formatDecimal(amount: pendingLendingTransactions.filter { selectedLendingIDs.contains($0.id) }.reduce(0) { $0 + abs($1.amount) }, fractionDigits: 2))").font(.designBodySmall).foregroundStyle(Color.designPrimaryFixedDim) }
+                }
             }
         }
         .padding(.horizontal, 24).padding(.vertical, 8)

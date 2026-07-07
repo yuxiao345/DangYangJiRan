@@ -10,6 +10,7 @@ enum AppearanceMode: String, CaseIterable {
 
 extension Notification.Name {
     static let macMenuNavigate = Notification.Name("macMenuNavigate")
+    static let macMenuNewTransaction = Notification.Name("macMenuNewTransaction")
 }
 
 @main
@@ -50,7 +51,7 @@ struct QianeymacApp: App {
                     .tint(Color.designAccentGreen)
                     .preferredColorScheme(preferredScheme)
                     .task {
-                        try? appContainer.recurringService.processDueRecurring(context: appContainer.viewContext)
+                        try? appContainer.recurringService.processAndDeduplicate(context: appContainer.viewContext)
                     }
             } else {
                 ProgressView("正在准备数据...")
@@ -69,6 +70,12 @@ struct QianeymacApp: App {
         .defaultSize(width: 1200, height: 780)
         .commands {
             SidebarCommands()
+            CommandGroup(replacing: .newItem) {
+                Button("记一笔") {
+                    NotificationCenter.default.post(name: .macMenuNewTransaction, object: nil)
+                }
+                .keyboardShortcut("n")
+            }
             CommandMenu("导航") {
                 Button("总览") { postNavigate(.dashboard) }
                     .keyboardShortcut("1")

@@ -62,8 +62,6 @@ struct FirstCCApp: App {
     @State private var storesLoaded = false
 
     init() {
-        registerCustomFonts()
-
         let largeTitle = UIFont(name: "SpaceGrotesk-Bold", size: 34) ?? UIFont.systemFont(ofSize: 34, weight: .bold)
         let inlineTitle = UIFont(name: "SpaceGrotesk-SemiBold", size: 17) ?? UIFont.systemFont(ofSize: 17, weight: .semibold)
         UINavigationBar.appearance().largeTitleTextAttributes = [.font: largeTitle]
@@ -74,25 +72,6 @@ struct FirstCCApp: App {
 
         let segmentFont = UIFont(name: "SpaceGrotesk-Medium", size: 13) ?? UIFont.systemFont(ofSize: 13, weight: .medium)
         UISegmentedControl.appearance().setTitleTextAttributes([.font: segmentFont], for: .normal)
-    }
-
-    private func registerCustomFonts() {
-        let fontNames = [
-            "SpaceGrotesk-Light", "SpaceGrotesk-Regular", "SpaceGrotesk-Medium",
-            "SpaceGrotesk-SemiBold", "SpaceGrotesk-Bold",
-            "JetBrainsMono-Regular", "JetBrainsMono-Medium", "JetBrainsMono-Bold"
-        ]
-        for name in fontNames {
-            guard let url = Bundle.main.url(forResource: name, withExtension: "ttf") else {
-                print("[Font] WARNING: \(name).ttf not found in bundle")
-                continue
-            }
-            var error: Unmanaged<CFError>?
-            if !CTFontManagerRegisterFontsForURL(url as CFURL, .process, &error) {
-                let msg = error?.takeRetainedValue().localizedDescription ?? "unknown"
-                print("[Font] Failed to register \(name): \(msg)")
-            }
-        }
     }
 
     private var preferredScheme: ColorScheme? {

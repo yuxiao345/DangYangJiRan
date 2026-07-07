@@ -94,7 +94,7 @@ final class AppContainer {
             }
         }
 
-        // Deduplicate ledgers after CloudKit import
+        // Deduplicate after CloudKit import
         NotificationCenter.default.addObserver(
             forName: .NSPersistentStoreRemoteChange,
             object: nil,
@@ -102,6 +102,7 @@ final class AppContainer {
         ) { [weak self] _ in
             Task { @MainActor [weak self] in
                 self?.deduplicateLedgers()
+                self?.deduplicateRecurring()
             }
         }
     }
@@ -509,6 +510,16 @@ final class AppContainer {
                 UserDefaults.standard.set(keep.id.uuidString, forKey: "currentLedgerID")
             }
             try? context.save()
+        }
+    }
+
+    /// Remove duplicate recurring transactions (same template + same day) that can appear
+    /// when multiple devices trigger processDueRecurring before iCloud sync propagates.
+    func deduplicateRecurring() {
+        do {
+            try recurringService.deduplicateRecurringTransactions(context: viewContext)
+        } catch {
+            DiagnosticLog.log("AppContainer: deduplicateRecurring FAILED: \(error.localizedDescription)")
         }
     }
 

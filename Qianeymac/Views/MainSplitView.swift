@@ -47,6 +47,9 @@ struct MainSplitView: View {
                 selection = item
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .macMenuNewTransaction)) { _ in
+            showAddSheet = true
+        }
         .sheet(isPresented: $showAddSheet) {
             MacAddTransactionSheet()
         }
