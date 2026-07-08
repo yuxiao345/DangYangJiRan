@@ -29,31 +29,32 @@ enum ReportPeriod: Hashable {
     var dateRange: Range<Date>? {
         let cal = Calendar.current
         let now = Date()
-        let end = cal.date(byAdding: .day, value: 1, to: now) ?? now
+        let todayEnd = cal.date(byAdding: .day, value: 1, to: now) ?? now
         switch self {
         case .thisMonth:
-            return now.startOfMonth..<end
+            let endOfMonth = cal.date(byAdding: .month, value: 1, to: now.startOfMonth) ?? now
+            return now.startOfMonth..<endOfMonth
         case .last3Months:
             guard let start = cal.date(byAdding: .month, value: -3, to: now)?.startOfMonth else { return nil }
-            return start..<end
+            return start..<todayEnd
         case .last6Months:
             guard let start = cal.date(byAdding: .month, value: -6, to: now)?.startOfMonth else { return nil }
-            return start..<end
+            return start..<todayEnd
         case .last12Months:
             guard let start = cal.date(byAdding: .month, value: -12, to: now)?.startOfMonth else { return nil }
-            return start..<end
+            return start..<todayEnd
         case .last18Months:
             guard let start = cal.date(byAdding: .month, value: -18, to: now)?.startOfMonth else { return nil }
-            return start..<end
+            return start..<todayEnd
         case .lastYear:
             guard let start = cal.date(byAdding: .year, value: -1, to: now)?.startOfMonth else { return nil }
-            return start..<end
+            return start..<todayEnd
         case .last2Years:
             guard let start = cal.date(byAdding: .year, value: -2, to: now)?.startOfMonth else { return nil }
-            return start..<end
+            return start..<todayEnd
         case .last3Years:
             guard let start = cal.date(byAdding: .year, value: -3, to: now)?.startOfYear else { return nil }
-            return start..<end
+            return start..<todayEnd
         case .customRange(let start, let end):
             return start..<end
         }
@@ -772,7 +773,7 @@ final class ReportViewModel {
                let dir = t.lendingDirection,
                dir == .borrowIn,
                t.lendingStatus == .pending {
-                balance += -t.amount
+                balance += -ledgerAmount(t)
             } else {
                 balance += ledgerAmount(t)
             }

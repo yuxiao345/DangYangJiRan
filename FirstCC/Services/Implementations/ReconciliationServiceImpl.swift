@@ -128,7 +128,7 @@ struct ReconciliationServiceImpl: ReconciliationServiceProtocol {
         for match in matches {
             switch match.userAction {
             case .confirmed(let txn):
-                appTotal += txn.amount
+                appTotal += txn.ledgerAmount
             case .createNew:
                 if let amount = match.bankItem.amount {
                     appTotal += amount

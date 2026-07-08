@@ -40,19 +40,25 @@ struct AccountServiceImpl: AccountServiceProtocol {
         let accountID = account.id
         var balance = account.initialBalance
 
+        // 若账户币种与账本基准币种不一致，使用交易原始币种保持一致性
+        let acctCurrency = account.effectiveCurrencyCode
+        let ledgerCurrency = account.ledger?.defaultCurrencyCode ?? "CNY"
+        let useLedgerAmount = acctCurrency == ledgerCurrency
+
         let request = NSFetchRequest<Transaction>(entityName: "Transaction")
         request.predicate = NSPredicate(format: "account.id == %@ AND isReconciled == NO AND parentTransaction == nil", accountID as CVarArg)
         let transactions = (try? context.fetch(request)) ?? []
 
         for t in transactions {
+            let amt = useLedgerAmount ? t.ledgerAmount : t.amount
             // 借贷账户上的待结算借入=债务，反转符号（借入+1000 → 余额-1000）
             if account.type == .lending,
                let dir = t.lendingDirection,
                dir == .borrowIn,
                t.lendingStatus == .pending {
-                balance += -t.amount
+                balance += -amt
             } else {
-                balance += t.amount
+                balance += amt
             }
         }
 
@@ -64,12 +70,13 @@ struct AccountServiceImpl: AccountServiceProtocol {
                                               accountID as CVarArg, TransactionType.lending.rawValue)
             let toTransactions = (try? context.fetch(toRequest)) ?? []
             for t in toTransactions {
+                let amt = useLedgerAmount ? t.ledgerAmount : t.amount
                 if let dir = t.lendingDirection {
                     switch dir {
                     case .lendOut:
-                        if t.lendingStatus == .pending { balance += -t.amount }
+                        if t.lendingStatus == .pending { balance += -amt }
                     case .repay:
-                        balance += t.amount
+                        balance += amt
                     case .borrowIn, .collect:
                         break
                     }

@@ -171,7 +171,7 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
 
     func totalExpense(in range: ClosedRange<Date>, ledger: Ledger, context: NSManagedObjectContext) -> Decimal {
         let txs = fetchExpenseTransactions(in: range, ledgerID: ledger.id, context: context)
-        return abs(txs.reduce(Decimal(0)) { $0 + $1.amount })
+        return abs(txs.reduce(Decimal(0)) { $0 + $1.ledgerAmount })
     }
 
     func categorySpending(in range: ClosedRange<Date>, for book: BudgetBook, context: NSManagedObjectContext) -> [UUID: Decimal] {
@@ -179,7 +179,7 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
         return fetchExpenseTransactions(in: range, ledgerID: ledgerID, context: context)
             .reduce(into: [:]) { dict, t in
                 guard let catID = t.category?.id else { return }
-                dict[catID, default: 0] += t.amount
+                dict[catID, default: 0] += t.ledgerAmount
             }
             .mapValues { abs($0) }
     }
@@ -197,7 +197,7 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
                 return ids.contains(cid)
             }
         }
-        return abs(txs.reduce(Decimal(0)) { $0 + $1.amount })
+        return abs(txs.reduce(Decimal(0)) { $0 + $1.ledgerAmount })
     }
 
     private func budgetedCategoryIDs(for book: BudgetBook) -> Set<UUID> {
@@ -221,7 +221,7 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
         var byDay: [Date: Decimal] = [:]
         for t in filtered {
             let day = cal.startOfDay(for: t.date)
-            byDay[day, default: 0] += t.amount
+            byDay[day, default: 0] += t.ledgerAmount
         }
         var current = cal.startOfDay(for: range.lowerBound)
         let end = min(cal.startOfDay(for: range.upperBound), cal.startOfDay(for: Date()))

@@ -23,6 +23,7 @@ struct TransactionListView: View {
     @State private var dailyIncome: [Int: Decimal] = [:]
     @State private var maxDailyExpense: Decimal = 0
     @State private var maxDailyIncome: Decimal = 0
+    @State private var refreshVersion = 0
     @State private var monthlyIncome: Decimal = 0
     @State private var monthlyExpense: Decimal = 0
     @State private var monthTransactions: [Transaction] = []
@@ -73,6 +74,7 @@ struct TransactionListView: View {
                 .padding(16)
             }
         }
+        .id(refreshVersion)
         .modifier(ScrollCollapseModifier(isCalendarExpanded: $isCalendarExpanded))
         .designScreen()
         .navigationTitle(filterCategory.map { LocalizedStringKey($0.name) } ?? "流水")
@@ -127,13 +129,13 @@ struct TransactionListView: View {
             applyFilters()
         }
         .onChange(of: filterType) { _, _ in
-            loadCalendarData()
             applyFilters()
         }
         .onChange(of: selectedDay) { _, _ in applyFilters() }
         .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in
             loadCalendarData()
             applyFilters()
+            refreshVersion &+= 1
         }
     }
 
@@ -146,8 +148,8 @@ struct TransactionListView: View {
             if t.type == .income, fullMonthSettlementIDs.contains(t.id) { return false }
             return true
         }
-        let total = nonTransfer.reduce(Decimal.zero) { $0 + $1.amount }
-        let currencyCode = transactions.first?.currencyCode ?? "CNY"
+        let total = nonTransfer.reduce(Decimal.zero) { $0 + $1.ledgerAmount }
+        let currencyCode = transactions.first?.ledger?.defaultCurrencyCode ?? "CNY"
 
         return HStack(spacing: 8) {
             Circle()
@@ -223,12 +225,13 @@ struct TransactionListView: View {
             let d = cal.component(.day, from: t.date)
             switch t.type {
             case .expense:
-                let absAmt = abs(t.amount)
+                let absAmt = abs(t.ledgerAmount)
                 expenseByDay[d, default: 0] += absAmt
                 totalExpense += absAmt
             case .income:
-                incomeByDay[d, default: 0] += t.amount
-                totalIncome += t.amount
+                let incAmt = t.ledgerAmount
+                incomeByDay[d, default: 0] += incAmt
+                totalIncome += incAmt
             default:
                 break
             }

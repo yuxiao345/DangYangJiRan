@@ -160,11 +160,11 @@ struct AccountListView: View {
 
         let lendOutPending = allLending
             .filter { $0.lendingDirectionRaw == lendOutRaw && $0.lendingStatusRaw == pendingRaw && $0.toAccount?.id == accountID }
-            .reduce(Decimal.zero) { $0 + $1.amount + ($1.settledAmount ?? 0) }
+            .reduce(Decimal.zero) { $0 + $1.ledgerAmount + $1.settledAmountInLedgerCurrency }
 
         let borrowInPending = allLending
             .filter { $0.lendingDirectionRaw == borrowInRaw && $0.lendingStatusRaw == pendingRaw && $0.account?.id == accountID }
-            .reduce(Decimal.zero) { $0 + $1.amount - ($1.settledAmount ?? 0) }
+            .reduce(Decimal.zero) { $0 + $1.ledgerAmount - $1.settledAmountInLedgerCurrency }
 
         return AccountRowView.LendingAccountInfo(
             lendOutPending: -lendOutPending,

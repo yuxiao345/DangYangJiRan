@@ -86,6 +86,7 @@ struct AddEditAccountView: View {
                             Text("\(code) (\(currencyName(code)))").tag(code)
                         }
                     }
+                    .disabled(isEditing)
 
                     Button {
                         showLogoPicker = true

@@ -103,7 +103,7 @@ final class DashboardViewModel {
 
         let normalTransactions = allTransactions.excludingReimbursementTransactions()
 
-        monthlyIncome = normalTransactions.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
+        monthlyIncome = normalTransactions.filter { $0.type == .income }.reduce(0) { $0 + $1.ledgerAmount }
         let cal = Calendar.current
         let rangeStart = cal.startOfDay(for: monthStart)
         let rangeEnd = cal.endOfDay(for: cal.date(byAdding: DateComponents(month: 1, day: -1), to: monthStart) ?? monthStart)
@@ -113,7 +113,7 @@ final class DashboardViewModel {
         recentTransactions = Array(allTransactions.deduplicatingTransfers().sorted(by: { $0.date > $1.date }).prefix(20))
 
         // Previous month balance = current balance - this month's net (all types, unfiltered)
-        let net = allTransactions.reduce(0) { $0 + $1.amount }
+        let net = allTransactions.reduce(0) { $0 + $1.ledgerAmount }
         previousMonthBalance = totalBalance - net
         if previousMonthBalance != 0 {
             let change = totalBalance - previousMonthBalance
@@ -276,7 +276,7 @@ final class DashboardViewModel {
     }
 
     private func netAmount(_ t: Transaction) -> Decimal {
-        let base = t.convertedAmount ?? t.amount
+        let base = t.ledgerAmount
         return t.refundGroupId != nil ? -abs(base) : abs(base)
     }
 

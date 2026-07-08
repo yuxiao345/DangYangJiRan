@@ -56,6 +56,6 @@ struct CreditCardStatementServiceImpl: CreditCardStatementServiceProtocol {
 
         return allTxns
             .filter { $0.type == .expense && period.contains($0.date) }
-            .reduce(Decimal.zero) { $0 + $1.amount }
+            .reduce(Decimal.zero) { $0 + $1.ledgerAmount }
     }
 }

@@ -172,6 +172,7 @@ struct MacAccountEditSheet: View {
                     }
                 }
                 .pickerStyle(.menu).labelsHidden()
+                .disabled(isEditing)
             }
             GridRow {
                 Text("余额：")

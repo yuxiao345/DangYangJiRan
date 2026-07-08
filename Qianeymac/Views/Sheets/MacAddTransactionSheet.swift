@@ -187,10 +187,10 @@ struct MacAddTransactionSheet: View {
             loadPendingLendingTx()
             if editing == nil {
                 selectedCurrencyCode = selectedAccount?.currencyCode ?? ledgerCurrencyCode
+                exchangeRate = nil
+                convertedAmount = nil
+                if activeCurrency != ledgerCurrencyCode { fetchExchangeRate() }
             }
-            exchangeRate = nil
-            convertedAmount = nil
-            if activeCurrency != ledgerCurrencyCode { fetchExchangeRate() }
         }
         .onChange(of: selectedToAccount) { _, _ in loadPendingLendingTx(); destAmount = 0; destAmountString = "0.00" }
         .onChange(of: selectedPhotos) { _, _ in loadPhotoData() }
@@ -1075,12 +1075,7 @@ struct MacAddTransactionSheet: View {
             t.category = selectedCategory; t.member = selectedMember; t.merchant = selectedMerchant
             t.project = selectedProject; t.modifiedAt = Date()
 
-            // Currency + exchange rate
-            t.currencyCode = activeCurrency
-            if activeCurrency != ledgerCurrencyCode, let rate = exchangeRate {
-                t.exchangeRate = NSDecimalNumber(decimal: rate).doubleValue
-                t.convertedAmount = convertedAmount
-            } else { t.exchangeRate = 0; t.convertedAmount = nil }
+            appContainer.transactionService.applyCurrency(to: t, currencyCode: activeCurrency, exchangeRate: exchangeRate, ledgerCurrencyCode: ledgerCurrencyCode)
 
             // Split: delete old children, recreate
             if type == .expense {
@@ -1095,6 +1090,7 @@ struct MacAddTransactionSheet: View {
                             category: item.category, member: item.member, merchant: item.merchant,
                             project: item.project, parentTransaction: t, context: modelContext)
                         child.ledger = t.ledger
+                        appContainer.transactionService.applyCurrency(to: child, currencyCode: activeCurrency, exchangeRate: exchangeRate, ledgerCurrencyCode: ledgerCurrencyCode)
                     }
                 }
                 t.reimbursementStatus = isReimbursable ? .pending : .none
@@ -1133,7 +1129,7 @@ struct MacAddTransactionSheet: View {
             }
             t.photoURLs = photoDataList.isEmpty ? nil : PhotoStorage.save(photoDataList, transactionId: t.id)
 
-            do { try modelContext.save(); isEditing = false }
+            do { try modelContext.save(); isEditing = false; NotificationCenter.default.post(name: .transactionDidChange, object: nil) }
             catch { errorMessage = error.localizedDescription }
         } else if let refundOriginal = refundingOriginal {
             // Refund: use the dedicated service method
@@ -1153,6 +1149,7 @@ struct MacAddTransactionSheet: View {
                         date: date, account: selectedAccount, category: item.category, member: item.member,
                         merchant: item.merchant, project: item.project, parentTransaction: parent, context: modelContext)
                     child.ledger = ledger
+                    appContainer.transactionService.applyCurrency(to: child, currencyCode: activeCurrency, exchangeRate: exchangeRate, ledgerCurrencyCode: ledgerCurrencyCode)
                 }
                 try? modelContext.save()
                 NotificationCenter.default.post(name: .transactionDidChange, object: nil)
@@ -1170,7 +1167,7 @@ struct MacAddTransactionSheet: View {
                 let tx = Transaction(type: type, amount: signed, currencyCode: activeCurrency, note: note.isEmpty ? nil : note,
                     date: date, account: selectedAccount, toAccount: selectedToAccount,
                     category: selectedCategory, member: selectedMember, merchant: selectedMerchant, project: selectedProject, context: modelContext)
-                if activeCurrency != ledgerCurrencyCode, let rate = exchangeRate { tx.exchangeRate = NSDecimalNumber(decimal: rate).doubleValue; tx.convertedAmount = convertedAmount }
+                appContainer.transactionService.applyCurrency(to: tx, currencyCode: activeCurrency, exchangeRate: exchangeRate, ledgerCurrencyCode: ledgerCurrencyCode)
                 if type == .expense && isReimbursable { tx.reimbursementStatus = .pending }
                 if type == .lending { tx.lendingDirection = lendingDirection; if lendingDirection == .lendOut || lendingDirection == .borrowIn { tx.lendingStatus = .pending } }
                 if !photoDataList.isEmpty { tx.photoURLs = PhotoStorage.save(photoDataList, transactionId: tx.id) }

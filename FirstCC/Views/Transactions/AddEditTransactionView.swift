@@ -161,9 +161,9 @@ struct AddEditTransactionView: View {
                 loadPendingLendingTransactions()
                 if editing == nil {
                     selectedCurrencyCode = selectedAccount?.currencyCode ?? "CNY"
+                    exchangeRate = nil
+                    if needsExchangeRate { fetchExchangeRate() }
                 }
-                exchangeRate = nil
-                if needsExchangeRate { fetchExchangeRate() }
             }
             .onChange(of: selectedToAccount) { _, _ in
                 selectedLendingIDs = []
@@ -1922,6 +1922,7 @@ struct AddEditTransactionView: View {
         selectedAccount = t.account
         selectedToAccount = t.toAccount
         selectedCurrencyCode = t.currencyCode
+        if let rate = t.exchangeRateValue { exchangeRate = Decimal(rate) }
         selectedCategory = t.category
         selectedMember = t.member
         selectedMerchant = t.merchant
@@ -2046,6 +2047,7 @@ struct AddEditTransactionView: View {
                 context: modelContext
             )
             child.ledger = ledger
+            applyCurrency(to: child)
         }
     }
 
@@ -2101,11 +2103,10 @@ struct AddEditTransactionView: View {
     }
 
     private func applyCurrency(to t: Transaction) {
-        t.currencyCode = selectedCurrencyCode
-        if selectedCurrencyCode != ledgerCurrencyCode, let rate = exchangeRate {
-            t.exchangeRate = Double(truncating: rate as NSDecimalNumber)
-            t.convertedAmount = t.amount * rate
-        }
+        appContainer.transactionService.applyCurrency(
+            to: t, currencyCode: selectedCurrencyCode,
+            exchangeRate: exchangeRate, ledgerCurrencyCode: ledgerCurrencyCode
+        )
     }
 
     private func currencyName(_ code: String) -> String {
@@ -2174,7 +2175,7 @@ struct AddEditTransactionView: View {
     private var selectedLendingTotal: Decimal {
         pendingLendingTransactions
             .filter { selectedLendingIDs.contains($0.id) }
-            .reduce(0) { $0 + abs($1.amount) }
+            .reduce(0) { $0 + abs($1.ledgerAmount) }
     }
 
     private func displayLabelForLending(_ t: Transaction) -> String {
@@ -2209,6 +2210,8 @@ struct AddEditTransactionView: View {
         t.member = selectedMember
         t.merchant = selectedMerchant
         t.project = selectedProject
+
+        applyCurrency(to: t)
 
         if isSplit && type == .expense {
             t.isSplitParent = true
@@ -2274,10 +2277,14 @@ struct AddEditTransactionView: View {
                 }
                 paired.photoURLs = photoDataList.isEmpty ? nil : PhotoStorage.save(photoDataList, transactionId: paired.id)
                 paired.modifiedAt = Date()
+                if let destCurrency = selectedToAccount?.effectiveCurrencyCode {
+                    paired.currencyCode = destCurrency
+                }
             }
         }
 
         try modelContext.save()
+        NotificationCenter.default.post(name: .transactionDidChange, object: nil)
     }
 
     private func toggleExpense(_ id: UUID) {
@@ -2291,7 +2298,7 @@ struct AddEditTransactionView: View {
     private var selectedReimbursementTotal: Decimal {
         pendingExpenses
             .filter { selectedExpenseIDs.contains($0.id) }
-            .reduce(0) { $0 + abs($1.amount) }
+            .reduce(0) { $0 + abs($1.ledgerAmount) }
     }
 
     private func loadPendingExpenses() {

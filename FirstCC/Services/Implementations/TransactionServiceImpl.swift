@@ -21,8 +21,8 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
         let groupID = UUID()
         let absSourceAmount = abs(amount)
         let absDestAmount = destAmount.map { abs($0) } ?? absSourceAmount
-        let sourceCurrency = sourceAccount.currencyCode ?? "CNY"
-        let destCurrency = destAccount.currencyCode ?? "CNY"
+        let sourceCurrency = sourceAccount.effectiveCurrencyCode
+        let destCurrency = destAccount.effectiveCurrencyCode
 
         let outflow = Transaction(
             type: .transfer,
@@ -66,6 +66,8 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
             type: original.type,
             amount: signedAmount,
             currencyCode: original.currencyCode,
+            exchangeRate: original.exchangeRateValue,
+            convertedAmount: original.amount != 0 ? original.convertedAmount.map { $0 / original.amount * signedAmount } : nil,
             note: "退款: \(original.note ?? "")",
             date: Date(),
             refundGroupId: original.id,
@@ -230,5 +232,19 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
         context.delete(transaction)
         try context.save()
         NotificationCenter.default.post(name: .transactionDidChange, object: nil)
+    }
+
+    func applyCurrency(to t: Transaction, currencyCode: String, exchangeRate: Decimal?, ledgerCurrencyCode: String) {
+        t.currencyCode = currencyCode
+        if currencyCode != ledgerCurrencyCode, let rate = exchangeRate {
+            t.exchangeRate = Double(truncating: rate as NSDecimalNumber)
+            let computed = t.amount * rate
+            // 使用 Double 中间值避免 Swift 6.3 / macOS 26 beta 中
+            // NSDecimalNumber → Int64 的高精度 Decimal 转换 bug
+            t.convertedAmountInFen = Int64((computed * 100 as NSDecimalNumber).doubleValue)
+        } else {
+            t.exchangeRate = 0
+            t.convertedAmountInFen = 0
+        }
     }
 }

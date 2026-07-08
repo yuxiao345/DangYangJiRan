@@ -216,6 +216,7 @@ private struct LedgerSettingsContent: View {
                         }
                     }
                     .pickerStyle(.menu).labelsHidden()
+                    .disabled(true)
                 }
             }
             .buttonSizing(.flexible)       // macOS 26+ — makes Picker fill available width

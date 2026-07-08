@@ -172,7 +172,7 @@ struct AccountDetailView: View {
         // groups 从最新到最旧排列，从当前余额逐步回推
         for group in groups {
             result[group.key] = running
-            let dayNet = group.value.reduce(Decimal.zero) { $0 + $1.amount }
+            let dayNet = group.value.reduce(Decimal.zero) { $0 + $1.ledgerAmount }
             running -= dayNet
         }
         return result

@@ -51,6 +51,7 @@ struct LedgerSettingsView: View {
                         Text("\(code) (\(currencyName(code)))").tag(code)
                     }
                 }
+                .disabled(true)
             }
 
             Section {

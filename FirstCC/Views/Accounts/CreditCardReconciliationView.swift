@@ -198,7 +198,7 @@ struct StatementTransactionsView: View {
         if statement.isReconciled, let saved = statement.reconciledAppAmount {
             return saved
         }
-        return transactions.reduce(Decimal.zero) { $0 + $1.amount }
+        return transactions.reduce(Decimal.zero) { $0 + $1.ledgerAmount }
     }
 
     private func loadTransactions() {

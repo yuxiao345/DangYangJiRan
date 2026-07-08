@@ -81,6 +81,16 @@ final class Transaction: NSManagedObject,  Sendable {
         set { exchangeRate = newValue ?? 0 }
     }
 
+    /// 以账本基准币种计价的金额（跨币种自动换算）
+    var ledgerAmount: Decimal { convertedAmount ?? amount }
+
+    /// 已结算金额按账本基准币种换算
+    var settledAmountInLedgerCurrency: Decimal {
+        guard let settled = settledAmount, settled != 0 else { return 0 }
+        guard let rate = exchangeRateValue else { return settled }
+        return settled * Decimal(rate)
+    }
+
     var convertedAmount: Decimal? {
         get { convertedAmountInFen == 0 ? nil : Decimal(convertedAmountInFen) / 100 }
         set { convertedAmountInFen = newValue.map { Int64(truncating: ($0 * 100) as NSDecimalNumber) } ?? 0 }
