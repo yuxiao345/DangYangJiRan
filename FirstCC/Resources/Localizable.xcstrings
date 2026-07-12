@@ -11564,6 +11564,23 @@
           }
         }
       }
+    },
+    "创建 '%@'" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create '%@'"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建 '%@'"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

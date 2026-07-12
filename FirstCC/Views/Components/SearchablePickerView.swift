@@ -12,6 +12,7 @@ struct SearchablePickerView<Item: Identifiable & Hashable>: View {
     let indentLevel: ((Item) -> Int)?
     let childrenProvider: ((Item) -> [Item])?
     let groupLabel: ((Item) -> String)?
+    let onCreate: ((String) async -> Item?)?
     @Binding var selection: Item?
 
     @State private var searchText = ""
@@ -27,6 +28,7 @@ struct SearchablePickerView<Item: Identifiable & Hashable>: View {
         indentLevel: ((Item) -> Int)? = nil,
         childrenProvider: ((Item) -> [Item])? = nil,
         groupLabel: ((Item) -> String)? = nil,
+        onCreate: ((String) async -> Item?)? = nil,
         selection: Binding<Item?>
     ) {
         self.title = title
@@ -38,6 +40,7 @@ struct SearchablePickerView<Item: Identifiable & Hashable>: View {
         self.indentLevel = indentLevel
         self.childrenProvider = childrenProvider
         self.groupLabel = groupLabel
+        self.onCreate = onCreate
         self._selection = selection
     }
 
@@ -62,9 +65,29 @@ struct SearchablePickerView<Item: Identifiable & Hashable>: View {
                         }
                     }
                 } else {
+                    let results = filteredItems
                     Section(searchText.isEmpty ? "全部" : "搜索结果") {
-                        ForEach(filteredItems) { item in
-                            itemRow(item)
+                        if !searchText.isEmpty && results.isEmpty, let onCreate = onCreate {
+                            Button {
+                                Task {
+                                    if let newItem = await onCreate(searchText) {
+                                        selection = newItem
+                                        saveRecent(newItem)
+                                        dismiss()
+                                    }
+                                }
+                            } label: {
+                                HStack {
+                                    Image(systemName: "plus.circle.fill")
+                                        .foregroundStyle(.green)
+                                        .frame(width: 28)
+                                    Text(String(localized: "创建 '\(searchText)'"))
+                                }
+                            }
+                        } else {
+                            ForEach(results) { item in
+                                itemRow(item)
+                            }
                         }
                     }
                 }

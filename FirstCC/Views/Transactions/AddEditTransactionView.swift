@@ -1802,6 +1802,16 @@ struct AddEditTransactionView: View {
                 itemLabel: { $0.name },
                 itemIcon: { _ in "bag" },
                 recentKey: "recent_merchant",
+                onCreate: { name in
+                    guard let ledger = appContainer.currentLedger else { return nil }
+                    let merchant = Merchant(name: name, sortOrder: merchants.count, context: modelContext)
+                    do {
+                        try appContainer.merchantService.createMerchant(merchant, ledger: ledger, context: modelContext)
+                        return merchant
+                    } catch {
+                        return nil
+                    }
+                },
                 selection: $selectedMerchant
             )
         case .project:
