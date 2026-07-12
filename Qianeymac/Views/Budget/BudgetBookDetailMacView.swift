@@ -211,7 +211,27 @@ struct BudgetBookDetailMacView: View {
     }
 
     private func loadData() {
-        items = (try? appContainer.budgetService.fetchItems(for: book, context: modelContext)) ?? []
+        let newItems = (try? appContainer.budgetService.fetchItems(for: book, context: modelContext)) ?? []
+        // 排序：一级分类在上，其子分类紧跟在下方；同级按名称排序
+        // 预构建排序键映射，避免在 sorted 比较器内 O(n) 扫描
+        let budgetedCatIDs = Set(newItems.compactMap { $0.category?.id })
+        let catNameByID: [UUID: String] = Dictionary(uniqueKeysWithValues: newItems.compactMap { item in
+            item.category.flatMap { ($0.id, $0.name) }
+        })
+        var sortKeys: [UUID: String] = [:]
+        for item in newItems {
+            guard let cat = item.category else { continue }
+            if let ancestorID = cat.allAncestorIDs.first(where: { budgetedCatIDs.contains($0) }) {
+                sortKeys[cat.id] = (catNameByID[ancestorID] ?? "") + cat.name
+            } else {
+                sortKeys[cat.id] = cat.name
+            }
+        }
+        items = newItems.sorted { a, b in
+            let keyA = a.category.flatMap { sortKeys[$0.id] } ?? ""
+            let keyB = b.category.flatMap { sortKeys[$0.id] } ?? ""
+            return (keyA as NSString).localizedStandardCompare(keyB) == .orderedAscending
+        }
         for item in items {
             cumulative[item.id] = appContainer.budgetService.cumulativeSpending(for: item, context: modelContext)
             period[item.id] = appContainer.budgetService.currentPeriodSpending(for: item, context: modelContext)

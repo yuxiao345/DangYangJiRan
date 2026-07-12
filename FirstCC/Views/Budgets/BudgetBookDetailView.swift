@@ -244,23 +244,43 @@ struct BudgetBookDetailView: View {
         let monthRange = rangeStart...rangeEnd
 
         let newItems = (try? appContainer.budgetService.fetchItems(for: book, context: modelContext)) ?? []
+        // 排序：一级分类在上，其子分类紧跟在下方；同级按名称排序
+        // 预构建排序键映射，避免在 sorted 比较器内 O(n) 扫描
+        let budgetedCatIDs = Set(newItems.compactMap { $0.category?.id })
+        let catNameByID: [UUID: String] = Dictionary(uniqueKeysWithValues: newItems.compactMap { item in
+            item.category.flatMap { ($0.id, $0.name) }
+        })
+        var sortKeys: [UUID: String] = [:]
+        for item in newItems {
+            guard let cat = item.category else { continue }
+            if let ancestorID = cat.allAncestorIDs.first(where: { budgetedCatIDs.contains($0) }) {
+                sortKeys[cat.id] = (catNameByID[ancestorID] ?? "") + cat.name
+            } else {
+                sortKeys[cat.id] = cat.name
+            }
+        }
+        let sortedItems = newItems.sorted { a, b in
+            let keyA = a.category.flatMap { sortKeys[$0.id] } ?? ""
+            let keyB = b.category.flatMap { sortKeys[$0.id] } ?? ""
+            return (keyA as NSString).localizedStandardCompare(keyB) == .orderedAscending
+        }
         let cumDict = appContainer.budgetService.categorySpending(in: cal.startOfDay(for: book.startDate)...Date(), for: book, context: modelContext)
         let perDict = appContainer.budgetService.categorySpending(in: monthRange, for: book, context: modelContext)
         var newCumulative: [UUID: Decimal] = [:]
         var newPeriod: [UUID: Decimal] = [:]
-        for item in newItems {
+        for item in sortedItems {
             let catID = item.category?.id
             newCumulative[item.id] = catID.flatMap { cumDict[$0] } ?? 0
             newPeriod[item.id] = catID.flatMap { perDict[$0] } ?? 0
         }
         let newUnbudgeted = appContainer.budgetService.unbudgetedCategorySpending(for: book, context: modelContext)
         let newTotalUnbudgeted = newUnbudgeted.reduce(0) { $0 + $1.1 }
-        // 从 categorySpending 结果直接求和，避免重复 fetch
-        let newTotalCumulative = cumDict.values.reduce(0, +)
-        let newTotalPeriod = perDict.values.reduce(0, +)
+        // 用专用方法计算汇总支出，避免 categorySpending 字典祖先展开导致重复计算
+        let newTotalCumulative = appContainer.budgetService.totalCumulativeSpending(for: book, context: modelContext)
+        let newTotalPeriod = appContainer.budgetService.totalCurrentPeriodSpending(for: book, context: modelContext)
 
         // 先渲染 0 状态列表，下一帧用 spring 驱动 Animatable 进度条
-        items = newItems
+        items = sortedItems
         cumulativeSpent = [:]
         periodSpent = [:]
         animTotalCumulative = 0

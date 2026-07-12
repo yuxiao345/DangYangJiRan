@@ -146,6 +146,8 @@ struct BudgetItemData: Identifiable {
     let periodCount: Double
     /// 是否为累计数据（非本维度原生周期项）
     let isCumulative: Bool
+    /// 是否为子限额（其分类的祖先也有预算）
+    let isSubLimit: Bool
     /// 本维度时间进度
     let timeProgress: Double
     let elapsedDays: Int
@@ -819,8 +821,8 @@ final class ReportViewModel {
         let elapsed = min(max(0, cal.dateComponents([.day], from: start, to: today).day ?? 0), totalDays)
         let remainingDays = max(0, totalDays - elapsed)
 
-        let totalBudget = budgetItems.reduce(Decimal(0)) { $0 + $1.budgetAmount }
-        let totalSpent = budgetItems.reduce(Decimal(0)) { $0 + $1.spentAmount }
+        let totalBudget = budgetItems.filter { !$0.isSubLimit }.reduce(Decimal(0)) { $0 + $1.budgetAmount }
+        let totalSpent = budgetItems.filter { !$0.isSubLimit }.reduce(Decimal(0)) { $0 + $1.spentAmount }
 
         let timeProgress = totalDays > 0 ? Double(elapsed) / Double(totalDays) : 0
         let budgetProgress = totalBudget > 0 ? Double(truncating: (totalSpent / totalBudget) as NSNumber) : 0
@@ -865,8 +867,13 @@ final class ReportViewModel {
         let categorySpending = budgetService.categorySpending(in: dimRange, for: book, context: context)
         let tp = dim.timeProgress(bookStart: book.startDate, bookEnd: book.endDate)
 
+        // 预计算：哪些分类有预算（用于判断子限额），仅含活跃项，与 rootBudgetItems 保持一致
+        let budgetedCatIDs = Set(items.filter { $0.isActive }.compactMap { $0.category?.id })
+
         budgetItems = items.compactMap { item in
             guard let cat = item.category else { return nil }
+            // 如果该分类的任何祖先也有预算，则本项是子限额
+            let isSubLimit = cat.allAncestorIDs.contains(where: { budgetedCatIDs.contains($0) })
             let period = item.period
 
             guard let target = dim.nativePeriod else {
@@ -877,7 +884,7 @@ final class ReportViewModel {
                     id: item.id, name: cat.name, colorHex: cat.colorHex ?? "#999999",
                     period: period, budgetAmount: totalBudget, spentAmount: cumulativeSpent,
                     periodAmount: item.amount, periodCount: Double(item.periodCount),
-                    isCumulative: false,
+                    isCumulative: false, isSubLimit: isSubLimit,
                     timeProgress: tp.progress, elapsedDays: tp.elapsed, totalPeriodDays: tp.total
                 )
             }
@@ -898,7 +905,7 @@ final class ReportViewModel {
                 id: item.id, name: cat.name, colorHex: cat.colorHex ?? "#999999",
                 period: period, budgetAmount: budget, spentAmount: abs(spent),
                 periodAmount: item.amount, periodCount: 1,
-                isCumulative: !isNative,
+                isCumulative: !isNative, isSubLimit: isSubLimit,
                 timeProgress: tp.progress, elapsedDays: tp.elapsed, totalPeriodDays: tp.total
             )
         }.sorted {
@@ -917,8 +924,8 @@ final class ReportViewModel {
         if book.matchBudgetItems {
             var trendByCat: [UUID: [DailySpendingPoint]] = [:]
             for item in items {
-                guard let cid = item.category?.id else { continue }
-                trendByCat[item.id] = budgetService.dailySpending(in: trendStart...trendEnd, categoryID: cid, ledgerID: ledger.id, context: context)
+                guard let cat = item.category else { continue }
+                trendByCat[item.id] = budgetService.dailySpending(in: trendStart...trendEnd, categoryID: cat.id, ledgerID: ledger.id, context: context)
             }
             dailyTrendByCategory = trendByCat
         } else {
@@ -928,8 +935,13 @@ final class ReportViewModel {
         // 消耗速率：matchBudgetItems 决定范围
         let burnPoints: [DailySpendingPoint]
         if book.matchBudgetItems {
+            let budgetedCatIDs = Set(items.filter { $0.isActive }.compactMap { $0.category?.id })
             var dailyAggregate: [Date: Decimal] = [:]
-            for (_, points) in dailyTrendByCategory {
+            for item in items {
+                guard let cat = item.category else { continue }
+                // 找出该分类下已有独立预算的后代，作为排除项传给 dailySpending
+                let childBudgetedIDs = cat.allDescendantIDs.filter { budgetedCatIDs.contains($0) }
+                let points = budgetService.dailySpending(in: trendStart...trendEnd, categoryID: cat.id, excludeCategoryIDs: childBudgetedIDs, ledgerID: ledger.id, context: context)
                 for point in points {
                     dailyAggregate[point.date, default: 0] += point.amount
                 }

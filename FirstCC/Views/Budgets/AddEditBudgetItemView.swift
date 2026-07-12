@@ -20,6 +20,9 @@ struct AddEditBudgetItemView: View {
     @State private var showCategoryPicker = false
     @State private var categorySearchText = ""
     @State private var errorMessage: String?
+    @State private var periodLocked = false
+    @State private var lockedByCategory = ""
+    @State private var amountWarning: String?
 
     #if os(macOS)
     private let fieldLabel: Font = .custom("SpaceGrotesk-Regular", fixedSize: 13)
@@ -79,10 +82,23 @@ struct AddEditBudgetItemView: View {
             }
             #endif
         }
+        .onChange(of: selectedCategory) { _, newCat in
+            if let cat = newCat { checkPeriodLock(for: cat) }
+            else { periodLocked = false; lockedByCategory = "" }
+        }
         .alert(Text("提示"), isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
             Button("好") { errorMessage = nil }
         } message: {
-            Text("该分类已存在预算项，不能重复添加")
+            Text(errorMessage ?? "")
+        }
+        .alert(Text("金额提示"), isPresented: Binding(get: { amountWarning != nil }, set: { if !$0 { amountWarning = nil } })) {
+            Button("仍然保存") {
+                amountWarning = nil
+                if let ledger = effectiveLedger { performSave(ledger: ledger) }
+            }
+            Button("取消", role: .cancel) { amountWarning = nil }
+        } message: {
+            Text(amountWarning ?? "")
         }
     }
 
@@ -262,12 +278,17 @@ struct AddEditBudgetItemView: View {
                     .pickerStyle(.menu)
                     .labelsHidden()
                     .font(fieldLabel)
+                    .disabled(periodLocked)
                 }
                 .padding(12)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
                         .strokeBorder(Color.designOnSurfaceVariant.opacity(0.25), lineWidth: 1)
                 )
+                if periodLocked {
+                    Text("周期已锁定，与「\(lockedByCategory)」的预算周期保持一致")
+                        .font(.designBodySmall).foregroundStyle(.orange)
+                }
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
                         Text("预警阈值").font(fieldLabel)
@@ -294,6 +315,11 @@ struct AddEditBudgetItemView: View {
                     ForEach(BudgetPeriod.allCases, id: \.self) { p in
                         Text(p.displayName).tag(p)
                     }
+                }
+                .disabled(periodLocked)
+                if periodLocked {
+                    Text("周期已锁定，与「\(lockedByCategory)」的预算周期保持一致")
+                        .font(.caption).foregroundStyle(.orange)
                 }
                 VStack(alignment: .leading, spacing: 4) {
                     Text("预警阈值: \(Int(alertThreshold * 100))%")
@@ -434,6 +460,15 @@ struct AddEditBudgetItemView: View {
                 return
             }
         }
+        // 检查金额约束（软约束，提示但允许保存）
+        if let warning = checkAmountConstraint() {
+            amountWarning = warning
+            return
+        }
+        performSave(ledger: ledger)
+    }
+
+    private func performSave(ledger: Ledger) {
         if let item = editing {
             item.amount = amount
             item.period = period
@@ -461,6 +496,75 @@ struct AddEditBudgetItemView: View {
         }
         NSLog("[BudgetItem] calling dismiss()")
         dismiss()
+    }
+
+    // MARK: - 层级约束
+
+    /// 检查所选分类与已有预算项的层级关系，自动锁定周期
+    private func checkPeriodLock(for cat: Category) {
+        let existing = (try? appContainer.budgetService.fetchItems(for: book, context: modelContext)) ?? []
+        let otherItems = existing.filter { $0.id != editing?.id }
+
+        // 检查祖先链：如果父分类有预算，锁定为父预算的周期
+        for ancestorID in cat.allAncestorIDs {
+            if let ancestorItem = otherItems.first(where: { $0.category?.id == ancestorID }) {
+                period = ancestorItem.period
+                periodLocked = true
+                lockedByCategory = ancestorItem.category?.name ?? ""
+                return
+            }
+        }
+
+        // 检查后代：如果有子分类已设预算，锁定为子预算的周期
+        for otherItem in otherItems {
+            guard let otherCat = otherItem.category else { continue }
+            if otherCat.allAncestorIDs.contains(cat.id) {
+                period = otherItem.period
+                periodLocked = true
+                lockedByCategory = otherCat.name
+                return
+            }
+        }
+
+        periodLocked = false
+        lockedByCategory = ""
+    }
+
+    /// 检查金额约束，返回警告信息（nil 表示无冲突）
+    private func checkAmountConstraint() -> String? {
+        guard let cat = selectedCategory else { return nil }
+        let existing = (try? appContainer.budgetService.fetchItems(for: book, context: modelContext)) ?? []
+        let otherItems = existing.filter { $0.id != editing?.id }
+
+        // 检查子预算合计是否超过本预算
+        var childSum: Decimal = 0
+        for otherItem in otherItems {
+            guard let otherCat = otherItem.category else { continue }
+            if otherCat.allAncestorIDs.contains(cat.id) {
+                childSum += otherItem.amount
+            }
+        }
+        if childSum > amount {
+            return String(localized: "子预算合计\(childSum)已超过当前金额\(amount)，仍要保存吗？")
+        }
+
+        // 检查本预算 + 同级预算是否超过父预算
+        if let parent = cat.parent {
+            if let parentItem = otherItems.first(where: { $0.category?.id == parent.id }) {
+                var siblingSum: Decimal = amount
+                for otherItem in otherItems {
+                    guard let otherCat = otherItem.category else { continue }
+                    if otherCat.parent?.id == parent.id && otherCat.id != cat.id {
+                        siblingSum += otherItem.amount
+                    }
+                }
+                if siblingSum > parentItem.amount {
+                    return String(localized: "子预算合计(\(siblingSum))将超过父预算「\(parent.name)」\(parentItem.amount)，仍要保存吗？")
+                }
+            }
+        }
+
+        return nil
     }
 
 }

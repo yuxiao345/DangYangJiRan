@@ -59,3 +59,28 @@ extension Category {
 }
 
 extension Category: Identifiable {}
+
+// MARK: - 分类层级遍历（预算向上汇总用）
+
+extension Category {
+    /// 所有后代分类 ID（递归，含子、孙、曾孙...）
+    var allDescendantIDs: Set<UUID> {
+        var ids = Set<UUID>()
+        for child in children ?? [] {
+            ids.insert(child.id)
+            ids.formUnion(child.allDescendantIDs)
+        }
+        return ids
+    }
+
+    /// 所有祖先分类 ID（父、祖父...，不含自身）
+    var allAncestorIDs: Set<UUID> {
+        var ids = Set<UUID>()
+        var current = parent
+        while let p = current {
+            ids.insert(p.id)
+            current = p.parent
+        }
+        return ids
+    }
+}

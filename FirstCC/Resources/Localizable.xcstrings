@@ -978,6 +978,23 @@
         }
       }
     },
+    "仍然保存" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save Anyway"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仍然保存"
+          }
+        }
+      }
+    },
     "休闲娱乐" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1047,6 +1064,9 @@
       }
     },
     "余额：" : {
+
+    },
+    "你正在参与此共享账本，仅拥有者可管理成员" : {
 
     },
     "使用%@解锁" : {
@@ -2068,6 +2088,23 @@
         }
       }
     },
+    "创建 '%@'" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create '%@'"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建 '%@'"
+          }
+        }
+      }
+    },
     "创建分摊" : {
 
     },
@@ -3080,6 +3117,23 @@
         }
       }
     },
+    "周期已锁定，与「%@」的预算周期保持一致" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Period locked, consistent with '%@' budget cycle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "周期已锁定，与「%@」的预算周期保持一致"
+          }
+        }
+      }
+    },
     "周期记账" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3488,6 +3542,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "子分类的支出/收入类型必须与父分类「%@」一致"
+          }
+        }
+      }
+    },
+    "子预算合计(%@)将超过父预算「%@」%@，仍要保存吗？" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sub-budget total (%1$@) will exceed parent budget '%2$@' %3$@. Save anyway?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "子预算合计(%1$@)将超过父预算「%2$@」%3$@，仍要保存吗？"
+          }
+        }
+      }
+    },
+    "子预算合计%@已超过当前金额%@，仍要保存吗？" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sub-budget total %1$@ already exceeds current amount %2$@. Save anyway?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "子预算合计%1$@已超过当前金额%2$@，仍要保存吗？"
           }
         }
       }
@@ -7564,6 +7652,9 @@
         }
       }
     },
+    "此账本已开启共享，其他用户可加入协作记账" : {
+
+    },
     "每%@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -10922,6 +11013,23 @@
         }
       }
     },
+    "金额提示" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Amount Notice"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "金额提示"
+          }
+        }
+      }
+    },
     "钱伲" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -11561,23 +11669,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "默认货币"
-          }
-        }
-      }
-    },
-    "创建 '%@'" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Create '%@'"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "创建 '%@'"
           }
         }
       }

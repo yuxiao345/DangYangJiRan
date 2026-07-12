@@ -161,9 +161,13 @@ final class DashboardViewModel {
         var dailyAggregate: [Date: Decimal] = [:]
         if book.matchBudgetItems {
             let items = (try? budgetService.fetchItems(for: book, context: context)) ?? []
+            let budgetedCatIDs = Set(items.filter { $0.isActive }.compactMap { $0.category?.id })
             for item in items {
-                guard let cid = item.category?.id else { continue }
-                let points = budgetService.dailySpending(in: trendStart...trendEnd, categoryID: cid, ledgerID: ledger.id, context: context)
+                guard let cat = item.category else { continue }
+                // 找出该分类下已有独立预算的后代，作为排除项传给 dailySpending
+                // 父分类只统计其独占交易，子分类交易由各自的预算项自行纳入，避免重复
+                let childBudgetedIDs = cat.allDescendantIDs.filter { budgetedCatIDs.contains($0) }
+                let points = budgetService.dailySpending(in: trendStart...trendEnd, categoryID: cat.id, excludeCategoryIDs: childBudgetedIDs, ledgerID: ledger.id, context: context)
                 for point in points {
                     dailyAggregate[point.date, default: 0] += point.amount
                 }
