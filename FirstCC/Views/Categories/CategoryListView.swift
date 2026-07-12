@@ -11,12 +11,21 @@ struct CategoryListView: View {
     @State private var showConfirmAlert = false
     @State private var confirmHideParent: Category?
     @State private var listVersion = 0
+    @State private var searchText = ""
 
     let ledger: Ledger?
     private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }
 
     private var flatExpense: [Category] { flattenCategoryTree(expenseCategories.filter { $0.parent == nil }) }
     private var flatIncome: [Category] { flattenCategoryTree(incomeCategories.filter { $0.parent == nil }) }
+
+    /// 搜索过滤 — 搜索激活时按名称过滤；搜索时同步禁用拖拽排序避免索引错位。
+    private func displayed(_ categories: [Category]) -> [Category] {
+        guard !searchText.isEmpty else { return categories }
+        return categories.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+    }
+
+    private var isSearching: Bool { !searchText.isEmpty }
 
     init(ledger: Ledger? = nil) {
         self.ledger = ledger
@@ -25,19 +34,21 @@ struct CategoryListView: View {
     var body: some View {
         List {
             Section("支出分类") {
-                if flatExpense.isEmpty {
-                    Text("暂无分类").foregroundStyle(.secondary)
+                let items = displayed(flatExpense)
+                if items.isEmpty {
+                    Text(isSearching ? "无匹配结果" : "暂无分类").foregroundStyle(.secondary)
                 }
-                ForEach(flatExpense) { category in
+                ForEach(items) { category in
                     categoryItem(category)
                 }
                 .onMove { from, to in moveCategory(from: from, to: to, isExpense: true) }
             }
             Section("收入分类") {
-                if flatIncome.isEmpty {
-                    Text("暂无分类").foregroundStyle(.secondary)
+                let items = displayed(flatIncome)
+                if items.isEmpty {
+                    Text(isSearching ? "无匹配结果" : "暂无分类").foregroundStyle(.secondary)
                 }
-                ForEach(flatIncome) { category in
+                ForEach(items) { category in
                     categoryItem(category)
                 }
                 .onMove { from, to in moveCategory(from: from, to: to, isExpense: false) }
@@ -45,6 +56,7 @@ struct CategoryListView: View {
         }
         .id(listVersion)
         .navigationTitle("分类管理")
+        .searchable(text: $searchText, prompt: Text("搜索"))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { showAddSheet = true } label: {
@@ -52,7 +64,7 @@ struct CategoryListView: View {
                 }
             }
         }
-        .environment(\.editMode, .constant(.active))
+        .environment(\.editMode, .constant(isSearching ? .inactive : .active))
         .sheet(isPresented: $showAddSheet, onDismiss: { loadCategories() }) {
             AddEditCategoryView(ledger: effectiveLedger)
         }

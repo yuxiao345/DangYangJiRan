@@ -19,9 +19,17 @@ struct MerchantListView: View {
     }
 
     var body: some View {
+        SearchableList(items: merchants, searchKey: \.name) { filteredMerchants, isSearching in
+            merchantListView(filteredMerchants, isSearching: isSearching)
+        }
+        .onAppear(perform: loadMerchants)
+    }
+
+    @ViewBuilder
+    private func merchantListView(_ merchants: [Merchant], isSearching: Bool) -> some View {
         List {
             if merchants.isEmpty {
-                Text("暂无商家，点击右上角 + 添加")
+                Text(isSearching ? "无匹配结果" : "暂无商家，点击右上角 + 添加")
                     .foregroundStyle(Color.designOnSurfaceVariant)
             }
             ForEach(merchants) { merchant in
@@ -79,7 +87,6 @@ struct MerchantListView: View {
         .onChange(of: editingMerchant) { _, newValue in
             if newValue == nil { listVersion += 1; loadMerchants() }
         }
-        .onAppear(perform: loadMerchants)
     }
 
     private func addMerchant() {

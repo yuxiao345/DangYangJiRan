@@ -203,6 +203,7 @@
 		9AB3037F2FDAACE700185B4D /* PixelProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = E41C53D82785F499B10CC4D8 /* PixelProgressBar.swift */; };
 		9AB303802FDAACE700185B4D /* DatePickerButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EF154BCA29F4CD1B0BE230E /* DatePickerButton.swift */; };
 		9AB303812FDAACE700185B4D /* SearchablePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 942E11744D3E866B2C87DA3F /* SearchablePickerView.swift */; };
+		3273825FD6EF4DECA514E00B /* SearchableList.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A55A28DF10437B87985038 /* SearchableList.swift */; };
 		9AB303822FDAACE700185B4D /* NumpadAmountField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119691BBF4E64429902986A5 /* NumpadAmountField.swift */; };
 		9AB303832FDAACE700185B4D /* NumpadGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 458691A145A84013AA5641B6 /* NumpadGrid.swift */; };
 		9AC8FB202FE3BBA000679EC7 /* AddEditBudgetBookView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDAEED1A1D8033C2FECF73C8 /* AddEditBudgetBookView.swift */; };
@@ -238,6 +239,7 @@
 		AB64321FA78EC56143057790 /* NLQueryParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3173047F27FC2EE8EA003652 /* NLQueryParser.swift */; };
 		AD5C7191D0C948FA97222B90 /* Set+Toggle.swift in Sources */ = {isa = PBXBuildFile; fileRef = D301E304595F4FE79A15BF68 /* Set+Toggle.swift */; };
 		ADB53C1D3DACDF4D57030627 /* SearchablePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 942E11744D3E866B2C87DA3F /* SearchablePickerView.swift */; };
+		732D10ABF6FA48D4B106FD0B /* SearchableList.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A55A28DF10437B87985038 /* SearchableList.swift */; };
 		ADBE28204CA0156801F20C78 /* MemberServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AEEA720C57BCDC5B0AB899D /* MemberServiceImpl.swift */; };
 		AF85B9267B379FF7D263C82A /* PendingReimbursementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F371BCA0764C641C933F49E1 /* PendingReimbursementView.swift */; };
 		B1C2D3E4F5061728394A5B6C /* CloudKitShareCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728394A5B6B /* CloudKitShareCoordinator.swift */; };
@@ -468,6 +470,7 @@
 		BFCAE20D6A42424A1CE75C26 /* BudgetBookDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetBookDetailView.swift; sourceTree = "<group>"; };
 		C019BFFDC38844A4B318A005 /* TransactionTemplateEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionTemplateEntity.swift; sourceTree = "<group>"; };
 		C160E639A68F4B9DAF71EE5D /* MerchantSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MerchantSeeder.swift; sourceTree = "<group>"; };
+		C1A55A28DF10437B87985038 /* SearchableList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchableList.swift; sourceTree = "<group>"; };
 		C1D2E3F40516273849A5B6C6 /* SharedLedgerImportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedLedgerImportService.swift; sourceTree = "<group>"; };
 		C2CD963B2C2BD0D35D5D49EE /* RecurringServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringServiceProtocol.swift; sourceTree = "<group>"; };
 		C57EFB0CAB1BC4F3B58C9EFF /* CurrencyServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyServiceImpl.swift; sourceTree = "<group>"; };
@@ -559,6 +562,7 @@
 				890D5E7CAF6ABC315D3BC162 /* FullScreenPhotoView.swift */,
 				E41C53D82785F499B10CC4D8 /* PixelProgressBar.swift */,
 				942E11744D3E866B2C87DA3F /* SearchablePickerView.swift */,
+				C1A55A28DF10437B87985038 /* SearchableList.swift */,
 				8C11EDFBC7413BA6F31DD4A4 /* TransactionRowView.swift */,
 				9EC70245AAD246858EB68CFC /* SyncStatusBadge.swift */,
 				E3F12A09B0014A49A0010001 /* AppLockView.swift */,
@@ -1225,6 +1229,7 @@
 				C947BEAB64D7696729AC5F3D /* FullScreenPhotoView.swift in Sources */,
 				5FC0C395FD0F9CCCBA4AF1F9 /* PixelProgressBar.swift in Sources */,
 				ADB53C1D3DACDF4D57030627 /* SearchablePickerView.swift in Sources */,
+				732D10ABF6FA48D4B106FD0B /* SearchableList.swift in Sources */,
 				17469B250263A15F7E5A9CA7 /* TransactionRowView.swift in Sources */,
 				31517376DF4F45270BBF9C9F /* AddEditTransactionView.swift in Sources */,
 				AF85B9267B379FF7D263C82A /* PendingReimbursementView.swift in Sources */,
@@ -1459,6 +1464,7 @@
 				9AB3037F2FDAACE700185B4D /* PixelProgressBar.swift in Sources */,
 				9AB303802FDAACE700185B4D /* DatePickerButton.swift in Sources */,
 				9AB303812FDAACE700185B4D /* SearchablePickerView.swift in Sources */,
+				3273825FD6EF4DECA514E00B /* SearchableList.swift in Sources */,
 				9AB303822FDAACE700185B4D /* NumpadAmountField.swift in Sources */,
 				9AB303832FDAACE700185B4D /* NumpadGrid.swift in Sources */,
 				AD5C7191D0C948FA97222B90 /* Set+Toggle.swift in Sources */,

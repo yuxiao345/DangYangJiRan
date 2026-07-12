@@ -8,6 +8,7 @@ struct AccountsManagementView: View {
     @State private var balances: [UUID: Decimal] = [:]
     @State private var showAddSheet = false
     @State private var editingAccount: Account?
+    @State private var searchText = ""
 
     let ledger: Ledger?
     private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }
@@ -18,8 +19,8 @@ struct AccountsManagementView: View {
 
     var body: some View {
         List {
-            if accounts.isEmpty {
-                Text("暂无账户，点击右上角 + 添加")
+            if filteredAccounts.isEmpty {
+                Text(searchText.isEmpty ? "暂无账户，点击右上角 + 添加" : "无匹配结果")
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(accountGroups, id: \.type) { group in
@@ -42,6 +43,7 @@ struct AccountsManagementView: View {
             }
         }
         .navigationTitle("账户管理")
+        .searchable(text: $searchText, prompt: Text("搜索"))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { showAddSheet = true } label: {
@@ -58,10 +60,15 @@ struct AccountsManagementView: View {
         .onAppear(perform: loadAccounts)
     }
 
+    private var filteredAccounts: [Account] {
+        guard !searchText.isEmpty else { return accounts }
+        return accounts.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+    }
+
     private var accountGroups: [(type: AccountType, accounts: [Account])] {
         var groups: [(AccountType, [Account])] = []
         for type in AccountType.allCases {
-            let matched = accounts.filter { $0.type == type && !$0.isArchived }
+            let matched = filteredAccounts.filter { $0.type == type && !$0.isArchived }
             if !matched.isEmpty {
                 groups.append((type, matched))
             }
@@ -70,7 +77,7 @@ struct AccountsManagementView: View {
     }
 
     private var archivedAccounts: [Account] {
-        accounts.filter { $0.isArchived }
+        filteredAccounts.filter { $0.isArchived }
     }
 
     private func accountRow(_ account: Account) -> some View {

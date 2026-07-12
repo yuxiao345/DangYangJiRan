@@ -18,7 +18,19 @@ struct MemberListView: View {
     }
 
     var body: some View {
+        SearchableList(items: members, searchKey: \.name) { filteredMembers, isSearching in
+            memberListView(filteredMembers, isSearching: isSearching)
+        }
+        .onAppear(perform: loadMembers)
+    }
+
+    @ViewBuilder
+    private func memberListView(_ members: [Member], isSearching: Bool) -> some View {
         List {
+            if members.isEmpty {
+                Text(isSearching ? "无匹配结果" : "暂无联系人")
+                    .foregroundStyle(Color.designOnSurfaceVariant)
+            }
             ForEach(members) { member in
                 HStack {
                     Image(systemName: member.avatar)
@@ -67,7 +79,6 @@ struct MemberListView: View {
         .onChange(of: editingMember) { _, newValue in
             if newValue == nil { listVersion += 1; loadMembers() }
         }
-        .onAppear(perform: loadMembers)
     }
 
     private func addMember() {

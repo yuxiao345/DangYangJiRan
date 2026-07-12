@@ -17,9 +17,17 @@ struct ProjectListView: View {
     }
 
     var body: some View {
+        SearchableList(items: projects, searchKey: \.name) { filteredProjects, isSearching in
+            projectListView(filteredProjects, isSearching: isSearching)
+        }
+        .onAppear(perform: loadProjects)
+    }
+
+    @ViewBuilder
+    private func projectListView(_ projects: [Project], isSearching: Bool) -> some View {
         List {
             if projects.isEmpty {
-                Text("暂无项目，点击右上角 + 添加")
+                Text(isSearching ? "无匹配结果" : "暂无项目，点击右上角 + 添加")
                     .foregroundStyle(Color.designOnSurfaceVariant)
             }
             ForEach(projects) { project in
@@ -77,7 +85,6 @@ struct ProjectListView: View {
         .onChange(of: editingProject) { _, newValue in
             if newValue == nil { listVersion += 1; loadProjects() }
         }
-        .onAppear(perform: loadProjects)
     }
 
     private var ledgerCurrency: String {
