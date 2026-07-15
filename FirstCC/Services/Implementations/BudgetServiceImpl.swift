@@ -302,7 +302,7 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
         let end = min(cal.startOfDay(for: range.upperBound), cal.startOfDay(for: Date()))
         var points: [DailySpendingPoint] = []
         while current <= end {
-            points.append(DailySpendingPoint(date: current, amount: max(0, byDay[current] ?? 0)))
+            points.append(DailySpendingPoint(date: current, amount: byDay[current] ?? 0))
             current = cal.date(byAdding: .day, value: 1, to: current) ?? current.addingTimeInterval(86400)
         }
         return points

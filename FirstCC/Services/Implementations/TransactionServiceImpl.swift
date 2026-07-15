@@ -238,19 +238,29 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
     }
 
     /// 修复历史退款交易缺失的 member/merchant/project 字段。
-    /// 从原交易复制，幂等（已有值的跳过），仅处理 refundGroupId 非空且三字段均为 nil 的记录。
+    /// 从原交易回填，幂等；若原交易已删除则清除孤儿 refundGroupId。
     func repairRefundMetadata(context: NSManagedObjectContext) throws {
+        // 查找至少缺失一个关联字段的退款（OR 确保部分修复的也能被补全）
         let request = NSFetchRequest<Transaction>(entityName: "Transaction")
-        request.predicate = NSPredicate(format: "refundGroupId != nil AND member == nil AND merchant == nil AND project == nil")
+        request.predicate = NSPredicate(format: "refundGroupId != nil AND (member == nil OR merchant == nil OR project == nil)")
         let refunds = try context.fetch(request)
         guard !refunds.isEmpty else { return }
 
+        // 批量查询所有原交易，避免 N+1
+        let originalIDs = refunds.compactMap(\.refundGroupId)
+        let batchRequest = NSFetchRequest<Transaction>(entityName: "Transaction")
+        batchRequest.predicate = NSPredicate(format: "id IN %@", originalIDs)
+        let originals = try context.fetch(batchRequest)
+        let originalByID = Dictionary(uniqueKeysWithValues: originals.map { ($0.id, $0) })
+
         for refund in refunds {
             guard let originalID = refund.refundGroupId else { continue }
-            let originalRequest = NSFetchRequest<Transaction>(entityName: "Transaction")
-            originalRequest.predicate = NSPredicate(format: "id == %@", originalID as CVarArg)
-            originalRequest.fetchLimit = 1
-            guard let original = try context.fetch(originalRequest).first else { continue }
+            guard let original = originalByID[originalID] else {
+                // 原交易已删除，清除孤儿 refundGroupId 防止 netExpenseAmount 误判
+                refund.refundGroupId = nil
+                refund.refundAmount = nil
+                continue
+            }
 
             if refund.member == nil, let m = original.member { refund.member = m }
             if refund.merchant == nil, let m = original.merchant { refund.merchant = m }
