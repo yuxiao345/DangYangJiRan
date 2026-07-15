@@ -50,9 +50,6 @@ struct QianeymacApp: App {
                     .environment(appContainer)
                     .tint(Color.designAccentGreen)
                     .preferredColorScheme(preferredScheme)
-                    .task {
-                        try? appContainer.recurringService.processAndDeduplicate(context: appContainer.viewContext)
-                    }
             } else {
                 ProgressView("正在准备数据...")
                     .frame(width: 300, height: 200)

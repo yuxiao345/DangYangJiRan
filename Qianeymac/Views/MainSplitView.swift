@@ -2,6 +2,7 @@ import SwiftUI
 @preconcurrency import CoreData
 import CloudKit
 import Contacts
+import Combine
 
 /// Main window layout.
 /// Uses standard NavigationSplitView.
@@ -11,16 +12,19 @@ import Contacts
 /// macOS 26.5 / Xcode 26.5 release — the standard API works correctly here.
 struct MainSplitView: View {
     @Environment(AppContainer.self) private var appContainer
+    @Environment(\.scenePhase) private var scenePhase
     @State private var selection: MacNavItem = .dashboard
     @State private var selectedReportType: ReportType?
     @State private var navigationPath = NavigationPath()
     @State private var showAddSheet = false
+    @State private var selectedDate: Date?
     @State private var allLedgers: [Ledger] = []
     @State private var showCreateLedgerSheet = false
     @State private var isCreatingShare = false
     @State private var shareParticipants: [User] = []
     @State private var participantAvatars: [UUID: NSImage] = [:]
     private let contactStore = CNContactStore()
+    private let recurringTimer = Timer.publish(every: 21600, on: .main, in: .common).autoconnect()
 
     var body: some View {
         NavigationSplitView {
@@ -40,6 +44,11 @@ struct MainSplitView: View {
         .navigationTitle("")
         .toolbar { macToolbar }
         .designScreen()
+        .task { processRecurring() }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active { processRecurring() }
+        }
+        .onReceive(recurringTimer) { _ in processRecurring() }
         .onAppear { loadLedgers(); loadParticipants() }
         .onChange(of: appContainer.currentLedger?.id) { _, _ in loadLedgers(); loadParticipants() }
         .onReceive(NotificationCenter.default.publisher(for: .macMenuNavigate)) { notif in
@@ -51,7 +60,7 @@ struct MainSplitView: View {
             showAddSheet = true
         }
         .sheet(isPresented: $showAddSheet) {
-            MacAddTransactionSheet()
+            MacAddTransactionSheet(prefillDate: selectedDate)
         }
         .sheet(isPresented: $showCreateLedgerSheet) {
             CreateLedgerMacSheet { loadLedgers() }
@@ -170,7 +179,7 @@ struct MainSplitView: View {
         case .accounts:
             AccountListContent()
         case .transactions:
-            TransactionListContent()
+            TransactionListContent(selectedDate: $selectedDate)
         case .reports:
             if let type = selectedReportType {
                 ReportDetailContent(reportType: type)
@@ -185,6 +194,24 @@ struct MainSplitView: View {
         let req = NSFetchRequest<Ledger>(entityName: "Ledger")
         req.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
         allLedgers = (try? ctx.fetch(req)) ?? []
+    }
+
+    // MARK: - Recurring
+
+    private func processRecurring() {
+        guard appContainer.currentLedger != nil else { return }
+        do {
+            try appContainer.recurringService.processDueRecurring(context: appContainer.viewContext)
+            // 跨设备去重每天最多执行一次
+            let lastKey = "lastRecurringDedup"
+            let last = UserDefaults.standard.object(forKey: lastKey) as? Date ?? .distantPast
+            if Date().timeIntervalSince(last) >= 86400 {
+                try appContainer.recurringService.deduplicateRecurringTransactions(context: appContainer.viewContext)
+                UserDefaults.standard.set(Date(), forKey: lastKey)
+            }
+        } catch {
+            DiagnosticLog.log("processRecurring FAILED: \(error.localizedDescription)")
+        }
     }
 
     // MARK: - Share

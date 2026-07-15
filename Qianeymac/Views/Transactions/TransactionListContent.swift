@@ -14,12 +14,14 @@ struct TransactionListContent: View {
     @State private var transactions: [Transaction] = []
     @State private var filterType: TransactionType?
     @State private var selectedMonth: Date = Date().startOfMonth
-    @State private var selectedDate: Date?
+    @Binding var selectedDate: Date?
     @State private var transactionDays: Set<Int> = []
     @State private var dailyExpense: [Int: Decimal] = [:]
     @State private var dailyIncome: [Int: Decimal] = [:]
     @State private var maxDailyExpense: Decimal = 0
     @State private var maxDailyIncome: Decimal = 0
+    @State private var monthlyIncome: Decimal = 0
+    @State private var monthlyExpense: Decimal = 0
     @State private var hoveredDayID: String? = nil
     @State private var monthSlideDirection: Edge = .trailing
     @Namespace private var calendarNamespace
@@ -55,6 +57,7 @@ struct TransactionListContent: View {
                             }
                             .buttonStyle(.borderless)
                         }
+
                         Spacer()
                         if !options.contains(.hideTypeFilter) {
                             GlassSegmentedPicker(selection: $filterType)
@@ -72,6 +75,13 @@ struct TransactionListContent: View {
                 .glassSection()
                 .padding(.horizontal, 12)
                 .padding(.top, 12)
+            }
+
+            // 合计栏：选中日期 → 当日收支，未选中 → 当月收支
+            if !options.contains(.hideCalendar) {
+                summaryBar
+                    .padding(.horizontal, 24)
+                    .padding(.top, 8)
             }
 
             ScrollView {
@@ -112,6 +122,65 @@ struct TransactionListContent: View {
             load()
         }
         .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in load() }
+    }
+
+    // MARK: - Summary Bar
+
+    private var summaryIncome: Decimal {
+        if let date = selectedDate {
+            let day = cal.component(.day, from: date)
+            return dailyIncome[day] ?? 0
+        }
+        return monthlyIncome
+    }
+
+    private var summaryExpense: Decimal {
+        if let date = selectedDate {
+            let day = cal.component(.day, from: date)
+            return dailyExpense[day] ?? 0
+        }
+        return monthlyExpense
+    }
+
+    private var summaryLabel: String {
+        if let date = selectedDate {
+            let m = cal.component(.month, from: date)
+            let d = cal.component(.day, from: date)
+            return String(localized: "\(m)月\(d)日")
+        }
+        return selectedMonth.monthDisplay
+    }
+
+    private var summaryBar: some View {
+        let currency = appContainer.currentLedger?.defaultCurrencyCode ?? "CNY"
+        return HStack(spacing: 0) {
+            Text(summaryLabel)
+                .font(.designBodyMedium)
+                .foregroundStyle(Color.designOnSurface)
+
+            Spacer()
+
+            HStack(spacing: 0) {
+                Text("收")
+                    .font(.designLabel)
+                    .foregroundStyle(Color.designPrimaryFixedDim)
+                    .frame(width: 16, alignment: .leading)
+                Text(CurrencyFormatter.formatAdaptive(amount: summaryIncome, currencyCode: currency))
+                    .font(.designMonoDataSmall)
+                    .foregroundStyle(Color.designPrimaryFixedDim)
+            }
+
+            HStack(spacing: 0) {
+                Text("支")
+                    .font(.designLabel)
+                    .foregroundStyle(Color.designAccentRed)
+                    .frame(width: 16, alignment: .leading)
+                    .padding(.leading, 16)
+                Text(CurrencyFormatter.formatAdaptive(amount: summaryExpense, currencyCode: currency))
+                    .font(.designMonoDataSmall)
+                    .foregroundStyle(Color.designAccentRed)
+            }
+        }
     }
 
     // MARK: - Custom Calendar (pure SwiftUI, no AppKit)
@@ -275,6 +344,7 @@ struct TransactionListContent: View {
         filters.dateRange = start..<end
         let all = (try? appContainer.transactionService.fetchTransactions(for: ledger, context: modelContext, filters: filters)) ?? []
         var result = all.deduplicatingTransfers()
+        if let type = filterType { result = result.filter { $0.type == type } }
         transactionDays = Set(result.filter { $0.type != .transfer }.map { cal.component(.day, from: $0.date) })
 
         // 每日热力图数据（排除转账、可报销支出、报销结算收入）
@@ -296,7 +366,8 @@ struct TransactionListContent: View {
         dailyIncome = incomeSum
         maxDailyExpense = expenseSum.values.max() ?? 0
         maxDailyIncome = incomeSum.values.max() ?? 0
-        if let type = filterType { result = result.filter { $0.type == type } }
+        monthlyExpense = expenseSum.values.reduce(0, +)
+        monthlyIncome = incomeSum.values.reduce(0, +)
         if let date = selectedDate { result = result.filter { cal.isDate($0.date, inSameDayAs: date) } }
         if let cat = filterCategory { result = result.filter { $0.category?.id == cat.id } }
         transactions = result
@@ -318,7 +389,7 @@ private struct GlassSegmentedPicker: View {
 
     private let options: [(label: String, type: TransactionType?)] = {
         [(String(localized: "全部"), nil)]
-        + TransactionType.allCases.map { ($0.displayName, $0) }
+        + TransactionType.allCases.filter { $0 != .adjustment }.map { ($0.displayName, $0) }
     }()
 
     var body: some View {

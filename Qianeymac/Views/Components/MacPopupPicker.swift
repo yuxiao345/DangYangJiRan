@@ -81,8 +81,7 @@ struct MacPopupPicker<T: Identifiable & Hashable>: NSViewRepresentable {
                 menu.addItem(menuItem(for: item, useIndent: false))
             }
             menu.addItem(.sectionHeader(title: String(localized: "全部")))
-            let recentIDs = Set(recentItems.map { $0.id })
-            for item in items where !recentIDs.contains(item.id) {
+            for item in items {
                 menu.addItem(menuItem(for: item, useIndent: true))
             }
         } else {

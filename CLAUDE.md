@@ -13,6 +13,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 5. **不过度工程化。** 标准 API 能用就用最简单的方式。复杂 workaround 只在彻底排除环境问题后才考虑。参见 [[feedback_no_overengineering]]。
 6. **UI 控件一致性。** 同一页面、同一功能的控件必须使用相同的 SwiftUI 组件。例如：选择器统一使用 `Picker(.menu)`，不允许混用 `Menu` 实现同功能——不同组件的渲染管线不同（SF Symbol vs 系统矢量），会导致字号、颜色、间距不一致，且无法通过调参对齐。
 
+## 构建与测试策略
+
+- 任何代码修改后，必须对 iOS 和 macOS 两个目标都进行构建，然后才能声明工作完成。绝不要假设一个平台构建成功就意味着另一个也没问题。
+- 修改共享的 service/model/budget 逻辑后，在 iOS 上运行单元测试（XCTest）。注意 macOS 上 Swift Testing 并行执行不稳定的问题——建议 macOS 测试顺序运行。
+
 ## Build & Run
 
 ```bash
@@ -39,7 +44,37 @@ xcrun devicectl device process launch --device <DEVICE_ID> com.qianey.app
 xcrun devicectl list devices
 ```
 
-Target: `钱伲`, scheme: `钱伲`, bundle ID: `com.qianey.app`, container: `iCloud.com.qianey.v2`. No tests or linting configured yet.
+## Test
+
+| 平台 | 框架 | Target | Bundle ID |
+|------|------|--------|-----------|
+| Mac | Swift Testing | `QianeymacTests` (unit) + `QianeymacUITests` (UI) | `com.qianey.app.mac.QianeymacTests` |
+| iOS | XCTest | `钱伲Tests` (unit) | `com.qianey.app.Tests` |
+
+### Mac
+
+```bash
+# Run all tests (unit + UI)
+xcodebuild test -project FirstCC.xcodeproj -scheme Qianeymac -destination "platform=macOS" -derivedDataPath /tmp/firstcc-test-build -jobs 4
+
+# Run unit tests only
+xcodebuild test -project FirstCC.xcodeproj -scheme Qianeymac -destination "platform=macOS" -only-testing:QianeymacTests -derivedDataPath /tmp/firstcc-test-build -jobs 4
+
+# Run a single test (Swift Testing)
+xcodebuild test -project FirstCC.xcodeproj -scheme Qianeymac -destination "platform=macOS" -only-testing:QianeymacTests/CurrencyFormatterTests/currencySymbol_CNY_returnsYenSign -derivedDataPath /tmp/firstcc-test-build -jobs 4
+```
+
+### iOS
+
+```bash
+# Run unit tests
+xcodebuild test -project FirstCC.xcodeproj -scheme 钱伲 -destination "platform=iOS Simulator,name=iPhone 17" -only-testing:钱伲Tests -derivedDataPath /tmp/firstcc-ios-test -jobs 4
+
+# Run a single test (XCTest)
+xcodebuild test -project FirstCC.xcodeproj -scheme 钱伲 -destination "platform=iOS Simulator,name=iPhone 17" -only-testing:钱伲Tests/CurrencyFormatterTests/testCurrencySymbol_CNY_returnsYenSign -derivedDataPath /tmp/firstcc-ios-test -jobs 4
+```
+
+Target: `钱伲`, scheme: `钱伲`, bundle ID: `com.qianey.app`, container: `iCloud.com.qianey.v2`.
 
 ## Architecture
 
@@ -55,6 +90,13 @@ Target: `钱伲`, scheme: `钱伲`, bundle ID: `com.qianey.app`, container: `iCl
 - `AppContainer.currentLedger` is the single source of truth for "which ledger is active"
 - Dashboard refreshes on `Notification.Name.transactionDidChange` and `onChange(of: currentLedger?.id)`
 - `UserDefaults.string(forKey: "currentLedgerID")` persists last-used ledger across restarts
+
+### 代码架构规则
+
+- 共享逻辑放在 Service 层，而不是 View 层。iOS 和 macOS 必须使用相同的 service 方法。
+- 统一平台代码时，消除重复实现——一个共享的单一真相来源。
+- 预算计算（总额、已用、剩余）必须使用单一过滤逻辑方法。多条计算路径曾导致支出差异 bug。
+- 父子预算关系使用信封/子限额聚合模型。
 
 ## Platform Feature Parity
 
@@ -182,6 +224,27 @@ ScrollView { content }
 ```
 
 参考正确实现：`CategoryBarList.swift` → `MacCategoryChartView.swift`。
+
+## 完成工作流
+
+### 实现后检查清单
+
+1. iOS 构建 ✅
+2. macOS 构建 ✅
+3. 运行单元测试 ✅
+4. 通过并行 Agent 运行 `/simplify` 和代码审查 ✅
+5. Git 提交 + 推送 ✅
+
+不要跳过任何步骤——这是标准的完成工作流。
+
+## macOS/iOS 踩坑记录
+
+### UI 血泪教训
+
+- **macOS Swift Charts 崩溃**: macOS 上的 Swift Charts 在 `drawingGroup()`、`chartOverlay` 和 `SectorMark.cornerRadius` 上存在已知的 SIGTRAP/EXC_BREAKPOINT 崩溃。Mac 端图表优先使用原生 SwiftUI 渲染（`RoundedRectangle` 柱状图）。
+- **分类缩进**: 层次化分类菜单使用 `NSMenuItem.indentationLevel`。禁止使用 padding/Spacer/attributedTitle——这些全都会失败。
+- **CalendarDay ID**: 绝不要对日历日期标识符使用 `UUID()`——配合 `.onHover` 会导致无限重渲染循环。使用稳定的基于日期的 ID。
+- **@State 字典变更**: 不要直接变更 `@State` 字典下标。SwiftUI 不会检测到变更。应创建新的字典副本。
 
 ## i18n / 多语言规范
 

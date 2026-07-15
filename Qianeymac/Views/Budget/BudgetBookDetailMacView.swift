@@ -81,7 +81,7 @@ struct BudgetBookDetailMacView: View {
             .designScreen()
             .navigationTitle(book.name)
             .navigationDestination(item: $navCategory) { cat in
-                TransactionListContent(filterCategory: cat, options: [.hideCalendar, .hideTypeFilter, .hideAddButton])
+                TransactionListContent(selectedDate: .constant(nil), filterCategory: cat, options: [.hideCalendar, .hideTypeFilter, .hideAddButton])
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

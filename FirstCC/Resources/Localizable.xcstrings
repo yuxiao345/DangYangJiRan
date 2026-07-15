@@ -285,6 +285,23 @@
     "%lld月" : {
 
     },
+    "%lld月%lld日" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld月%2$lld日"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld"
+          }
+        }
+      }
+    },
     "%lld月明细" : {
 
     },
@@ -1064,9 +1081,6 @@
       }
     },
     "余额：" : {
-
-    },
-    "你正在参与此共享账本，仅拥有者可管理成员" : {
 
     },
     "使用%@解锁" : {
@@ -2896,7 +2910,21 @@
       }
     },
     "合计: %@" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "合计: %@"
+          }
+        }
+      }
     },
     "合计: %@%%" : {
 
@@ -4073,6 +4101,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "展开"
+          }
+        }
+      }
+    },
+    "展开全部 %lld 条" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show All %lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "展开全部 %lld 条"
           }
         }
       }
@@ -7651,9 +7696,6 @@
           }
         }
       }
-    },
-    "此账本已开启共享，其他用户可加入协作记账" : {
-
     },
     "每%@" : {
       "extractionState" : "manual",

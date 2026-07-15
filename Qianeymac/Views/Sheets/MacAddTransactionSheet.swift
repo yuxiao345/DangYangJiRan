@@ -45,6 +45,7 @@ struct MacAddTransactionSheet: View {
     @State private var isReimbursable: Bool
     @State private var pendingExpenses: [Transaction]
     @State private var selectedExpenseIDs: Set<UUID>
+    @State private var showAllPendingExpenses = false
     @State private var selectedCurrencyCode: String
     @State private var exchangeRate: Decimal?
     @State private var convertedAmount: Decimal?
@@ -57,8 +58,9 @@ struct MacAddTransactionSheet: View {
     @State private var destAmountString: String = "0.00"
     @State private var showDestNumpad: Bool = false
     @State private var destNumpadText: String = ""
+    @State private var splitNumpadText: String = ""
 
-    init(editing: Transaction? = nil, displayMode: Bool = false, refunding: Transaction? = nil) {
+    init(editing: Transaction? = nil, displayMode: Bool = false, refunding: Transaction? = nil, prefillDate: Date? = nil) {
         let initEditing: Transaction?
         let initDisplayMode: Bool
         let initType: TransactionType
@@ -116,7 +118,7 @@ struct MacAddTransactionSheet: View {
         } else {
             initEditing = nil; initDisplayMode = false
             initType = .expense; initAmount = 0
-            initAmountString = ""; initNote = ""; initDate = Date()
+            initAmountString = ""; initNote = ""; initDate = prefillDate ?? Date()
             initAccount = nil; initToAccount = nil
             initCategory = nil; initMember = nil
             initMerchant = nil; initProject = nil
@@ -193,6 +195,11 @@ struct MacAddTransactionSheet: View {
             }
         }
         .onChange(of: selectedToAccount) { _, _ in loadPendingLendingTx(); destAmount = 0; destAmountString = "0.00" }
+        .onChange(of: selectedExpenseIDs) { _, _ in
+            guard !selectedExpenseIDs.isEmpty, editing == nil else { return }
+            amount = selectedReimbursementTotal
+            amountString = CurrencyFormatter.formatDecimal(amount: amount, fractionDigits: 2)
+        }
         .onChange(of: selectedPhotos) { _, _ in loadPhotoData() }
         .modifier(DeleteConfirmationModifier(deleteTarget: $deleteTarget, onDelete: { deleteTx($0) }))
         .sheet(isPresented: $showRefundSheet) {
@@ -500,7 +507,7 @@ struct MacAddTransactionSheet: View {
     @ViewBuilder
     private var categoryAndExtrasRows: some View {
         Group {
-            if type != .transfer && type != .lending {
+            if !isSplit, type != .transfer && type != .lending {
                 formPicker(label: "分类", selection: $selectedCategory,
                            items: categories, icon: { $0.iconName }, name: { $0.name },
                            color: { Color(hex: $0.colorHex) },
@@ -688,83 +695,215 @@ struct MacAddTransactionSheet: View {
                     Image(systemName: "plus.circle.fill").foregroundStyle(Color.designAccentGreen)
                 }.buttonStyle(.plain)
             }
-            ForEach(Array(splitItems.enumerated()), id: \.offset) { i, item in
-                VStack(spacing: 4) {
-                    HStack(spacing: 8) {
-                        Button { splitItems.remove(at: i) } label: {
-                            Image(systemName: "minus.circle.fill").foregroundStyle(.red)
-                        }.buttonStyle(.plain)
-                        // Numpad-triggered amount button
-                        Button {
-                            if editingSplitIndex == i { editingSplitIndex = nil }
-                            else { editingSplitIndex = i }
-                        } label: {
-                            Text(item.amount == 0 ? "金额" : CurrencyFormatter.formatDecimal(amount: item.amount, fractionDigits: 2))
-                                .font(.designBodySmall.weight(.medium))
-                                .foregroundStyle(item.amount == 0 ? .secondary : Color.designOnSurface)
-                                .frame(width: 80)
-                        }.buttonStyle(.plain)
-                        Picker("分类", selection: Binding(get: { item.category }, set: { splitItems[i].category = $0 })) {
-                            Text("无").tag(nil as Category?)
-                            ForEach(categories.filter { ($0.children?.count ?? 0) == 0 }) { c in
-                                Text(c.name).tag(c as Category?)
-                            }
-                        }.frame(width: 100)
-                        Picker("成员", selection: Binding(get: { item.member }, set: { splitItems[i].member = $0 })) {
-                            Text("无").tag(nil as Member?)
-                            ForEach(members) { m in Text(m.name).tag(m as Member?) }
-                        }.frame(width: 80)
-                        Picker("商家", selection: Binding(get: { item.merchant }, set: { splitItems[i].merchant = $0 })) {
-                            Text("无").tag(nil as Merchant?)
-                            ForEach(merchants) { m in Text(m.name).tag(m as Merchant?) }
-                        }.frame(width: 80)
-                        Picker("项目", selection: Binding(get: { item.project }, set: { splitItems[i].project = $0 })) {
-                            Text("无").tag(nil as Project?)
-                            ForEach(projects) { p in Text(p.name).tag(p as Project?) }
-                        }.frame(width: 80)
-                    }
-                    // Note field + numpad inline
-                    HStack(spacing: 8) {
-                        Image(systemName: "text.justify").foregroundStyle(.secondary).font(.system(size: 10))
-                        TextField("备注", text: Binding(get: { item.note }, set: { splitItems[i].note = $0 }))
-                            .textFieldStyle(.roundedBorder).font(.designBodySmall)
-                    }
-                    .padding(.leading, 28)
 
-                    if editingSplitIndex == i {
-                        macNumpadPopover(
-                            text: Binding(
-                                get: { item.amount == 0 ? "" : String(describing: item.amount) },
-                                set: {
-                                    if let d = Decimal(string: $0) { splitItems[i].amount = d }
-                                }
-                            ),
-                            amount: Binding(get: { item.amount }, set: { splitItems[i].amount = $0 }),
-                            amountString: Binding(
-                                get: { item.amount == 0 ? "" : CurrencyFormatter.formatDecimal(amount: item.amount, fractionDigits: 2) },
-                                set: { _ in }
-                            ),
-                            show: Binding(get: { editingSplitIndex == i }, set: { if !$0 { editingSplitIndex = nil } })
-                        )
-                    }
-                }
+            ForEach(Array(splitItems.enumerated()), id: \.offset) { i, item in
+                splitItemCard(i: i, item: item)
             }
         }
         .padding(.horizontal, 24).padding(.vertical, 8)
     }
 
+    @ViewBuilder
+    private func splitItemCard(i: Int, item: SplitItemDraft) -> some View {
+        VStack(spacing: 6) {
+            splitItemHeader(i: i, item: item)
+            splitItemCategoryRow(i: i, item: item)
+            splitItemMemberRow(i: i, item: item)
+            splitItemMerchantRow(i: i, item: item)
+            splitItemProjectRow(i: i, item: item)
+            splitItemNote(i: i, item: item)
+            if editingSplitIndex == i {
+                splitItemNumpad(i: i, item: item)
+            }
+        }
+        .padding(10)
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color.designSurfaceContainer.opacity(0.3)))
+    }
+
+    // MARK: - Split Item Subviews
+
+    @ViewBuilder
+    private func splitItemHeader(i: Int, item: SplitItemDraft) -> some View {
+        HStack(spacing: 12) {
+            Button {
+                splitItems.remove(at: i)
+                if editingSplitIndex == i { editingSplitIndex = nil; splitNumpadText = "" }
+                else if let idx = editingSplitIndex, idx > i { editingSplitIndex = idx - 1 }
+            } label: {
+                Image(systemName: "minus.circle.fill").foregroundStyle(.red)
+            }.buttonStyle(.plain)
+
+            Button {
+                if editingSplitIndex == i {
+                    editingSplitIndex = nil
+                    splitNumpadText = ""
+                } else {
+                    editingSplitIndex = i
+                    splitNumpadText = item.amount == 0 ? "" : String(describing: item.amount)
+                }
+            } label: {
+                splitAmountLabel(i: i, item: item)
+            }.buttonStyle(.plain)
+
+            Spacer()
+        }
+    }
+
+    @ViewBuilder
+    private func splitAmountLabel(i: Int, item: SplitItemDraft) -> some View {
+        let currencySym = CurrencyFormatter.currencySymbol(
+            for: selectedCurrencyCode.isEmpty ? ledgerCurrencyCode : selectedCurrencyCode)
+        let isActive = editingSplitIndex == i
+        let displayText: String = {
+            if isActive {
+                return splitNumpadText.isEmpty ? "0.00" : splitNumpadText
+            }
+            if item.amount == 0 { return "0.00" }
+            return CurrencyFormatter.formatDecimal(amount: item.amount, fractionDigits: 2)
+        }()
+        HStack(spacing: 4) {
+            Text(currencySym).font(.designBodySmall).foregroundStyle(.secondary)
+            Text(displayText)
+                .font(.custom("JetBrainsMono-Medium", fixedSize: 15))
+                .foregroundStyle(isActive ? Color.designPrimary : Color.designOnSurface)
+        }
+        .padding(.horizontal, 8).padding(.vertical, 4)
+        .background(RoundedRectangle(cornerRadius: 6).fill(isActive ? Color.designPrimary.opacity(0.08) : Color.clear))
+    }
+
+    // MARK: - Split Item Picker Rows (unified layout matching formPicker)
+
+    @ViewBuilder
+    private func splitItemCategoryRow(i: Int, item: SplitItemDraft) -> some View {
+        HStack(spacing: 12) {
+            Text("分类").font(.designBodyMedium).foregroundStyle(.secondary)
+                .frame(width: 60, alignment: .trailing)
+            MacPopupPicker(
+                selection: Binding(get: { item.category }, set: { splitItems[i].category = $0 }),
+                items: categories,
+                icon: { $0.iconName },
+                name: { $0.name },
+                color: { Color(hex: $0.colorHex) },
+                indent: { cat in var d = 0; var p = cat.parent; while p != nil { d += 1; p = p?.parent }; return d },
+                parentId: { $0.parent?.id },
+                recentKey: "recent_category",
+                onSelect: { recordRecent($0, key: "recent_category") }
+            )
+            .frame(width: 220)
+            Spacer()
+        }
+    }
+
+    @ViewBuilder
+    private func splitItemMemberRow(i: Int, item: SplitItemDraft) -> some View {
+        HStack(spacing: 12) {
+            Text("成员").font(.designBodyMedium).foregroundStyle(.secondary)
+                .frame(width: 60, alignment: .trailing)
+            MacPopupPicker(
+                selection: Binding(get: { item.member }, set: { splitItems[i].member = $0 }),
+                items: members,
+                icon: { $0.avatar },
+                name: { $0.name },
+                color: { _ in .secondary },
+                indent: nil,
+                parentId: nil,
+                recentKey: "recent_member",
+                onSelect: { recordRecent($0, key: "recent_member") }
+            )
+            .frame(width: 220)
+            Spacer()
+        }
+    }
+
+    @ViewBuilder
+    private func splitItemMerchantRow(i: Int, item: SplitItemDraft) -> some View {
+        HStack(spacing: 12) {
+            Text("商家").font(.designBodyMedium).foregroundStyle(.secondary)
+                .frame(width: 60, alignment: .trailing)
+            MacPopupPicker(
+                selection: Binding(get: { item.merchant }, set: { splitItems[i].merchant = $0 }),
+                items: merchants,
+                icon: { _ in "bag" },
+                name: { $0.name },
+                color: { _ in .secondary },
+                indent: nil,
+                parentId: nil,
+                recentKey: "recent_merchant",
+                onSelect: { recordRecent($0, key: "recent_merchant") }
+            )
+            .frame(width: 220)
+            Spacer()
+        }
+    }
+
+    @ViewBuilder
+    private func splitItemProjectRow(i: Int, item: SplitItemDraft) -> some View {
+        HStack(spacing: 12) {
+            Text("项目").font(.designBodyMedium).foregroundStyle(.secondary)
+                .frame(width: 60, alignment: .trailing)
+            MacPopupPicker(
+                selection: Binding(get: { item.project }, set: { splitItems[i].project = $0 }),
+                items: projects,
+                icon: { _ in "folder" },
+                name: { $0.name },
+                color: { _ in .secondary },
+                indent: nil,
+                parentId: nil,
+                recentKey: "recent_project",
+                onSelect: { recordRecent($0, key: "recent_project") }
+            )
+            .frame(width: 220)
+            Spacer()
+        }
+    }
+
+    @ViewBuilder
+    private func splitItemNote(i: Int, item: SplitItemDraft) -> some View {
+        HStack(spacing: 12) {
+            Text("备注").font(.designBodyMedium).foregroundStyle(.secondary)
+                .frame(width: 60, alignment: .trailing)
+            TextField("添加备注", text: Binding(get: { item.note }, set: { splitItems[i].note = $0 }))
+                .textFieldStyle(.roundedBorder)
+            Spacer()
+        }
+    }
+
+    @ViewBuilder
+    private func splitItemNumpad(i: Int, item: SplitItemDraft) -> some View {
+        macNumpadPopover(
+            text: $splitNumpadText,
+            amount: Binding(get: { item.amount }, set: { splitItems[i].amount = $0 }),
+            amountString: Binding(
+                get: { item.amount == 0 ? "" : CurrencyFormatter.formatDecimal(amount: item.amount, fractionDigits: 2) },
+                set: { _ in }
+            ),
+            show: Binding(
+                get: { editingSplitIndex == i },
+                set: { if !$0 { editingSplitIndex = nil; splitNumpadText = "" } }
+            )
+        )
+    }
+
     private var splitTotal: Decimal { splitItems.reduce(0) { $0 + $1.amount } }
+    private var selectedReimbursementTotal: Decimal {
+        pendingExpenses
+            .filter { selectedExpenseIDs.contains($0.id) }
+            .reduce(0) { $0 + abs($1.ledgerAmount) }
+    }
 
     // MARK: - Reimbursement
 
     private var reimbursementSection: some View {
-        HStack(alignment: .top, spacing: 12) {
+        let visible = showAllPendingExpenses ? pendingExpenses : Array(pendingExpenses.prefix(5))
+        let hiddenCount = pendingExpenses.count - 5
+
+        return HStack(alignment: .top, spacing: 12) {
             Text("待报销")
                 .font(.designBodyMedium)
                 .foregroundStyle(.secondary)
                 .frame(width: 60, alignment: .trailing)
             VStack(spacing: 8) {
-                ForEach(pendingExpenses) { exp in
+                ForEach(visible) { exp in
                     Button {
                         if selectedExpenseIDs.contains(exp.id) { selectedExpenseIDs.remove(exp.id) }
                         else { selectedExpenseIDs.insert(exp.id) }
@@ -772,15 +911,47 @@ struct MacAddTransactionSheet: View {
                         HStack {
                             Image(systemName: selectedExpenseIDs.contains(exp.id) ? "checkmark.circle.fill" : "circle")
                                 .foregroundStyle(selectedExpenseIDs.contains(exp.id) ? Color.designPrimaryFixedDim : .secondary)
-                            Text(exp.category?.name ?? "未分类").font(.designBodySmall)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(exp.category?.name ?? "未分类").font(.designBodyMedium)
+                                HStack(spacing: 4) {
+                                    Text(exp.date.formatted(date: .abbreviated, time: .omitted))
+                                    if let m = exp.member {
+                                        Text("·").foregroundStyle(.tertiary)
+                                        Text(m.name)
+                                    }
+                                    if let p = exp.project {
+                                        Text("·").foregroundStyle(.tertiary)
+                                        Text(p.name)
+                                    }
+                                    if let n = exp.note, !n.isEmpty {
+                                        Text("·").foregroundStyle(.tertiary)
+                                        Text(n).lineLimit(1)
+                                    }
+                                }
+                                .font(.designBodySmall).foregroundStyle(.secondary)
+                            }
                             Spacer()
                             Text(CurrencyFormatter.formatDecimal(amount: abs(exp.amount), fractionDigits: 0))
                                 .font(.designBodySmall).foregroundStyle(.secondary)
                         }
                     }.buttonStyle(.plain)
                 }
+
+                if hiddenCount > 0 {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) { showAllPendingExpenses.toggle() }
+                    } label: {
+                        Label(showAllPendingExpenses ? "收起" : "展开全部 \(pendingExpenses.count) 条",
+                              systemImage: showAllPendingExpenses ? "chevron.up" : "chevron.down")
+                            .font(.designBodySmall)
+                            .foregroundStyle(Color.designAccentGreen)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 2)
+                }
+
                 if !selectedExpenseIDs.isEmpty {
-                    HStack { Spacer(); Text("合计: \(CurrencyFormatter.formatDecimal(amount: pendingExpenses.filter { selectedExpenseIDs.contains($0.id) }.reduce(0) { $0 + abs($1.amount) }, fractionDigits: 2))").font(.designBodySmall).foregroundStyle(Color.designPrimaryFixedDim) }
+                    HStack { Spacer(); Text("合计: \(CurrencyFormatter.formatDecimal(amount: selectedReimbursementTotal, fractionDigits: 2))").font(.designBodySmall).foregroundStyle(Color.designPrimaryFixedDim) }
                 }
             }
         }

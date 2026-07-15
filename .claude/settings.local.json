@@ -253,7 +253,12 @@
       "Bash(pymobiledevice3 developer *)",
       "Bash(/Users/gyu/Library/Python/3.9/bin/pymobiledevice3 --help)",
       "Bash(xxd)",
-      "Bash(xargs cat)"
+      "Bash(xargs cat)",
+      "Bash(\"你正在参与此共享账本\"' /Users/gyu/Documents/AI/10-FirstCC/FirstCC/Resources/Localizable.xcstrings)",
+      "Bash(echo \"Exit: $?\")",
+      "Bash(claude *)",
+      "Bash(npm view *)",
+      "Skill(code-review)"
     ]
   },
   "hooks": {

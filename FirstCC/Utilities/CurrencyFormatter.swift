@@ -143,7 +143,7 @@ struct CurrencyFormatter {
         return "\(symbol)\(numberStr)"
     }
 
-    private static func simpleCurrencySymbol(for code: String) -> String {
+    static func simpleCurrencySymbol(for code: String) -> String {
         switch code {
         case "USD", "AUD", "CAD", "SGD": return "$"
         case "CNY", "JPY": return "¥"

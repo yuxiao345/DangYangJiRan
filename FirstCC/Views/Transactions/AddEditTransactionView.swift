@@ -70,6 +70,7 @@ struct AddEditTransactionView: View {
     @State private var pendingExpenses: [Transaction] = []
     @State private var selectedExpenseIDs: Set<UUID> = []
     @State private var showReimbursementSection: Bool = false
+    @State private var showAllPendingExpenses = false
 
     // Lending
     @State private var lendingDirection: LendingDirection = .lendOut
@@ -1462,13 +1463,16 @@ struct AddEditTransactionView: View {
     // MARK: - Pending Reimbursement
 
     private var pendingReimbursementSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let visible = showAllPendingExpenses ? pendingExpenses : Array(pendingExpenses.prefix(5))
+        let hiddenCount = pendingExpenses.count - 5
+
+        return VStack(alignment: .leading, spacing: 8) {
             Text("关联待报销")
                 .font(.designLabel)
                 .foregroundStyle(Color.designPrimary.opacity(0.8))
 
             VStack(spacing: 8) {
-                ForEach(pendingExpenses, id: \.objectID) { expense in
+                ForEach(visible, id: \.objectID) { expense in
                     HStack {
                         Image(systemName: selectedExpenseIDs.contains(expense.id) ? "checkmark.circle.fill" : "circle")
                             .foregroundStyle(selectedExpenseIDs.contains(expense.id) ? Color.designPrimaryFixedDim : Color.designOnSurfaceVariant)
@@ -1476,9 +1480,25 @@ struct AddEditTransactionView: View {
                             Text(LocalizedStringKey(expense.category?.name ?? ""))
                                 .font(.designBodyMedium)
                                 .foregroundStyle(Color.designOnSurface)
-                            Text(expense.date.formatted(date: .abbreviated, time: .omitted))
-                                .font(.designBodySmall)
-                                .foregroundStyle(Color.designOnSurfaceVariant)
+                            HStack(spacing: 4) {
+                                Text(expense.date.formatted(date: .abbreviated, time: .omitted))
+                                if let m = expense.member {
+                                    Text("·").foregroundStyle(.tertiary)
+                                    Text(m.name)
+                                }
+                                if let p = expense.project {
+                                    Text("·").foregroundStyle(.tertiary)
+                                    Text(p.name)
+                                }
+                            }
+                            .font(.designBodySmall)
+                            .foregroundStyle(Color.designOnSurfaceVariant)
+                            if let n = expense.note, !n.isEmpty {
+                                Text(n)
+                                    .font(.designBodySmall)
+                                    .foregroundStyle(.tertiary)
+                                    .lineLimit(1)
+                            }
                         }
                         Spacer()
                         CurrencyText(amount: abs(expense.amount), currencyCode: expense.currencyCode, size: 15)
@@ -1487,6 +1507,23 @@ struct AddEditTransactionView: View {
                     .contentShape(Rectangle())
                     .onTapGesture { toggleExpense(expense.id) }
                 }
+
+                if hiddenCount > 0 {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) { showAllPendingExpenses.toggle() }
+                    } label: {
+                        HStack {
+                            Image(systemName: showAllPendingExpenses ? "chevron.up" : "chevron.down")
+                                .font(.system(size: 10, weight: .medium))
+                            Text(showAllPendingExpenses ? "收起" : "展开全部 \(pendingExpenses.count) 条")
+                        }
+                        .font(.designBodySmall)
+                        .foregroundStyle(Color.designAccentGreen)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 2)
+                }
+
                 if !selectedExpenseIDs.isEmpty {
                     HStack {
                         Text("已选合计")
@@ -2317,7 +2354,7 @@ struct AddEditTransactionView: View {
             return
         }
         let all = (try? appContainer.transactionService.fetchTransactions(for: ledger, context: modelContext, filters: nil)) ?? []
-        pendingExpenses = all.filter { $0.type == TransactionType.expense && $0.reimbursementStatus == ReimbursementStatus.pending }
+        pendingExpenses = all.filter { $0.type == TransactionType.expense && $0.isReimbursable && $0.reimbursementStatus == ReimbursementStatus.pending }
     }
 
     private func linkReimbursedExpenses(to incomeId: UUID) throws {
