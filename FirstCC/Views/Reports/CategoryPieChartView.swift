@@ -11,6 +11,13 @@ struct CategoryPieChartView: View {
     let onSelectTransaction: ((Transaction) -> Void)?
     let transactions: [Transaction]?
 
+    // MARK: - Member Split Support
+    var memberSplits: [UUID: [CategoryMemberSplit]] = [:]
+    var isMemberSplitOn: Binding<Bool>?
+    var showMemberToggle: Bool = false
+    var onToggleMemberSplit: (() -> Void)?
+    var memberSplitDonutItems: [MemberSplitDonutItem] = []
+
     @State private var selectedAngle: Double?
     @State private var animationProgress: Double = 0
     @State private var barFillStep: Double = 0
@@ -21,9 +28,13 @@ struct CategoryPieChartView: View {
     @State private var stableCategories: [CategoryExpenseItem] = []
     @State private var chartID = UUID()
 
+    private var memberSplitActive: Bool {
+        isMemberSplitOn?.wrappedValue == true && showMemberToggle
+    }
+
     var body: some View {
         VStack(spacing: 12) {
-            if let txs = transactions, !txs.isEmpty {
+            if let txs = transactions, !txs.isEmpty, !memberSplitActive {
                 transactionList(txs)
             } else {
                 donutCard
@@ -32,6 +43,46 @@ struct CategoryPieChartView: View {
         }
         .onAppear {
             if stableCategories.isEmpty { stableCategories = categories }
+        }
+        .onChange(of: categories.map(\.id)) { _, _ in
+            handleCategoriesChanged()
+        }
+        .onChange(of: isMemberSplitOn?.wrappedValue ?? false) { _, newVal in
+            animationTask?.cancel()
+            animationTask = Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(100))
+                guard !Task.isCancelled else { return }
+                stableCategories = categories
+                chartID = UUID()
+                try? await Task.sleep(for: .milliseconds(1))
+                guard !Task.isCancelled else { return }
+                animationProgress = 0
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                    animationProgress = 1.0
+                }
+                guard !Task.isCancelled else { return }
+                runBarAnimation(delay: 0.1)
+            }
+        }
+    }
+
+    private func handleCategoriesChanged() {
+        gradientLookup = buildGradientLookup()
+        guard hasAppeared else { return }
+        animationTask?.cancel()
+        animationTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(100))
+            guard !Task.isCancelled else { return }
+            stableCategories = categories
+            chartID = UUID()
+            try? await Task.sleep(for: .milliseconds(1))
+            guard !Task.isCancelled else { return }
+            animationProgress = 0
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                animationProgress = 1.0
+            }
+            guard !Task.isCancelled else { return }
+            runBarAnimation(delay: 0.1)
         }
     }
 
@@ -45,46 +96,81 @@ struct CategoryPieChartView: View {
         .padding(24)
         .glassCard(cornerRadius: 24)
         .padding(.horizontal, 12)
-    }
-
-    private var donutChart: some View {
-        DonutChartContent(
-            categories: stableCategories,
-            animationProgress: animationProgress,
-            selectedAngle: $selectedAngle,
-            gradientLookup: gradientLookup,
-            fallbackGradient: fallbackGradient,
-            onCategoryTap: { onCategoryTap($0) }
-        )
-        .id(chartID)
-        .frame(height: 240)
-        .shadow(color: .black.opacity(0.12), radius: 20, y: 8)
-        .chartOverlay { proxy in
-            GeometryReader { geometry in
-                let frame = geometry[proxy.plotAreaFrame]
-                centerLabel
-                    .position(x: frame.midX, y: frame.midY)
+        .overlay(alignment: .bottomTrailing) {
+            if showMemberToggle {
+                memberToggleButton
             }
         }
-        .onChange(of: categories.map(\.id)) { _, _ in
-            gradientLookup = buildGradientLookup()
-            guard hasAppeared else { return }
-            animationTask?.cancel()
-            animationTask = Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(100))
-                guard !Task.isCancelled else { return }
-                // 先更新数据源，等一个 runloop 确保 Chart 拿到完整数据
-                stableCategories = categories
-                chartID = UUID()
-                try? await Task.sleep(for: .milliseconds(1))
-                guard !Task.isCancelled else { return }
-                // 再播动画
-                animationProgress = 0
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                    animationProgress = 1.0
+    }
+
+    // MARK: - Member Toggle Button
+
+    private var memberToggleButton: some View {
+        Button {
+            isMemberSplitOn?.wrappedValue.toggle()
+            if isMemberSplitOn?.wrappedValue == true {
+                onToggleMemberSplit?()
+            }
+        } label: {
+            Image(systemName: "person.2.circle.fill")
+                .font(.title3)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(
+                    memberSplitActive
+                        ? Color.designAccentGreen
+                        : Color.designOnSurfaceVariant
+                )
+                .padding(10)
+                .background(
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
+                )
+        }
+        .buttonStyle(.plain)
+        .padding(12)
+    }
+
+    // MARK: - Donut Chart
+
+    private var donutChart: some View {
+        Group {
+            if memberSplitActive && isDrilledDown && !memberSplitDonutItems.isEmpty {
+                // L2: Member-split donut
+                MemberSplitDonutContent(
+                    items: memberSplitDonutItems,
+                    animationProgress: animationProgress
+                )
+                .id(chartID)
+                .frame(height: 240)
+                .shadow(color: .black.opacity(0.12), radius: 20, y: 8)
+                .chartOverlay { proxy in
+                    GeometryReader { geometry in
+                        let frame = geometry[proxy.plotAreaFrame]
+                        centerLabel
+                            .position(x: frame.midX, y: frame.midY)
+                    }
                 }
-                guard !Task.isCancelled else { return }
-                runBarAnimation(delay: 0.1)
+            } else {
+                // Normal category donut (or L1 member donut via categories param)
+                DonutChartContent(
+                    categories: stableCategories,
+                    animationProgress: animationProgress,
+                    selectedAngle: $selectedAngle,
+                    gradientLookup: gradientLookup,
+                    fallbackGradient: fallbackGradient,
+                    onCategoryTap: memberSplitActive ? { _ in } : onCategoryTap
+                )
+                .id(chartID)
+                .frame(height: 240)
+                .shadow(color: .black.opacity(0.12), radius: 20, y: 8)
+                .chartOverlay { proxy in
+                    GeometryReader { geometry in
+                        let frame = geometry[proxy.plotAreaFrame]
+                        centerLabel
+                            .position(x: frame.midX, y: frame.midY)
+                    }
+                }
             }
         }
         .onAppear {
@@ -102,7 +188,7 @@ struct CategoryPieChartView: View {
 
     private var centerLabel: some View {
         VStack(spacing: 2) {
-            if isDrilledDown {
+            if isDrilledDown && !memberSplitActive {
                 Button {
                     onCenterTap()
                 } label: {
@@ -114,13 +200,24 @@ struct CategoryPieChartView: View {
                     }
                     .foregroundStyle(Color.designAccentGreen)
                 }
+            } else if memberSplitActive {
+                Text(centerTitle)
+                    .font(.designBodySmall)
+                    .foregroundStyle(Color.designOnSurfaceVariant)
             } else {
                 Text(centerTitle)
                     .font(.designBodySmall)
                     .foregroundStyle(Color.designOnSurfaceVariant)
             }
-            CurrencyText(amount: totalExpense, currencyCode: "", size: 18, foregroundColor: Color.designOnSurface)
-                .fontWeight(.bold)
+            CurrencyText(
+                amount: memberSplitActive && isDrilledDown
+                    ? memberSplitDonutItems.map(\.amount).reduce(0, +)
+                    : totalExpense,
+                currencyCode: "",
+                size: 18,
+                foregroundColor: Color.designOnSurface
+            )
+            .fontWeight(.bold)
         }
         .padding(12)
     }
@@ -162,7 +259,9 @@ struct CategoryPieChartView: View {
         VStack(spacing: 8) {
             ForEach(Array(categories.enumerated()), id: \.element.id) { index, item in
                 Button {
-                    onCategoryTap(item.id)
+                    if !memberSplitActive {
+                        onCategoryTap(item.id)
+                    }
                 } label: {
                     VStack(spacing: 8) {
                         HStack(spacing: 8) {
@@ -184,9 +283,34 @@ struct CategoryPieChartView: View {
                                     .foregroundStyle(Color.designOnSurfaceVariant)
                             }
 
-                            Image(systemName: "chevron.right")
-                                .font(.designBodySmall)
-                                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+                            if !memberSplitActive {
+                                Image(systemName: "chevron.right")
+                                    .font(.designBodySmall)
+                                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+                            }
+                        }
+
+                        // MARK: Member Split Sub-rows
+                        if memberSplitActive, let splits = memberSplits[item.id], !splits.isEmpty {
+                            VStack(spacing: 2) {
+                                ForEach(splits, id: \.memberID) { split in
+                                    HStack(spacing: 4) {
+                                        Circle()
+                                            .fill(memberSplitColor(baseColorHex: item.colorHex, memberIndex: splits.firstIndex(where: { $0.memberID == split.memberID }) ?? 0, totalMembers: splits.count))
+                                            .frame(width: 6, height: 6)
+                                        Text(split.memberName)
+                                            .font(.designBodySmall)
+                                            .foregroundStyle(Color.designOnSurfaceVariant)
+                                        Spacer()
+                                        CurrencyText(amount: split.amount, currencyCode: "", size: 12, foregroundColor: Color.designOnSurfaceVariant)
+                                        Text(String(format: "%.1f%%", split.percentage * 100))
+                                            .font(.designMonoDataSmall)
+                                            .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
+                                    }
+                                    .padding(.leading, 20)
+                                }
+                            }
+                            .padding(.top, 2)
                         }
 
                         let targetBlocks = item.percentage * 16
@@ -207,6 +331,15 @@ struct CategoryPieChartView: View {
             }
         }
         .padding(.horizontal, 12)
+    }
+
+    // MARK: - Member Split Color
+
+    private func memberSplitColor(baseColorHex: String, memberIndex: Int, totalMembers: Int) -> Color {
+        let base = baseColorHex.isEmpty ? Color.gray : Color(hex: baseColorHex)
+        guard totalMembers > 1 else { return base }
+        let fraction = Double(totalMembers - memberIndex) / Double(totalMembers)
+        return base.opacity(max(0.3, fraction))
     }
 
     // MARK: - Bar Animation

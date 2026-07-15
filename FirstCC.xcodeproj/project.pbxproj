@@ -311,6 +311,12 @@
 		FD2C9721768BC0DECAFBD9EA /* LedgerRole.swift in Sources */ = {isa = PBXBuildFile; fileRef = 123B9066865398E03B8DD922 /* LedgerRole.swift */; };
 		FD91B103255DEB923850049C /* CloudKitConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FD37181CF946710701C84CD /* CloudKitConfig.swift */; };
 		FFD3CC4FA09133AB7E0CFC53 /* AccountDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89DBFB59681FF75B16E21478 /* AccountDetailView.swift */; };
+		BB68CE3B72D34743B18CDD78 /* MemberPieChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E447B662BB7407285A77329 /* MemberPieChartView.swift */; };
+		B2F84D17B669435ABA7351E2 /* MemberPieChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E447B662BB7407285A77329 /* MemberPieChartView.swift */; };
+		780D8A99731A415BBE2EAA59 /* MemberCategoryCrossView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E27A05422424BA38456B730 /* MemberCategoryCrossView.swift */; };
+		984B39BAE9C34F3A9C9718D2 /* MemberCategoryCrossView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E27A05422424BA38456B730 /* MemberCategoryCrossView.swift */; };
+		96FEB08C2A4F41A287F0B3B1 /* MemberSplitDonutContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B6D818A9814FD5A0945FCA /* MemberSplitDonutContent.swift */; };
+		72301FF79F724300B43D23D5 /* MemberSplitDonutContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B6D818A9814FD5A0945FCA /* MemberSplitDonutContent.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -523,6 +529,9 @@
 		FB18074394D7CADFC89B2D67 /* CurrencyServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyServiceProtocol.swift; sourceTree = "<group>"; };
 		FD9C98A4532441F197C92D1E /* SplitFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitFormView.swift; sourceTree = "<group>"; };
 		FFDB4DF6538746E0A70203A4 /* RecurringRuleEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringRuleEntity.swift; sourceTree = "<group>"; };
+		6E447B662BB7407285A77329 /* MemberPieChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberPieChartView.swift; sourceTree = "<group>"; };
+		4E27A05422424BA38456B730 /* MemberCategoryCrossView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberCategoryCrossView.swift; sourceTree = "<group>"; };
+		26B6D818A9814FD5A0945FCA /* MemberSplitDonutContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberSplitDonutContent.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -932,6 +941,9 @@
 				02DDC5F77A2F4F6B8F12D87F /* TrendChartView.swift */,
 				372597A22CA245B898D21D6F /* CategoryPieChartView.swift */,
 				4C66C0A248C949A08F849676 /* DonutChartContent.swift */,
+				6E447B662BB7407285A77329 /* MemberPieChartView.swift */,
+				4E27A05422424BA38456B730 /* MemberCategoryCrossView.swift */,
+				26B6D818A9814FD5A0945FCA /* MemberSplitDonutContent.swift */,
 			);
 			path = Reports;
 			sourceTree = "<group>";
@@ -1355,7 +1367,7 @@
 				56025E3F889643DE9F32DCC7 /* ReportViewModel.swift in Sources */,
 				A44361F54D4542FE908424FE /* CategoryPieChartView.swift in Sources */,
 				9B863D6EE456400A886BF4FE /* DonutChartContent.swift in Sources */,
-				DE7AC17290274739B1858192 /* CalendarStripView.swift in Sources */,
+						DE7AC17290274739B1858192 /* CalendarStripView.swift in Sources */,
 				85DD12DBCBCD4B9AAD4EA49D /* CalendarDayCell.swift in Sources */,
 				2760B2289D5E47E78D2DA298 /* Color+Expense.swift in Sources */,
 				D73A02FE5CF844B68F520A93 /* ChineseExpressionParser.swift in Sources */,
@@ -1397,6 +1409,9 @@
 				213E5B79357A4CBD8618529B /* MultiSelectChipRow.swift in Sources */,
 				F03E251EB83C49E9A302DF9C /* MultiSelectPickerView.swift in Sources */,
 				1BBF779FF14B48B496C7AD33 /* AdvancedFilterPanel.swift in Sources */,
+				BB68CE3B72D34743B18CDD78 /* MemberPieChartView.swift in Sources */,
+				780D8A99731A415BBE2EAA59 /* MemberCategoryCrossView.swift in Sources */,
+				96FEB08C2A4F41A287F0B3B1 /* MemberSplitDonutContent.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1521,6 +1536,9 @@
 				CB716F7C99D248469ACE0A1E /* AdvancedFilterPanel.swift in Sources */,
 				D367EDF85D804F7D8DFE1399 /* DonutChartContent.swift in Sources */,
 				1264E870146AA37B64B947A8 /* PhotoStorage.swift in Sources */,
+				B2F84D17B669435ABA7351E2 /* MemberPieChartView.swift in Sources */,
+				984B39BAE9C34F3A9C9718D2 /* MemberCategoryCrossView.swift in Sources */,
+				72301FF79F724300B43D23D5 /* MemberSplitDonutContent.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

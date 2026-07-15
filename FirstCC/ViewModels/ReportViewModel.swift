@@ -72,6 +72,50 @@ struct CategoryExpenseItem: Identifiable {
     let children: [CategoryExpenseItem]
 }
 
+// MARK: - Member Report Types
+
+/// L1: 成员支出份额项
+struct MemberExpenseItem: Identifiable {
+    let id: UUID
+    let name: String
+    let avatar: String
+    let amount: Decimal
+    let percentage: Double
+    let transactionCount: Int
+}
+
+/// L3: 分类×成员交叉项
+struct MemberCategoryCrossItem: Identifiable {
+    var id: UUID { categoryID }
+    let categoryID: UUID
+    let categoryName: String
+    let iconName: String
+    let colorHex: String
+    let totalAmount: Decimal
+    /// (memberID, memberName, amount) — memberID 为 nil 表示未标记成员
+    let memberAmounts: [(memberID: UUID?, memberName: String, amount: Decimal)]
+}
+
+/// L2 成员拆分：单个分类下各成员的支出
+struct CategoryMemberSplit {
+    let memberID: UUID?
+    let memberName: String
+    let amount: Decimal
+    let percentage: Double  // within this category
+}
+
+/// L2 成员拆分饼图数据项
+struct MemberSplitDonutItem: Identifiable {
+    let id = UUID()
+    let categoryID: UUID
+    let categoryName: String
+    let categoryColorHex: String
+    let memberName: String
+    let amount: Decimal
+    let memberIndex: Int
+    let totalMembers: Int
+}
+
 struct TrendDataPoint: Identifiable {
     let id = UUID()
     let label: String
@@ -373,6 +417,31 @@ final class ReportViewModel {
     var allocationFilter: AllocationFilter = .all
     var categoryType: TransactionType = .expense
 
+    // MARK: Member Report State
+    static let unassignedMemberUUID = UUID(uuidString: "11111111-1111-1111-1111-111111111111")!
+    var memberExpenses: [MemberExpenseItem] = []
+    var selectedMemberID: UUID?
+    var selectedMemberName: String { memberExpenses.first(where: { $0.id == selectedMemberID })?.name ?? "" }
+    var memberCategoryExpenses: [CategoryExpenseItem] = []
+    var memberCategoryCross: [MemberCategoryCrossItem] = []
+    var memberTXByCategory: [UUID: [Transaction]] = [:]
+    /// Cached expense transactions for L2 drill-down computation
+    private var memberAllExpenseTx: [Transaction] = []
+
+    // MARK: Member Split (category view member overlay)
+    var isShowingMemberSplit = false
+    var categoryMemberSplits: [UUID: [CategoryMemberSplit]] = [:]
+    /// L1 member donut data — converted from MemberExpenseItem for CategoryPieChartView
+    var memberDonutCategories: [CategoryExpenseItem] = []
+    /// All cached transactions for member-split computation
+    private var allExpenseTxForSplit: [Transaction] = []
+
+    var isShowingMemberTransactions: Bool {
+        guard let id = selectedMemberID else { return false }
+        if id == Self.unassignedMemberUUID { return true }
+        return memberCategoryExpenses.isEmpty
+    }
+
     private var currentCategories: [CategoryExpenseItem] {
         categoryType == .expense ? categoryExpenses : categoryIncomes
     }
@@ -447,6 +516,15 @@ final class ReportViewModel {
         fetch.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
         let all = (try? context.fetch(fetch)) ?? []
 
+        // Cache expense transactions for member-split computation
+        allExpenseTxForSplit = all
+            .excludingReimbursementTransactions()
+            .filter { t in
+                guard t.type == .expense else { return false }
+                guard !t.isSplitParent else { return false }
+                return true
+            }
+
         // Load expense categories
         let expenseResult = buildCategoryItems(
             from: all,
@@ -485,13 +563,18 @@ final class ReportViewModel {
         type: TransactionType,
         categoryService: CategoryServiceProtocol,
         ledger: Ledger,
-        context: NSManagedObjectContext
+        context: NSManagedObjectContext,
+        memberID: UUID? = nil
     ) -> CategoryBuildResult {
         let transactions = allTransactions
             .excludingReimbursementTransactions()
             .filter { t in
                 guard t.type == type else { return false }
                 guard !t.isSplitParent else { return false }
+                if let mid = memberID {
+                    if mid == Self.unassignedMemberUUID { return t.member == nil }
+                    return t.member?.id == mid
+                }
                 return true
             }
 
@@ -1161,7 +1244,312 @@ final class ReportViewModel {
     }
     #endif
 
+    // MARK: - Member Report
+
+    func loadMemberData(
+        ledger: Ledger,
+        transactionService: TransactionServiceProtocol,
+        categoryService: CategoryServiceProtocol,
+        memberService: MemberServiceProtocol,
+        context: NSManagedObjectContext
+    ) {
+        guard let range = selectedPeriod.dateRange else { return }
+
+        let ledgerID = ledger.id
+        let fetch = NSFetchRequest<Transaction>(entityName: "Transaction")
+        fetch.predicate = NSPredicate(format: "ledger.id == %@ AND date >= %@ AND date < %@", ledgerID as CVarArg, range.lowerBound as CVarArg, range.upperBound as CVarArg)
+        fetch.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+        let all = (try? context.fetch(fetch)) ?? []
+
+        let expenseTx = all
+            .excludingReimbursementTransactions()
+            .filter { t in
+                guard t.type == .expense else { return false }
+                guard !t.isSplitParent else { return false }
+                return true
+            }
+
+        let members = (try? memberService.fetchMembers(for: ledger, context: context)) ?? []
+        let memberLookup = Dictionary(uniqueKeysWithValues: members.map { ($0.id, $0) })
+
+        // MARK: L1 — Member expense totals
+        var memberTotals: [UUID: (amount: Decimal, count: Int)] = [:]
+        var unassignedTotal: Decimal = 0
+        var unassignedCount: Int = 0
+
+        for t in expenseTx {
+            if let mid = t.member?.id {
+                var entry = memberTotals[mid] ?? (0, 0)
+                entry.amount += t.netExpenseAmount
+                entry.count += 1
+                memberTotals[mid] = entry
+            } else {
+                unassignedTotal += t.netExpenseAmount
+                unassignedCount += 1
+            }
+        }
+
+        let grandTotal = memberTotals.values.map(\.amount).reduce(0, +) + unassignedTotal
+
+        var items: [MemberExpenseItem] = memberTotals.compactMap { mid, entry in
+            guard let m = memberLookup[mid] else { return nil }
+            return MemberExpenseItem(
+                id: mid, name: m.name, avatar: m.avatar,
+                amount: entry.amount,
+                percentage: grandTotal > 0 ? Double(truncating: (entry.amount / grandTotal) as NSNumber) : 0,
+                transactionCount: entry.count
+            )
+        }.sorted { $0.amount > $1.amount }
+
+        if unassignedTotal > 0 {
+            items.append(MemberExpenseItem(
+                id: Self.unassignedMemberUUID,
+                name: String(localized: "未标记成员"),
+                avatar: "person.crop.circle.badge.questionmark",
+                amount: unassignedTotal,
+                percentage: grandTotal > 0 ? Double(truncating: (unassignedTotal / grandTotal) as NSNumber) : 0,
+                transactionCount: unassignedCount
+            ))
+        }
+
+        memberExpenses = items
+        memberAllExpenseTx = expenseTx  // cache for L2 drill-down
+
+        // Validate selection
+        if let sel = selectedMemberID, !items.contains(where: { $0.id == sel }) {
+            selectedMemberID = nil
+        }
+
+        // MARK: L3 — Category × Member cross table
+        var crossItems: [MemberCategoryCrossItem] = []
+        var rootTotals: [UUID: (cat: Category, total: Decimal)] = [:]
+        var rootMemberTotals: [UUID: [UUID: Decimal]] = [:]  // [rootCatID: [memberID: amount]]
+        var rootUnassignedTotals: [UUID: Decimal] = [:]       // [rootCatID: unassignedAmount]
+
+        for t in expenseTx {
+            guard let cat = t.category else { continue }
+            let rootCat = rootCategory(for: cat)
+            let amt = t.netExpenseAmount
+            rootTotals[rootCat.id] = (rootCat, (rootTotals[rootCat.id]?.total ?? 0) + amt)
+
+            if let mid = t.member?.id {
+                var memberMap = rootMemberTotals[rootCat.id] ?? [:]
+                memberMap[mid, default: 0] += amt
+                rootMemberTotals[rootCat.id] = memberMap
+            } else {
+                rootUnassignedTotals[rootCat.id, default: 0] += amt
+            }
+        }
+
+        // Sorted by total amount descending
+        let sortedRoots = rootTotals.sorted { $0.value.total > $1.value.total }
+
+        for (rootID, entry) in sortedRoots {
+            var memberAmts: [(memberID: UUID?, memberName: String, amount: Decimal)] = []
+
+            // Members with spending in this category
+            if let memberMap = rootMemberTotals[rootID] {
+                for (mid, amt) in memberMap.sorted(by: { $0.value > $1.value }) {
+                    let name = memberLookup[mid]?.name ?? String(localized: "未知")
+                    memberAmts.append((mid, name, amt))
+                }
+            }
+
+            // Unassigned spending in this category
+            if let unassigned = rootUnassignedTotals[rootID], unassigned > 0 {
+                memberAmts.append((nil, String(localized: "未标记"), unassigned))
+            }
+
+            crossItems.append(MemberCategoryCrossItem(
+                categoryID: rootID,
+                categoryName: entry.cat.name,
+                iconName: entry.cat.iconName,
+                colorHex: entry.cat.colorHex,
+                totalAmount: entry.total,
+                memberAmounts: memberAmts
+            ))
+        }
+
+        memberCategoryCross = crossItems
+    }
+
+    func selectMember(_ id: UUID?, categoryService: CategoryServiceProtocol, ledger: Ledger, context: NSManagedObjectContext) {
+        if selectedMemberID == id {
+            selectedMemberID = nil
+            memberCategoryExpenses = []
+        } else {
+            selectedMemberID = id
+            // Pre-compute L2: member's category breakdown
+            if let mid = id {
+                let result = buildCategoryItems(
+                    from: memberAllExpenseTx,
+                    type: .expense,
+                    categoryService: categoryService,
+                    ledger: ledger,
+                    context: context,
+                    memberID: mid
+                )
+                memberCategoryExpenses = result.items
+            }
+        }
+    }
+
+    func goBackMember() {
+        selectedMemberID = nil
+    }
+
+    // MARK: - Member Split (category view overlay)
+
+    /// Compute per-category member splits for the current display categories.
+    /// Called when the member-split toggle is turned on in L2.
+    func computeCategoryMemberSplits(
+        for categories: [CategoryExpenseItem],
+        memberService: MemberServiceProtocol,
+        ledger: Ledger,
+        context: NSManagedObjectContext
+    ) {
+        let members = (try? memberService.fetchMembers(for: ledger, context: context)) ?? []
+        let memberLookup = Dictionary(uniqueKeysWithValues: members.map { ($0.id, $0) })
+
+        var splits: [UUID: [CategoryMemberSplit]] = [:]
+
+        for cat in categories {
+            // Use cached txByCategory mapping when available, fall back to filtering
+            let txs: [Transaction] = txByCategory[cat.id] ?? allExpenseTxForSplit.filter { tx in
+                if cat.id == Self.uncategorizedUUID { return tx.category == nil }
+                return tx.category?.id == cat.id
+            }
+
+            // Aggregate by member
+            var memberTotals: [UUID: Decimal] = [:]
+            var unassignedTotal: Decimal = 0
+            for t in txs {
+                if let mid = t.member?.id {
+                    memberTotals[mid, default: 0] += t.netExpenseAmount
+                } else {
+                    unassignedTotal += t.netExpenseAmount
+                }
+            }
+
+            let catTotal = memberTotals.values.reduce(0, +) + unassignedTotal
+            guard catTotal > 0 else { continue }
+
+            var memberSplits: [CategoryMemberSplit] = memberTotals.compactMap { mid, amt in
+                guard let m = memberLookup[mid] else { return nil }
+                return CategoryMemberSplit(
+                    memberID: mid, memberName: m.name, amount: amt,
+                    percentage: Double(truncating: (amt / catTotal) as NSNumber)
+                )
+            }.sorted { $0.amount > $1.amount }
+
+            if unassignedTotal > 0 {
+                memberSplits.append(CategoryMemberSplit(
+                    memberID: nil, memberName: String(localized: "未标记"), amount: unassignedTotal,
+                    percentage: Double(truncating: (unassignedTotal / catTotal) as NSNumber)
+                ))
+            }
+
+            splits[cat.id] = memberSplits
+        }
+
+        categoryMemberSplits = splits
+    }
+
+    /// Convert MemberExpenseItem list to CategoryExpenseItem format for L1 member donut.
+    /// Computes from cached transactions if memberExpenses hasn't been loaded (e.g., in category tab).
+    func buildMemberDonutCategories(memberService: MemberServiceProtocol, ledger: Ledger, context: NSManagedObjectContext) {
+        if !memberExpenses.isEmpty {
+            memberDonutCategories = memberExpenses.map { m in
+                CategoryExpenseItem(
+                    id: m.id, name: m.name, iconName: m.avatar,
+                    colorHex: "", amount: m.amount, percentage: m.percentage,
+                    parentID: nil, children: []
+                )
+            }
+            return
+        }
+
+        // Compute from cached transactions
+        let members = (try? memberService.fetchMembers(for: ledger, context: context)) ?? []
+        let memberLookup = Dictionary(uniqueKeysWithValues: members.map { ($0.id, $0) })
+
+        var totals: [UUID: Decimal] = [:]
+        var unassigned: Decimal = 0
+        for t in allExpenseTxForSplit {
+            if let mid = t.member?.id {
+                totals[mid, default: 0] += t.netExpenseAmount
+            } else {
+                unassigned += t.netExpenseAmount
+            }
+        }
+
+        let grandTotal = totals.values.reduce(0, +) + unassigned
+        guard grandTotal > 0 else { memberDonutCategories = []; return }
+
+        var items: [CategoryExpenseItem] = totals.compactMap { mid, amt in
+            guard let m = memberLookup[mid] else { return nil }
+            return CategoryExpenseItem(
+                id: mid, name: m.name, iconName: m.avatar,
+                colorHex: "", amount: amt,
+                percentage: Double(truncating: (amt / grandTotal) as NSNumber),
+                parentID: nil, children: []
+            )
+        }.sorted { $0.amount > $1.amount }
+
+        if unassigned > 0 {
+            items.append(CategoryExpenseItem(
+                id: Self.unassignedMemberUUID, name: String(localized: "未标记成员"),
+                iconName: "person.crop.circle.badge.questionmark", colorHex: "",
+                amount: unassigned,
+                percentage: Double(truncating: (unassigned / grandTotal) as NSNumber),
+                parentID: nil, children: []
+            ))
+        }
+
+        memberDonutCategories = items
+    }
+
+    /// Build flat items for member-split donut chart (L2).
+    static func buildMemberSplitDonutItems(
+        categories: [CategoryExpenseItem],
+        splits: [UUID: [CategoryMemberSplit]]
+    ) -> [MemberSplitDonutItem] {
+        var items: [MemberSplitDonutItem] = []
+        for cat in categories {
+            guard let memberSplits = splits[cat.id], !memberSplits.isEmpty else { continue }
+            let totalMembers = memberSplits.count
+            for (idx, ms) in memberSplits.enumerated() {
+                items.append(MemberSplitDonutItem(
+                    categoryID: cat.id, categoryName: cat.name,
+                    categoryColorHex: cat.colorHex, memberName: ms.memberName,
+                    amount: ms.amount, memberIndex: idx, totalMembers: totalMembers
+                ))
+            }
+        }
+        return items
+    }
+
+    /// Build category items filtered to a specific member (L2 drill-down).
+    func buildCategoryItemsForMember(
+        from allTransactions: [Transaction],
+        memberID: UUID?,
+        categoryService: CategoryServiceProtocol,
+        ledger: Ledger,
+        context: NSManagedObjectContext
+    ) -> [CategoryExpenseItem] {
+        let result = buildCategoryItems(
+            from: allTransactions,
+            type: .expense,
+            categoryService: categoryService,
+            ledger: ledger,
+            context: context,
+            memberID: memberID
+        )
+        return result.items
+    }
+
     func selectCategory(_ id: UUID?) {
+        isShowingMemberSplit = false
         if selectedCategoryID == id {
             selectedCategoryID = nil
         } else {
@@ -1170,6 +1558,7 @@ final class ReportViewModel {
     }
 
     func goBack() {
+        isShowingMemberSplit = false
         guard let id = selectedCategoryID else { return }
         selectedCategoryID = findItem(id: id)?.parentID
     }

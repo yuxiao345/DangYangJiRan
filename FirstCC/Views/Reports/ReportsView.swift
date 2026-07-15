@@ -4,11 +4,13 @@ import SwiftUI
 enum ReportType: CaseIterable {
     case category
     case trend
+    case member
 
     var label: String {
         switch self {
-        case .category: "分类占比"
-        case .trend: "收支趋势"
+        case .category: String(localized: "分类占比")
+        case .trend: String(localized: "收支趋势")
+        case .member: String(localized: "成员支出")
         }
     }
 
@@ -16,6 +18,7 @@ enum ReportType: CaseIterable {
         switch self {
         case .category: [.thisMonth, .last3Months, .last6Months]
         case .trend: [.lastYear, .last2Years, .last3Years]
+        case .member: [.thisMonth, .last3Months, .last6Months, .lastYear]
         }
     }
 
@@ -23,6 +26,7 @@ enum ReportType: CaseIterable {
         switch self {
         case .category: .thisMonth
         case .trend: .lastYear
+        case .member: .thisMonth
         }
     }
 }
@@ -101,6 +105,8 @@ struct ReportsView: View {
                         categoryContent
                     case .trend:
                         trendReport
+                    case .member:
+                        memberContent
                     }
                 }
             }
@@ -112,8 +118,12 @@ struct ReportsView: View {
         .simultaneousGesture(backSwipe)
         .designScreen()
         .onAppear { loadData() }
-        .onChange(of: viewModel.selectedPeriod) { _, _ in loadData() }
+        .onChange(of: viewModel.selectedPeriod) { _, _ in
+            viewModel.isShowingMemberSplit = false
+            loadData()
+        }
         .onChange(of: selectedReport) { _, newType in
+            viewModel.isShowingMemberSplit = false
             if !newType.supportedPeriods.contains(viewModel.selectedPeriod) {
                 viewModel.selectedPeriod = newType.defaultPeriod
             } else {
@@ -121,6 +131,7 @@ struct ReportsView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in
+            viewModel.isShowingMemberSplit = false
             loadData()
         }
     }
@@ -131,13 +142,18 @@ struct ReportsView: View {
     private var backSwipe: some Gesture {
         DragGesture(minimumDistance: 40, coordinateSpace: .global)
             .onEnded { value in
-                guard viewModel.selectedCategoryID != nil else { return }
+                let isDrilledDown = viewModel.selectedCategoryID != nil || viewModel.selectedMemberID != nil
+                guard isDrilledDown else { return }
                 // 仅响应从左边缘发起的水平右滑
                 let isFromLeftEdge = value.startLocation.x < 44
                 let isRightSwipe = value.translation.width > 80
                 let isHorizontal = abs(value.translation.width) > abs(value.translation.height)
                 if isFromLeftEdge && isRightSwipe && isHorizontal {
-                    viewModel.goBack()
+                    if viewModel.selectedMemberID != nil {
+                        viewModel.goBackMember()
+                    } else {
+                        viewModel.goBack()
+                    }
                 }
             }
     }
@@ -156,15 +172,61 @@ struct ReportsView: View {
             .frame(maxWidth: .infinity)
             .padding(.top, 120)
         } else {
+            let isL1MemberMode = viewModel.isShowingMemberSplit && viewModel.selectedCategoryID == nil
+            let isL2MemberMode = viewModel.isShowingMemberSplit && viewModel.selectedCategoryID != nil
+
             CategoryPieChartView(
-                categories: viewModel.displayCategories,
-                totalExpense: viewModel.displayTotal,
-                centerTitle: viewModel.displayTitle,
+                categories: isL1MemberMode ? viewModel.memberDonutCategories : viewModel.displayCategories,
+                totalExpense: isL1MemberMode
+                    ? viewModel.memberDonutCategories.map(\.amount).reduce(0, +)
+                    : viewModel.displayTotal,
+                centerTitle: isL1MemberMode
+                    ? String(localized: "成员占比")
+                    : viewModel.displayTitle,
                 isDrilledDown: viewModel.selectedCategoryID != nil,
-                onCategoryTap: { viewModel.selectCategory($0) },
-                onCenterTap: { viewModel.goBack() },
+                onCategoryTap: { id in
+                    if !viewModel.isShowingMemberSplit {
+                        viewModel.selectCategory(id)
+                    }
+                },
+                onCenterTap: {
+                    if viewModel.isShowingMemberSplit {
+                        viewModel.isShowingMemberSplit = false
+                    } else {
+                        viewModel.goBack()
+                    }
+                },
                 onSelectTransaction: { tx in selectedTransaction = tx },
-                transactions: viewModel.isShowingTransactions ? viewModel.displayTransactions : nil
+                transactions: (!viewModel.isShowingMemberSplit && viewModel.isShowingTransactions)
+                    ? viewModel.displayTransactions : nil,
+                memberSplits: viewModel.categoryMemberSplits,
+                isMemberSplitOn: $viewModel.isShowingMemberSplit,
+                showMemberToggle: true,
+                onToggleMemberSplit: {
+                    guard let ledger = appContainer.currentLedger else { return }
+                    if viewModel.selectedCategoryID == nil {
+                        // L1: build member donut categories
+                        viewModel.buildMemberDonutCategories(
+                            memberService: appContainer.memberService,
+                            ledger: ledger,
+                            context: modelContext
+                        )
+                    } else {
+                        // L2: compute member splits for current display categories
+                        viewModel.computeCategoryMemberSplits(
+                            for: viewModel.displayCategories,
+                            memberService: appContainer.memberService,
+                            ledger: ledger,
+                            context: modelContext
+                        )
+                    }
+                },
+                memberSplitDonutItems: isL2MemberMode
+                    ? ReportViewModel.buildMemberSplitDonutItems(
+                        categories: viewModel.displayCategories,
+                        splits: viewModel.categoryMemberSplits
+                    )
+                    : []
             )
             .padding(.vertical, 8)
         }
@@ -173,6 +235,63 @@ struct ReportsView: View {
     @ViewBuilder
     private var trendReport: some View {
         TrendChartView(dataPoints: viewModel.trendData)
+    }
+
+    // MARK: - Member Content
+
+    @ViewBuilder
+    private var memberContent: some View {
+        if viewModel.memberExpenses.isEmpty {
+            VStack(spacing: 8) {
+                Image(systemName: "person.2")
+                    .font(.largeTitle)
+                    .foregroundStyle(Color.designOnSurfaceVariant)
+                Text(String(localized: "暂无成员支出数据"))
+                    .font(.designBodyMedium)
+                    .foregroundStyle(Color.designOnSurfaceVariant)
+                Text(String(localized: "记一笔时点击\"成员\"可为交易标记成员"))
+                    .font(.designBodySmall)
+                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.7))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 120)
+        } else if viewModel.selectedMemberID != nil {
+            // L2: Member category drill-down (data pre-computed in ViewModel)
+            CategoryPieChartView(
+                categories: viewModel.memberCategoryExpenses,
+                totalExpense: viewModel.memberCategoryExpenses.map(\.amount).reduce(0, +),
+                centerTitle: viewModel.selectedMemberName,
+                isDrilledDown: true,
+                onCategoryTap: { _ in },
+                onCenterTap: { viewModel.goBackMember() },
+                onSelectTransaction: { tx in selectedTransaction = tx },
+                transactions: nil
+            )
+            .padding(.vertical, 8)
+        } else {
+            // L1 + L3: Member overview + cross table
+            ScrollView {
+                VStack(spacing: 12) {
+                    MemberPieChartView(
+                        members: viewModel.memberExpenses,
+                        onMemberTap: { mid in
+                            guard let ledger = appContainer.currentLedger else { return }
+                            viewModel.selectMember(
+                                mid,
+                                categoryService: appContainer.categoryService,
+                                ledger: ledger,
+                                context: modelContext
+                            )
+                        }
+                    )
+
+                    if !viewModel.memberCategoryCross.isEmpty {
+                        MemberCategoryCrossView(items: viewModel.memberCategoryCross)
+                    }
+                }
+                .padding(.vertical, 8)
+            }
+        }
     }
 
     private func loadData() {
@@ -189,6 +308,14 @@ struct ReportsView: View {
             viewModel.loadTrendData(
                 ledger: ledger,
                 transactionService: appContainer.transactionService,
+                context: modelContext
+            )
+        case .member:
+            viewModel.loadMemberData(
+                ledger: ledger,
+                transactionService: appContainer.transactionService,
+                categoryService: appContainer.categoryService,
+                memberService: appContainer.memberService,
                 context: modelContext
             )
         }
