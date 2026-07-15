@@ -104,7 +104,15 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
             preds.append(NSPredicate(format: "typeRaw == %@", type.rawValue))
         }
         if let ids = filters?.categoryIDs, !ids.isEmpty {
-            preds.append(NSPredicate(format: "category.id IN %@", Array(ids) as NSArray))
+            var expandedIDs = ids
+            // 展开父分类以包含所有子分类交易
+            let catRequest = NSFetchRequest<Category>(entityName: "Category")
+            catRequest.predicate = NSPredicate(format: "id IN %@", Array(ids) as NSArray)
+            let categories = try context.fetch(catRequest)
+            for cat in categories {
+                expandedIDs.formUnion(cat.allDescendantIDs)
+            }
+            preds.append(NSPredicate(format: "category.id IN %@", Array(expandedIDs) as NSArray))
         }
         if let ids = filters?.memberIDs, !ids.isEmpty {
             preds.append(NSPredicate(format: "member.id IN %@", Array(ids) as NSArray))
