@@ -258,7 +258,11 @@
       "Bash(echo \"Exit: $?\")",
       "Bash(claude *)",
       "Bash(npm view *)",
-      "Skill(code-review)"
+      "Skill(code-review)",
+      "Bash(ssh -T git@github.com)",
+      "Bash(ssh-add -l)",
+      "Bash(ssh -p 443 git@github.com)",
+      "Bash(env)"
     ]
   },
   "hooks": {
