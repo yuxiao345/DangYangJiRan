@@ -24,7 +24,6 @@ struct DashboardContentColumn: View {
     @State private var categoryHoveredIndex: Int?
 
     // MARK: - Layout
-    @State private var leftColumnHeight: CGFloat = 0
 
     var body: some View {
         ScrollView {
@@ -41,17 +40,9 @@ struct DashboardContentColumn: View {
                             categoryOverviewCard
                         }
                         .frame(maxWidth: .infinity)
-                        .background(
-                            GeometryReader { geo in
-                                Color.clear
-                                    .onAppear { leftColumnHeight = geo.size.height }
-                                    .onChange(of: geo.size.height) { _, new in leftColumnHeight = new }
-                            }
-                        )
-                        // Right: recent transactions, height-matched to left column
+                        // Right: recent transactions, independently scrollable
                         recentTransactionsCard
                             .frame(maxWidth: .infinity)
-                            .frame(minHeight: max(0, leftColumnHeight))
                     }
                 } else {
                     emptyBudgetCard
@@ -494,13 +485,14 @@ struct DashboardContentColumn: View {
             } else {
                 ScrollView {
                     VStack(spacing: 4) {
-                        ForEach(viewModel.recentTransactions.prefix(15), id: \.objectID) { t in
+                        ForEach(viewModel.recentTransactions, id: \.objectID) { t in
                             TransactionRowView(transaction: t)
                         }
                     }
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
                 }
+                .frame(maxHeight: 440)
             }
         }
         .glassCard(cornerRadius: 20)

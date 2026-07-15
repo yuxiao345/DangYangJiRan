@@ -2222,7 +2222,7 @@ struct AddEditTransactionView: View {
     private var selectedLendingTotal: Decimal {
         pendingLendingTransactions
             .filter { selectedLendingIDs.contains($0.id) }
-            .reduce(0) { $0 + abs($1.ledgerAmount) }
+            .reduce(0) { $0 + max(0, abs($1.ledgerAmount) - $1.settledAmountInLedgerCurrency) }
     }
 
     private func displayLabelForLending(_ t: Transaction) -> String {

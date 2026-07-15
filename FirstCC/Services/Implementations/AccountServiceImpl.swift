@@ -51,35 +51,42 @@ struct AccountServiceImpl: AccountServiceProtocol {
 
         for t in transactions {
             let amt = useLedgerAmount ? t.ledgerAmount : t.amount
-            // 借贷账户上的待结算借入=债务，反转符号（借入+1000 → 余额-1000）
+            // 借贷账户：借入待结算=应付（反转符号，扣除已还部分）；收款/还款已在第二轮跳过避免重复计算
             if account.type == .lending,
-               let dir = t.lendingDirection,
-               dir == .borrowIn,
-               t.lendingStatus == .pending {
-                balance += -amt
+               let dir = t.lendingDirection {
+                if dir == .borrowIn, t.lendingStatus == .pending {
+                    let settledAmt = useLedgerAmount ? t.settledAmountInLedgerCurrency : (t.settledAmount ?? 0)
+                    balance += -(amt - min(settledAmt, abs(amt)))
+                }
+                // collect/repay/lendOut: 第一轮跳过，由第二轮处理
             } else {
                 balance += amt
             }
         }
 
-        // 借贷账户：借出/还款时 account 是别的账户，toAccount 才是本账户。
-        // 待结算的借出/借入=应收/应付（反转符号），还款=钱流出（不反转）。
-        if account.type == .lending {
-            let toRequest = NSFetchRequest<Transaction>(entityName: "Transaction")
-            toRequest.predicate = NSPredicate(format: "toAccount.id == %@ AND typeRaw == %@ AND isReconciled == NO AND parentTransaction == nil",
-                                              accountID as CVarArg, TransactionType.lending.rawValue)
-            let toTransactions = (try? context.fetch(toRequest)) ?? []
-            for t in toTransactions {
-                let amt = useLedgerAmount ? t.ledgerAmount : t.amount
-                if let dir = t.lendingDirection {
+        // 第二轮：toAccount = 本账户的借贷交易
+        // - 借贷账户：借出待结算=应收（反转符号，扣除已结算部分）
+        // - 非借贷账户：收款/借入=钱到账
+        let toRequest = NSFetchRequest<Transaction>(entityName: "Transaction")
+        toRequest.predicate = NSPredicate(format: "toAccount.id == %@ AND typeRaw == %@ AND isReconciled == NO AND parentTransaction == nil",
+                                          accountID as CVarArg, TransactionType.lending.rawValue)
+        let toTransactions = (try? context.fetch(toRequest)) ?? []
+        for t in toTransactions {
+            let amt = useLedgerAmount ? t.ledgerAmount : t.amount
+            if let dir = t.lendingDirection {
+                if account.type == .lending {
                     switch dir {
                     case .lendOut:
-                        if t.lendingStatus == .pending { balance += -amt }
-                    case .repay:
-                        balance += amt
-                    case .borrowIn, .collect:
+                        if t.lendingStatus == .pending {
+                            let settledAmt = useLedgerAmount ? t.settledAmountInLedgerCurrency : (t.settledAmount ?? 0)
+                            balance += -(amt + min(settledAmt, abs(amt)))
+                        }
+                    case .borrowIn, .collect, .repay:
                         break
                     }
+                } else {
+                    // 非借贷账户：collect/borrowIn = 钱从借贷账户转入本账户
+                    if dir == .collect || dir == .borrowIn { balance += amt }
                 }
             }
         }

@@ -175,39 +175,27 @@ struct MacAddTransactionSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            typeSelector
-            Divider()
-            contentScroll
-            bottomBar
-        }
-        .macSheetFrame()
-        .toolbar { toolbarContent }
-        .task { loadData() }
-        .onChange(of: type) { _, _ in loadCategories(); loadPendingReimbursement(); destAmount = 0; destAmountString = "0.00" }
-        .onChange(of: lendingDirection) { _, _ in loadPendingLendingTx() }
-        .onChange(of: selectedAccount) { _, _ in
-            loadPendingLendingTx()
-            if editing == nil {
-                selectedCurrencyCode = selectedAccount?.currencyCode ?? ledgerCurrencyCode
-                exchangeRate = nil
-                convertedAmount = nil
-                if activeCurrency != ledgerCurrencyCode { fetchExchangeRate() }
+                typeSelector
+                Divider()
+                contentScroll
+                bottomBar
             }
-        }
-        .onChange(of: selectedToAccount) { _, _ in loadPendingLendingTx(); destAmount = 0; destAmountString = "0.00" }
-        .onChange(of: selectedExpenseIDs) { _, _ in
-            guard !selectedExpenseIDs.isEmpty, editing == nil else { return }
-            amount = selectedReimbursementTotal
-            amountString = CurrencyFormatter.formatDecimal(amount: amount, fractionDigits: 2)
-        }
-        .onChange(of: selectedPhotos) { _, _ in loadPhotoData() }
-        .modifier(DeleteConfirmationModifier(deleteTarget: $deleteTarget, onDelete: { deleteTx($0) }))
-        .sheet(isPresented: $showRefundSheet) {
-            if let t = editing { MacAddTransactionSheet(refunding: t) }
-        }
-        .alert(errorMessage ?? "保存失败", isPresented: .constant(errorMessage != nil)) {
-            Button("好") { errorMessage = nil }
-        } message: { Text(errorMessage ?? "") }
+            .macSheetFrame()
+            .toolbar { toolbarContent }
+            .task { loadData() }
+            .onChange(of: type) { _, _ in onTypeChange() }
+            .onChange(of: lendingDirection) { _, _ in loadPendingLendingTx() }
+            .onChange(of: selectedAccount) { _, _ in onAccountChange() }
+            .onChange(of: selectedToAccount) { _, _ in onToAccountChange() }
+            .onChange(of: selectedExpenseIDs) { _, _ in syncReimbursementAmount() }
+            .onChange(of: selectedPhotos) { _, _ in loadPhotoData() }
+            .modifier(DeleteConfirmationModifier(deleteTarget: $deleteTarget, onDelete: { deleteTx($0) }))
+            .sheet(isPresented: $showRefundSheet) {
+                if let t = editing { MacAddTransactionSheet(refunding: t) }
+            }
+            .alert(errorMessage ?? "保存失败", isPresented: .constant(errorMessage != nil)) {
+                Button("好") { errorMessage = nil }
+            } message: { Text(errorMessage ?? "") }
     }
 
     private var contentScroll: some View {
@@ -993,6 +981,7 @@ struct MacAddTransactionSheet: View {
                     Button {
                         if selectedLendingIDs.contains(item.id) { selectedLendingIDs.remove(item.id) }
                         else { selectedLendingIDs.insert(item.id) }
+                        updateAmountFromSelectedLending()
                     } label: {
                         HStack {
                             Image(systemName: selectedLendingIDs.contains(item.id) ? "checkmark.circle.fill" : "circle")
@@ -1007,7 +996,7 @@ struct MacAddTransactionSheet: View {
                     }.buttonStyle(.plain)
                 }
                 if !selectedLendingIDs.isEmpty {
-                    HStack { Spacer(); Text("已选: \(CurrencyFormatter.formatDecimal(amount: pendingLendingTransactions.filter { selectedLendingIDs.contains($0.id) }.reduce(0) { $0 + abs($1.amount) }, fractionDigits: 2))").font(.designBodySmall).foregroundStyle(Color.designPrimaryFixedDim) }
+                    HStack { Spacer(); Text("已选: \(CurrencyFormatter.formatDecimal(amount: pendingLendingTransactions.filter { selectedLendingIDs.contains($0.id) }.reduce(0) { $0 + max(0, abs($1.ledgerAmount) - $1.settledAmountInLedgerCurrency) }, fractionDigits: 2))").font(.designBodySmall).foregroundStyle(Color.designPrimaryFixedDim) }
                 }
             }
         }
@@ -1226,6 +1215,31 @@ struct MacAddTransactionSheet: View {
         pendingExpenses = all.filter { $0.type == .expense && $0.isReimbursable && $0.reimbursementStatus == .pending }
     }
 
+    private func syncReimbursementAmount() {
+        guard !selectedExpenseIDs.isEmpty, editing == nil else { return }
+        amount = selectedReimbursementTotal
+        amountString = CurrencyFormatter.formatDecimal(amount: amount, fractionDigits: 2)
+    }
+
+    private func onTypeChange() {
+        loadCategories(); loadPendingReimbursement(); destAmount = 0; destAmountString = "0.00"
+    }
+
+    private func onAccountChange() {
+        loadPendingLendingTx()
+        if editing == nil {
+            selectedCurrencyCode = selectedAccount?.currencyCode ?? ledgerCurrencyCode
+            exchangeRate = nil
+            convertedAmount = nil
+            if activeCurrency != ledgerCurrencyCode { fetchExchangeRate() }
+        }
+    }
+
+    private func onToAccountChange() {
+        if lendingDirection == .repay { loadPendingLendingTx() }
+        destAmount = 0; destAmountString = "0.00"
+    }
+
     // MARK: - Save
 
     private func signingAmount() -> Decimal { signedAmount(amount: amount, type: type, direction: type == .lending ? lendingDirection : nil) }
@@ -1366,6 +1380,21 @@ struct MacAddTransactionSheet: View {
         default: pendingLendingTransactions = []
         }
         selectedLendingIDs = Set(pendingLendingTransactions.map(\.id))
+        // Auto-fill amount from selected pending total for new transactions
+        if editing == nil, lendingDirection == .collect || lendingDirection == .repay {
+            let total = pendingLendingTransactions.reduce(0) { $0 + max(0, abs($1.ledgerAmount) - $1.settledAmountInLedgerCurrency) }
+            if total > 0 {
+                amount = total
+                amountString = CurrencyFormatter.formatDecimal(amount: amount, fractionDigits: 2)
+            }
+        }
+    }
+
+    private func updateAmountFromSelectedLending() {
+        guard editing == nil else { return }
+        let total = pendingLendingTransactions.filter { selectedLendingIDs.contains($0.id) }.reduce(0) { $0 + max(0, abs($1.ledgerAmount) - $1.settledAmountInLedgerCurrency) }
+        amount = total
+        amountString = CurrencyFormatter.formatDecimal(amount: amount, fractionDigits: 2)
     }
 
     private func linkSettled(txID: UUID) throws {

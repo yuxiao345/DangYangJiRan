@@ -137,20 +137,6 @@ struct AccountListContent: View {
                             .background(Capsule().fill(Color.designAccentRed.opacity(0.1)))
                     }
                 }
-                if let info, info.lendOutPending != 0 || info.borrowInPending != 0 {
-                    HStack(spacing: 8) {
-                        if info.lendOutPending != 0 {
-                            Text("应收 \(CurrencyFormatter.formatDecimal(amount: info.lendOutPending, currencyCode: account.currencyCode, fractionDigits: 0, showAbs: true))")
-                                .font(.designBodyCaption)
-                                .foregroundStyle(Color.orange)
-                        }
-                        if info.borrowInPending != 0 {
-                            Text("应付 \(CurrencyFormatter.formatDecimal(amount: info.borrowInPending, currencyCode: account.currencyCode, fractionDigits: 0, showAbs: true))")
-                                .font(.designBodyCaption)
-                                .foregroundStyle(Color.blue)
-                        }
-                    }
-                }
             }
 
             Spacer()
@@ -160,14 +146,20 @@ struct AccountListContent: View {
                              size: 16, foregroundColor: balanceColor(balance, account: account))
                 if let info {
                     if info.lendOutPending != 0 {
-                        Text("待收")
-                            .font(.designBodyCaption)
-                            .foregroundStyle(.orange)
+                        HStack(spacing: 4) {
+                            Text("应收")
+                                .font(.designBodyCaption)
+                                .foregroundStyle(Color.designOnSurfaceVariant)
+                            CurrencyText(amount: info.lendOutPending, currencyCode: account.currencyCode, showSign: false, size: 11, foregroundColor: .orange)
+                        }
                     }
                     if info.borrowInPending != 0 {
-                        Text("待还")
-                            .font(.designBodyCaption)
-                            .foregroundStyle(.blue)
+                        HStack(spacing: 4) {
+                            Text("应付")
+                                .font(.designBodyCaption)
+                                .foregroundStyle(Color.designOnSurfaceVariant)
+                            CurrencyText(amount: info.borrowInPending, currencyCode: account.currencyCode, showSign: false, size: 11, foregroundColor: .blue)
+                        }
                     }
                 }
             }

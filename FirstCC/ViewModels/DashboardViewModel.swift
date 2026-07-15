@@ -110,7 +110,11 @@ final class DashboardViewModel {
         let monthRange = rangeStart...rangeEnd
         monthlyExpense = -(budgetService.totalExpense(in: monthRange, ledger: ledger, context: context))
 
-        recentTransactions = Array(allTransactions.deduplicatingTransfers().sorted(by: { $0.date > $1.date }).prefix(20))
+        let oneMonthAgo = calendar.date(byAdding: .month, value: -1, to: now) ?? now
+        recentTransactions = Array(allTransactions
+            .deduplicatingTransfers()
+            .filter { $0.date >= oneMonthAgo }
+            .sorted(by: { $0.date > $1.date }))
 
         // Previous month balance = current balance - this month's net (all types, unfiltered)
         let net = allTransactions.reduce(0) { $0 + $1.ledgerAmount }

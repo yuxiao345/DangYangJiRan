@@ -221,7 +221,8 @@ struct AccountDetailView: View {
         guard let ledger = appContainer.currentLedger else { return }
 
         let req = NSFetchRequest<Transaction>(entityName: "Transaction")
-        req.predicate = NSPredicate(format: "account.id == %@ AND parentTransaction == nil", account.id as CVarArg)
+        req.predicate = NSPredicate(format: "(account.id == %@ OR (toAccount.id == %@ AND typeRaw == %@)) AND parentTransaction == nil",
+                                    account.id as CVarArg, account.id as CVarArg, TransactionType.lending.rawValue)
         req.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
         transactions = (try? modelContext.fetch(req)) ?? []
     }
