@@ -126,9 +126,9 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
         var rawByCat: [UUID: Decimal] = [:]
         for t in txs {
             guard let catID = t.category?.id else { continue }
-            rawByCat[catID, default: 0] += t.ledgerAmount
+            rawByCat[catID, default: 0] += t.netExpenseAmount
         }
-        let spendingByCategory = rawByCat.mapValues { abs($0) }
+        let spendingByCategory = rawByCat.mapValues { max(0, $0) }
 
         return unbudgeted
             .compactMap { cat -> (Category, Decimal)? in
@@ -183,7 +183,8 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
 
     func totalExpense(in range: ClosedRange<Date>, ledger: Ledger, context: NSManagedObjectContext) -> Decimal {
         let txs = fetchExpenseTransactions(in: range, ledgerID: ledger.id, context: context)
-        return abs(txs.reduce(Decimal(0)) { $0 + $1.ledgerAmount })
+        let net = txs.reduce(Decimal(0)) { $0 + $1.netExpenseAmount }
+        return max(0, net)
     }
 
     func categorySpending(in range: ClosedRange<Date>, for book: BudgetBook, context: NSManagedObjectContext) -> [UUID: Decimal] {
@@ -193,7 +194,7 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
         var byCategory: [Category: Decimal] = [:]
         for t in txs {
             guard let cat = t.category else { continue }
-            byCategory[cat, default: 0] += t.ledgerAmount
+            byCategory[cat, default: 0] += t.netExpenseAmount
         }
         // 再展开祖先：每个唯一分类只计算一次 allAncestorIDs，而非每笔交易都重复计算
         var result: [UUID: Decimal] = [:]
@@ -204,7 +205,7 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
                 result[id, default: 0] += sum
             }
         }
-        return result.mapValues { abs($0) }
+        return result.mapValues { max(0, $0) }
     }
 
     private func spending(in range: ClosedRange<Date>, category: Category?, book: BudgetBook, context: NSManagedObjectContext) -> Decimal {
@@ -224,7 +225,8 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
                 return ids.contains(cid)
             }
         }
-        return abs(txs.reduce(Decimal(0)) { $0 + $1.ledgerAmount })
+        let net = txs.reduce(Decimal(0)) { $0 + $1.netExpenseAmount }
+        return max(0, net)
     }
 
     /// 顶层预算项：category 没有预算祖先的项。子预算是子限额，不应与父预算累加。
@@ -294,13 +296,13 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
         var byDay: [Date: Decimal] = [:]
         for t in filtered {
             let day = cal.startOfDay(for: t.date)
-            byDay[day, default: 0] += t.ledgerAmount
+            byDay[day, default: 0] += t.netExpenseAmount
         }
         var current = cal.startOfDay(for: range.lowerBound)
         let end = min(cal.startOfDay(for: range.upperBound), cal.startOfDay(for: Date()))
         var points: [DailySpendingPoint] = []
         while current <= end {
-            points.append(DailySpendingPoint(date: current, amount: abs(byDay[current] ?? 0)))
+            points.append(DailySpendingPoint(date: current, amount: max(0, byDay[current] ?? 0)))
             current = cal.date(byAdding: .day, value: 1, to: current) ?? current.addingTimeInterval(86400)
         }
         return points

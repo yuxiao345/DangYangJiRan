@@ -110,6 +110,10 @@ final class AppContainer {
     func loadStores() async throws {
         try await coreDataStack.loadStores()
 
+        // One-time repair: backfill missing member/merchant/project on historical refunds.
+        // Must run after stores are loaded so data is available.
+        repairRefundMetadataIfNeeded()
+
         guard coreDataStack.cloudKitAvailable else {
             configureDefaultLedger()
             return
@@ -486,6 +490,21 @@ final class AppContainer {
     }
 
     // MARK: - Deduplication
+
+    /// One-time repair: backfill member/merchant/project on historical refund transactions.
+    /// Runs once per app version, safe to call repeatedly (predicate skips already-repaired records).
+    private func repairRefundMetadataIfNeeded() {
+        let key = "refundMetadataRepaired_v1"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+
+        do {
+            try transactionService.repairRefundMetadata(context: viewContext)
+            UserDefaults.standard.set(true, forKey: key)
+            DiagnosticLog.log("AppContainer: refund metadata repair completed")
+        } catch {
+            DiagnosticLog.log("AppContainer: refund metadata repair FAILED: \(error.localizedDescription)")
+        }
+    }
 
     /// Remove duplicate ledgers (same name) that can appear after uninstall/reinstall
     /// when CloudKit syncs back old data alongside newly-created defaults.

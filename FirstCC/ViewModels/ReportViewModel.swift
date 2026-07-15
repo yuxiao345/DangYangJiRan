@@ -417,7 +417,7 @@ final class ReportViewModel {
 
     var displayTotal: Decimal {
         if isShowingTransactions {
-            return displayTransactions.reduce(0) { $0 + (categoryType == .expense ? netAmount($1) : abs(ledgerAmount($1))) }
+            return displayTransactions.reduce(0) { $0 + (categoryType == .expense ? $1.netExpenseAmount : abs(ledgerAmount($1))) }
         }
         if selectedCategoryID != nil {
             return displayCategories.map(\.amount).reduce(0, +)
@@ -506,12 +506,12 @@ final class ReportViewModel {
 
         for t in transactions {
             guard let cat = t.category else {
-                uncategorizedTotal += type == .expense ? netAmount(t) : abs(ledgerAmount(t))
+                uncategorizedTotal += type == .expense ? t.netExpenseAmount : abs(ledgerAmount(t))
                 uncategorizedTxs.append(t)
                 continue
             }
             let rootCat = rootCategory(for: cat)
-            let amt = type == .expense ? netAmount(t) : abs(ledgerAmount(t))
+            let amt = type == .expense ? t.netExpenseAmount : abs(ledgerAmount(t))
 
             var entry = rootMap[rootCat.id] ?? (rootCat, 0, 0, [:])
             entry.total += amt
@@ -640,7 +640,7 @@ final class ReportViewModel {
                 if t.type == .income {
                     entry.income += ledgerAmount(t)
                 } else {
-                    entry.expense += netAmount(t)
+                    entry.expense += t.netExpenseAmount
                 }
                 byYearMonth[compoundKey] = entry
             }
@@ -681,7 +681,7 @@ final class ReportViewModel {
                 if t.type == .income {
                     entry.income += ledgerAmount(t)
                 } else {
-                    entry.expense += netAmount(t)
+                    entry.expense += t.netExpenseAmount
                 }
                 byMonth[key] = entry
             }
@@ -1190,12 +1190,6 @@ final class ReportViewModel {
     /// Amount in ledger's default currency (converted if cross-currency)
     private func ledgerAmount(_ t: Transaction) -> Decimal {
         t.convertedAmount ?? t.amount
-    }
-
-    /// Net amount for expense aggregation: positive for regular, negative for refunds
-    private func netAmount(_ t: Transaction) -> Decimal {
-        let base = ledgerAmount(t)
-        return t.refundGroupId != nil ? -abs(base) : abs(base)
     }
 
     private func rootCategory(for cat: Category) -> Category {

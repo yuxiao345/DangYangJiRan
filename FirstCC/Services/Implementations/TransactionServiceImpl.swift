@@ -74,6 +74,9 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
             refundAmount: amount,
             account: original.account,
             category: original.category,
+            member: original.member,
+            merchant: original.merchant,
+            project: original.project,
             context: context
         )
         refund.ledger = original.ledger
@@ -232,6 +235,31 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
         context.delete(transaction)
         try context.save()
         NotificationCenter.default.post(name: .transactionDidChange, object: nil)
+    }
+
+    /// 修复历史退款交易缺失的 member/merchant/project 字段。
+    /// 从原交易复制，幂等（已有值的跳过），仅处理 refundGroupId 非空且三字段均为 nil 的记录。
+    func repairRefundMetadata(context: NSManagedObjectContext) throws {
+        let request = NSFetchRequest<Transaction>(entityName: "Transaction")
+        request.predicate = NSPredicate(format: "refundGroupId != nil AND member == nil AND merchant == nil AND project == nil")
+        let refunds = try context.fetch(request)
+        guard !refunds.isEmpty else { return }
+
+        for refund in refunds {
+            guard let originalID = refund.refundGroupId else { continue }
+            let originalRequest = NSFetchRequest<Transaction>(entityName: "Transaction")
+            originalRequest.predicate = NSPredicate(format: "id == %@", originalID as CVarArg)
+            originalRequest.fetchLimit = 1
+            guard let original = try context.fetch(originalRequest).first else { continue }
+
+            if refund.member == nil, let m = original.member { refund.member = m }
+            if refund.merchant == nil, let m = original.merchant { refund.merchant = m }
+            if refund.project == nil, let p = original.project { refund.project = p }
+        }
+
+        if context.hasChanges {
+            try context.save()
+        }
     }
 
     func applyCurrency(to t: Transaction, currencyCode: String, exchangeRate: Decimal?, ledgerCurrencyCode: String) {

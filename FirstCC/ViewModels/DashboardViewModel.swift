@@ -242,11 +242,11 @@ final class DashboardViewModel {
 
         for t in expenseTxns {
             guard let cat = t.category else {
-                uncategorizedTotal += netAmount(t)
+                uncategorizedTotal += t.netExpenseAmount
                 continue
             }
             let root = rootCategory(for: cat)
-            rootTotals[root.id, default: 0] += netAmount(t)
+            rootTotals[root.id, default: 0] += t.netExpenseAmount
         }
 
         let total = rootTotals.values.reduce(0, +) + uncategorizedTotal
@@ -281,11 +281,6 @@ final class DashboardViewModel {
 
         categoryOverviewItems = items
         categoryOverviewTotal = total
-    }
-
-    private func netAmount(_ t: Transaction) -> Decimal {
-        let base = t.ledgerAmount
-        return t.refundGroupId != nil ? -abs(base) : abs(base)
     }
 
     private func rootCategory(for cat: Category) -> Category {

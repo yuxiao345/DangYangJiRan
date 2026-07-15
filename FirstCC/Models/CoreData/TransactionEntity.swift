@@ -208,3 +208,11 @@ final class Transaction: NSManagedObject,  Sendable {
 }
 
 extension Transaction: Identifiable {}
+
+extension Transaction {
+    /// 支出聚合金额：普通支出返回 +abs(ledgerAmount)，退款（有 refundGroupId）返回 -abs(ledgerAmount)。
+    /// 用于统计/报表中的支出汇总，退款显式从总额中减去。
+    var netExpenseAmount: Decimal {
+        refundGroupId != nil ? -abs(ledgerAmount) : abs(ledgerAmount)
+    }
+}

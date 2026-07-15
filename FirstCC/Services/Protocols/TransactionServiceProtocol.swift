@@ -27,6 +27,9 @@ protocol TransactionServiceProtocol {
     func deleteTransaction(_ transaction: Transaction, context: NSManagedObjectContext) throws
     /// 将交易的币种、汇率和折算金额应用到 model，统一处理跨币种转换（含 Swift 6.3 beta workaround）
     func applyCurrency(to transaction: Transaction, currencyCode: String, exchangeRate: Decimal?, ledgerCurrencyCode: String)
+
+    /// 修复历史退款交易缺失的 member/merchant/project（从原交易回填），幂等
+    func repairRefundMetadata(context: NSManagedObjectContext) throws
 }
 
 struct TransactionFilters {
