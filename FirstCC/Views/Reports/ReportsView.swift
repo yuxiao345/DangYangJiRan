@@ -78,12 +78,13 @@ struct ReportsView: View {
                     .padding(4)
                     .glassCard(cornerRadius: 14)
                     .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
+                    .padding(.top, 8)
 
                     if isUsingCustomRange {
                         customDatePickers
                             .padding(.horizontal, 16)
-                            .padding(.bottom, 8)
+                            .padding(.vertical, 6)
+                            .transition(.move(edge: .top).combined(with: .opacity))
                     }
 
                     switch selectedReport {
@@ -145,19 +146,21 @@ struct ReportsView: View {
                 .buttonStyle(.plain)
             }
 
-            // 自定义 button — toggle date pickers, keep data on hide
+            // 自定义 button — toggle date pickers with animation
             Button {
-                if isUsingCustomRange {
-                    isUsingCustomRange = false
-                } else {
-                    isUsingCustomRange = true
-                    if case .customRange = viewModel.selectedPeriod {
-                        // reuse existing dates
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    if isUsingCustomRange {
+                        isUsingCustomRange = false
                     } else {
-                        customStartDate = Date().startOfMonth
-                        customEndDate = Date()
+                        isUsingCustomRange = true
+                        if case .customRange = viewModel.selectedPeriod {
+                            // reuse existing dates
+                        } else {
+                            customStartDate = Date().startOfMonth
+                            customEndDate = Date()
+                        }
+                        viewModel.selectedPeriod = .customRange(start: customStartDate, end: customEndDate)
                     }
-                    viewModel.selectedPeriod = .customRange(start: customStartDate, end: customEndDate)
                 }
             } label: {
                 Text(String(localized: "自定义"))
@@ -173,16 +176,11 @@ struct ReportsView: View {
     }
 
     private var customDatePickers: some View {
-        HStack(spacing: 12) {
-            DatePicker(
-                String(localized: "起始日期"),
-                selection: $customStartDate,
-                in: ...customEndDate,
-                displayedComponents: .date
+        HStack(spacing: 8) {
+            compactDateButton(
+                date: $customStartDate,
+                in: Date.distantPast...customEndDate
             )
-            .datePickerStyle(.compact)
-            .labelsHidden()
-            .font(.custom("JetBrainsMono-Medium", fixedSize: 11))
             .onChange(of: customStartDate) { _, newStart in
                 viewModel.selectedPeriod = .customRange(start: newStart, end: customEndDate)
             }
@@ -191,22 +189,31 @@ struct ReportsView: View {
                 .font(.custom("JetBrainsMono-Medium", fixedSize: 11))
                 .foregroundStyle(Color.designOnSurfaceVariant)
 
-            DatePicker(
-                String(localized: "截止日期"),
-                selection: $customEndDate,
-                in: customStartDate...Date(),
-                displayedComponents: .date
+            compactDateButton(
+                date: $customEndDate,
+                in: customStartDate...Date()
             )
-            .datePickerStyle(.compact)
-            .labelsHidden()
-            .font(.custom("JetBrainsMono-Medium", fixedSize: 11))
             .onChange(of: customEndDate) { _, newEnd in
                 viewModel.selectedPeriod = .customRange(start: customStartDate, end: newEnd)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
         .glassCard(cornerRadius: 14)
+    }
+
+    /// Custom date label — full-width, system DatePicker overlaid transparently.
+    private func compactDateButton(date: Binding<Date>, in range: ClosedRange<Date>) -> some View {
+        Text(date.wrappedValue.formatted(.dateTime.year().month(.twoDigits).day(.twoDigits)))
+            .font(.custom("JetBrainsMono-Medium", fixedSize: 11))
+            .foregroundStyle(Color.designOnSurface)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 5)
+            .background(Color.designSurfaceContainer.opacity(0.6))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay {
+                DatePicker("", selection: date, in: range, displayedComponents: .date)
+                    .labelsHidden()
+                    .colorMultiply(.clear)
+            }
     }
 
     private func periodBackground(for period: ReportPeriod) -> some View {
@@ -319,7 +326,7 @@ struct ReportsView: View {
                     )
                     : []
             )
-            .padding(.vertical, 8)
+            .padding(.vertical, 4)
         }
     }
 
