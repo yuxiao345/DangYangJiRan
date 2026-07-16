@@ -7,6 +7,7 @@ struct AccountDetailContent: View {
     let account: Account
     @State private var transactions: [Transaction] = []
     @State private var balance: Decimal = 0
+    @State private var selectedTransaction: Transaction?
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
@@ -19,6 +20,9 @@ struct AccountDetailContent: View {
         .designScreen()
         .navigationTitle("")
         .onAppear(perform: load)
+        .sheet(item: $selectedTransaction) { t in
+            MacAddTransactionSheet(editing: t, displayMode: true)
+        }
     }
 
     // MARK: - Hero Card
@@ -132,7 +136,12 @@ struct AccountDetailContent: View {
                     }
 
                     ForEach(group.value, id: \.objectID) { t in
-                        TransactionRowView(transaction: t)
+                        Button {
+                            selectedTransaction = t
+                        } label: {
+                            TransactionRowView(transaction: t)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }

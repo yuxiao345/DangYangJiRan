@@ -24,6 +24,7 @@ struct TransactionListContent: View {
     @State private var monthlyExpense: Decimal = 0
     @State private var hoveredDayID: String? = nil
     @State private var monthSlideDirection: Edge = .trailing
+    @State private var selectedTransaction: Transaction?
     @Namespace private var calendarNamespace
 
     var filterCategory: Category?
@@ -94,7 +95,9 @@ struct TransactionListContent: View {
                             Text(group.key).font(.designBodyCaption).foregroundStyle(Color.designOnSurfaceVariant)
                                 .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 6)
                             ForEach(group.value) { t in
-                                NavigationLink(value: t) {
+                                Button {
+                                    selectedTransaction = t
+                                } label: {
                                     TransactionRowView(transaction: t)
                                         .padding(.vertical, 2)
                                 }
@@ -107,8 +110,8 @@ struct TransactionListContent: View {
             }
         }
         .designScreen()
-        .navigationDestination(for: Transaction.self) { t in
-            TransactionDetailContent(transaction: t)
+        .sheet(item: $selectedTransaction) { t in
+            MacAddTransactionSheet(editing: t, displayMode: true)
         }
         .navigationTitle("")
         .onAppear(perform: load)
@@ -355,7 +358,7 @@ struct TransactionListContent: View {
             let day = cal.component(.day, from: t.date)
             switch t.type {
             case .expense:
-                expenseSum[day, default: 0] += abs(t.amount)
+                expenseSum[day, default: 0] += t.netExpenseAmount
             case .income:
                 incomeSum[day, default: 0] += t.amount
             default:

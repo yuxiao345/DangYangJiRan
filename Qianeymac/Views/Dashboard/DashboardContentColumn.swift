@@ -22,6 +22,7 @@ struct DashboardContentColumn: View {
     @State private var categoryPieProgress: Double = 0
     @State private var categoryExplodedIndex: Int? = 0
     @State private var categoryHoveredIndex: Int?
+    @State private var selectedTransaction: Transaction?
 
     // MARK: - Layout
 
@@ -62,6 +63,9 @@ struct DashboardContentColumn: View {
             } else if let ledger = appContainer.currentLedger {
                 BudgetBookListView(ledger: ledger)
             }
+        }
+        .sheet(item: $selectedTransaction) { t in
+            MacAddTransactionSheet(editing: t, displayMode: true)
         }
     }
 
@@ -486,7 +490,12 @@ struct DashboardContentColumn: View {
                 ScrollView {
                     VStack(spacing: 4) {
                         ForEach(viewModel.recentTransactions, id: \.objectID) { t in
-                            TransactionRowView(transaction: t)
+                            Button {
+                                selectedTransaction = t
+                            } label: {
+                                TransactionRowView(transaction: t)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                     .padding(.horizontal, 10)

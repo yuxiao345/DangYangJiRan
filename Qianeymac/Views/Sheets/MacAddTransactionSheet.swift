@@ -390,7 +390,7 @@ struct MacAddTransactionSheet: View {
             }
             .pickerStyle(.menu)
             .labelsHidden()
-            .disabled(selectedAccount != nil)
+            .disabled(selectedAccount != nil && (type == .transfer || type == .lending))
             .onChange(of: selectedCurrencyCode) { _, _ in fetchExchangeRate() }
 
             // Numpad
@@ -966,6 +966,7 @@ struct MacAddTransactionSheet: View {
                     }.buttonStyle(.plain)
                 }
             }
+            .disabled(editing != nil)
         }
         .padding(.horizontal, 24).padding(.vertical, 8)
     }
