@@ -145,12 +145,18 @@ struct ReportsView: View {
                 .buttonStyle(.plain)
             }
 
-            // 自定义 button (not in supportedPeriods — has associated dates)
+            // 自定义 button — toggle date pickers, keep data on hide
             Button {
-                if !isUsingCustomRange {
+                if isUsingCustomRange {
+                    isUsingCustomRange = false
+                } else {
                     isUsingCustomRange = true
-                    customStartDate = Date().startOfMonth
-                    customEndDate = Date()
+                    if case .customRange = viewModel.selectedPeriod {
+                        // reuse existing dates
+                    } else {
+                        customStartDate = Date().startOfMonth
+                        customEndDate = Date()
+                    }
                     viewModel.selectedPeriod = .customRange(start: customStartDate, end: customEndDate)
                 }
             } label: {
@@ -158,10 +164,10 @@ struct ReportsView: View {
                     .font(.custom("JetBrainsMono-Medium", fixedSize: 12))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
-                    .background(isUsingCustomRange ? Color.designPrimaryContainer.opacity(0.2) : Color.designSurfaceContainer.opacity(0.6))
+                    .background(isCustomActive ? Color.designPrimaryContainer.opacity(0.2) : Color.designSurfaceContainer.opacity(0.6))
                     .clipShape(RoundedRectangle(cornerRadius: 10))
             }
-            .foregroundStyle(isUsingCustomRange ? Color.designOnSurface : Color.designOnSurfaceVariant)
+            .foregroundStyle(isCustomActive ? Color.designOnSurface : Color.designOnSurfaceVariant)
             .buttonStyle(.plain)
         }
     }
@@ -176,12 +182,13 @@ struct ReportsView: View {
             )
             .datePickerStyle(.compact)
             .labelsHidden()
+            .font(.custom("JetBrainsMono-Medium", fixedSize: 11))
             .onChange(of: customStartDate) { _, newStart in
                 viewModel.selectedPeriod = .customRange(start: newStart, end: customEndDate)
             }
 
             Text("–")
-                .font(.designBodySmall)
+                .font(.custom("JetBrainsMono-Medium", fixedSize: 11))
                 .foregroundStyle(Color.designOnSurfaceVariant)
 
             DatePicker(
@@ -192,6 +199,7 @@ struct ReportsView: View {
             )
             .datePickerStyle(.compact)
             .labelsHidden()
+            .font(.custom("JetBrainsMono-Medium", fixedSize: 11))
             .onChange(of: customEndDate) { _, newEnd in
                 viewModel.selectedPeriod = .customRange(start: customStartDate, end: newEnd)
             }
@@ -210,8 +218,13 @@ struct ReportsView: View {
     }
 
     private func isPeriodActive(_ period: ReportPeriod) -> Bool {
-        if isUsingCustomRange { return false }
+        if case .customRange = viewModel.selectedPeriod { return false }
         return viewModel.selectedPeriod == period
+    }
+
+    private var isCustomActive: Bool {
+        if case .customRange = viewModel.selectedPeriod { return true }
+        return false
     }
 
     // MARK: - Swipe Back Gesture
