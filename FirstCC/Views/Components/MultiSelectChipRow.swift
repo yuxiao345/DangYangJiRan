@@ -3,6 +3,10 @@ import SwiftUI
 // MARK: - NameProviding (shared protocol, also in AddEditTransactionView for iOS)
 #if os(macOS)
 protocol NameProviding { var name: String { get } }
+extension Category: NameProviding {}
+extension Member: NameProviding {}
+extension Merchant: NameProviding {}
+extension Project: NameProviding {}
 #endif
 
 /// Multi-select chip row — generalizes the `recentPickerRow` pattern
@@ -50,7 +54,7 @@ struct MultiSelectChipRow<Item: Identifiable & Hashable>: View where Item.ID == 
                                     ? Color.designPrimaryFixedDim
                                     : Color.designOnSurfaceVariant)
                             if let np = item as? (any NameProviding) {
-                                Text(LocalizedStringKey(np.name))
+                                Text(np.name)
                                     .font(.system(size: 10)).lineLimit(1)
                                     .foregroundStyle(isSelected
                                         ? Color.designPrimaryFixedDim

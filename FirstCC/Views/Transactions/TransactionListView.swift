@@ -209,10 +209,6 @@ struct TransactionListView: View {
 
         let normal = all
             .excludingReimbursementTransactions()
-            .filter { t in
-                guard t.refundGroupId == nil else { return false }
-                return true
-            }
 
         let calData = filterCategory.map { cat in normal.filter { $0.category?.id == cat.id } } ?? normal
 
@@ -225,9 +221,9 @@ struct TransactionListView: View {
             let d = cal.component(.day, from: t.date)
             switch t.type {
             case .expense:
-                let absAmt = abs(t.ledgerAmount)
-                expenseByDay[d, default: 0] += absAmt
-                totalExpense += absAmt
+                let amt = t.netExpenseAmount
+                expenseByDay[d, default: 0] += amt
+                totalExpense += amt
             case .income:
                 let incAmt = t.ledgerAmount
                 incomeByDay[d, default: 0] += incAmt

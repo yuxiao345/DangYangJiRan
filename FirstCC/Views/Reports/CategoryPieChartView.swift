@@ -99,12 +99,12 @@ struct CategoryPieChartView: View {
         .frame(maxWidth: .infinity)
         .padding(24)
         .glassCard(cornerRadius: 24)
-        .padding(.horizontal, 12)
         .overlay(alignment: .bottomTrailing) {
             if showMemberToggle {
                 memberToggleButton
             }
         }
+        .padding(.horizontal, 12)
     }
 
     // MARK: - Member Toggle Button
@@ -117,7 +117,7 @@ struct CategoryPieChartView: View {
             }
         } label: {
             Image(systemName: "person.2.circle.fill")
-                .font(.title3)
+                .font(.title)
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(
                     memberSplitActive
@@ -126,8 +126,9 @@ struct CategoryPieChartView: View {
                 )
         }
         .buttonStyle(.plain)
-        .padding(.bottom, 12)
-        .padding(.trailing, 16)
+        .padding(8)
+        .padding(.bottom, 0)
+        .padding(.trailing, 0)
     }
 
     // MARK: - Donut Chart
@@ -193,7 +194,8 @@ struct CategoryPieChartView: View {
                 amount: totalExpense,
                 currencyCode: "",
                 size: 18,
-                foregroundColor: Color.designOnSurface
+                foregroundColor: Color.designOnSurface,
+                fractionDigits: 0
             )
             .fontWeight(.bold)
         }

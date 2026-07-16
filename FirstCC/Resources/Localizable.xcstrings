@@ -19,6 +19,7 @@
         }
       }
     },
+    "–": {},
     "—": {},
     "，至%@止": {
       "extractionState": "manual",
@@ -249,6 +250,16 @@
       }
     },
     "%lld 笔": {},
+    "%lld%@": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld%2$@"
+          }
+        }
+      }
+    },
     "%lld%%": {},
     "%lld个预算项": {},
     "%lld日": {},
@@ -307,6 +318,7 @@
         }
       }
     },
+    "amount": {},
     "Amount": {},
     "App未匹配明细（%lld笔）": {},
     "App记账": {
@@ -981,7 +993,6 @@
       }
     },
     "余额：": {},
-    "你正在参与此共享账本，仅拥有者可管理成员": {},
     "使用%@解锁": {
       "extractionState": "manual",
       "localizations": {
@@ -1571,8 +1582,40 @@
       }
     },
     "关联待还": {},
-    "关键词": {},
-    "关闭": {},
+    "关键词": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关键词"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keyword"
+          }
+        }
+      }
+    },
+    "关闭": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        }
+      }
+    },
     "关闭「%@」将同时关闭其下的 %@ 个子分类，确定要继续吗？": {
       "extractionState": "manual",
       "localizations": {
@@ -1636,6 +1679,23 @@
         }
       }
     },
+    "其他商家": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other Merchants"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "其他商家"
+          }
+        }
+      }
+    },
     "其他支出": {
       "extractionState": "manual",
       "localizations": {
@@ -1666,6 +1726,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "其他收入"
+          }
+        }
+      }
+    },
+    "其他项目": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other Projects"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "其他项目"
           }
         }
       }
@@ -1910,8 +1987,42 @@
         }
       }
     },
+    "分类 × 成员对比": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Category × Member"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分类 × 成员对比"
+          }
+        }
+      }
+    },
     "分类：": {},
-    "分类(%lld)": {},
+    "分类(%lld)": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分类(%lld)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Category(%lld)"
+          }
+        }
+      }
+    },
+    "分类占比": {},
     "分类管理": {
       "extractionState": "manual",
       "localizations": {
@@ -3263,6 +3374,23 @@
       }
     },
     "外观模式": {},
+    "多维分析": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Multi-Dimension"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "多维分析"
+          }
+        }
+      }
+    },
     "天": {
       "extractionState": "manual",
       "localizations": {
@@ -4875,7 +5003,23 @@
       }
     },
     "成员：": {},
-    "成员(%lld)": {},
+    "成员(%lld)": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "成员(%lld)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Member(%lld)"
+          }
+        }
+      }
+    },
     "成员分摊": {
       "extractionState": "manual",
       "localizations": {
@@ -4893,6 +5037,23 @@
         }
       }
     },
+    "成员占比": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Member Share"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "成员占比"
+          }
+        }
+      }
+    },
     "成员同步失败：%@": {
       "extractionState": "manual",
       "localizations": {
@@ -4906,6 +5067,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "成员同步失败：%@"
+          }
+        }
+      }
+    },
+    "成员支出": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Member Spending"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "成员支出"
           }
         }
       }
@@ -5679,6 +5857,7 @@
         }
       }
     },
+    "收支趋势": {},
     "收款": {
       "extractionState": "manual",
       "localizations": {
@@ -6464,6 +6643,23 @@
         }
       }
     },
+    "暂无商家支出数据": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No merchant expense data"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂无商家支出数据"
+          }
+        }
+      }
+    },
     "暂无对账记录，点击右上角 + 添加": {
       "extractionState": "manual",
       "localizations": {
@@ -6511,6 +6707,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "暂无成员，请先在成员管理中创建"
+          }
+        }
+      }
+    },
+    "暂无成员支出数据": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No member spending data yet"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂无成员支出数据"
           }
         }
       }
@@ -6653,6 +6866,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "暂无项目，点击右上角 + 添加"
+          }
+        }
+      }
+    },
+    "暂无项目支出数据": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No project expense data"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂无项目支出数据"
           }
         }
       }
@@ -6899,6 +7129,74 @@
         }
       }
     },
+    "未标记": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unassigned"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未标记"
+          }
+        }
+      }
+    },
+    "未标记商家": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unmarked Merchant"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未标记商家"
+          }
+        }
+      }
+    },
+    "未标记成员": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unassigned Member"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未标记成员"
+          }
+        }
+      }
+    },
+    "未标记项目": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unmarked Project"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未标记项目"
+          }
+        }
+      }
+    },
     "未知": {
       "extractionState": "manual",
       "localizations": {
@@ -6997,6 +7295,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "本周"
+          }
+        }
+      }
+    },
+    "本年": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Year"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本年"
           }
         }
       }
@@ -7362,7 +7677,6 @@
         }
       }
     },
-    "此账本已开启共享，其他用户可加入协作记账": {},
     "每%@": {
       "extractionState": "manual",
       "localizations": {
@@ -8398,6 +8712,23 @@
       }
     },
     "离线": {},
+    "笔": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "txns"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "笔"
+          }
+        }
+      }
+    },
     "等 %lld 项...": {
       "extractionState": "manual",
       "localizations": {
@@ -9210,6 +9541,23 @@
         }
       }
     },
+    "记一笔时点击\"成员\"可为交易标记成员": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tag a member when recording a transaction"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "记一笔时点击\"成员\"可为交易标记成员"
+          }
+        }
+      }
+    },
     "设置": {
       "extractionState": "manual",
       "localizations": {
@@ -9681,6 +10029,23 @@
         }
       }
     },
+    "起始日期": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start Date"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "起始日期"
+          }
+        }
+      }
+    },
     "超前": {
       "extractionState": "manual",
       "localizations": {
@@ -10013,6 +10378,23 @@
     },
     "近12月": {},
     "近18月": {},
+    "还有%lld项未显示": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld more items not shown"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还有%lld项未显示"
+          }
+        }
+      }
+    },
     "还款": {
       "extractionState": "manual",
       "localizations": {
@@ -10342,16 +10724,16 @@
     "选择商家": {
       "extractionState": "manual",
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Select Merchant"
-          }
-        },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "选择商家"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select Merchant"
           }
         }
       }
@@ -10774,7 +11156,23 @@
       }
     },
     "项目：": {},
-    "项目(%lld)": {},
+    "项目(%lld)": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "项目(%lld)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Project(%lld)"
+          }
+        }
+      }
+    },
     "项目名称": {
       "extractionState": "manual",
       "localizations": {
@@ -11225,308 +11623,104 @@
         }
       }
     },
-    "成员支出": {
+    "完成": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "成员支出"
+            "value": "完成"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Member Spending"
+            "value": "Done"
           }
         }
       }
     },
-    "未标记成员": {
+    "找到 %lld 笔交易，合计": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未标记成员"
+            "value": "找到 %lld 笔交易，合计"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Unassigned Member"
+            "value": "Found %lld transactions, total"
           }
         }
       }
     },
-    "暂无成员支出数据": {
+    "未设置搜索条件": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "暂无成员支出数据"
+            "value": "未设置搜索条件"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No member spending data yet"
+            "value": "No Search Criteria"
           }
         }
       }
     },
-    "记一笔时点击\"成员\"可为交易标记成员": {
+    "继续搜索": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "记一笔时点击\"成员\"可为交易标记成员"
+            "value": "继续搜索"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tag a member when recording a transaction"
+            "value": "Continue Search"
           }
         }
       }
     },
-    "成员占比": {
+    "未设置任何搜索条件，将查询所有交易记录，可能花费较长时间。确定要搜索吗？": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "成员占比"
+            "value": "未设置任何搜索条件，将查询所有交易记录，可能花费较长时间。确定要搜索吗？"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Member Share"
+            "value": "No search criteria set. This will query all transactions, which may take a while. Continue?"
           }
         }
       }
     },
-    "分类 × 成员对比": {
+    "商家(%lld)": {
       "extractionState": "manual",
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "分类 × 成员对比"
+            "value": "商家(%lld)"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Category × Member"
-          }
-        }
-      }
-    },
-    "未标记": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "未标记"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unassigned"
-          }
-        }
-      }
-    },
-    "笔": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "笔"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "txns"
-          }
-        }
-      }
-    },
-    "本年": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "本年"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This Year"
-          }
-        }
-      }
-    },
-    "起始日期": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "起始日期"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Start Date"
-          }
-        }
-      }
-    },
-    "暂无商家支出数据": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "暂无商家支出数据"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No merchant expense data"
-          }
-        }
-      }
-    },
-    "暂无项目支出数据": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "暂无项目支出数据"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No project expense data"
-          }
-        }
-      }
-    },
-    "未标记商家": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "未标记商家"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unmarked Merchant"
-          }
-        }
-      }
-    },
-    "未标记项目": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "未标记项目"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unmarked Project"
-          }
-        }
-      }
-    },
-    "多维分析": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "多维分析"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Multi-Dimension"
-          }
-        }
-      }
-    },
-    "其他商家": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "其他商家"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Other Merchants"
-          }
-        }
-      }
-    },
-    "其他项目": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "其他项目"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Other Projects"
-          }
-        }
-      }
-    },
-    "还有%lld项未显示": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "还有%lld项未显示"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld more items not shown"
+            "value": "Merchant(%lld)"
           }
         }
       }

@@ -40,5 +40,6 @@ struct TransactionFilters {
     // 多选：同类 = OR, 跨类 = AND
     var categoryIDs: Set<UUID>?
     var memberIDs: Set<UUID>?
+    var merchantIDs: Set<UUID>?
     var projectIDs: Set<UUID>?
 }

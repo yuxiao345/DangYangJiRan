@@ -11,6 +11,7 @@ enum AppearanceMode: String, CaseIterable {
 extension Notification.Name {
     static let macMenuNavigate = Notification.Name("macMenuNavigate")
     static let macMenuNewTransaction = Notification.Name("macMenuNewTransaction")
+    static let macMenuSearch = Notification.Name("macMenuSearch")
 }
 
 @main
@@ -72,6 +73,12 @@ struct QianeymacApp: App {
                     NotificationCenter.default.post(name: .macMenuNewTransaction, object: nil)
                 }
                 .keyboardShortcut("n")
+            }
+            CommandGroup(after: .newItem) {
+                Button("搜索") {
+                    NotificationCenter.default.post(name: .macMenuSearch, object: nil)
+                }
+                .keyboardShortcut("F", modifiers: [.command, .shift])
             }
             CommandMenu("导航") {
                 Button("总览") { postNavigate(.dashboard) }

@@ -9,6 +9,7 @@ struct SavedFilter: Codable, Identifiable, Equatable {
     var amountMax: Decimal?
     var categoryIDs: [UUID]
     var memberIDs: [UUID]
+    var merchantIDs: [UUID] = []
     var projectIDs: [UUID]
     var keyword: String
     var createdAt: Date

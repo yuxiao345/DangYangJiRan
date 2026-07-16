@@ -120,6 +120,9 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
         if let ids = filters?.projectIDs, !ids.isEmpty {
             preds.append(NSPredicate(format: "project.id IN %@", Array(ids) as NSArray))
         }
+        if let ids = filters?.merchantIDs, !ids.isEmpty {
+            preds.append(NSPredicate(format: "merchant.id IN %@", Array(ids) as NSArray))
+        }
         request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: preds)
         request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
         let results = try context.fetch(request)

@@ -21,6 +21,7 @@ final class SearchViewModel {
     var isFilterPanelExpanded = false
     var selectedCategoryIDs: Set<UUID> = []
     var selectedMemberIDs: Set<UUID> = []
+    var selectedMerchantIDs: Set<UUID> = []
     var selectedProjectIDs: Set<UUID> = []
     var dateFrom: Date?
     var dateTo: Date?
@@ -48,6 +49,7 @@ final class SearchViewModel {
             amountMin: amountMin, amountMax: amountMax,
             categoryIDs: Array(selectedCategoryIDs),
             memberIDs: Array(selectedMemberIDs),
+            merchantIDs: Array(selectedMerchantIDs),
             projectIDs: Array(selectedProjectIDs),
             keyword: manualKeyword, createdAt: Date()
         )
@@ -63,6 +65,7 @@ final class SearchViewModel {
         amountMin = state.amountMin; amountMax = state.amountMax
         selectedCategoryIDs = Set(state.categoryIDs)
         selectedMemberIDs = Set(state.memberIDs)
+        selectedMerchantIDs = Set(state.merchantIDs)
         selectedProjectIDs = Set(state.projectIDs)
         manualKeyword = state.keyword
     }
@@ -119,21 +122,28 @@ final class SearchViewModel {
 
         // Category count chip
         if !selectedCategoryIDs.isEmpty {
-            chips.append(FilterChip(label: "分类(\(selectedCategoryIDs.count))", isManual: true, clearAction: { [weak self] in
+            chips.append(FilterChip(label: String(localized: "分类(\(selectedCategoryIDs.count))"), isManual: true, clearAction: { [weak self] in
                 self?.selectedCategoryIDs.removeAll()
             }))
         }
 
         // Member count chip
         if !selectedMemberIDs.isEmpty {
-            chips.append(FilterChip(label: "成员(\(selectedMemberIDs.count))", isManual: true, clearAction: { [weak self] in
+            chips.append(FilterChip(label: String(localized: "成员(\(selectedMemberIDs.count))"), isManual: true, clearAction: { [weak self] in
                 self?.selectedMemberIDs.removeAll()
+            }))
+        }
+
+        // Merchant count chip
+        if !selectedMerchantIDs.isEmpty {
+            chips.append(FilterChip(label: String(localized: "商家(\(selectedMerchantIDs.count))"), isManual: true, clearAction: { [weak self] in
+                self?.selectedMerchantIDs.removeAll()
             }))
         }
 
         // Project count chip
         if !selectedProjectIDs.isEmpty {
-            chips.append(FilterChip(label: "项目(\(selectedProjectIDs.count))", isManual: true, clearAction: { [weak self] in
+            chips.append(FilterChip(label: String(localized: "项目(\(selectedProjectIDs.count))"), isManual: true, clearAction: { [weak self] in
                 self?.selectedProjectIDs.removeAll()
             }))
         }
@@ -165,7 +175,7 @@ final class SearchViewModel {
     }
 
     var hasManualFilters: Bool {
-        !selectedCategoryIDs.isEmpty || !selectedMemberIDs.isEmpty || !selectedProjectIDs.isEmpty
+        !selectedCategoryIDs.isEmpty || !selectedMemberIDs.isEmpty || !selectedMerchantIDs.isEmpty || !selectedProjectIDs.isEmpty
         || dateFrom != nil || dateTo != nil || amountMin != nil || amountMax != nil
         || manualType != nil || !manualKeyword.isEmpty
     }
@@ -176,11 +186,13 @@ final class SearchViewModel {
 
     func toggleCategory(_ id: UUID) { selectedCategoryIDs.toggle(id) }
     func toggleMember(_ id: UUID)   { selectedMemberIDs.toggle(id) }
+    func toggleMerchant(_ id: UUID) { selectedMerchantIDs.toggle(id) }
     func toggleProject(_ id: UUID)  { selectedProjectIDs.toggle(id) }
 
     func clearAllManualFilters() {
         selectedCategoryIDs.removeAll()
         selectedMemberIDs.removeAll()
+        selectedMerchantIDs.removeAll()
         selectedProjectIDs.removeAll()
         dateFrom = nil
         dateTo = nil
@@ -204,6 +216,7 @@ final class SearchViewModel {
             amountMin: amountMin, amountMax: amountMax,
             categoryIDs: Array(selectedCategoryIDs),
             memberIDs: Array(selectedMemberIDs),
+            merchantIDs: Array(selectedMerchantIDs),
             projectIDs: Array(selectedProjectIDs),
             keyword: manualKeyword,
             createdAt: Date()
@@ -217,6 +230,7 @@ final class SearchViewModel {
         amountMin = filter.amountMin; amountMax = filter.amountMax
         selectedCategoryIDs = Set(filter.categoryIDs)
         selectedMemberIDs = Set(filter.memberIDs)
+        selectedMerchantIDs = Set(filter.merchantIDs)
         selectedProjectIDs = Set(filter.projectIDs)
         manualKeyword = filter.keyword
     }
@@ -246,6 +260,23 @@ final class SearchViewModel {
         }
     }
 
+    /// 回车触发搜索，无 debounce — 用于手动提交场景
+    func submitSearch(context: NSManagedObjectContext) {
+        searchTask?.cancel()
+        searchResults = []
+        parsedQuery = nil
+        hasSearched = false
+
+        let hasText = !searchText.trimmingCharacters(in: .whitespaces).isEmpty
+        guard hasText || hasManualFilters else {
+            isSearching = false
+            return
+        }
+
+        isSearching = true
+        performSearch(text: searchText, context: context)
+    }
+
     func applyManualFilters(context: NSManagedObjectContext) {
         searchResults = []
         parsedQuery = nil
@@ -260,60 +291,98 @@ final class SearchViewModel {
     }
 
     private func performSearch(text: String, context: NSManagedObjectContext) {
-        Task { @MainActor in
+        // Capture values on MainActor before any async work (prevents Core Data thread-safety violations)
+        let ledgerID = ledger.id
+        let capturedService = transactionService
+        guard let coordinator = context.persistentStoreCoordinator else {
+            isSearching = false
+            return
+        }
+
+        // Cancel any previous search task; this single Task chain is fully cancellable
+        searchTask?.cancel()
+        searchTask = Task {
+            // Phase 1: Parse text (lightweight, on MainActor to read NL model availability)
             var query = ParsedSearchQuery()
             if !text.trimmingCharacters(in: .whitespaces).isEmpty {
                 query = await parseWithNLFallback(text)
             }
+            guard !Task.isCancelled else { return }
             self.parsedQuery = query
 
-            var filters = TransactionFilters()
+            // Build filters on MainActor (reads @MainActor state like dateFrom, amountMin, etc.)
+            let filters = buildFilters(from: query)
+            guard !Task.isCancelled else { return }
 
-            // Merge NLP date + manual date (narrowest wins)
-            let manualDate: Range<Date>? = {
-                if let from = dateFrom, let to = dateTo {
-                    return min(from, to)..<max(from, to)
-                } else if let from = dateFrom {
-                    return from..<Date.distantFuture
-                } else if let to = dateTo {
-                    return Date.distantPast..<to
+            // Phase 2: Heavy fetch on background context, not blocking UI
+            let objectIDs = await Task.detached {
+                let bgContext = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+                bgContext.persistentStoreCoordinator = coordinator
+
+                return await bgContext.perform {
+                    let bgReq = NSFetchRequest<Ledger>(entityName: "Ledger")
+                    bgReq.predicate = NSPredicate(format: "id == %@", ledgerID as CVarArg)
+                    bgReq.fetchLimit = 1
+                    guard let bgLedger = try? bgContext.fetch(bgReq).first else { return [NSManagedObjectID]() }
+                    return (try? capturedService.fetchTransactions(for: bgLedger, context: bgContext, filters: filters))?
+                        .map(\.objectID) ?? []
                 }
-                return nil
-            }()
-            filters.dateRange = intersectRanges(query.dateRange, manualDate)
+            }.value
 
-            // Merge NLP amount + manual amount
-            let manualAmount: ClosedRange<Decimal>? = {
-                switch (amountMin, amountMax) {
-                case (let lo?, let hi?): return Swift.min(lo, hi)...Swift.max(lo, hi)
-                case (let lo?, nil): return lo...Decimal.greatestFiniteMagnitude
-                case (nil, let hi?): return 0...hi
-                case (nil, nil): return nil
-                }
-            }()
-            filters.amountRange = intersectAmountRanges(query.amountRange, manualAmount)
+            guard !Task.isCancelled else { return }
 
-            // Type: manual overrides NLP
-            filters.type = manualType ?? query.transactionType
-
-            // Keyword: combine NLP + manual
-            let combined = [query.keyword, manualKeyword.isEmpty ? nil : manualKeyword]
-                .compactMap { $0 }.filter { !$0.isEmpty }
-            filters.keyword = combined.isEmpty ? nil : combined.joined(separator: " ")
-
-            // Multi-select: manual only (NLP can't parse these)
-            filters.categoryIDs = selectedCategoryIDs.isEmpty ? nil : selectedCategoryIDs
-            filters.memberIDs = selectedMemberIDs.isEmpty ? nil : selectedMemberIDs
-            filters.projectIDs = selectedProjectIDs.isEmpty ? nil : selectedProjectIDs
-
-            let results = (try? transactionService.fetchTransactions(
-                for: ledger, context: context, filters: filters
-            )) ?? []
-
-            self.searchResults = results
+            self.searchResults = objectIDs.compactMap { context.object(with: $0) as? Transaction }
             self.isSearching = false
-            persistFilterState()
+            self.hasSearched = true
+            self.persistFilterState()
         }
+    }
+
+    /// Build TransactionFilters from parsed query + manual filter state.
+    /// Must be called on MainActor (reads published filter state).
+    @MainActor
+    private func buildFilters(from query: ParsedSearchQuery) -> TransactionFilters {
+        var filters = TransactionFilters()
+
+        // Merge NLP date + manual date (narrowest wins)
+        let manualDate: Range<Date>? = {
+            if let from = dateFrom, let to = dateTo {
+                return min(from, to)..<max(from, to)
+            } else if let from = dateFrom {
+                return from..<Date.distantFuture
+            } else if let to = dateTo {
+                return Date.distantPast..<to
+            }
+            return nil
+        }()
+        filters.dateRange = intersectRanges(query.dateRange, manualDate)
+
+        // Merge NLP amount + manual amount
+        let manualAmount: ClosedRange<Decimal>? = {
+            switch (amountMin, amountMax) {
+            case (let lo?, let hi?): return Swift.min(lo, hi)...Swift.max(lo, hi)
+            case (let lo?, nil): return lo...Decimal.greatestFiniteMagnitude
+            case (nil, let hi?): return 0...hi
+            case (nil, nil): return nil
+            }
+        }()
+        filters.amountRange = intersectAmountRanges(query.amountRange, manualAmount)
+
+        // Type: manual overrides NLP
+        filters.type = manualType ?? query.transactionType
+
+        // Keyword: combine NLP + manual
+        let combined = [query.keyword, manualKeyword.isEmpty ? nil : manualKeyword]
+            .compactMap { $0 }.filter { !$0.isEmpty }
+        filters.keyword = combined.isEmpty ? nil : combined.joined(separator: " ")
+
+        // Multi-select: manual only (NLP can't parse these)
+        filters.categoryIDs = selectedCategoryIDs.isEmpty ? nil : selectedCategoryIDs
+        filters.memberIDs = selectedMemberIDs.isEmpty ? nil : selectedMemberIDs
+        filters.merchantIDs = selectedMerchantIDs.isEmpty ? nil : selectedMerchantIDs
+        filters.projectIDs = selectedProjectIDs.isEmpty ? nil : selectedProjectIDs
+
+        return filters
     }
 
     // MARK: - Range Helpers

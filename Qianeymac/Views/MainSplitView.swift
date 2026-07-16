@@ -17,6 +17,7 @@ struct MainSplitView: View {
     @State private var selectedReportType: ReportType?
     @State private var navigationPath = NavigationPath()
     @State private var showAddSheet = false
+    @State private var showSearchSheet = false
     @State private var selectedDate: Date?
     @State private var allLedgers: [Ledger] = []
     @State private var showCreateLedgerSheet = false
@@ -59,11 +60,19 @@ struct MainSplitView: View {
         .onReceive(NotificationCenter.default.publisher(for: .macMenuNewTransaction)) { _ in
             showAddSheet = true
         }
+        .onReceive(NotificationCenter.default.publisher(for: .macMenuSearch)) { _ in
+            showSearchSheet = true
+        }
         .sheet(isPresented: $showAddSheet) {
             MacAddTransactionSheet(prefillDate: selectedDate)
         }
         .sheet(isPresented: $showCreateLedgerSheet) {
             CreateLedgerMacSheet { loadLedgers() }
+        }
+        .sheet(isPresented: $showSearchSheet) {
+            if let ledger = appContainer.currentLedger {
+                MacSearchView(ledger: ledger, transactionService: appContainer.transactionService)
+            }
         }
     }
 
@@ -105,6 +114,11 @@ struct MainSplitView: View {
                     else { createShareAndShow() }
                 }
             )
+        }
+        ToolbarItem(placement: .primaryAction) {
+            Button { showSearchSheet = true } label: {
+                Image(systemName: "magnifyingglass")
+            }
         }
         ToolbarItem(placement: .primaryAction) {
             Button { showAddSheet = true } label: {
