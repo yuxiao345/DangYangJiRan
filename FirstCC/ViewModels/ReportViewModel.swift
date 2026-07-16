@@ -3,6 +3,7 @@ import Foundation
 
 enum ReportPeriod: Hashable {
     case thisMonth
+    case thisYear
     case last3Months
     case last6Months
     case last12Months
@@ -15,6 +16,7 @@ enum ReportPeriod: Hashable {
     var label: String {
         switch self {
         case .thisMonth: String(localized: "本月")
+        case .thisYear: String(localized: "本年")
         case .last3Months: String(localized: "近3月")
         case .last6Months: String(localized: "近6月")
         case .last12Months: String(localized: "近12月")
@@ -34,6 +36,9 @@ enum ReportPeriod: Hashable {
         case .thisMonth:
             let endOfMonth = cal.date(byAdding: .month, value: 1, to: now.startOfMonth) ?? now
             return now.startOfMonth..<endOfMonth
+        case .thisYear:
+            guard let yearStart = cal.date(from: cal.dateComponents([.year], from: now)) else { return nil }
+            return yearStart..<todayEnd
         case .last3Months:
             guard let start = cal.date(byAdding: .month, value: -3, to: now)?.startOfMonth else { return nil }
             return start..<todayEnd

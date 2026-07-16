@@ -16,7 +16,7 @@ enum ReportType: CaseIterable {
 
     var supportedPeriods: [ReportPeriod] {
         switch self {
-        case .category: [.thisMonth, .last3Months, .last6Months]
+        case .category: [.thisMonth, .thisYear]
         case .trend: [.lastYear, .last2Years, .last3Years]
         case .member: [.thisMonth, .last3Months, .last6Months, .lastYear]
         }
@@ -37,6 +37,9 @@ struct ReportsView: View {
     @State private var viewModel = ReportViewModel()
     @State private var selectedReport: ReportType = .category
     @State private var selectedTransaction: Transaction?
+    @State private var isUsingCustomRange = false
+    @State private var customStartDate = Date().startOfMonth
+    @State private var customEndDate = Date()
 
     var body: some View {
         NavigationStack {
@@ -71,34 +74,17 @@ struct ReportsView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
 
-                    HStack(spacing: 8) {
-                        ForEach(selectedReport.supportedPeriods, id: \.self) { period in
-                            Button {
-                                viewModel.selectedPeriod = period
-                            } label: {
-                                Text(period.label)
-                                    .font(.custom("JetBrainsMono-Medium", fixedSize: 12))
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 8)
-                                    .background(
-                                        viewModel.selectedPeriod == period
-                                            ? Color.designPrimaryContainer.opacity(0.2)
-                                            : Color.designSurfaceContainer.opacity(0.6)
-                                    )
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                            }
-                            .foregroundStyle(
-                                viewModel.selectedPeriod == period
-                                    ? Color.designOnSurface
-                                    : Color.designOnSurfaceVariant
-                            )
-                            .buttonStyle(.plain)
-                        }
-                    }
+                    periodPicker
                     .padding(4)
                     .glassCard(cornerRadius: 14)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
+
+                    if isUsingCustomRange {
+                        customDatePickers
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 8)
+                    }
 
                     switch selectedReport {
                     case .category:
@@ -124,6 +110,7 @@ struct ReportsView: View {
         }
         .onChange(of: selectedReport) { _, newType in
             viewModel.isShowingMemberSplit = false
+            isUsingCustomRange = false
             if !newType.supportedPeriods.contains(viewModel.selectedPeriod) {
                 viewModel.selectedPeriod = newType.defaultPeriod
             } else {
@@ -134,6 +121,97 @@ struct ReportsView: View {
             viewModel.isShowingMemberSplit = false
             loadData()
         }
+    }
+
+    // MARK: - Period Picker
+
+    private var periodPicker: some View {
+        HStack(spacing: 8) {
+            ForEach(selectedReport.supportedPeriods, id: \.self) { period in
+                Button {
+                    isUsingCustomRange = false
+                    viewModel.selectedPeriod = period
+                } label: {
+                    Text(period.label)
+                        .font(.custom("JetBrainsMono-Medium", fixedSize: 12))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(periodBackground(for: period))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .foregroundStyle(
+                    isPeriodActive(period) ? Color.designOnSurface : Color.designOnSurfaceVariant
+                )
+                .buttonStyle(.plain)
+            }
+
+            // 自定义 button (not in supportedPeriods — has associated dates)
+            Button {
+                if !isUsingCustomRange {
+                    isUsingCustomRange = true
+                    customStartDate = Date().startOfMonth
+                    customEndDate = Date()
+                    viewModel.selectedPeriod = .customRange(start: customStartDate, end: customEndDate)
+                }
+            } label: {
+                Text(String(localized: "自定义"))
+                    .font(.custom("JetBrainsMono-Medium", fixedSize: 12))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(isUsingCustomRange ? Color.designPrimaryContainer.opacity(0.2) : Color.designSurfaceContainer.opacity(0.6))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+            .foregroundStyle(isUsingCustomRange ? Color.designOnSurface : Color.designOnSurfaceVariant)
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var customDatePickers: some View {
+        HStack(spacing: 12) {
+            DatePicker(
+                String(localized: "起始日期"),
+                selection: $customStartDate,
+                in: ...customEndDate,
+                displayedComponents: .date
+            )
+            .datePickerStyle(.compact)
+            .labelsHidden()
+            .onChange(of: customStartDate) { _, newStart in
+                viewModel.selectedPeriod = .customRange(start: newStart, end: customEndDate)
+            }
+
+            Text("–")
+                .font(.designBodySmall)
+                .foregroundStyle(Color.designOnSurfaceVariant)
+
+            DatePicker(
+                String(localized: "截止日期"),
+                selection: $customEndDate,
+                in: customStartDate...Date(),
+                displayedComponents: .date
+            )
+            .datePickerStyle(.compact)
+            .labelsHidden()
+            .onChange(of: customEndDate) { _, newEnd in
+                viewModel.selectedPeriod = .customRange(start: customStartDate, end: newEnd)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .glassCard(cornerRadius: 14)
+    }
+
+    private func periodBackground(for period: ReportPeriod) -> some View {
+        if isPeriodActive(period) {
+            Color.designPrimaryContainer.opacity(0.2)
+        } else {
+            Color.designSurfaceContainer.opacity(0.6)
+        }
+    }
+
+    private func isPeriodActive(_ period: ReportPeriod) -> Bool {
+        if isUsingCustomRange { return false }
+        return viewModel.selectedPeriod == period
     }
 
     // MARK: - Swipe Back Gesture
