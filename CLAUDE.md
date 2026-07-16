@@ -118,21 +118,29 @@ Target: `钱伲`, scheme: `钱伲`, bundle ID: `com.qianey.app`, container: `iCl
 | **流水详情** | `TransactionDetailView`→`AddEditTransactionView(displayMode:)` | `TransactionDetailContent`→`MacAddTransactionSheet(displayMode:)` | - |
 | **记一笔** | `AddEditTransactionView` | `MacAddTransactionSheet` | services |
 | **收支日历** | `CalendarStripView`+`CalendarDayCell` | 内置在 `TransactionListContent` | - |
-| **报表** | `ReportsView` | `ReportTypeContent`+`ReportDetailContent` | `ReportViewModel` |
-| **设置主页** | `SettingsView` | `MacSettingsView` | - |
-| **账本列表** | `LedgerListSettingsView` (in SettingsContent) | `MacLedgerSettingsView` | services |
+| **报表** | `ReportsView`（3种：分类占比+成员维度、收支趋势、多维分析） | `ReportDetailContent`（6种：分类占比+成员维度、收支趋势、资产变化、预算执行、资产配置、多维分析） | `ReportViewModel` |
+| **搜索** | `SearchView` | `MacSearchView`（toolbar 弹出） | `SearchViewModel`, `ChineseExpressionParser` |
+| **高级搜索** | `AdvancedFilterPanel`（SearchView 内） | `MacAdvancedFilterView`（popover picker） | - |
+| **设置主页** | `SettingsView` | `SettingsContent`+`SettingsWindow` | - |
+| **账本列表** | `LedgerListSettingsView`（Settings 内） | `SettingsContent` 内 | services |
 | **分类管理** | `CategoryListView`+`AddEditCategoryView` | `MacCategoryListView`+`MacCategoryEditSheet` | services |
 | **成员管理** | `MemberListView` | `MacMemberListView`+`MacMemberEditSheet` | services |
+| **商户管理** | `MerchantListView`（Settings 内） | `MacMerchantListView`+`MacMerchantEditSheet` ⚠️ 导航未挂载 | services |
+| **项目管理** | `ProjectListView`（Settings 内） | `MacProjectListView`+`MacProjectEditSheet` ⚠️ 导航未挂载 | services |
+| **周期账管理** | RecurringListView（Settings 内） | `MacRecurringListView`+`MacAddEditRecurringView` ⚠️ 导航未挂载 | services |
+| **模板管理** | TemplateListView（Settings 内） | `MacTemplateListView`+`MacAddEditTemplateView` ⚠️ 导航未挂载 | services |
 | **预算详情** | `BudgetBookDetailView` | `BudgetBookDetailMacView` | `AddEditBudgetItemView`, services |
 | **预算列表** | `BudgetBookListView` | 复用（`#if os(macOS)` 条件编译） | `BudgetBookListView` |
 | **新增/编辑预算** | `AddEditBudgetBookView` | 复用 iOS（共享） | `AddEditBudgetBookView` |
-| **搜索** | `SearchView` | 未实现 | `SearchViewModel`, `ChineseExpressionParser` |
-| **高级搜索** | `SearchView` (多条件) | 未实现 | - |
-| **数据导出** | `ExportView` | 未实现 | `ExportServiceProtocol` |
-| **App 锁** | `AppLockView` | 未实现 | `BiometricAuth` |
-| **共享管理** | `CloudSharingView`+`LedgerSettingsView` | 未实现 | `SyncServiceImpl`, `CloudKitShareCoordinator` |
+| **数据导出** | `ExportView` | `MacExportView` ⚠️ 导航未挂载 | `ExportServiceProtocol` |
+| **共享管理** | `CloudSharingView`+`LedgerSettingsView` | `CloudSharingDelegate`+`ShareBadgeView`（toolbar） | `SyncServiceImpl`, `CloudKitShareCoordinator` |
 | **信用卡对账** | `CreditCardReconciliationView` | 未实现 | services |
-| **商户/项目管理** | iOS Settings 内 | Mac 未实现 | services |
+| **分期管理** | `Installments/` 目录 | 未实现 | - |
+| **拆分交易管理** | `SplitDetailView`+`SplitEntryRowView`+`SplitFormView` | 内置在 `MacAddTransactionSheet` | - |
+| **App 锁** | `AppLockView` | 未实现（macOS 安全模型不同） | `BiometricAuth` |
+| **Onboarding** | `OnboardingView`+`CreateLedgerView` | `CreateLedgerMacSheet` | - |
+
+> ⚠️ 标记的文件已实现但未挂载到 `MacLedgerDetailView` 导航中（仅链接了分类和成员管理），需要补充导航入口。
 
 ### 共享层（两个 target 都编译）
 
@@ -195,7 +203,7 @@ Do NOT use `CKShareTransferRepresentation` / `ShareLink` — that approach ties 
 
 **Sharing changes:** Keep it simple. Use `container.share([rootObject], to: nil)`. Do not introduce raw CKShare APIs, `CKShareTransferRepresentation`, or multi-step workarounds unless proven necessary after exhausting all standard-API debugging (schema deployment, store state, actor isolation).
 
-**New UI component:** Every distinct UI component gets its own file. Do not accumulate multiple independent views/subviews in a single file. If a view grows beyond ~150 lines or hosts multiple logical sub-components (ring-chart, bar-list, detail-list), split each sub-component into its own file in the same directory. The orchestrator view should be thin — compose components, manage state/animations, pass callbacks. Example: `MacCategoryChartView.swift` (85 lines) orchestrates `DonutChart.swift` + `CategoryBarList.swift` + `TransactionDetailList`.
+**New UI component:** Every distinct UI component gets its own file. Do not accumulate multiple independent views/subviews in a single file. If a view grows beyond ~150 lines or hosts multiple logical sub-components (ring-chart, bar-list, detail-list), split each sub-component into its own file in the same directory. The orchestrator view should be thin — compose components, manage state/animations, pass callbacks. Example: `MacCategoryChartView.swift` orchestrates `DonutChart.swift` + `CategoryBarList.swift` + `TransactionDetailList.swift`.
 
 **Mac ScrollView + glassCard 布局规范（强制）：** 玻璃卡片在 ScrollView 内时，**水平 padding 必须放在 ScrollView 内部内容上，不能放在 ScrollView 本身**。ScrollView 默认裁剪内容，阴影需要 24px 呼吸空间。同时必须加 `.scrollClipDisabled()` 防止 SwiftUI 裁剪阴影。标准模板：
 
@@ -236,6 +244,28 @@ ScrollView { content }
 5. Git 提交 + 推送 ✅
 
 不要跳过任何步骤——这是标准的完成工作流。
+
+## Mac 报表架构
+
+Mac 报表位于 `Qianeymac/Views/Reports/`，使用独立组件拼装（非复用 iOS 的 CategoryPieChartView）：
+
+| 文件 | 职责 |
+|------|------|
+| `ReportContent.swift` | `ReportType` 枚举（6种）+ `ReportDetailContent` 容器，含 `reportPickerBar` 通用选择器 |
+| `DonutChart.swift` | 饼图组件（`DonutChart`）+ 通用胶囊切换器（`GlassPillToggle`） |
+| `CategoryBarList.swift` | 分类柱状列表（`CategoryBarList` + `CategoryBarRow`），支持成员子行 |
+| `TransactionDetailList.swift` | 可复用交易明细列表（从 MacCategoryChartView 提取） |
+| `MacCategoryChartView.swift` | 分类占比编排器：饼图+列表+成员维度切换（L1成员占比/L2成员拆分） |
+| `MacTrendChartView.swift` | 收支趋势图 |
+| `MacAssetChartView.swift` | 资产变化图 |
+| `MacBudgetChartView.swift` | 预算执行图 |
+| `MacAssetAllocationView.swift` | 资产配置图 |
+| `MacDimensionChartView.swift` | 多维分析（商家/项目双维度），饼图+列表+下钻 |
+
+**关键设计模式：**
+- 饼图 + 列表的通用布局已提取为 `MacDimensionChartView.chartSection()` 私有方法
+- 成员模式（`isMemberSplitOn`）在 `ReportContent` 生命周期钩子中统一重置（切换周期/报表/账本/交易时）
+- 维度选择器使用 `GlassPillToggle` 同款胶囊玻璃风格，置于饼图卡片内左上角
 
 ## macOS/iOS 踩坑记录
 
