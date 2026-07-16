@@ -262,7 +262,15 @@
       "Bash(ssh -T git@github.com)",
       "Bash(ssh-add -l)",
       "Bash(ssh -p 443 git@github.com)",
-      "Bash(env)"
+      "Bash(env)",
+      "Bash(mkdir -p /tmp/firstcc-backup-20260716)",
+      "Bash(cp /Users/gyu/Documents/AI/10-FirstCC/FirstCC/Views/Reports/CategoryPieChartView.swift /tmp/firstcc-backup-20260716/)",
+      "Bash(cp /Users/gyu/Documents/AI/10-FirstCC/FirstCC/Views/Reports/DonutChartContent.swift /tmp/firstcc-backup-20260716/)",
+      "Bash(cp /Users/gyu/Documents/AI/10-FirstCC/FirstCC/ViewModels/ReportViewModel.swift /tmp/firstcc-backup-20260716/)",
+      "Bash(cp /Users/gyu/Documents/AI/10-FirstCC/FirstCC/Views/Reports/ReportsView.swift /tmp/firstcc-backup-20260716/)",
+      "Bash(sed -i '' 's/colorHex: \"#BDBDBD\"/colorHex: \"#E0E0E0\"/' /Users/gyu/Documents/AI/10-FirstCC/FirstCC/ViewModels/ReportViewModel.swift)",
+      "Bash(sed -i '' 's/String\\(localized: \"其他项目\"\\)/\"···\"/' /Users/gyu/Documents/AI/10-FirstCC/FirstCC/ViewModels/ReportViewModel.swift)",
+      "Bash(echo \"---EXIT:$?---\")"
     ]
   },
   "hooks": {
