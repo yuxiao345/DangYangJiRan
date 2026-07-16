@@ -3,6 +3,10 @@ import Charts
 
 struct CategoryPieChartView: View {
     let categories: [CategoryExpenseItem]
+    /// Optional: override donut data (e.g., aggregated for dimension overview). nil = use categories.
+    var donutCategories: [CategoryExpenseItem]? = nil
+    /// Optional: max visible items in list. Excess items hidden with "more" indicator.
+    var maxListItems: Int? = nil
     let totalExpense: Decimal
     let centerTitle: String
     let isDrilledDown: Bool
@@ -120,56 +124,32 @@ struct CategoryPieChartView: View {
                         ? Color.designAccentGreen
                         : Color.designOnSurfaceVariant
                 )
-                .padding(10)
-                .background(
-                    Circle()
-                        .fill(.ultraThinMaterial)
-                        .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
-                )
         }
         .buttonStyle(.plain)
-        .padding(12)
+        .padding(.bottom, 12)
+        .padding(.trailing, 16)
     }
 
     // MARK: - Donut Chart
 
     private var donutChart: some View {
         Group {
-            if memberSplitActive && isDrilledDown && !memberSplitDonutItems.isEmpty {
-                // L2: Member-split donut
-                MemberSplitDonutContent(
-                    items: memberSplitDonutItems,
-                    animationProgress: animationProgress
-                )
-                .id(chartID)
-                .frame(height: 240)
-                .shadow(color: .black.opacity(0.12), radius: 20, y: 8)
-                .chartOverlay { proxy in
-                    GeometryReader { geometry in
-                        let frame = geometry[proxy.plotAreaFrame]
-                        centerLabel
-                            .position(x: frame.midX, y: frame.midY)
-                    }
-                }
-            } else {
-                // Normal category donut (or L1 member donut via categories param)
-                DonutChartContent(
-                    categories: stableCategories,
-                    animationProgress: animationProgress,
-                    selectedAngle: $selectedAngle,
-                    gradientLookup: gradientLookup,
-                    fallbackGradient: fallbackGradient,
-                    onCategoryTap: memberSplitActive ? { _ in } : onCategoryTap
-                )
-                .id(chartID)
-                .frame(height: 240)
-                .shadow(color: .black.opacity(0.12), radius: 20, y: 8)
-                .chartOverlay { proxy in
-                    GeometryReader { geometry in
-                        let frame = geometry[proxy.plotAreaFrame]
-                        centerLabel
-                            .position(x: frame.midX, y: frame.midY)
-                    }
+            DonutChartContent(
+                categories: donutCategories ?? stableCategories,
+                animationProgress: animationProgress,
+                selectedAngle: $selectedAngle,
+                gradientLookup: gradientLookup,
+                fallbackGradient: fallbackGradient,
+                onCategoryTap: memberSplitActive ? { _ in } : onCategoryTap
+            )
+            .id(chartID)
+            .frame(height: 240)
+            .shadow(color: .black.opacity(0.12), radius: 20, y: 8)
+            .chartOverlay { proxy in
+                GeometryReader { geometry in
+                    let frame = geometry[proxy.plotAreaFrame]
+                    centerLabel
+                        .position(x: frame.midX, y: frame.midY)
                 }
             }
         }
@@ -210,9 +190,7 @@ struct CategoryPieChartView: View {
                     .foregroundStyle(Color.designOnSurfaceVariant)
             }
             CurrencyText(
-                amount: memberSplitActive && isDrilledDown
-                    ? memberSplitDonutItems.map(\.amount).reduce(0, +)
-                    : totalExpense,
+                amount: totalExpense,
                 currencyCode: "",
                 size: 18,
                 foregroundColor: Color.designOnSurface
@@ -256,81 +234,117 @@ struct CategoryPieChartView: View {
     // MARK: - Category List
 
     private var categoryList: some View {
-        VStack(spacing: 8) {
-            ForEach(Array(categories.enumerated()), id: \.element.id) { index, item in
-                Button {
-                    if !memberSplitActive {
-                        onCategoryTap(item.id)
-                    }
-                } label: {
-                    VStack(spacing: 8) {
-                        HStack(spacing: 8) {
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(Color(hex: item.colorHex) ?? .gray)
-                                .frame(width: 12, height: 12)
+        let cap = maxListItems ?? categories.count
+        let visible = Array(categories.prefix(cap).enumerated())
+        let hiddenCount = categories.count - cap
 
-                            Text(item.name)
-                                .font(.designBodyMedium)
-                                .foregroundStyle(Color.designOnSurface)
+        return VStack(spacing: 8) {
+            ForEach(visible, id: \.element.id) { index, item in
+                categoryRow(index: index, item: item)
+            }
 
-                            Spacer()
-
-                            VStack(alignment: .trailing, spacing: 2) {
-                                CurrencyText(amount: item.amount, currencyCode: "", size: 15, foregroundColor: Color.designOnSurface)
-                                    .fontWeight(.medium)
-                                Text(String(format: "%.1f%%", item.percentage * 100))
-                                    .font(.designMonoDataSmall)
-                                    .foregroundStyle(Color.designOnSurfaceVariant)
-                            }
-
-                            if !memberSplitActive {
-                                Image(systemName: "chevron.right")
-                                    .font(.designBodySmall)
-                                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
-                            }
-                        }
-
-                        // MARK: Member Split Sub-rows
-                        if memberSplitActive, let splits = memberSplits[item.id], !splits.isEmpty {
-                            VStack(spacing: 2) {
-                                ForEach(splits, id: \.memberID) { split in
-                                    HStack(spacing: 4) {
-                                        Circle()
-                                            .fill(memberSplitColor(baseColorHex: item.colorHex, memberIndex: splits.firstIndex(where: { $0.memberID == split.memberID }) ?? 0, totalMembers: splits.count))
-                                            .frame(width: 6, height: 6)
-                                        Text(split.memberName)
-                                            .font(.designBodySmall)
-                                            .foregroundStyle(Color.designOnSurfaceVariant)
-                                        Spacer()
-                                        CurrencyText(amount: split.amount, currencyCode: "", size: 12, foregroundColor: Color.designOnSurfaceVariant)
-                                        Text(String(format: "%.1f%%", split.percentage * 100))
-                                            .font(.designMonoDataSmall)
-                                            .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
-                                    }
-                                    .padding(.leading, 20)
-                                }
-                            }
-                            .padding(.top, 2)
-                        }
-
-                        let targetBlocks = item.percentage * 16
-                        let displayProgress = min(barFillStep, targetBlocks) / 16.0
-                        PixelProgressBar(progress: displayProgress, tint: Color(hex: item.colorHex) ?? .gray, totalBlocks: 16)
-                    }
-                    .padding(12)
-                    .glassCard(cornerRadius: 16)
+            if hiddenCount > 0 {
+                HStack(spacing: 6) {
+                    Image(systemName: "ellipsis.circle")
+                        .font(.designBodySmall)
+                        .foregroundStyle(Color.designOnSurfaceVariant)
+                    Text(String(localized: "还有\(hiddenCount)项未显示"))
+                        .font(.designBodySmall)
+                        .foregroundStyle(Color.designOnSurfaceVariant)
+                    Spacer()
                 }
-                .buttonStyle(.plain)
+                .padding(12)
+                .glassCard(cornerRadius: 16)
                 .opacity(animationProgress >= 1.0 ? 1 : 0)
-                .offset(y: animationProgress >= 1.0 ? 0 : 20)
-                .animation(
-                    .spring(response: 0.5, dampingFraction: 0.7)
-                    .delay(Double(index) * 0.06),
-                    value: animationProgress
-                )
             }
         }
         .padding(.horizontal, 12)
+    }
+
+    @ViewBuilder
+    private func categoryRow(index: Int, item: CategoryExpenseItem) -> some View {
+        Button {
+            if !memberSplitActive {
+                onCategoryTap(item.id)
+            }
+        } label: {
+            VStack(spacing: 8) {
+                HStack(spacing: 8) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color(hex: item.colorHex) ?? .gray)
+                        .frame(width: 12, height: 12)
+
+                    Text(item.name)
+                        .font(.designBodyMedium)
+                        .foregroundStyle(Color.designOnSurface)
+
+                    Spacer()
+
+                    VStack(alignment: .trailing, spacing: 2) {
+                        CurrencyText(amount: item.amount, currencyCode: "", size: 15, foregroundColor: Color.designOnSurface)
+                            .fontWeight(.medium)
+                        Text(String(format: "%.1f%%", item.percentage * 100))
+                            .font(.designMonoDataSmall)
+                            .foregroundStyle(Color.designOnSurfaceVariant)
+                    }
+
+                    if !memberSplitActive {
+                        Image(systemName: "chevron.right")
+                            .font(.designBodySmall)
+                            .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+                    }
+                }
+
+                // MARK: Member Split Sub-rows
+                if memberSplitActive, let splits = memberSplits[item.id], !splits.isEmpty {
+                    let catBarProgress = min(barFillStep, item.percentage * 16) / 16.0
+                    PixelProgressBar(progress: catBarProgress, tint: Color(hex: item.colorHex) ?? .gray, totalBlocks: 16)
+
+                    VStack(spacing: 6) {
+                        ForEach(splits, id: \.memberID) { split in
+                            let mIdx = splits.firstIndex(where: { $0.memberID == split.memberID }) ?? 0
+                            VStack(spacing: 4) {
+                                HStack(spacing: 4) {
+                                    Circle()
+                                        .fill(memberSplitColor(baseColorHex: item.colorHex, memberIndex: mIdx, totalMembers: splits.count))
+                                        .frame(width: 6, height: 6)
+                                    Text(split.memberName)
+                                        .font(.designBodySmall)
+                                        .foregroundStyle(Color.designOnSurfaceVariant)
+                                    Spacer()
+                                    CurrencyText(amount: split.amount, currencyCode: "", size: 12, foregroundColor: Color.designOnSurfaceVariant)
+                                    Text(String(format: "%.1f%%", split.percentage * 100))
+                                        .font(.designMonoDataSmall)
+                                        .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
+                                }
+                                let memberBarProgress = min(barFillStep, split.percentage * 16) / 16.0
+                                PixelProgressBar(
+                                    progress: memberBarProgress,
+                                    tint: memberSplitColor(baseColorHex: item.colorHex, memberIndex: mIdx, totalMembers: splits.count),
+                                    totalBlocks: 12
+                                )
+                            }
+                            .padding(.leading, 20)
+                        }
+                    }
+                    .padding(.top, 2)
+                } else {
+                    let targetBlocks = item.percentage * 16
+                    let displayProgress = min(barFillStep, targetBlocks) / 16.0
+                    PixelProgressBar(progress: displayProgress, tint: Color(hex: item.colorHex) ?? .gray, totalBlocks: 16)
+                }
+            }
+            .padding(12)
+            .glassCard(cornerRadius: 16)
+        }
+        .buttonStyle(.plain)
+        .opacity(animationProgress >= 1.0 ? 1 : 0)
+        .offset(y: animationProgress >= 1.0 ? 0 : 20)
+        .animation(
+            .spring(response: 0.5, dampingFraction: 0.7)
+            .delay(Double(index) * 0.06),
+            value: animationProgress
+        )
     }
 
     // MARK: - Member Split Color
@@ -346,8 +360,10 @@ struct CategoryPieChartView: View {
 
     /// Steps through blocks one-by-one: 1 → 2 → 3 → ... → N, with a partial fill on the last block.
     private func runBarAnimation(delay: Double) {
+        guard !categories.isEmpty else { return }
         let maxBlocks = categories.map { $0.percentage * 16.0 }.max() ?? 8.0
         let fullSteps = Int(floor(maxBlocks))
+        guard fullSteps > 0 else { return }
         let remainder = maxBlocks - Double(fullSteps)
         let stepDuration = 0.2
         let thisID = UUID()

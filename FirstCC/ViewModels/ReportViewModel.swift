@@ -77,6 +77,20 @@ struct CategoryExpenseItem: Identifiable {
     let children: [CategoryExpenseItem]
 }
 
+// MARK: - Dimension Type
+
+enum DimensionType: CaseIterable {
+    case merchant
+    case project
+
+    var label: String {
+        switch self {
+        case .merchant: String(localized: "商家")
+        case .project: String(localized: "项目")
+        }
+    }
+}
+
 // MARK: - Member Report Types
 
 /// L1: 成员支出份额项
@@ -424,6 +438,11 @@ final class ReportViewModel {
 
     // MARK: Member Report State
     static let unassignedMemberUUID = UUID(uuidString: "11111111-1111-1111-1111-111111111111")!
+    /// 成员饼图配色 — 差异明显的 8 色调色板
+    static let memberColorHexes = [
+        "#FF6B6B", "#4ECDC4", "#FFD93D", "#6C5CE7",
+        "#A8E6CF", "#74B9FF", "#FF8A80", "#B388FF",
+    ]
     var memberExpenses: [MemberExpenseItem] = []
     var selectedMemberID: UUID?
     var selectedMemberName: String { memberExpenses.first(where: { $0.id == selectedMemberID })?.name ?? "" }
@@ -446,6 +465,46 @@ final class ReportViewModel {
         if id == Self.unassignedMemberUUID { return true }
         return memberCategoryExpenses.isEmpty
     }
+
+    // MARK: Dimension Report State (商家/项目多维度占比)
+    /// 维度色板，复用成员色板
+    static let dimensionColorHexes = memberColorHexes
+    static let unassignedDimensionUUID = UUID(uuidString: "22222222-2222-2222-2222-222222222222")!
+    var dimensionExpenses: [CategoryExpenseItem] = []
+    /// Donut version: top 6 + "其他" aggregate (饼图用)
+    var dimensionDonutItems: [CategoryExpenseItem] = []
+    var selectedDimensionID: UUID?
+    var selectedDimensionName: String { dimensionExpenses.first(where: { $0.id == selectedDimensionID })?.name ?? "" }
+    var dimensionDrillDownTransactions: [Transaction] = []
+    /// Project drill-down: full category tree + tx mapping
+    var projectRootCategories: [CategoryExpenseItem] = []
+    var projectTXByCategory: [UUID: [Transaction]] = [:]
+    var projectSelectedCategoryID: UUID?
+    var projectSelectedCategoryName: String {
+        guard let id = projectSelectedCategoryID else { return selectedDimensionName }
+        let allItems = projectRootCategories + projectRootCategories.flatMap(\.children)
+        return allItems.first(where: { $0.id == id })?.name ?? selectedDimensionName
+    }
+    var projectDisplayCategories: [CategoryExpenseItem] {
+        guard let id = projectSelectedCategoryID else { return projectRootCategories }
+        for top in projectRootCategories {
+            if top.id == id, !top.children.isEmpty { return top.children }
+            if let child = top.children.first(where: { $0.id == id }), !child.children.isEmpty { return child.children }
+        }
+        return []
+    }
+    var projectIsShowingTransactions: Bool {
+        guard let id = projectSelectedCategoryID else { return false }
+        let allItems = projectRootCategories + projectRootCategories.flatMap(\.children)
+        guard let item = allItems.first(where: { $0.id == id }) else { return false }
+        return item.children.isEmpty
+    }
+    var projectDisplayTransactions: [Transaction] {
+        guard let id = projectSelectedCategoryID else { return [] }
+        return projectTXByCategory[id] ?? []
+    }
+    /// Cached transactions for dimension drill-down
+    private var dimensionAllExpenseTx: [Transaction] = []
 
     private var currentCategories: [CategoryExpenseItem] {
         categoryType == .expense ? categoryExpenses : categoryIncomes
@@ -1403,6 +1462,256 @@ final class ReportViewModel {
         selectedMemberID = nil
     }
 
+    // MARK: - Dimension Data Loading (商家/项目多维度占比)
+
+    func loadDimensionData(
+        type: DimensionType,
+        ledger: Ledger,
+        transactionService: TransactionServiceProtocol,
+        merchantService: MerchantServiceProtocol,
+        projectService: ProjectServiceProtocol,
+        categoryService: CategoryServiceProtocol,
+        context: NSManagedObjectContext
+    ) {
+        guard let range = selectedPeriod.dateRange else { return }
+
+        // Clear stale drill-down state from previous loads
+        dimensionDrillDownTransactions = []
+        projectRootCategories = []
+        projectTXByCategory = [:]
+        projectSelectedCategoryID = nil
+
+        let ledgerID = ledger.id
+        let fetch = NSFetchRequest<Transaction>(entityName: "Transaction")
+        fetch.predicate = NSPredicate(format: "ledger.id == %@ AND date >= %@ AND date < %@", ledgerID as CVarArg, range.lowerBound as CVarArg, range.upperBound as CVarArg)
+        fetch.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+        let all = (try? context.fetch(fetch)) ?? []
+
+        let expenseTx = all
+            .excludingReimbursementTransactions()
+            .filter { t in
+                guard t.type == .expense else { return false }
+                guard !t.isSplitParent else { return false }
+                return true
+            }
+
+        dimensionAllExpenseTx = expenseTx
+
+        switch type {
+        case .merchant:
+            let merchants = (try? merchantService.fetchMerchants(for: ledger, context: context)) ?? []
+            let lookup = Dictionary(uniqueKeysWithValues: merchants.map { ($0.id, $0) })
+
+            var totals: [UUID: Decimal] = [:]
+            var unassigned: Decimal = 0
+            for t in expenseTx {
+                if let mid = t.merchant?.id {
+                    totals[mid, default: 0] += t.netExpenseAmount
+                } else {
+                    unassigned += t.netExpenseAmount
+                }
+            }
+
+            let grandTotal = totals.values.reduce(0, +) + unassigned
+            guard grandTotal > 0 else { dimensionExpenses = []; dimensionDonutItems = []; return }
+
+            let sorted = totals.sorted { $0.value > $1.value }
+            let cap = 6
+
+            // Full list (all items, for progress bar list)
+            dimensionExpenses = sorted.enumerated().compactMap { idx, entry in
+                let (mid, amt) = entry
+                guard let m = lookup[mid] else { return nil }
+                return CategoryExpenseItem(
+                    id: mid, name: m.name, iconName: "bag",
+                    colorHex: Self.dimensionColorHexes[idx % Self.dimensionColorHexes.count],
+                    amount: amt,
+                    percentage: Double(truncating: (amt / grandTotal) as NSNumber),
+                    parentID: nil, children: []
+                )
+            }
+
+            // Donut: top 6 + "其他" aggregate
+            dimensionDonutItems = sorted.prefix(cap).enumerated().compactMap { idx, entry in
+                let (mid, amt) = entry
+                guard let m = lookup[mid] else { return nil }
+                return CategoryExpenseItem(
+                    id: mid, name: m.name, iconName: "bag",
+                    colorHex: Self.dimensionColorHexes[idx % Self.dimensionColorHexes.count],
+                    amount: amt,
+                    percentage: Double(truncating: (amt / grandTotal) as NSNumber),
+                    parentID: nil, children: []
+                )
+            }
+            if sorted.count > cap {
+                let otherAmount = sorted.dropFirst(cap).map(\.value).reduce(0, +)
+                if otherAmount > 0 {
+                    dimensionDonutItems.append(CategoryExpenseItem(
+                        id: UUID(), name: "···",
+                        iconName: "ellipsis", colorHex: "#E0E0E0",
+                        amount: otherAmount,
+                        percentage: Double(truncating: (otherAmount / grandTotal) as NSNumber),
+                        parentID: nil, children: []
+                    ))
+                }
+            }
+
+            if unassigned > 0 {
+                let ue = CategoryExpenseItem(
+                    id: Self.unassignedDimensionUUID, name: String(localized: "未标记商家"),
+                    iconName: "questionmark", colorHex: "#9E9E9E",
+                    amount: unassigned,
+                    percentage: Double(truncating: (unassigned / grandTotal) as NSNumber),
+                    parentID: nil, children: []
+                )
+                dimensionExpenses.append(ue)
+                dimensionDonutItems.append(ue)
+            }
+
+        case .project:
+            let projects = (try? projectService.fetchProjects(for: ledger, context: context)) ?? []
+            let lookup = Dictionary(uniqueKeysWithValues: projects.map { ($0.id, $0) })
+
+            var totals: [UUID: Decimal] = [:]
+            var unassigned: Decimal = 0
+            for t in expenseTx {
+                if let pid = t.project?.id {
+                    totals[pid, default: 0] += t.netExpenseAmount
+                } else {
+                    unassigned += t.netExpenseAmount
+                }
+            }
+
+            let grandTotal = totals.values.reduce(0, +) + unassigned
+            guard grandTotal > 0 else { dimensionExpenses = []; dimensionDonutItems = []; return }
+
+            let sorted = totals.sorted { $0.value > $1.value }
+            let cap = 6
+
+            // Full list (all items, for progress bar list)
+            dimensionExpenses = sorted.enumerated().compactMap { idx, entry in
+                let (pid, amt) = entry
+                guard let p = lookup[pid] else { return nil }
+                return CategoryExpenseItem(
+                    id: pid, name: p.name, iconName: "folder",
+                    colorHex: Self.dimensionColorHexes[idx % Self.dimensionColorHexes.count],
+                    amount: amt,
+                    percentage: Double(truncating: (amt / grandTotal) as NSNumber),
+                    parentID: nil, children: []
+                )
+            }
+
+            // Donut: top 6 + "其他" aggregate
+            dimensionDonutItems = sorted.prefix(cap).enumerated().compactMap { idx, entry in
+                let (pid, amt) = entry
+                guard let p = lookup[pid] else { return nil }
+                return CategoryExpenseItem(
+                    id: pid, name: p.name, iconName: "folder",
+                    colorHex: Self.dimensionColorHexes[idx % Self.dimensionColorHexes.count],
+                    amount: amt,
+                    percentage: Double(truncating: (amt / grandTotal) as NSNumber),
+                    parentID: nil, children: []
+                )
+            }
+            if sorted.count > cap {
+                let otherAmount = sorted.dropFirst(cap).map(\.value).reduce(0, +)
+                if otherAmount > 0 {
+                    dimensionDonutItems.append(CategoryExpenseItem(
+                        id: UUID(), name: "···",
+                        iconName: "ellipsis", colorHex: "#E0E0E0",
+                        amount: otherAmount,
+                        percentage: Double(truncating: (otherAmount / grandTotal) as NSNumber),
+                        parentID: nil, children: []
+                    ))
+                }
+            }
+
+            if unassigned > 0 {
+                let ue = CategoryExpenseItem(
+                    id: Self.unassignedDimensionUUID, name: String(localized: "未标记项目"),
+                    iconName: "questionmark", colorHex: "#9E9E9E",
+                    amount: unassigned,
+                    percentage: Double(truncating: (unassigned / grandTotal) as NSNumber),
+                    parentID: nil, children: []
+                )
+                dimensionExpenses.append(ue)
+                dimensionDonutItems.append(ue)
+            }
+        }
+
+        // Validate selection
+        if let sel = selectedDimensionID, !dimensionExpenses.contains(where: { $0.id == sel }) {
+            selectedDimensionID = nil
+        }
+    }
+
+    func selectDimensionItem(_ id: UUID, type: DimensionType, categoryService: CategoryServiceProtocol, ledger: Ledger, context: NSManagedObjectContext) {
+        if selectedDimensionID == id {
+            selectedDimensionID = nil
+            dimensionDrillDownTransactions = []
+            projectRootCategories = []
+            projectTXByCategory = [:]
+            projectSelectedCategoryID = nil
+        } else {
+            selectedDimensionID = id
+            let filtered: [Transaction]
+            if id == Self.unassignedDimensionUUID {
+                switch type {
+                case .merchant: filtered = dimensionAllExpenseTx.filter { $0.merchant == nil }
+                case .project:  filtered = dimensionAllExpenseTx.filter { $0.project == nil }
+                }
+            } else {
+                filtered = dimensionAllExpenseTx.filter { $0.merchant?.id == id || $0.project?.id == id }
+            }
+
+            if type == .merchant {
+                // 商家 → 直接进交易明细
+                dimensionDrillDownTransactions = filtered
+                    .filter { $0.type == .expense && !$0.isSplitParent }
+                    .excludingReimbursementTransactions()
+            } else {
+                // 项目 → 构建完整分类层级树，支持多级下钻
+                let result = buildCategoryItems(
+                    from: filtered,
+                    type: .expense,
+                    categoryService: categoryService,
+                    ledger: ledger,
+                    context: context
+                )
+                projectRootCategories = result.items
+                projectTXByCategory = result.txMap
+                projectSelectedCategoryID = nil
+                dimensionDrillDownTransactions = []
+            }
+        }
+    }
+
+    func goBackDimension() {
+        selectedDimensionID = nil
+    }
+
+    /// Project: tap category for hierarchical drill-down.
+    /// Leaf vs non-leaf distinction handled by `projectIsShowingTransactions`.
+    func selectProjectCategory(_ categoryID: UUID) {
+        projectSelectedCategoryID = categoryID
+    }
+
+    func goBackProjectLevel() {
+        guard let current = projectSelectedCategoryID else {
+            selectedDimensionID = nil
+            return
+        }
+        // Check if we're at sub-category level (parent of current is a root category)
+        for root in projectRootCategories {
+            if root.children.contains(where: { $0.id == current }) {
+                projectSelectedCategoryID = root.id  // back to root level
+                return
+            }
+        }
+        // At root level → back to project list
+        projectSelectedCategoryID = nil
+    }
+
     // MARK: - Member Split (category view overlay)
 
     /// Compute per-category member splits for the current display categories.
@@ -1464,10 +1773,11 @@ final class ReportViewModel {
     /// Computes from cached transactions if memberExpenses hasn't been loaded (e.g., in category tab).
     func buildMemberDonutCategories(memberService: MemberServiceProtocol, ledger: Ledger, context: NSManagedObjectContext) {
         if !memberExpenses.isEmpty {
-            memberDonutCategories = memberExpenses.map { m in
+            memberDonutCategories = memberExpenses.enumerated().map { idx, m in
                 CategoryExpenseItem(
                     id: m.id, name: m.name, iconName: m.avatar,
-                    colorHex: "", amount: m.amount, percentage: m.percentage,
+                    colorHex: Self.memberColorHexes[idx % Self.memberColorHexes.count],
+                    amount: m.amount, percentage: m.percentage,
                     parentID: nil, children: []
                 )
             }
@@ -1491,20 +1801,22 @@ final class ReportViewModel {
         let grandTotal = totals.values.reduce(0, +) + unassigned
         guard grandTotal > 0 else { memberDonutCategories = []; return }
 
-        var items: [CategoryExpenseItem] = totals.compactMap { mid, amt in
+        var items: [CategoryExpenseItem] = totals.sorted { $0.value > $1.value }.enumerated().compactMap { idx, entry in
+            let (mid, amt) = entry
             guard let m = memberLookup[mid] else { return nil }
             return CategoryExpenseItem(
                 id: mid, name: m.name, iconName: m.avatar,
-                colorHex: "", amount: amt,
+                colorHex: Self.memberColorHexes[idx % Self.memberColorHexes.count],
+                amount: amt,
                 percentage: Double(truncating: (amt / grandTotal) as NSNumber),
                 parentID: nil, children: []
             )
-        }.sorted { $0.amount > $1.amount }
+        }
 
         if unassigned > 0 {
             items.append(CategoryExpenseItem(
                 id: Self.unassignedMemberUUID, name: String(localized: "未标记成员"),
-                iconName: "person.crop.circle.badge.questionmark", colorHex: "",
+                iconName: "person.crop.circle.badge.questionmark", colorHex: "#9E9E9E",
                 amount: unassigned,
                 percentage: Double(truncating: (unassigned / grandTotal) as NSNumber),
                 parentID: nil, children: []

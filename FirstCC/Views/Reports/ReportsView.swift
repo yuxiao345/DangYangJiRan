@@ -10,15 +10,15 @@ enum ReportType: CaseIterable {
         switch self {
         case .category: String(localized: "分类占比")
         case .trend: String(localized: "收支趋势")
-        case .member: String(localized: "成员支出")
+        case .member: String(localized: "多维分析")
         }
     }
 
     var supportedPeriods: [ReportPeriod] {
         switch self {
         case .category: [.thisMonth, .thisYear]
-        case .trend: [.lastYear, .last2Years, .last3Years]
-        case .member: [.thisMonth, .last3Months, .last6Months, .lastYear]
+        case .trend: [.thisYear, .lastYear]
+        case .member: [.thisMonth, .thisYear]
         }
     }
 
@@ -40,6 +40,7 @@ struct ReportsView: View {
     @State private var isUsingCustomRange = false
     @State private var customStartDate = Date().startOfMonth
     @State private var customEndDate = Date()
+    @State private var selectedDimension: DimensionType = .merchant
 
     var body: some View {
         NavigationStack {
@@ -87,13 +88,21 @@ struct ReportsView: View {
                             .transition(.move(edge: .top).combined(with: .opacity))
                     }
 
+                    if selectedReport == .member {
+                        dimensionPicker
+                            .padding(4)
+                            .glassCard(cornerRadius: 14)
+                            .padding(.horizontal, 16)
+                            .padding(.top, 8)
+                    }
+
                     switch selectedReport {
                     case .category:
                         categoryContent
                     case .trend:
                         trendReport
                     case .member:
-                        memberContent
+                        dimensionContent
                     }
                 }
             }
@@ -240,15 +249,20 @@ struct ReportsView: View {
     private var backSwipe: some Gesture {
         DragGesture(minimumDistance: 40, coordinateSpace: .global)
             .onEnded { value in
-                let isDrilledDown = viewModel.selectedCategoryID != nil || viewModel.selectedMemberID != nil
+                let isDrilledDown = viewModel.selectedCategoryID != nil || viewModel.selectedMemberID != nil || viewModel.selectedDimensionID != nil
                 guard isDrilledDown else { return }
-                // 仅响应从左边缘发起的水平右滑
                 let isFromLeftEdge = value.startLocation.x < 44
                 let isRightSwipe = value.translation.width > 80
                 let isHorizontal = abs(value.translation.width) > abs(value.translation.height)
                 if isFromLeftEdge && isRightSwipe && isHorizontal {
                     if viewModel.selectedMemberID != nil {
                         viewModel.goBackMember()
+                    } else if viewModel.selectedDimensionID != nil {
+                        if viewModel.projectSelectedCategoryID != nil {
+                            viewModel.goBackProjectLevel()
+                        } else {
+                            viewModel.goBackDimension()
+                        }
                     } else {
                         viewModel.goBack()
                     }
@@ -326,7 +340,7 @@ struct ReportsView: View {
                     )
                     : []
             )
-            .padding(.vertical, isUsingCustomRange ? 4 : 8)
+            .padding(.vertical, isUsingCustomRange ? 6 : 8)
         }
     }
 
@@ -335,60 +349,107 @@ struct ReportsView: View {
         TrendChartView(dataPoints: viewModel.trendData)
     }
 
-    // MARK: - Member Content
+    // MARK: - Dimension Picker
+
+    private var dimensionPicker: some View {
+        HStack(spacing: 8) {
+            ForEach(DimensionType.allCases, id: \.self) { dim in
+                Button {
+                    selectedDimension = dim
+                    loadData()
+                } label: {
+                    Text(dim.label)
+                        .font(.custom("JetBrainsMono-Medium", fixedSize: 12))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(selectedDimension == dim ? Color.designPrimaryContainer.opacity(0.2) : Color.designSurfaceContainer.opacity(0.6))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .foregroundStyle(selectedDimension == dim ? Color.designOnSurface : Color.designOnSurfaceVariant)
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    // MARK: - Dimension Content (多维分析)
 
     @ViewBuilder
-    private var memberContent: some View {
-        if viewModel.memberExpenses.isEmpty {
+    private var dimensionContent: some View {
+        if viewModel.dimensionExpenses.isEmpty {
             VStack(spacing: 8) {
-                Image(systemName: "person.2")
+                Image(systemName: selectedDimension == .merchant ? "bag" : "folder")
                     .font(.largeTitle)
                     .foregroundStyle(Color.designOnSurfaceVariant)
-                Text(String(localized: "暂无成员支出数据"))
+                Text(selectedDimension == .merchant
+                    ? String(localized: "暂无商家支出数据")
+                    : String(localized: "暂无项目支出数据"))
                     .font(.designBodyMedium)
                     .foregroundStyle(Color.designOnSurfaceVariant)
-                Text(String(localized: "记一笔时点击\"成员\"可为交易标记成员"))
-                    .font(.designBodySmall)
-                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.7))
             }
             .frame(maxWidth: .infinity)
             .padding(.top, 120)
-        } else if viewModel.selectedMemberID != nil {
-            // L2: Member category drill-down (data pre-computed in ViewModel)
+        } else if viewModel.selectedDimensionID != nil, selectedDimension == .merchant {
+            // 商家 → 直接展示交易明细
             CategoryPieChartView(
-                categories: viewModel.memberCategoryExpenses,
-                totalExpense: viewModel.memberCategoryExpenses.map(\.amount).reduce(0, +),
-                centerTitle: viewModel.selectedMemberName,
+                categories: [],
+                totalExpense: viewModel.dimensionDrillDownTransactions.map { $0.netExpenseAmount }.reduce(0, +),
+                centerTitle: viewModel.selectedDimensionName,
                 isDrilledDown: true,
                 onCategoryTap: { _ in },
-                onCenterTap: { viewModel.goBackMember() },
+                onCenterTap: { viewModel.goBackDimension() },
+                onSelectTransaction: { tx in selectedTransaction = tx },
+                transactions: viewModel.dimensionDrillDownTransactions
+            )
+            .padding(.vertical, 8)
+        } else if viewModel.selectedDimensionID != nil, selectedDimension == .project {
+            // 项目 → 层级下钻
+            if viewModel.projectIsShowingTransactions {
+                // Leaf category → transactions
+                CategoryPieChartView(
+                    categories: [],
+                    totalExpense: viewModel.projectDisplayTransactions.map { $0.netExpenseAmount }.reduce(0, +),
+                    centerTitle: viewModel.projectSelectedCategoryName,
+                    isDrilledDown: true,
+                    onCategoryTap: { _ in },
+                    onCenterTap: { viewModel.goBackProjectLevel() },
+                    onSelectTransaction: { tx in selectedTransaction = tx },
+                    transactions: viewModel.projectDisplayTransactions
+                )
+                .padding(.vertical, 8)
+            } else {
+                // Category level
+                let cats = viewModel.projectDisplayCategories
+                CategoryPieChartView(
+                    categories: cats,
+                    totalExpense: cats.map(\.amount).reduce(0, +),
+                    centerTitle: viewModel.projectSelectedCategoryName,
+                    isDrilledDown: viewModel.projectSelectedCategoryID != nil,
+                    onCategoryTap: { id in viewModel.selectProjectCategory(id) },
+                    onCenterTap: { viewModel.goBackProjectLevel() },
+                    onSelectTransaction: { tx in selectedTransaction = tx },
+                    transactions: nil
+                )
+                .padding(.vertical, 8)
+            }
+        } else {
+            // L1: Dimension overview
+            CategoryPieChartView(
+                categories: viewModel.dimensionExpenses,
+                donutCategories: viewModel.dimensionDonutItems,
+                totalExpense: viewModel.dimensionDonutItems.map(\.amount).reduce(0, +),
+                centerTitle: selectedDimension.label,
+                isDrilledDown: false,
+                onCategoryTap: { id in
+                    guard let ledger = appContainer.currentLedger else { return }
+                    // "其他" aggregate entry is not drill-down-able
+                    guard viewModel.dimensionExpenses.contains(where: { $0.id == id }) else { return }
+                    viewModel.selectDimensionItem(id, type: selectedDimension, categoryService: appContainer.categoryService, ledger: ledger, context: modelContext)
+                },
+                onCenterTap: {},
                 onSelectTransaction: { tx in selectedTransaction = tx },
                 transactions: nil
             )
             .padding(.vertical, 8)
-        } else {
-            // L1 + L3: Member overview + cross table
-            ScrollView {
-                VStack(spacing: 12) {
-                    MemberPieChartView(
-                        members: viewModel.memberExpenses,
-                        onMemberTap: { mid in
-                            guard let ledger = appContainer.currentLedger else { return }
-                            viewModel.selectMember(
-                                mid,
-                                categoryService: appContainer.categoryService,
-                                ledger: ledger,
-                                context: modelContext
-                            )
-                        }
-                    )
-
-                    if !viewModel.memberCategoryCross.isEmpty {
-                        MemberCategoryCrossView(items: viewModel.memberCategoryCross)
-                    }
-                }
-                .padding(.vertical, 8)
-            }
         }
     }
 
@@ -409,11 +470,13 @@ struct ReportsView: View {
                 context: modelContext
             )
         case .member:
-            viewModel.loadMemberData(
+            viewModel.loadDimensionData(
+                type: selectedDimension,
                 ledger: ledger,
                 transactionService: appContainer.transactionService,
+                merchantService: appContainer.merchantService,
+                projectService: appContainer.projectService,
                 categoryService: appContainer.categoryService,
-                memberService: appContainer.memberService,
                 context: modelContext
             )
         }

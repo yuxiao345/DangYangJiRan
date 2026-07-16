@@ -8993,7 +8993,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Custom"
+            "value": "Custom Range"
           }
         },
         "zh-Hans": {
@@ -11391,6 +11391,142 @@
           "stringUnit": {
             "state": "translated",
             "value": "Start Date"
+          }
+        }
+      }
+    },
+    "暂无商家支出数据": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂无商家支出数据"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No merchant expense data"
+          }
+        }
+      }
+    },
+    "暂无项目支出数据": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂无项目支出数据"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No project expense data"
+          }
+        }
+      }
+    },
+    "未标记商家": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未标记商家"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unmarked Merchant"
+          }
+        }
+      }
+    },
+    "未标记项目": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未标记项目"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unmarked Project"
+          }
+        }
+      }
+    },
+    "多维分析": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "多维分析"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Multi-Dimension"
+          }
+        }
+      }
+    },
+    "其他商家": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "其他商家"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other Merchants"
+          }
+        }
+      }
+    },
+    "其他项目": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "其他项目"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other Projects"
+          }
+        }
+      }
+    },
+    "还有%lld项未显示": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还有%lld项未显示"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld more items not shown"
           }
         }
       }
