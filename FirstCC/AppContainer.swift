@@ -109,6 +109,10 @@ final class AppContainer {
 
     func loadStores() async throws {
         try await coreDataStack.loadStores()
+        // Baseline for detecting the first CloudKit import — captured right
+        // after stores load so imports that finish during the identity fetch
+        // below still count.
+        let storesLoadedAt = Date()
 
         // One-time repair: backfill missing member/merchant/project on historical refunds.
         // Must run after stores are loaded so data is available.
@@ -124,13 +128,15 @@ final class AppContainer {
 
         // Wait for CloudKit to import existing data before deciding
         // whether to create a default ledger. Without this, every
-        // reinstall creates a duplicate "我的账本" because CloudKit
-        // hasn't pulled the old one back yet.
+        // fresh install creates a duplicate "我的账本" because CloudKit
+        // hasn't pulled the old one back yet. Only waits when the local
+        // store is empty, so normal launches are unaffected.
         let context = viewContext
         let fetch = NSFetchRequest<Ledger>(entityName: "Ledger")
-        for waitSec in [1, 2, 4] {
-            if (try? context.count(for: fetch)) ?? 0 > 0 { break }
-            try? await Task.sleep(nanoseconds: UInt64(waitSec) * 1_000_000_000)
+        if ((try? context.count(for: fetch)) ?? 0) == 0 {
+            syncStatus = .syncing
+            await coreDataStack.waitForInitialImport(since: storesLoadedAt)
+            syncStatus = .synced
         }
 
         // Recover share acceptance for devices that auto-discovered a shared

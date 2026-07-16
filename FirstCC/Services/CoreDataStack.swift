@@ -233,6 +233,25 @@ final class CoreDataStack {
         }
     }
 
+    /// Wait for the first successful CloudKit import after `baseline`, then for
+    /// the import wave to settle. Used on first launch with an empty local store,
+    /// so existing cloud data lands before a default ledger gets created.
+    /// `baseline` should be captured right after `loadStores()` returns — import
+    /// events can only fire after stores are loaded, so any import newer than
+    /// that counts, even one that completed before this method was called.
+    func waitForInitialImport(since baseline: Date, maxWait: TimeInterval = 30.0) async {
+        let start = Date()
+        DiagnosticLog.log("CoreDataStack: waiting for initial import (maxWait=\(maxWait)s)")
+        while Date().timeIntervalSince(start) < maxWait {
+            if lastImportEventTime > baseline {
+                await waitForImportSettled()
+                return
+            }
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+        }
+        DiagnosticLog.log("CoreDataStack: initial import timeout after \(maxWait)s")
+    }
+
     // MARK: - CloudKit Sharing
 
     func createShareForLedger(id: UUID, name: String) async throws -> CKShare {
