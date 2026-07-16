@@ -138,7 +138,7 @@ Target: `钱伲`, scheme: `钱伲`, bundle ID: `com.qianey.app`, container: `iCl
 | **分期管理** | `Installments/` 目录 | 未实现 | - |
 | **拆分交易管理** | `SplitDetailView`+`SplitEntryRowView`+`SplitFormView` | 内置在 `MacAddTransactionSheet` | - |
 | **App 锁** | `AppLockView` | 未实现（macOS 安全模型不同） | `BiometricAuth` |
-| **Onboarding** | `OnboardingView`+`CreateLedgerView` | `CreateLedgerMacSheet` | - |
+| **Onboarding** | 已替换为仪表盘引导 | 已替换为仪表盘引导 | - |
 
 > ⚠️ 标记的文件已实现但未挂载到 `MacLedgerDetailView` 导航中（仅链接了分类和成员管理），需要补充导航入口。
 
