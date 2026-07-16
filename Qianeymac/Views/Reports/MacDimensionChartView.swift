@@ -213,7 +213,7 @@ struct MacDimensionChartView: View {
             Image(systemName: "chart.pie.fill")
                 .font(.system(size: 40))
                 .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
-            Text(String(localized: "暂无支出数据"))
+            Text("暂无支出数据")
                 .font(.designBodyMedium)
                 .foregroundStyle(Color.designOnSurfaceVariant)
         }

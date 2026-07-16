@@ -76,13 +76,7 @@ struct MacCategoryChartView: View {
                     isDrilledDown: isDrilledDown,
                     categoryType: $categoryType,
                     onCategoryTap: memberSplitActive ? { _ in } : onCategoryTap,
-                    onCenterTap: {
-                        if memberSplitActive {
-                            isMemberSplitOn?.wrappedValue = false
-                        } else {
-                            onCenterTap()
-                        }
-                    },
+                    onCenterTap: { onCenterTap() },
                     pieProgress: $pieProgress,
                     explodedIndex: $explodedIndex,
                     hoveredIndex: $hoveredIndex
@@ -169,7 +163,7 @@ struct MacCategoryChartView: View {
             Image(systemName: "chart.pie.fill")
                 .font(.system(size: 40))
                 .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
-            Text(String(localized: "暂无支出数据"))
+            Text("暂无支出数据")
                 .font(.designBodyMedium)
                 .foregroundStyle(Color.designOnSurfaceVariant)
         }

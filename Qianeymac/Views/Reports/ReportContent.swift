@@ -435,7 +435,7 @@ struct ReportDetailContent: View {
 
     @ViewBuilder
     private var dimensionContent: some View {
-        if viewModel.projectIsShowingTransactions {
+        if viewModel.projectIsShowingTransactions && selectedDimension == .project {
             // State 1a: Project leaf category → transaction detail
             MacDimensionChartView(
                 donutItems: [],
