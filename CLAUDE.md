@@ -134,10 +134,10 @@ Target: `钱伲`, scheme: `钱伲`, bundle ID: `com.qianey.app`, container: `iCl
 | **新增/编辑预算** | `AddEditBudgetBookView` | 复用 iOS（共享） | `AddEditBudgetBookView` |
 | **数据导出** | `ExportView` | `MacExportView` ⚠️ 导航未挂载 | `ExportServiceProtocol` |
 | **共享管理** | `CloudSharingView`+`LedgerSettingsView` | `CloudSharingDelegate`+`ShareBadgeView`（toolbar） | `SyncServiceImpl`, `CloudKitShareCoordinator` |
-| **信用卡对账** | `CreditCardReconciliationView` | 未实现 | services |
-| **分期管理** | `Installments/` 目录 | 未实现 | - |
+| **信用卡对账** | `CreditCardReconciliationView` | 暂缓 | services |
+| **分期管理** | `Installments/` 目录 | 不做 | - |
 | **拆分交易管理** | `SplitDetailView`+`SplitEntryRowView`+`SplitFormView` | 内置在 `MacAddTransactionSheet` | - |
-| **App 锁** | `AppLockView` | 未实现（macOS 安全模型不同） | `BiometricAuth` |
+| **App 锁** | `AppLockView` | 不做（macOS 安全模型不同） | `BiometricAuth` |
 | **Onboarding** | 已替换为仪表盘引导 | 已替换为仪表盘引导 | - |
 
 > ⚠️ 标记的文件已实现但未挂载到 `MacLedgerDetailView` 导航中（仅链接了分类和成员管理），需要补充导航入口。
