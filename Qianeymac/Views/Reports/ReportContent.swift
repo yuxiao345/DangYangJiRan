@@ -7,6 +7,7 @@ enum ReportType: String, CaseIterable, Identifiable {
     case assets = "资产变化"
     case budget = "预算执行"
     case allocation = "资产配置"
+    case member = "多维分析"
 
     var id: String { rawValue }
     var icon: String {
@@ -16,6 +17,7 @@ enum ReportType: String, CaseIterable, Identifiable {
         case .assets: "chart.bar"
         case .budget: "gauge.with.dots.needle.33percent"
         case .allocation: "wallet.pass"
+        case .member: "chart.pie"
         }
     }
 
@@ -26,6 +28,7 @@ enum ReportType: String, CaseIterable, Identifiable {
         case .assets:    [.lastYear, .last2Years, .last3Years]
         case .budget:    [.thisMonth, .last3Months]
         case .allocation: [.thisMonth]
+        case .member:    [.thisMonth, .thisYear]
         }
     }
 
@@ -36,6 +39,7 @@ enum ReportType: String, CaseIterable, Identifiable {
         case .assets:    .lastYear
         case .budget:    .thisMonth
         case .allocation: .thisMonth
+        case .member:    .thisMonth
         }
     }
 }
@@ -51,6 +55,7 @@ struct ReportDetailContent: View {
     @State private var viewModel = ReportViewModel()
     @State private var showCustomRange = false
     @State private var bookPickerHighlighted = false
+    @State private var selectedDimension: DimensionType = .merchant
 
     // Custom range: year + month state
     @State private var startYear = Calendar.current.component(.year, from: Self.defaultStartDate)
@@ -80,7 +85,28 @@ struct ReportDetailContent: View {
                     categoryType: $viewModel.categoryType,
                     onCategoryTap: { viewModel.selectCategory($0) },
                     onCenterTap: { viewModel.goBack() },
-                    onSelectTransaction: nil
+                    onSelectTransaction: nil,
+                    isMemberSplitOn: $viewModel.isShowingMemberSplit,
+                    memberDonutCategories: viewModel.memberDonutCategories,
+                    memberTotalExpense: viewModel.memberDonutCategories.map(\.amount).reduce(0, +),
+                    memberSplits: viewModel.categoryMemberSplits,
+                    onToggleMemberSplit: {
+                        guard let ledger = appContainer.currentLedger else { return }
+                        if viewModel.selectedCategoryID == nil {
+                            viewModel.buildMemberDonutCategories(
+                                memberService: appContainer.memberService,
+                                ledger: ledger,
+                                context: modelContext
+                            )
+                        } else {
+                            viewModel.computeCategoryMemberSplits(
+                                for: viewModel.displayCategories,
+                                memberService: appContainer.memberService,
+                                ledger: ledger,
+                                context: modelContext
+                            )
+                        }
+                    }
                 )
             case .assets:
                 MacAssetChartView(dataPoints: viewModel.assetData)
@@ -100,19 +126,33 @@ struct ReportDetailContent: View {
                     netWorth: viewModel.totalAllocationNetWorth,
                     filter: $viewModel.allocationFilter
                 )
+            case .member:
+                dimensionContent
             }
         }
         .frame(maxHeight: .infinity, alignment: .top)
         .designScreen()
         .task(id: reportType) {
+            viewModel.isShowingMemberSplit = false
+            showCustomRange = false
             viewModel.selectedPeriod = reportType.defaultPeriod
             loadData()
         }
-        .onChange(of: viewModel.selectedPeriod) { _, _ in loadData() }
+        .onChange(of: viewModel.selectedPeriod) { _, _ in
+            viewModel.isShowingMemberSplit = false
+            loadData()
+        }
         .onChange(of: viewModel.selectedBudgetBookID) { _, _ in loadData() }
         .onChange(of: viewModel.budgetViewDimension) { _, _ in loadData() }
-        .onChange(of: appContainer.currentLedger?.id) { _, _ in loadData() }
-        .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in loadData() }
+        .onChange(of: selectedDimension) { _, _ in loadData() }
+        .onChange(of: appContainer.currentLedger?.id) { _, _ in
+            viewModel.isShowingMemberSplit = false
+            loadData()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in
+            viewModel.isShowingMemberSplit = false
+            loadData()
+        }
         #if DEBUG
         .toolbar {
             ToolbarItem(placement: .automatic) {
@@ -212,41 +252,10 @@ struct ReportDetailContent: View {
                     .menuStyle(.borderlessButton)
                     .fixedSize()
                 }
+            } else if reportType == .member {
+                periodPillsWithCustomRange
             } else {
-                ForEach(reportType.supportedPeriods, id: \.self) { period in
-                    pickerButton(
-                        label: period.label,
-                        isActive: viewModel.selectedPeriod == period && !isCustomPeriod,
-                        action: {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                viewModel.selectedPeriod = period
-                            }
-                        }
-                    )
-                }
-
-                Button {
-                    showCustomRange = true
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "calendar")
-                        if isCustomPeriod {
-                            Text(customRangeLabel)
-                        }
-                    }
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(
-                        isCustomPeriod ? Color.designOnSurface : Color.designOnSurfaceVariant.opacity(0.7)
-                    )
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 5)
-                    .contentShape(Rectangle())
-                    .background(pillBackground(active: isCustomPeriod))
-                }
-                .buttonStyle(.plain)
-                .popover(isPresented: $showCustomRange) {
-                    customRangePopover
-                }
+                periodPillsWithCustomRange
             }
         }
         .padding(4)
@@ -277,6 +286,44 @@ struct ReportDetailContent: View {
                 .background(pillBackground(active: isActive))
         }
         .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var periodPillsWithCustomRange: some View {
+        ForEach(reportType.supportedPeriods, id: \.self) { period in
+            pickerButton(
+                label: period.label,
+                isActive: viewModel.selectedPeriod == period && !isCustomPeriod,
+                action: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        viewModel.selectedPeriod = period
+                    }
+                }
+            )
+        }
+
+        Button {
+            showCustomRange = true
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "calendar")
+                if isCustomPeriod {
+                    Text(customRangeLabel)
+                }
+            }
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(
+                isCustomPeriod ? Color.designOnSurface : Color.designOnSurfaceVariant.opacity(0.7)
+            )
+            .padding(.horizontal, 12)
+            .padding(.vertical, 5)
+            .contentShape(Rectangle())
+            .background(pillBackground(active: isCustomPeriod))
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $showCustomRange) {
+            customRangePopover
+        }
     }
 
     @ViewBuilder
@@ -384,6 +431,92 @@ struct ReportDetailContent: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    // MARK: - Dimension Content (多维分析)
+
+    @ViewBuilder
+    private var dimensionContent: some View {
+        if viewModel.projectIsShowingTransactions {
+            // State 1a: Project leaf category → transaction detail
+            MacDimensionChartView(
+                donutItems: [],
+                allItems: [],
+                totalExpense: 0,
+                title: "",
+                selectedDimension: $selectedDimension,
+                isDrilledDown: true,
+                transactions: viewModel.projectDisplayTransactions,
+                drillDownTitle: viewModel.projectSelectedCategoryName,
+                drillDownTotal: viewModel.projectDisplayTransactions.map { $0.netExpenseAmount }.reduce(0, +),
+                drillDownCategories: [],
+                onCategoryTap: { _ in },
+                onCenterTap: { viewModel.goBackProjectLevel() },
+                onDrillDownCategoryTap: { _ in }
+            )
+        } else if viewModel.selectedDimensionID != nil && selectedDimension == .merchant {
+            // State 1b: Merchant drill-down → transaction detail
+            MacDimensionChartView(
+                donutItems: [],
+                allItems: [],
+                totalExpense: 0,
+                title: "",
+                selectedDimension: $selectedDimension,
+                isDrilledDown: true,
+                transactions: viewModel.dimensionDrillDownTransactions,
+                drillDownTitle: viewModel.selectedDimensionName,
+                drillDownTotal: viewModel.dimensionDrillDownTransactions.map { $0.netExpenseAmount }.reduce(0, +),
+                drillDownCategories: [],
+                onCategoryTap: { _ in },
+                onCenterTap: { viewModel.goBackDimension() },
+                onDrillDownCategoryTap: { _ in }
+            )
+        } else if viewModel.selectedDimensionID != nil && selectedDimension == .project {
+            // State 2: Project category drill-down
+            let cats = viewModel.projectDisplayCategories
+            MacDimensionChartView(
+                donutItems: [],
+                allItems: [],
+                totalExpense: 0,
+                title: "",
+                selectedDimension: $selectedDimension,
+                isDrilledDown: true,
+                transactions: [],
+                drillDownTitle: viewModel.projectSelectedCategoryName,
+                drillDownTotal: cats.map(\.amount).reduce(0, +),
+                drillDownCategories: cats,
+                onCategoryTap: { _ in },
+                onCenterTap: { viewModel.goBackProjectLevel() },
+                onDrillDownCategoryTap: { viewModel.selectProjectCategory($0) }
+            )
+        } else {
+            // State 3: L1 Dimension overview
+            MacDimensionChartView(
+                donutItems: viewModel.dimensionDonutItems,
+                allItems: viewModel.dimensionExpenses,
+                totalExpense: viewModel.dimensionDonutItems.map(\.amount).reduce(0, +),
+                title: selectedDimension.label,
+                selectedDimension: $selectedDimension,
+                isDrilledDown: false,
+                transactions: [],
+                drillDownTitle: "",
+                drillDownTotal: 0,
+                drillDownCategories: [],
+                onCategoryTap: { id in
+                    guard let ledger = appContainer.currentLedger else { return }
+                    guard viewModel.dimensionExpenses.contains(where: { $0.id == id }) else { return }
+                    viewModel.selectDimensionItem(
+                        id,
+                        type: selectedDimension,
+                        categoryService: appContainer.categoryService,
+                        ledger: ledger,
+                        context: modelContext
+                    )
+                },
+                onCenterTap: {},
+                onDrillDownCategoryTap: { _ in }
+            )
+        }
+    }
+
     // MARK: - Data Loading
 
     private func loadData() {
@@ -418,6 +551,16 @@ struct ReportDetailContent: View {
             viewModel.loadAllocationData(
                 ledger: ledger,
                 accountService: appContainer.accountService,
+                context: modelContext
+            )
+        case .member:
+            viewModel.loadDimensionData(
+                type: selectedDimension,
+                ledger: ledger,
+                transactionService: appContainer.transactionService,
+                merchantService: appContainer.merchantService,
+                projectService: appContainer.projectService,
+                categoryService: appContainer.categoryService,
                 context: modelContext
             )
         }

@@ -14,14 +14,51 @@ struct MacCategoryChartView: View {
     let onCenterTap: () -> Void
     let onSelectTransaction: ((Transaction) -> Void)?
 
+    // MARK: - Member Split Support
+
+    var isMemberSplitOn: Binding<Bool>?
+    var memberDonutCategories: [CategoryExpenseItem] = []
+    var memberTotalExpense: Decimal = 0
+    var memberSplits: [UUID: [CategoryMemberSplit]] = [:]
+    var onToggleMemberSplit: (() -> Void)?
+
     @State private var barProgress: Double = 0
     @State private var pieProgress: Double = 0
     @State private var explodedIndex: Int? = nil
     @State private var hoveredIndex: Int? = nil
 
+    private var memberSplitActive: Bool {
+        isMemberSplitOn?.wrappedValue == true
+    }
+
+    /// L2: member mode + drilled into a category
+    private var isL2MemberMode: Bool {
+        memberSplitActive && isDrilledDown
+    }
+
+    /// L1: member mode at category overview
+    private var isL1MemberMode: Bool {
+        memberSplitActive && !isDrilledDown
+    }
+
+    // MARK: - Computed Donut Data
+
+    /// L1 成员模式：饼图切换为成员占比；L2 保持分类饼图（成员拆分在下方列表中）
+    private var donutCategories: [CategoryExpenseItem] {
+        isL1MemberMode ? memberDonutCategories : categories
+    }
+
+    private var donutTotal: Decimal {
+        isL1MemberMode ? memberTotalExpense : totalExpense
+    }
+
+    private var donutTitle: String {
+        isL1MemberMode ? String(localized: "成员占比") : centerTitle
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            if isShowingTransactions {
+            if isShowingTransactions && !memberSplitActive {
                 TransactionDetailList(
                     transactions: transactions,
                     centerTitle: centerTitle,
@@ -33,28 +70,39 @@ struct MacCategoryChartView: View {
                 emptyView
             } else {
                 DonutChart(
-                    categories: categories,
-                    totalExpense: totalExpense,
-                    centerTitle: centerTitle,
+                    categories: donutCategories,
+                    totalExpense: donutTotal,
+                    centerTitle: donutTitle,
                     isDrilledDown: isDrilledDown,
                     categoryType: $categoryType,
-                    onCategoryTap: onCategoryTap,
-                    onCenterTap: onCenterTap,
+                    onCategoryTap: memberSplitActive ? { _ in } : onCategoryTap,
+                    onCenterTap: {
+                        if memberSplitActive {
+                            isMemberSplitOn?.wrappedValue = false
+                        } else {
+                            onCenterTap()
+                        }
+                    },
                     pieProgress: $pieProgress,
                     explodedIndex: $explodedIndex,
                     hoveredIndex: $hoveredIndex
                 )
                 .glassCard(cornerRadius: 20)
+                .overlay(alignment: .bottomTrailing) {
+                    memberToggleButton
+                }
                 .padding(.horizontal, 24)
                 .padding(.top, 4)
                 .padding(.bottom, 20)
+
                 ScrollView {
                     CategoryBarList(
-                        categories: categories,
+                        categories: isL1MemberMode ? memberDonutCategories : categories,
                         barProgress: barProgress,
                         hoveredIndex: $hoveredIndex,
                         explodedIndex: $explodedIndex,
-                        onCategoryTap: onCategoryTap
+                        onCategoryTap: memberSplitActive ? { _ in } : onCategoryTap,
+                        memberSplits: isL2MemberMode ? memberSplits : [:]
                     )
                     .padding(.vertical, 12)
                 }
@@ -64,6 +112,41 @@ struct MacCategoryChartView: View {
         .onChange(of: categories.map(\.id)) { _, _ in
             explodedIndex = nil
             triggerAnimations()
+        }
+        .onChange(of: memberSplitActive) { _, _ in
+            explodedIndex = nil
+            triggerAnimations()
+        }
+    }
+
+    // MARK: - Member Toggle Button
+
+    @ViewBuilder
+    private var memberToggleButton: some View {
+        if isMemberSplitOn != nil {
+            Button {
+                isMemberSplitOn?.wrappedValue.toggle()
+                if isMemberSplitOn?.wrappedValue == true {
+                    onToggleMemberSplit?()
+                }
+            } label: {
+                Image(systemName: "person.2.circle.fill")
+                    .font(.title3)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(
+                        memberSplitActive
+                            ? Color.designAccentGreen
+                            : Color.designOnSurfaceVariant
+                    )
+                    .padding(10)
+                    .background(
+                        Circle()
+                            .fill(.ultraThinMaterial)
+                            .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
+                    )
+            }
+            .buttonStyle(.plain)
+            .padding(12)
         }
     }
 
@@ -86,61 +169,10 @@ struct MacCategoryChartView: View {
             Image(systemName: "chart.pie.fill")
                 .font(.system(size: 40))
                 .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
-            Text("暂无支出数据")
+            Text(String(localized: "暂无支出数据"))
                 .font(.designBodyMedium)
                 .foregroundStyle(Color.designOnSurfaceVariant)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-}
-
-// MARK: - Transaction Detail List
-
-private struct TransactionDetailList: View {
-    let transactions: [Transaction]
-    let centerTitle: String
-    let totalExpense: Decimal
-    let onBack: () -> Void
-    let onSelectTransaction: ((Transaction) -> Void)?
-
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Button {
-                    onBack()
-                } label: {
-                    Image(systemName: "chevron.left")
-                }
-                .buttonStyle(DesignGlassCircleButton())
-                Text(centerTitle)
-                    .font(.designBodyMedium)
-                    .foregroundStyle(Color.designOnSurface)
-                    .padding(.leading, 8)
-                Spacer()
-                CurrencyText(amount: totalExpense, currencyCode: "", size: 18, foregroundColor: Color.designOnSurface)
-                    .fontWeight(.bold)
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 12)
-
-            Divider()
-                .padding(.horizontal, 24)
-
-            ScrollView {
-                LazyVStack(spacing: 6) {
-                    ForEach(transactions.sorted(by: { $0.date > $1.date }), id: \.id) { tx in
-                        Button {
-                            onSelectTransaction?(tx)
-                        } label: {
-                            TransactionRowView(transaction: tx)
-                                .padding(.vertical, 2)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 12)
-            }
-        }
     }
 }
