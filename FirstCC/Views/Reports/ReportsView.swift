@@ -83,7 +83,7 @@ struct ReportsView: View {
                     if isUsingCustomRange {
                         customDatePickers
                             .padding(.horizontal, 16)
-                            .padding(.vertical, 6)
+                            .padding(.top, 6)
                             .transition(.move(edge: .top).combined(with: .opacity))
                     }
 
@@ -326,7 +326,7 @@ struct ReportsView: View {
                     )
                     : []
             )
-            .padding(.vertical, 4)
+            .padding(.vertical, isUsingCustomRange ? 4 : 8)
         }
     }
 
