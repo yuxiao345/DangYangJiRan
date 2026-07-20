@@ -713,8 +713,12 @@ struct MacAssetAllocationView: View {
         let h = max(1, cellH - padding * 2)
 
         return ZStack {
-            // Tappable overlay
+            // Tappable overlay with visible border for debug
             Color.clear
+                .overlay(
+                    Rectangle()
+                        .stroke(Color.red, lineWidth: 1)
+                )
                 .contentShape(Rectangle())
                 .frame(width: cellW, height: cellH)
                 .offset(x: cellX + cellW / 2, y: cellY + cellH / 2)
@@ -739,8 +743,8 @@ struct MacAssetAllocationView: View {
                         RoundedRectangle(cornerRadius: 6)
                             .stroke(Color.white.opacity(0.25), lineWidth: 0.5)
                     )
-                // Debug: show actual pixel bounds (always visible but tiny)
-                Text(String(format: "%.0f,%.0f", cellX, cellY))
+                // Debug: show actual pixel bounds
+                Text(String(format: "%.0f,%.0f %.0fx%.0f", cellX, cellY, cellW, cellH))
                     .font(.system(size: 5, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.4))
                     .allowsHitTesting(false)
