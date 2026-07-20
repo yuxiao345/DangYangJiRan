@@ -317,6 +317,7 @@
 		FD2C9721768BC0DECAFBD9EA /* LedgerRole.swift in Sources */ = {isa = PBXBuildFile; fileRef = 123B9066865398E03B8DD922 /* LedgerRole.swift */; };
 		FD91B103255DEB923850049C /* CloudKitConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FD37181CF946710701C84CD /* CloudKitConfig.swift */; };
 		FFD3CC4FA09133AB7E0CFC53 /* AccountDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89DBFB59681FF75B16E21478 /* AccountDetailView.swift */; };
+		9EEC8553E633E7215974753A /* AccountAllocationItem+Aggregate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2003AB9FBA8CF16B3F2DF283 /* AccountAllocationItem+Aggregate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -532,6 +533,7 @@
 		FB18074394D7CADFC89B2D67 /* CurrencyServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyServiceProtocol.swift; sourceTree = "<group>"; };
 		FD9C98A4532441F197C92D1E /* SplitFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitFormView.swift; sourceTree = "<group>"; };
 		FFDB4DF6538746E0A70203A4 /* RecurringRuleEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringRuleEntity.swift; sourceTree = "<group>"; };
+		2003AB9FBA8CF16B3F2DF283 /* AccountAllocationItem+Aggregate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AccountAllocationItem+Aggregate.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -657,6 +659,7 @@
 			isa = PBXGroup;
 			children = (
 				B85BA1C0261A4AB1A343A943 /* AccountEntity.swift */,
+				2003AB9FBA8CF16B3F2DF283 /* AccountAllocationItem+Aggregate.swift */,
 				7AD069FBC4BC4DA79CAE9FFD /* BudgetBookEntity.swift */,
 				CEC88579A77D47DBAA48EFDB /* BudgetItemEntity.swift */,
 				6ADD4AF2825146B684DE7F18 /* CategoryEntity.swift */,
@@ -1454,6 +1457,7 @@
 				9A8E07B22FCD5537004FCB60 /* ExchangeRateEntity.swift in Sources */,
 				9A8E07B32FCD5537004FCB60 /* LedgerEntity.swift in Sources */,
 				9A8E07B42FCD5537004FCB60 /* AccountEntity.swift in Sources */,
+				9EEC8553E633E7215974753A /* AccountAllocationItem+Aggregate.swift in Sources */,
 				9A8E07B52FCD5537004FCB60 /* TransactionEntity.swift in Sources */,
 				9A8E07BD2FCD5595004FCB60 /* FirstCC.xcdatamodeld in Sources */,
 				9A8E07B62FCD5537004FCB60 /* CreditCardStatementEntity.swift in Sources */,

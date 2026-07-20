@@ -180,6 +180,8 @@ struct AccountAllocationItem: Identifiable {
     let id: UUID
     let name: String
     let accountType: AccountType
+    /// 自定义类型名（仅 accountType == .other 时有值），用于按具体自定义类型分组
+    let customTypeName: String?
     let iconName: String
     let balance: Decimal
     let percentage: Double
@@ -1157,6 +1159,7 @@ final class ReportViewModel {
                 id: account.id,
                 name: account.name,
                 accountType: account.type,
+                customTypeName: account.customTypeName,
                 iconName: account.iconName ?? account.type.systemIcon,
                 balance: bal,
                 percentage: totalAbs > 0 ? Double(truncating: (abs(bal) / totalAbs) as NSNumber) : 0,

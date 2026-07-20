@@ -91,6 +91,7 @@ final class DashboardViewModel {
                 let bal = accountBalances[a.id] ?? 0
                 return AccountAllocationItem(
                     id: a.id, name: a.name, accountType: a.type,
+                    customTypeName: a.customTypeName,
                     iconName: a.iconName ?? a.type.systemIcon, balance: bal,
                     percentage: totalAbs > 0 ? Double(truncating: (abs(bal) / totalAbs) as NSNumber) : 0,
                     isLiability: bal < 0

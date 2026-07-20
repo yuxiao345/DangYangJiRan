@@ -24,6 +24,9 @@ struct DashboardContentColumn: View {
     @State private var categoryHoveredIndex: Int?
     @State private var selectedTransaction: Transaction?
 
+    // MARK: - Allocation Drill State
+    @State private var allocationDrilled: AccountAllocationItem.DrillKey?
+
     // MARK: - Layout
 
     var body: some View {
@@ -266,26 +269,39 @@ struct DashboardContentColumn: View {
     // MARK: - 资产配置瀑布
 
     private var allocationCard: some View {
-        let assets = viewModel.allocationItems.filter { !$0.isLiability }
-        let liabilities = viewModel.allocationItems.filter { $0.isLiability }
-        let totalAssets = assets.reduce(Decimal.zero) { $0 + $1.balance }
+        let totalAssets = viewModel.allocationItems.filter { !$0.isLiability }.reduce(Decimal.zero) { $0 + $1.balance }
 
         return VStack(alignment: .leading, spacing: 8) {
-            Button {
-                onNavigate?(.allocation)
-            } label: {
-                HStack {
-                    Text("资产配置")
-                        .font(.designBodyMedium.weight(.bold))
-                        .foregroundStyle(Color.designOnSurface)
+            HStack {
+                Text("资产配置")
+                    .font(.designBodyMedium.weight(.bold))
+                    .foregroundStyle(Color.designOnSurface)
+                    .contentShape(Rectangle())
+                    .onTapGesture { onNavigate?(.allocation) }
+
+                if let key = allocationDrilled {
+                    Spacer()
+                    Button {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { allocationDrilled = nil }
+                    } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: "chevron.left")
+                            Text(String(localized: "全部"))
+                            Text("·")
+                            Image(systemName: key.iconName).font(.system(size: 10))
+                            Text(key.displayName)
+                        }
+                        .font(.system(size: 10))
+                        .foregroundStyle(Color.designOnSurfaceVariant)
+                    }
+                    .buttonStyle(DesignGlassTextButton())
+                } else {
                     Spacer()
                     Image(systemName: "chevron.right")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
                 }
-                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
 
             if viewModel.allocationItems.isEmpty {
                 Text("暂无账户数据")
@@ -294,18 +310,41 @@ struct DashboardContentColumn: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 24)
             } else {
-                waterfallChart(assets: assets, liabilities: liabilities, totalAssets: totalAssets)
+                waterfallChart(totalAssets: totalAssets)
+                    .overlay(alignment: .topTrailing) {
+                        if let key = allocationDrilled {
+                            Text(key.displayName)
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundStyle(Color.designOnSurfaceVariant)
+                                .padding(.horizontal, 6).padding(.vertical, 2)
+                                .background(Capsule().fill(.regularMaterial))
+                                .padding(6)
+                        }
+                    }
             }
         }
         .padding(16)
         .glassCard(cornerRadius: 20)
     }
 
-    private func waterfallChart(assets: [AccountAllocationItem], liabilities: [AccountAllocationItem], totalAssets: Decimal) -> some View {
+    private func waterfallChart(totalAssets: Decimal) -> some View {
+        // 共享聚合：L1 类型聚合；L2 沿用 drilled 键
+        let items = viewModel.allocationItems
+        let nodes: [AccountAllocationItem.AllocationNode]
+        if let key = allocationDrilled {
+            nodes = AllocationAggregator.drillDown(items, to: key)
+        } else {
+            nodes = AllocationAggregator.aggregate(items)
+        }
+        let assetNodes = nodes.filter { !$0.isLiability }
+        let liabNodes = nodes.filter { $0.isLiability }
+        let isL2 = allocationDrilled != nil
+
         // Pre-compute waterfall segments with stable index-based IDs
         struct Segment: Identifiable {
             let id: Int
-            let label: String
+            let axisKey: String   // 唯一 X 分类键（= node.id），避免同名类型两侧挤到同一 X 位置
+            let label: String     // X 轴显示名
             let yStart: Decimal
             let yEnd: Decimal
             let isSummary: Bool
@@ -315,33 +354,40 @@ struct DashboardContentColumn: View {
         var segments: [Segment] = []
         var idx = 0
         var running = Decimal.zero
-        for item in assets {
+        for item in assetNodes {
             let end = running + item.balance
-            segments.append(Segment(id: idx, label: item.name, yStart: running, yEnd: end, isSummary: false, isAsset: true))
+            segments.append(Segment(id: idx, axisKey: item.id, label: item.name, yStart: running, yEnd: end, isSummary: false, isAsset: true))
             idx += 1; running = end
         }
-        segments.append(Segment(id: idx, label: String(localized: "总资产"), yStart: 0, yEnd: totalAssets, isSummary: true, isAsset: true))
-        idx += 1; running = totalAssets
-        for item in liabilities {
+        if !isL2 {
+            segments.append(Segment(id: idx, axisKey: "summary|assets", label: String(localized: "总资产"), yStart: 0, yEnd: totalAssets, isSummary: true, isAsset: true))
+            idx += 1; running = totalAssets
+        }
+        for item in liabNodes {
             let absBal = abs(item.balance)
             let end = running - absBal
-            segments.append(Segment(id: idx, label: item.name, yStart: running, yEnd: end, isSummary: false, isAsset: false))
+            segments.append(Segment(id: idx, axisKey: item.id, label: item.name, yStart: running, yEnd: end, isSummary: false, isAsset: false))
             idx += 1; running = end
         }
-        segments.append(Segment(id: idx, label: String(localized: "净资产"), yStart: 0, yEnd: viewModel.totalBalance, isSummary: true, isAsset: viewModel.totalBalance >= 0))
+        if !isL2 {
+            segments.append(Segment(id: idx, axisKey: "summary|net", label: String(localized: "净资产"), yStart: 0, yEnd: viewModel.totalBalance, isSummary: true, isAsset: viewModel.totalBalance >= 0))
+        }
 
         // Connector: dashed line tracing running total across non-summary bars
         struct ConnectorPoint: Identifiable {
             let id: Int
-            let label: String
+            let axisKey: String
             let value: Decimal
         }
-        let connectorData = segments.filter { !$0.isSummary }.map { ConnectorPoint(id: $0.id, label: $0.label, value: $0.yEnd) }
+        let connectorData = segments.filter { !$0.isSummary }.map { ConnectorPoint(id: $0.id, axisKey: $0.axisKey, value: $0.yEnd) }
+
+        // axisKey → 显示名映射，供 X 轴标签渲染
+        let labelMap = Dictionary(segments.map { ($0.axisKey, $0.label) }, uniquingKeysWith: { first, _ in first })
 
         return Chart {
             ForEach(segments) { seg in
                 BarMark(
-                    x: .value("", seg.label),
+                    x: .value("", seg.axisKey),
                     yStart: .value("Start", seg.yStart),
                     yEnd: .value("End", seg.yEnd),
                     width: .fixed(seg.isSummary ? 36 : 20)
@@ -350,10 +396,9 @@ struct DashboardContentColumn: View {
                 .cornerRadius(seg.isSummary ? 4 : 3)
             }
 
-            // Dashed connector line
             ForEach(connectorData) { point in
                 LineMark(
-                    x: .value("", point.label),
+                    x: .value("", point.axisKey),
                     y: .value("", point.value)
                 )
             }
@@ -365,14 +410,23 @@ struct DashboardContentColumn: View {
                 .lineStyle(StrokeStyle(lineWidth: 1))
         }
         .chartXAxis {
-            AxisMarks { _ in
-                AxisValueLabel()
-                    .font(.system(size: 9))
-                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
+            AxisMarks { value in
+                AxisValueLabel {
+                    if let key = value.as(String.self) {
+                        Text(labelMap[key] ?? key)
+                            .font(.system(size: 9))
+                            .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
+                    }
+                }
             }
         }
         .chartYAxis(.hidden)
         .frame(height: 100)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            // Mini 卡片没有坐标转换，简单方案：点图任意位置返回 L1
+            if allocationDrilled != nil { allocationDrilled = nil }
+        }
     }
 
     // MARK: - 预算消耗速率

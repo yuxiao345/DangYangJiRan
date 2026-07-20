@@ -1,11 +1,16 @@
 import SwiftUI
 import Charts
+#if canImport(AppKit)
+import AppKit
+#endif
 
 // MARK: - Waterfall Item
 
 private struct WaterfallItem: Identifiable {
     let id = UUID()
-    let label: String
+    /// 唯一 X 分类值：避免同名类型（资产/负债两侧）挤到同一 X 位置
+    let axisKey: String
+    let label: String   // X 轴显示名
     let amount: Decimal
     let runningStart: Decimal
     let runningEnd: Decimal
@@ -23,15 +28,27 @@ struct MacAssetAllocationView: View {
     @State private var animTrigger = false
     @State private var barProgress: Double = 0
     @State private var selectedBar: String?
+    /// 瀑布图下钻目标（nil = L1 类型聚合视图；非 nil = L2 该类型账户明细）
+    @State private var drilled: DrillKey?
 
     private var currencyCode: String { "CNY" }
 
-    private var listItems: [AccountAllocationItem] {
-        switch filter {
-        case .all:     return items
-        case .assets:  return items.filter { !$0.isLiability }
-        case .liabilities: return items.filter { $0.isLiability }
-        }
+    // MARK: - Drill-down Model
+
+    /// 下钻/聚合节点类型别名：直接复用共享层 AccountAllocationItem.AllocationNode
+    private typealias AllocationNode = AccountAllocationItem.AllocationNode
+    private typealias DrillKey = AccountAllocationItem.DrillKey
+
+    /// L1：按 (具体类型, 侧) 聚合（共享 helper）
+    private func aggregatedNodes() -> [AllocationNode] { AllocationAggregator.aggregate(items) }
+
+    private var l1AssetNodes: [AllocationNode] { aggregatedNodes().filter { !$0.isLiability } }
+    private var l1LiabilityNodes: [AllocationNode] { aggregatedNodes().filter { $0.isLiability } }
+
+    /// L2：下钻后该类型该侧的账户明细
+    private var drillNodes: [AllocationNode] {
+        guard let key = drilled else { return [] }
+        return AllocationAggregator.drillDown(items, to: key)
     }
 
     private var totalAssets: Decimal {
@@ -45,6 +62,7 @@ struct MacAssetAllocationView: View {
     // MARK: - Waterfall Data
 
     private var waterfallData: [WaterfallItem] {
+        if drilled != nil { return buildDrillWaterfall() }
         switch filter {
         case .all: return buildAllWaterfall()
         case .assets: return buildAssetsWaterfall()
@@ -52,11 +70,20 @@ struct MacAssetAllocationView: View {
         }
     }
 
-    /// Minimum visual bar height to keep tiny amounts (e.g. ¥105 next to ¥500,000) visible
+    /// Minimum visual bar height to keep tiny amounts visible. 必须按**当前显示的侧**取量纲，
+    /// 否则 `.liabilities` 视图下会被 `.all` 全局最大值（通常总资产远大于总负债）压得所有小柱同高。
     private var minBarHeight: Decimal {
-        let maxVal = max(totalAssets, totalLiabilities, netWorth,
-                         items.map { abs($0.balance) }.max() ?? 0)
-        return maxVal > 0 ? maxVal / 50 : 0
+        let scale: Decimal
+        if drilled != nil {
+            scale = drillNodes.reduce(Decimal.zero) { $0 + abs($1.balance) }
+        } else {
+            switch filter {
+            case .all:        scale = max(totalAssets, totalLiabilities)
+            case .assets:     scale = totalAssets
+            case .liabilities: scale = totalLiabilities
+            }
+        }
+        return scale > 0 ? scale / 50 : 0
     }
 
     /// Clamp small bars to a visible height; the logical `end` is returned separately
@@ -70,8 +97,8 @@ struct MacAssetAllocationView: View {
 
     private func buildAllWaterfall() -> [WaterfallItem] {
         var result: [WaterfallItem] = []
-        let assets = items.filter { !$0.isLiability }
-        let liabilities = items.filter { $0.isLiability }
+        let assets = l1AssetNodes
+        let liabilities = l1LiabilityNodes
 
         // 1. Build up: each asset account accumulates left → right
         var running = Decimal.zero
@@ -79,7 +106,7 @@ struct MacAssetAllocationView: View {
             let logicalEnd = running + item.balance
             let (visual, _) = clampedVisual(start: running, logicalEnd: logicalEnd)
             result.append(WaterfallItem(
-                label: item.name, amount: item.balance,
+                axisKey: item.id, label: item.name, amount: item.balance,
                 runningStart: running, runningEnd: visual,
                 isAsset: true, isSummary: false
             ))
@@ -88,7 +115,7 @@ struct MacAssetAllocationView: View {
 
         // 2. Total assets summary bar
         result.append(WaterfallItem(
-            label: String(localized: "总资产"), amount: totalAssets,
+            axisKey: "summary|assets", label: String(localized: "总资产"), amount: totalAssets,
             runningStart: 0, runningEnd: totalAssets,
             isAsset: true, isSummary: true
         ))
@@ -100,7 +127,7 @@ struct MacAssetAllocationView: View {
             let logicalEnd = running - absBal
             let (visual, _) = clampedVisual(start: running, logicalEnd: logicalEnd)
             result.append(WaterfallItem(
-                label: item.name, amount: -absBal,
+                axisKey: item.id, label: item.name, amount: -absBal,
                 runningStart: running, runningEnd: visual,
                 isAsset: false, isSummary: false
             ))
@@ -109,7 +136,7 @@ struct MacAssetAllocationView: View {
 
         // 4. Net worth summary
         result.append(WaterfallItem(
-            label: String(localized: "净资产"), amount: netWorth,
+            axisKey: "summary|net", label: String(localized: "净资产"), amount: netWorth,
             runningStart: 0, runningEnd: netWorth,
             isAsset: netWorth >= 0, isSummary: true
         ))
@@ -119,14 +146,14 @@ struct MacAssetAllocationView: View {
 
     private func buildAssetsWaterfall() -> [WaterfallItem] {
         var result: [WaterfallItem] = []
-        let assets = items.filter { !$0.isLiability }
+        let assets = l1AssetNodes
 
         var running = Decimal.zero
         for item in assets {
             let logicalEnd = running + item.balance
             let (visual, _) = clampedVisual(start: running, logicalEnd: logicalEnd)
             result.append(WaterfallItem(
-                label: item.name, amount: item.balance,
+                axisKey: item.id, label: item.name, amount: item.balance,
                 runningStart: running, runningEnd: visual,
                 isAsset: true, isSummary: false
             ))
@@ -134,7 +161,7 @@ struct MacAssetAllocationView: View {
         }
 
         result.append(WaterfallItem(
-            label: String(localized: "总资产"), amount: totalAssets,
+            axisKey: "summary|assets", label: String(localized: "总资产"), amount: totalAssets,
             runningStart: 0, runningEnd: totalAssets,
             isAsset: true, isSummary: true
         ))
@@ -144,7 +171,7 @@ struct MacAssetAllocationView: View {
 
     private func buildLiabilitiesWaterfall() -> [WaterfallItem] {
         var result: [WaterfallItem] = []
-        let liabilities = items.filter { $0.isLiability }
+        let liabilities = l1LiabilityNodes
 
         // Cascading waterfall: each liability starts from where the previous one ended
         var running = Decimal.zero
@@ -153,7 +180,7 @@ struct MacAssetAllocationView: View {
             let logicalEnd = running - absBal
             let (visual, _) = clampedVisual(start: running, logicalEnd: logicalEnd)
             result.append(WaterfallItem(
-                label: item.name, amount: -absBal,
+                axisKey: item.id, label: item.name, amount: -absBal,
                 runningStart: running, runningEnd: visual,
                 isAsset: false, isSummary: false
             ))
@@ -161,7 +188,7 @@ struct MacAssetAllocationView: View {
         }
 
         result.append(WaterfallItem(
-            label: String(localized: "总负债"), amount: totalLiabilities,
+            axisKey: "summary|liab", label: String(localized: "总负债"), amount: totalLiabilities,
             runningStart: 0, runningEnd: -totalLiabilities,
             isAsset: false, isSummary: true
         ))
@@ -169,17 +196,70 @@ struct MacAssetAllocationView: View {
         return result
     }
 
+    /// L2：下钻某类型后，展开该类型内各账户的瀑布，末尾附该类型小计条
+    private func buildDrillWaterfall() -> [WaterfallItem] {
+        guard let key = drilled else { return [] }
+        var result: [WaterfallItem] = []
+        let nodes = drillNodes
+
+        if key.isLiability {
+            var running = Decimal.zero
+            for node in nodes {
+                let absBal = abs(node.balance)
+                let logicalEnd = running - absBal
+                let (visual, _) = clampedVisual(start: running, logicalEnd: logicalEnd)
+                result.append(WaterfallItem(
+                    axisKey: node.id, label: node.name, amount: -absBal,
+                    runningStart: running, runningEnd: visual,
+                    isAsset: false, isSummary: false
+                ))
+                running = logicalEnd
+            }
+            let subtotal = nodes.reduce(Decimal.zero) { $0 + abs($1.balance) }
+            result.append(WaterfallItem(
+                axisKey: "summary|drill", label: key.displayName, amount: subtotal,
+                runningStart: 0, runningEnd: -subtotal,
+                isAsset: false, isSummary: true
+            ))
+        } else {
+            var running = Decimal.zero
+            for node in nodes {
+                let logicalEnd = running + node.balance
+                let (visual, _) = clampedVisual(start: running, logicalEnd: logicalEnd)
+                result.append(WaterfallItem(
+                    axisKey: node.id, label: node.name, amount: node.balance,
+                    runningStart: running, runningEnd: visual,
+                    isAsset: true, isSummary: false
+                ))
+                running = logicalEnd
+            }
+            let subtotal = nodes.reduce(Decimal.zero) { $0 + $1.balance }
+            result.append(WaterfallItem(
+                axisKey: "summary|drill", label: key.displayName, amount: subtotal,
+                runningStart: 0, runningEnd: subtotal,
+                isAsset: true, isSummary: true
+            ))
+        }
+
+        return result
+    }
+
     /// Thin dashed connector line data — traces the running total across non-summary bars
     private struct ConnectorPoint: Identifiable {
         let id = UUID()
-        let label: String
+        let axisKey: String
         let value: Decimal
     }
 
     private var connectorData: [ConnectorPoint] {
         waterfallData.filter { !$0.isSummary }.map {
-            ConnectorPoint(label: $0.label, value: $0.runningEnd)
+            ConnectorPoint(axisKey: $0.axisKey, value: $0.runningEnd)
         }
+    }
+
+    /// axisKey → 显示名映射，供 X 轴标签渲染（BarMark 用唯一 axisKey 定位，标签显示 label）
+    private var axisLabelMap: [String: String] {
+        Dictionary(waterfallData.map { ($0.axisKey, $0.label) }, uniquingKeysWith: { first, _ in first })
     }
 
     // MARK: - Body
@@ -194,8 +274,20 @@ struct MacAssetAllocationView: View {
             }
         }
         .onAppear(perform: triggerAnimations)
-        .onChange(of: items.map(\.id)) { _, _ in triggerAnimations() }
-        .onChange(of: filter) { _, _ in triggerAnimations() }
+        .onChange(of: items.map(\.id)) { _, _ in drilled = nil; triggerAnimations() }
+        .onChange(of: filter) { _, _ in drilled = nil; triggerAnimations() }
+        .onChange(of: drilled) { _, _ in triggerAnimations() }
+    }
+
+    /// L1 点选类型柱 → 下钻；汇总条/叶子账户柱不响应。
+    /// selectedBar 由 chartXSelection 的悬停命中提供，值为柱子的唯一 axisKey（= 节点 id）。
+    private func handleSelection(_ axisKey: String?) {
+        guard drilled == nil, let axisKey else { return }
+        if let node = aggregatedNodes().first(where: { $0.id == axisKey && $0.drillKey != nil }) {
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                drilled = node.drillKey
+            }
+        }
     }
 
     private var emptyView: some View {
@@ -226,7 +318,7 @@ struct MacAssetAllocationView: View {
                 // Connector: dashed brand-colored running-total trace
                 ForEach(connectorData) { point in
                     LineMark(
-                        x: .value("", point.label),
+                        x: .value("", point.axisKey),
                         y: .value("", point.value)
                     )
                 }
@@ -239,6 +331,9 @@ struct MacAssetAllocationView: View {
                     .lineStyle(StrokeStyle(lineWidth: 1.5))
             }
             .chartXSelection(value: $selectedBar)
+            .simultaneousGesture(TapGesture().onEnded {
+                handleSelection(selectedBar)
+            })
             .chartBackground { _ in
                 LinearGradient(
                     stops: [
@@ -249,10 +344,14 @@ struct MacAssetAllocationView: View {
                 )
             }
             .chartXAxis {
-                AxisMarks(values: .automatic) { _ in
-                    AxisValueLabel()
-                        .font(.system(size: 11))
-                        .foregroundStyle(Color.designOnSurfaceVariant)
+                AxisMarks(values: .automatic) { value in
+                    AxisValueLabel {
+                        if let key = value.as(String.self) {
+                            Text(axisLabelMap[key] ?? key)
+                                .font(.system(size: 11))
+                                .foregroundStyle(Color.designOnSurfaceVariant)
+                        }
+                    }
                 }
             }
             .chartYAxis {
@@ -273,7 +372,10 @@ struct MacAssetAllocationView: View {
             .glassCard(cornerRadius: 20)
             .designGrain()
             .overlay(alignment: .topLeading) {
-                if totalAssets > 0, totalLiabilities > 0 {
+                if let key = drilled {
+                    breadcrumbBar(key)
+                        .padding(10)
+                } else if totalAssets > 0, totalLiabilities > 0 {
                     let ratio = Double(truncating: (totalLiabilities / totalAssets) as NSNumber)
                     let ratioColor: Color = ratio < 0.3 ? .designPrimaryFixedDim
                         : ratio < 0.6 ? .orange
@@ -322,6 +424,23 @@ struct MacAssetAllocationView: View {
         }
     }
 
+    /// L2 面包屑：图表内玻璃按钮，点击返回类型聚合视图
+    private func breadcrumbBar(_ key: DrillKey) -> some View {
+        Button {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { drilled = nil }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 11, weight: .semibold))
+                Image(systemName: key.iconName)
+                    .font(.system(size: 11))
+                Text(key.displayName)
+                    .font(.designBodyCaption)
+            }
+        }
+        .buttonStyle(DesignGlassTextButton())
+    }
+
     private func barColor(_ item: WaterfallItem) -> Color {
         item.isAsset ? Color.designPrimaryFixedDim : Color.designAccentRed
     }
@@ -331,7 +450,7 @@ struct MacAssetAllocationView: View {
     private func waterfallBar(i: Int, item: WaterfallItem) -> some ChartContent {
         let end = animTrigger ? item.runningEnd : item.runningStart
         BarMark(
-            x: .value("", item.label),
+            x: .value("", item.axisKey),
             yStart: .value("Start", item.runningStart),
             yEnd: .value("End", end),
             width: .fixed(item.isSummary ? 44 : 24)
@@ -393,19 +512,26 @@ struct MacAssetAllocationView: View {
 
     /// Lightweight squarified-layout treemap showing asset distribution by area.
     private struct TreemapRect: Identifiable {
-        let id = UUID()
-        let item: AccountAllocationItem
+        let id: String        // 稳定键 = 节点 id，避免下钻重算时 ForEach 全量重建
+        let item: AllocationNode
         var frame: CGRect  // normalized 0…1
     }
 
-    private var treemapRects: [TreemapRect] {
-        let items = listItems.sorted { abs($0.balance) > abs($1.balance) }
-        guard !items.isEmpty else { return [] }
+    /// 树图与瀑布图共用两级模型：L1 类型聚合、L2 下钻账户明细
+    private var treemapDisplayNodes: [AllocationNode] {
+        if drilled != nil { return drillNodes }
+        switch filter {
+        case .all: return aggregatedNodes()
+        case .assets: return l1AssetNodes
+        case .liabilities: return l1LiabilityNodes
+        }
+    }
 
-        // "全部" mode: split into assets (left) + liabilities (right), sized by total
-        if filter == .all {
-            let assetItems = items.filter { !$0.isLiability }
-            let liabilityItems = items.filter { $0.isLiability }
+    private var treemapRects: [TreemapRect] {
+        // L1 全部：左资产 / 右负债 双区
+        if drilled == nil, filter == .all {
+            let assetItems = l1AssetNodes.sorted { abs($0.balance) > abs($1.balance) }
+            let liabilityItems = l1LiabilityNodes.sorted { abs($0.balance) > abs($1.balance) }
             let totalAll = totalAssets + totalLiabilities
             guard totalAll > 0 else { return [] }
 
@@ -424,19 +550,22 @@ struct MacAssetAllocationView: View {
             return result
         }
 
+        // L2 下钻 或 单侧 filter：单区铺满
+        let items = treemapDisplayNodes.sorted { abs($0.balance) > abs($1.balance) }
+        guard !items.isEmpty else { return [] }
         return squarify(items: items, in: CGRect(x: 0, y: 0, width: 1, height: 1))
     }
 
     /// X position of the divider between assets and liabilities (normalized 0…1), nil if single zone
     private var dividerX: CGFloat? {
-        guard filter == .all, totalAssets + totalLiabilities > 0 else { return nil }
+        guard drilled == nil, filter == .all, totalAssets + totalLiabilities > 0 else { return nil }
         let assetFrac = CGFloat(truncating: (totalAssets / (totalAssets + totalLiabilities)) as NSNumber)
         if assetFrac < 0.08 || assetFrac > 0.92 { return nil }
         return assetFrac
     }
 
     /// Simple squarified treemap: recursively subdivide, alternating horizontal/vertical.
-    private func squarify(items: [AccountAllocationItem], in rect: CGRect) -> [TreemapRect] {
+    private func squarify(items: [AllocationNode], in rect: CGRect) -> [TreemapRect] {
         guard !items.isEmpty else { return [] }
         let total = items.reduce(Decimal.zero) { $0 + abs($1.balance) }
         guard total > 0 else { return [] }
@@ -445,7 +574,7 @@ struct MacAssetAllocationView: View {
         let horizontal = rect.width >= rect.height
 
         if items.count == 1 {
-            return [TreemapRect(item: items[0], frame: rect)]
+            return [TreemapRect(id: items[0].id, item: items[0], frame: rect)]
         }
 
         // Find the best split point: minimize worst aspect ratio
@@ -519,15 +648,20 @@ struct MacAssetAllocationView: View {
         .padding(.top, 12)
     }
 
-    /// Per-category percentage (asset % of totalAssets, liability % of totalLiabilities)
-    private func categoryPercentage(for item: AccountAllocationItem) -> Double {
-        let total = item.isLiability ? totalLiabilities : totalAssets
+    /// L1：占比 = 类型额 / 该侧总额；L2：占比 = 账户额 / 下钻类型小计
+    private func categoryPercentage(for item: AllocationNode) -> Double {
+        let total: Decimal
+        if drilled != nil {
+            total = drillNodes.reduce(Decimal.zero) { $0 + abs($1.balance) }
+        } else {
+            total = item.isLiability ? totalLiabilities : totalAssets
+        }
         guard total > 0 else { return 0 }
         return Double(truncating: (abs(item.balance) / total) as NSNumber)
     }
 
     /// Apple HIG: single hue per category, saturation = weight → larger blocks more saturated
-    private func treemapColor(for item: AccountAllocationItem) -> Color {
+    private func treemapColor(for item: AllocationNode) -> Color {
         let pct = categoryPercentage(for: item)
         let opacity = 0.35 + pct * 0.55
         if item.isLiability {
@@ -593,6 +727,18 @@ struct MacAssetAllocationView: View {
         .position(x: x + w / 2, y: y + h / 2)
         .opacity(barProgress > 0 ? 1 : 0)
         .animation(.spring(response: 0.6, dampingFraction: 0.65).delay(Double(treemapRects.firstIndex(where: { $0.id == rect.id }) ?? 0) * 0.05), value: barProgress)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if let key = item.drillKey {
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) { drilled = key }
+            }
+        }
+        .onHover { hovering in
+            guard item.drillKey != nil else { return }
+            #if canImport(AppKit)
+            if hovering { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
+            #endif
+        }
     }
 
     // MARK: - Animation
