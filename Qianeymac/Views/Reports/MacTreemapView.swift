@@ -21,6 +21,9 @@ struct MacTreemapView: View {
     /// 最小块尺寸（像素）
     private let minBlockSide: CGFloat = 50
 
+    /// 区块间 gutter（像素），让玻璃切片之间有呼吸空间
+    private let gutter: CGFloat = 3
+
     var body: some View {
         GeometryReader { geo in
             let size = geo.size
@@ -153,15 +156,20 @@ struct MacTreemapView: View {
         guard rowTotal > 0 else { return row }
         var placed: [TreemapBlock] = []
         var offset: CGFloat = 0
-        for block in row {
+        for (idx, block) in row.enumerated() {
             let length = (block.area / rowTotal) * side
             let frame: CGRect
             if horizontal {
+                // 区块间留 gutter（最后一块不留）
+                let isLast = idx == row.count - 1
+                let height = max(0, length - (isLast ? 0 : gutter))
                 frame = CGRect(x: rect.minX, y: rect.minY + offset,
-                               width: rect.width, height: length)
+                               width: rect.width, height: height)
             } else {
+                let isLast = idx == row.count - 1
+                let width = max(0, length - (isLast ? 0 : gutter))
                 frame = CGRect(x: rect.minX + offset, y: rect.minY,
-                               width: length, height: rect.height)
+                               width: width, height: rect.height)
             }
             placed.append(block.withFrame(frame))
             offset += length
@@ -193,50 +201,83 @@ struct MacTreemapView: View {
 
     private func treemapCell(block: TreemapBlock, onSelect: @escaping (AllocationNode) -> Void) -> some View {
         let node = block.node
-        let fill = blockColor(for: node, index: block.index)
+        let palette = blockPalette(for: node, index: block.index)
         let frame = block.frame
+        let percentage = blockPercentage(for: block)
 
         return ZStack {
-            // Visual
+            // Visual: glassmorphism + 0.5px 极细高光描边 + 步进式透明度
             ZStack {
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(fill)
-                    .shadow(color: .black.opacity(0.2), radius: 3, y: 2)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
+                // 1. 底色：步进式透明度（按金额占比分层）
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(palette.fill)
+                    .background(
+                        // 2. 多层级 Glassmorphism 弥散光
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(.ultraThinMaterial)
+                            .opacity(0.25)
                     )
+                    .overlay(
+                        // 3. 0.5px 极细高光描边（模拟玻璃切片）
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(0.4),
+                                        Color.white.opacity(0.1),
+                                        Color.black.opacity(0.05)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 0.5
+                            )
+                    )
+                    .shadow(color: .black.opacity(0.15), radius: 6, x: 0, y: 2)
 
-                if frame.width > 60, frame.height > 36 {
-                    let pad = min(8, frame.width * 0.06, frame.height * 0.08)
-                    VStack(spacing: 0) {
-                        HStack(alignment: .top) {
-                            HStack(spacing: 3) {
-                                Image(systemName: node.iconName)
-                                    .font(.system(size: min(11, frame.height * 0.35)))
-                                    .foregroundStyle(.white.opacity(0.9))
-                                Text(node.name)
-                                    .font(.system(size: min(10, frame.width * 0.07), weight: .medium))
-                                    .foregroundStyle(.white)
-                                    .lineLimit(1)
-                            }
-                            Spacer()
-                        }
-                        Spacer()
-                        HStack {
-                            Spacer()
-                            Text(formatAmount(abs(node.balance)))
-                                .font(.system(size: min(11, frame.width * 0.08), weight: .bold, design: .monospaced))
+                // 内容：左上 + 右下 非对称对齐
+                if frame.width > 70, frame.height > 42 {
+                    let pad = min(10, frame.width * 0.06, frame.height * 0.1)
+                    ZStack(alignment: .topLeading) {
+                        // 左上：图标 + 名称
+                        HStack(alignment: .top, spacing: 4) {
+                            Image(systemName: node.iconName)
+                                .font(.system(size: min(12, frame.height * 0.18), weight: .semibold))
+                                .foregroundStyle(.white.opacity(0.95))
+                            Text(node.name)
+                                .font(.system(size: min(11, frame.width * 0.07), weight: .semibold))
                                 .foregroundStyle(.white)
                                 .lineLimit(1)
-                                .minimumScaleFactor(0.6)
+                                .truncationMode(.tail)
+                            Spacer(minLength: 0)
+                        }
+                        .padding(pad)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                        VStack {
+                            Spacer()
+                            HStack {
+                                Spacer()
+                                VStack(alignment: .trailing, spacing: 1) {
+                                    Text(formatAmount(abs(node.balance)))
+                                        .font(.system(size: min(12, frame.width * 0.085), weight: .bold, design: .rounded))
+                                        .foregroundStyle(.white)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.5)
+                                    Text(String(format: "%.1f%%", percentage * 100))
+                                        .font(.system(size: min(9, frame.width * 0.06), weight: .medium, design: .monospaced))
+                                        .foregroundStyle(.white.opacity(0.7))
+                                        .lineLimit(1)
+                                }
+                            }
+                            .padding(pad)
                         }
                     }
-                    .padding(pad)
-                } else if frame.width > 36, frame.height > 22 {
+                } else if frame.width > 40, frame.height > 26 {
+                    // 小块：只显示图标
                     Image(systemName: node.iconName)
-                        .font(.system(size: min(12, frame.width * 0.2)))
-                        .foregroundStyle(.white.opacity(0.85))
+                        .font(.system(size: min(14, frame.width * 0.22), weight: .medium))
+                        .foregroundStyle(.white.opacity(0.9))
                 }
             }
             .frame(width: frame.width, height: frame.height)
@@ -257,6 +298,13 @@ struct MacTreemapView: View {
         }
     }
 
+    private func blockPercentage(for block: TreemapBlock) -> Double {
+        guard total > 0 else { return 0 }
+        let amount = NSDecimalNumber(decimal: abs(block.node.balance)).doubleValue
+        let totalDouble = NSDecimalNumber(decimal: total).doubleValue
+        return totalDouble > 0 ? amount / totalDouble : 0
+    }
+
     private func formatAmount(_ amount: Decimal) -> String {
         let amountDouble = NSDecimalNumber(decimal: amount).doubleValue
         if amountDouble >= 100000 {
@@ -268,12 +316,22 @@ struct MacTreemapView: View {
         }
     }
 
-    private func blockColor(for node: AllocationNode, index: Int) -> Color {
-        let baseHue: Double = node.isLiability ? 0.0 : 0.4
-        let saturation = 0.55 + Double(index % 3) * 0.15
-        let brightness = 0.55 + Double((index + 1) % 4) * 0.08
-        return Color(hue: baseHue, saturation: saturation, brightness: brightness)
-    }
+    /// 步进式透明度：薄荷绿（资产）/ 稳重红（负债）+ 按 index 分层
+private func blockPalette(for node: AllocationNode, index: Int) -> (fill: Color, accent: Color) {
+    let baseHue: Double = node.isLiability ? 0.0 : 0.42
+    let layer = index % 4
+    // 步进式饱和度与亮度：层 0 = 主色 / 层 1-3 = 逐步淡化
+    let saturation = node.isLiability
+        ? [0.55, 0.50, 0.45, 0.40][layer]
+        : [0.50, 0.45, 0.40, 0.35][layer]
+    let brightness = node.isLiability
+        ? [0.55, 0.62, 0.68, 0.74][layer]
+        : [0.50, 0.58, 0.66, 0.74][layer]
+    return (
+        fill: Color(hue: baseHue, saturation: saturation, brightness: brightness).opacity(0.85),
+        accent: Color(hue: baseHue, saturation: saturation + 0.1, brightness: min(brightness + 0.1, 1.0))
+    )
+}
 
     struct TreemapBlock: Identifiable {
         let node: AllocationNode
