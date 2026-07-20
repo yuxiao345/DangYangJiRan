@@ -619,6 +619,12 @@ struct MacAssetAllocationView: View {
                     .foregroundStyle(.blue)
                     .padding(4)
                     .background(Color.white.opacity(0.8))
+                Text(_debugZoneInfo)
+                    .font(.system(size: 8, design: .monospaced))
+                    .foregroundStyle(.blue)
+                    .padding(4)
+                    .background(Color.white.opacity(0.8))
+                    .offset(y: 20)
 
                 // Treemap cells
                 ForEach(treemapRects) { rect in
@@ -633,6 +639,18 @@ struct MacAssetAllocationView: View {
         .designGrain()
         .padding(.horizontal, 24)
         .padding(.top, 12)
+    }
+
+    /// DEBUG: zone 信息
+    private var _debugZoneInfo: String {
+        let totalAll = totalAssets + totalLiabilities
+        guard totalAll > 0 else { return "no data" }
+        let assetFrac = CGFloat(truncating: (totalAssets / totalAll) as NSNumber)
+        let minZoneFrac: CGFloat = 0.08
+        let dividerW: CGFloat = 0.012
+        let safeAssetFrac = min(assetFrac, 1 - minZoneFrac - dividerW)
+        let safeLiabFrac = max(1 - assetFrac, minZoneFrac)
+        return String(format: "assetFrac=%.3f safeAsset=%.3f safeLiab=%.3f", assetFrac, safeAssetFrac, safeLiabFrac)
     }
 
     /// L1：占比 = 类型额 / 该侧总额；L2：占比 = 账户额 / 下钻类型小计
