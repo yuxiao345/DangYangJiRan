@@ -565,7 +565,7 @@ struct MacAssetAllocationView: View {
     }
 
     private var treemapRects: [TreemapRect] {
-        // L1 全部：左资产 / 右负债 双区
+        // L1 全部：上资产 / 下负债 双行
         if drilled == nil, filter == .all {
             let assetItems = l1AssetNodes.sorted { abs($0.balance) > abs($1.balance) }
             let liabilityItems = l1LiabilityNodes.sorted { abs($0.balance) > abs($1.balance) }
@@ -573,20 +573,19 @@ struct MacAssetAllocationView: View {
             guard totalAll > 0 else { return [] }
 
             let assetFrac = CGFloat(truncating: (totalAssets / totalAll) as NSNumber)
-            let minZoneFrac: CGFloat = 0.08
-            let dividerW: CGFloat = 0.012
-
-            let safeAssetFrac = min(assetFrac, 1 - minZoneFrac - dividerW)
-            let safeLiabFrac = max(1 - assetFrac, minZoneFrac)
+            let rowGap: CGFloat = 0.02  // 上下两行之间的间隙
 
             var result: [TreemapRect] = []
+            // 上半：资产
             if !assetItems.isEmpty {
-                let zone = CGRect(x: 0, y: 0, width: safeAssetFrac, height: 1)
+                let assetRowHeight = (assetFrac - rowGap / 2) * (1 - rowGap)
+                let zone = CGRect(x: 0, y: 0, width: 1, height: max(0.001, assetRowHeight))
                 result += stripLayout(items: assetItems, in: zone)
             }
+            // 下半：负债
             if !liabilityItems.isEmpty {
-                let liabStart = min(1, safeAssetFrac + dividerW)
-                let zone = CGRect(x: liabStart, y: 0, width: safeLiabFrac, height: 1)
+                let liabRowHeight = ((1 - assetFrac) - rowGap / 2) * (1 - rowGap)
+                let zone = CGRect(x: 0, y: 1 - max(0.001, liabRowHeight), width: 1, height: max(0.001, liabRowHeight))
                 result += stripLayout(items: liabilityItems, in: zone)
             }
             return result
@@ -598,35 +597,12 @@ struct MacAssetAllocationView: View {
         return stripLayout(items: items, in: CGRect(x: 0, y: 0, width: 1, height: 1))
     }
 
-    /// X position of the divider between assets and liabilities (normalized 0…1), nil if single zone
-    private var dividerX: CGFloat? {
-        guard drilled == nil, filter == .all, totalAssets + totalLiabilities > 0 else { return nil }
-        let assetFrac = CGFloat(truncating: (totalAssets / (totalAssets + totalLiabilities)) as NSNumber)
-        let minZoneFrac: CGFloat = 0.08
-        if assetFrac < minZoneFrac || assetFrac > 1 - minZoneFrac { return nil }
-        return assetFrac
-    }
-
     private var treemapSection: some View {
         GeometryReader { geo in
             let size = geo.size.width > 0 && geo.size.height > 0 ? geo.size : CGSize(width: 400, height: 300)
             let padding: CGFloat = 4
 
             ZStack(alignment: .topLeading) {
-                // Debug: show container size
-                Text(String(format: "size: %.0fx%.0f", size.width, size.height))
-                    .font(.system(size: 8, design: .monospaced))
-                    .foregroundStyle(.blue)
-                    .padding(4)
-                    .background(Color.white.opacity(0.8))
-                Text(_debugZoneInfo)
-                    .font(.system(size: 8, design: .monospaced))
-                    .foregroundStyle(.blue)
-                    .padding(4)
-                    .background(Color.white.opacity(0.8))
-                    .offset(y: 20)
-
-                // Treemap cells
                 ForEach(treemapRects) { rect in
                     treemapCell(rect: rect, containerSize: size, padding: padding)
                 }
@@ -639,18 +615,6 @@ struct MacAssetAllocationView: View {
         .designGrain()
         .padding(.horizontal, 24)
         .padding(.top, 12)
-    }
-
-    /// DEBUG: zone 信息
-    private var _debugZoneInfo: String {
-        let totalAll = totalAssets + totalLiabilities
-        guard totalAll > 0 else { return "no data" }
-        let assetFrac = CGFloat(truncating: (totalAssets / totalAll) as NSNumber)
-        let minZoneFrac: CGFloat = 0.08
-        let dividerW: CGFloat = 0.012
-        let safeAssetFrac = min(assetFrac, 1 - minZoneFrac - dividerW)
-        let safeLiabFrac = max(1 - assetFrac, minZoneFrac)
-        return String(format: "assetFrac=%.3f safeAsset=%.3f safeLiab=%.3f", assetFrac, safeAssetFrac, safeLiabFrac)
     }
 
     /// L1：占比 = 类型额 / 该侧总额；L2：占比 = 账户额 / 下钻类型小计
@@ -690,12 +654,8 @@ struct MacAssetAllocationView: View {
         let h = max(1, cellH - padding * 2)
 
         return ZStack {
-            // Tappable overlay with visible border for debug
+            // Tappable overlay
             Color.clear
-                .overlay(
-                    Rectangle()
-                        .stroke(Color.red, lineWidth: 1)
-                )
                 .contentShape(Rectangle())
                 .frame(width: cellW, height: cellH)
                 .position(x: cellX + cellW / 2, y: cellY + cellH / 2)
@@ -720,11 +680,6 @@ struct MacAssetAllocationView: View {
                         RoundedRectangle(cornerRadius: 6)
                             .stroke(Color.white.opacity(0.25), lineWidth: 0.5)
                     )
-                // Debug: show actual pixel bounds
-                Text(String(format: "%.0f,%.0f %.0fx%.0f", cellX, cellY, cellW, cellH))
-                    .font(.system(size: 5, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.4))
-                    .allowsHitTesting(false)
 
                 if w > 60, h > 36 {
                     let pad = min(8, w * 0.06, h * 0.08)
