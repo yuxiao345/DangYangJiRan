@@ -58,7 +58,7 @@ struct MacTreemapView: View {
             let amount = NSDecimalNumber(decimal: abs(node.balance)).doubleValue
             switch scaleMode {
             case .log:
-                return log10(max(1, amount)) + 1   // log10 + 1 保证值始终 >= 0
+                return log10(max(1, amount)) + 1
             case .sqrt:
                 return sqrt(amount)
             }
@@ -66,46 +66,108 @@ struct MacTreemapView: View {
         let totalWeight = weights.reduce(0, +)
         guard totalWeight > 0 else { return [] }
 
-        // 2. 预计算目标面积（按权重）
         let containerArea = container.width * container.height
-        var blocks: [TreemapBlock] = []
-        var assignedArea: CGFloat = 0
-        var i = 0
-        while i < nodes.count {
-            let w = weights[i]
-            let idealArea = CGFloat(w / totalWeight) * containerArea
 
-            // 3. 应用最小阈值（仅最后几个区块需要兜底）
-            let remainingCount = nodes.count - i
+        // 2. 按资产/负债分组，分别计算权重
+        let assetIndices = nodes.indices.filter { !nodes[$0].isLiability }
+        let liabilityIndices = nodes.indices.filter { nodes[$0].isLiability }
+
+        let assetWeight = assetIndices.reduce(0) { $0 + weights[$1] }
+        let liabilityWeight = liabilityIndices.reduce(0) { $0 + weights[$1] }
+        let twoSides = !assetIndices.isEmpty && !liabilityIndices.isEmpty
+
+        // 3. 按分组占比分配主区域
+        let assetArea: CGFloat
+        let liabilityArea: CGFloat
+        if twoSides {
+            let assetFrac = CGFloat(assetWeight / (assetWeight + liabilityWeight))
+            assetArea = containerArea * assetFrac
+            liabilityArea = containerArea * (1 - assetFrac)
+        } else if assetIndices.isEmpty {
+            assetArea = 0
+            liabilityArea = containerArea
+        } else {
+            assetArea = containerArea
+            liabilityArea = 0
+        }
+
+        // 4. 构建 blocks 并应用最小阈值
+        func buildBlocks(for indices: [Int], in area: CGFloat) -> [TreemapBlock] {
+            guard !indices.isEmpty, area > 0 else { return [] }
+            let sortedIndices = indices.sorted { weights[$0] > weights[$1] }
+            let groupWeight = indices.reduce(0) { $0 + weights[$1] }
             let minArea = minBlockSide * minBlockSide
-            // 估算剩余空间
-            let remainingArea = containerArea - assignedArea
-            let idealRemaining = CGFloat(weights[i...].reduce(0, +) / totalWeight) * containerArea
-            // 如果理想面积太小，把它放大到 minArea
-            let targetArea: CGFloat
-            if idealArea < minArea && idealRemaining > minArea * CGFloat(remainingCount) {
-                targetArea = minArea
-            } else if idealRemaining < minArea * CGFloat(remainingCount) {
-                // 空间不够均分，使用剩余空间等分
-                targetArea = remainingArea / CGFloat(remainingCount)
-            } else {
-                targetArea = idealArea
+            var blocks: [TreemapBlock] = []
+            var assigned: CGFloat = 0
+            for (pos, idx) in sortedIndices.enumerated() {
+                let idealArea = CGFloat(weights[idx] / groupWeight) * area
+                let remainingCount = sortedIndices.count - pos
+                let remainingArea = area - assigned
+                let idealRemaining = CGFloat(sortedIndices[pos...].reduce(0) { $0 + weights[$1] } / groupWeight) * area
+                let targetArea: CGFloat
+                if idealArea < minArea && idealRemaining > minArea * CGFloat(remainingCount) {
+                    targetArea = minArea
+                } else if idealRemaining < minArea * CGFloat(remainingCount) {
+                    targetArea = remainingArea / CGFloat(remainingCount)
+                } else {
+                    targetArea = idealArea
+                }
+                blocks.append(TreemapBlock(node: nodes[idx], area: targetArea, index: idx))
+                assigned += targetArea
             }
-
-            blocks.append(TreemapBlock(node: nodes[i], area: targetArea, index: i))
-            assignedArea += targetArea
-            i += 1
+            // 归一化
+            let totalAssigned = blocks.reduce(0) { $0 + $1.area }
+            if totalAssigned > 0 {
+                let scale = area / totalAssigned
+                blocks = blocks.map { TreemapBlock(node: $0.node, area: $0.area * scale, index: $0.index) }
+            }
+            return blocks
         }
 
-        // 4. 归一化（防止浮点累积误差超出边界）
-        let totalAssigned = blocks.reduce(0) { $0 + $1.area }
-        if totalAssigned > 0 {
-            let scale = containerArea / totalAssigned
-            blocks = blocks.map { TreemapBlock(node: $0.node, area: $0.area * scale, index: $0.index) }
+        let assetBlocks = buildBlocks(for: assetIndices, in: assetArea)
+        let liabilityBlocks = buildBlocks(for: liabilityIndices, in: liabilityArea)
+
+        // 5. 按方向分配矩形：横向 split 时左资产右负债，纵向 split 时上资产下负债
+        var result: [TreemapBlock] = []
+        if twoSides {
+            let horizontal = container.width >= container.height
+            let assetFrac = CGFloat(assetWeight / (assetWeight + liabilityWeight))
+            if horizontal {
+                let splitX = container.minX + container.width * assetFrac
+                let assetRect = CGRect(
+                    x: container.minX, y: container.minY,
+                    width: container.width * assetFrac - gutter / 2,
+                    height: container.height
+                )
+                let liabilityRect = CGRect(
+                    x: splitX + gutter / 2, y: container.minY,
+                    width: container.width * (1 - assetFrac) - gutter / 2,
+                    height: container.height
+                )
+                result += squarify(blocks: assetBlocks, in: assetRect)
+                result += squarify(blocks: liabilityBlocks, in: liabilityRect)
+            } else {
+                let splitY = container.minY + container.height * assetFrac
+                let assetRect = CGRect(
+                    x: container.minX, y: container.minY,
+                    width: container.width,
+                    height: container.height * assetFrac - gutter / 2
+                )
+                let liabilityRect = CGRect(
+                    x: container.minX, y: splitY + gutter / 2,
+                    width: container.width,
+                    height: container.height * (1 - assetFrac) - gutter / 2
+                )
+                result += squarify(blocks: assetBlocks, in: assetRect)
+                result += squarify(blocks: liabilityBlocks, in: liabilityRect)
+            }
+        } else if assetIndices.isEmpty {
+            result += squarify(blocks: liabilityBlocks, in: container)
+        } else {
+            result += squarify(blocks: assetBlocks, in: container)
         }
 
-        // 5. Squarified treemap 布局
-        return squarify(blocks: blocks, in: container)
+        return result
     }
 
     /// Squarified treemap：递归分割，最优化每个矩形长宽比
