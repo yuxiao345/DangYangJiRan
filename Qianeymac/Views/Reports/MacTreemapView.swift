@@ -22,12 +22,26 @@ struct MacTreemapView: View {
     private let minBlockSide: CGFloat = 50
 
     /// 区块间 gutter（像素），让玻璃切片之间有呼吸空间
-    private let gutter: CGFloat = 3
+    private let gutter: CGFloat = 14
+
+    /// 区块圆角（增大负空间）
+    private let blockCornerRadius: CGFloat = 16
+
+    /// 内容区内边距（占块尺寸的比例，确保文字安全距离）
+    private let contentPaddingRatio: CGFloat = 0.15
 
     var body: some View {
         GeometryReader { geo in
             let size = geo.size
-            let rects = computeRects(in: CGRect(origin: .zero, size: size))
+            // 主容器外部留白：让边缘区块也保持呼吸感
+            let outerInset: CGFloat = 4
+            let containerRect = CGRect(
+                x: outerInset,
+                y: outerInset,
+                width: max(0, size.width - outerInset * 2),
+                height: max(0, size.height - outerInset * 2)
+            )
+            let rects = computeRects(in: containerRect)
             ZStack(alignment: .topLeading) {
                 ForEach(rects) { block in
                     treemapCell(block: block, onSelect: onSelect)
@@ -209,17 +223,17 @@ struct MacTreemapView: View {
             // Visual: glassmorphism + 0.5px 极细高光描边 + 步进式透明度
             ZStack {
                 // 1. 底色：步进式透明度（按金额占比分层）
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: blockCornerRadius)
                     .fill(palette.fill)
                     .background(
                         // 2. 多层级 Glassmorphism 弥散光
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: blockCornerRadius)
                             .fill(.ultraThinMaterial)
                             .opacity(0.25)
                     )
                     .overlay(
                         // 3. 0.5px 极细高光描边（模拟玻璃切片）
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: blockCornerRadius)
                             .strokeBorder(
                                 LinearGradient(
                                     colors: [
@@ -237,7 +251,8 @@ struct MacTreemapView: View {
 
                 // 内容：左上 + 右下 非对称对齐
                 if frame.width > 70, frame.height > 42 {
-                    let pad = min(10, frame.width * 0.06, frame.height * 0.1)
+                    // 15% 内边距比例（按短边取），确保文字安全距离
+                    let pad = max(8, min(frame.width, frame.height) * contentPaddingRatio)
                     ZStack(alignment: .topLeading) {
                         // 左上：图标 + 名称
                         HStack(alignment: .top, spacing: 4) {
