@@ -331,17 +331,9 @@ struct MacAssetAllocationView: View {
                     .lineStyle(StrokeStyle(lineWidth: 1.5))
             }
             .chartXSelection(value: $selectedBar)
-            .chartOverlay { proxy in
-                Color.clear
-                    .contentShape(Rectangle())
-                    .gesture(
-                        SpatialTapGesture()
-                            .onEnded { value in
-                                if let axisKey = proxy.value(atX: value.location.x, as: String.self) {
-                                    handleSelection(axisKey)
-                                }
-                            }
-                    )
+            .contentShape(Rectangle())
+            .onTapGesture {
+                handleSelection(selectedBar)
             }
             .chartBackground { _ in
                 LinearGradient(
