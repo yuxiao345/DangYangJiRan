@@ -542,6 +542,28 @@ struct MacAssetAllocationView: View {
         }
     }
 
+    /// 水平条带布局：将 items 按 balance 比例分配到 zone，返回以 zone 原点为基准的 normalized rect
+    private func stripLayout(items: [AllocationNode], in rect: CGRect) -> [TreemapRect] {
+        guard !items.isEmpty else { return [] }
+        let total = items.reduce(Decimal.zero) { $0 + abs($1.balance) }
+        guard total > 0 else { return [] }
+
+        var result: [TreemapRect] = []
+        var offset: CGFloat = 0
+
+        for item in items {
+            let fraction = CGFloat(truncating: (abs(item.balance) / total) as NSNumber)
+            let width = max(0.001, fraction)
+            result.append(TreemapRect(
+                id: item.id,
+                item: item,
+                frame: CGRect(x: rect.minX + offset, y: rect.minY, width: width, height: rect.height)
+            ))
+            offset += width
+        }
+        return result
+    }
+
     private var treemapRects: [TreemapRect] {
         // L1 全部：左资产 / 右负债 双区
         if drilled == nil, filter == .all {
@@ -551,22 +573,21 @@ struct MacAssetAllocationView: View {
             guard totalAll > 0 else { return [] }
 
             let assetFrac = CGFloat(truncating: (totalAssets / totalAll) as NSNumber)
-            let minZoneFrac: CGFloat = 0.08  // 保证每侧最小占比，防止某侧被压到看不见
-            let dividerW: CGFloat = 0.012     // thin divider between zones
+            let minZoneFrac: CGFloat = 0.08
+            let dividerW: CGFloat = 0.012
 
-            // 保证左右都有最小占比，防止 liability zone 宽度过小导致无法点击
             let safeAssetFrac = min(assetFrac, 1 - minZoneFrac - dividerW)
             let safeLiabFrac = max(1 - assetFrac, minZoneFrac)
 
             var result: [TreemapRect] = []
             if !assetItems.isEmpty {
                 let zone = CGRect(x: 0, y: 0, width: safeAssetFrac, height: 1)
-                result += squarify(items: assetItems, in: zone)
+                result += stripLayout(items: assetItems, in: zone)
             }
             if !liabilityItems.isEmpty {
                 let liabStart = min(1, safeAssetFrac + dividerW)
                 let zone = CGRect(x: liabStart, y: 0, width: safeLiabFrac, height: 1)
-                result += squarify(items: liabilityItems, in: zone)
+                result += stripLayout(items: liabilityItems, in: zone)
             }
             return result
         }
@@ -574,7 +595,7 @@ struct MacAssetAllocationView: View {
         // L2 下钻 或 单侧 filter：单区铺满
         let items = treemapDisplayNodes.sorted { abs($0.balance) > abs($1.balance) }
         guard !items.isEmpty else { return [] }
-        return squarify(items: items, in: CGRect(x: 0, y: 0, width: 1, height: 1))
+        return stripLayout(items: items, in: CGRect(x: 0, y: 0, width: 1, height: 1))
     }
 
     /// X position of the divider between assets and liabilities (normalized 0…1), nil if single zone
@@ -584,70 +605,6 @@ struct MacAssetAllocationView: View {
         let minZoneFrac: CGFloat = 0.08
         if assetFrac < minZoneFrac || assetFrac > 1 - minZoneFrac { return nil }
         return assetFrac
-    }
-
-    /// Simple squarified treemap: recursively subdivide, alternating horizontal/vertical.
-    private func squarify(items: [AllocationNode], in rect: CGRect) -> [TreemapRect] {
-        guard !items.isEmpty else { return [] }
-        let total = items.reduce(Decimal.zero) { $0 + abs($1.balance) }
-        guard total > 0 else { return [] }
-
-        // Clamp rect to prevent any out-of-bounds coordinates
-        let safeRect = CGRect(
-            x: max(0, min(1, rect.minX)),
-            y: max(0, min(1, rect.minY)),
-            width: max(0.001, rect.width),
-            height: max(0.001, rect.height)
-        )
-
-        // Choose orientation: split along the longer side
-        let horizontal = safeRect.width >= safeRect.height
-
-        if items.count == 1 {
-            return [TreemapRect(id: items[0].id, item: items[0], frame: safeRect)]
-        }
-
-        // Find the best split point: minimize worst aspect ratio
-        var bestSplit = 1
-        var bestRatio = CGFloat.greatestFiniteMagnitude
-        var cumulative = Decimal.zero
-
-        for i in 0..<(items.count - 1) {
-            cumulative += abs(items[i].balance)
-            let frac = CGFloat(truncating: (cumulative / total) as NSNumber)
-            let size1 = horizontal ? CGSize(width: safeRect.width * frac, height: safeRect.height) : CGSize(width: safeRect.width, height: safeRect.height * frac)
-            let size2 = horizontal ? CGSize(width: safeRect.width * (1 - frac), height: safeRect.height) : CGSize(width: safeRect.width, height: safeRect.height * (1 - frac))
-            let ratio = max(aspectRatio(size1), aspectRatio(size2))
-            if ratio < bestRatio {
-                bestRatio = ratio
-                bestSplit = i + 1
-            }
-        }
-
-        let head = Array(items[0..<bestSplit])
-        let tail = Array(items[bestSplit...])
-        let headTotal = head.reduce(Decimal.zero) { $0 + abs($1.balance) }
-        let frac = min(1, max(0, CGFloat(truncating: (headTotal / total) as NSNumber)))
-
-        let headRect: CGRect
-        let tailRect: CGRect
-
-        if horizontal {
-            let tailWidth = max(0, safeRect.width * (1 - frac))
-            headRect = CGRect(x: safeRect.minX, y: safeRect.minY, width: safeRect.width * frac, height: safeRect.height)
-            tailRect = CGRect(x: safeRect.minX + safeRect.width * frac, y: safeRect.minY, width: tailWidth, height: safeRect.height)
-        } else {
-            let tailHeight = max(0, safeRect.height * (1 - frac))
-            headRect = CGRect(x: safeRect.minX, y: safeRect.minY, width: safeRect.width, height: safeRect.height * frac)
-            tailRect = CGRect(x: safeRect.minX, y: safeRect.minY + safeRect.height * frac, width: safeRect.width, height: tailHeight)
-        }
-
-        return squarify(items: head, in: headRect) + squarify(items: tail, in: tailRect)
-    }
-
-    private func aspectRatio(_ size: CGSize) -> CGFloat {
-        guard size.width > 0, size.height > 0 else { return .greatestFiniteMagnitude }
-        return max(size.width / size.height, size.height / size.width)
     }
 
     private var treemapSection: some View {
