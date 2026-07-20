@@ -592,11 +592,19 @@ struct MacAssetAllocationView: View {
         let total = items.reduce(Decimal.zero) { $0 + abs($1.balance) }
         guard total > 0 else { return [] }
 
+        // Clamp rect to prevent any out-of-bounds coordinates
+        let safeRect = CGRect(
+            x: max(0, min(1, rect.minX)),
+            y: max(0, min(1, rect.minY)),
+            width: max(0.001, rect.width),
+            height: max(0.001, rect.height)
+        )
+
         // Choose orientation: split along the longer side
-        let horizontal = rect.width >= rect.height
+        let horizontal = safeRect.width >= safeRect.height
 
         if items.count == 1 {
-            return [TreemapRect(id: items[0].id, item: items[0], frame: rect)]
+            return [TreemapRect(id: items[0].id, item: items[0], frame: safeRect)]
         }
 
         // Find the best split point: minimize worst aspect ratio
@@ -607,8 +615,8 @@ struct MacAssetAllocationView: View {
         for i in 0..<(items.count - 1) {
             cumulative += abs(items[i].balance)
             let fraction = CGFloat(truncating: (cumulative / total) as NSNumber)
-            let size1 = horizontal ? CGSize(width: rect.width * fraction, height: rect.height) : CGSize(width: rect.width, height: rect.height * fraction)
-            let size2 = horizontal ? CGSize(width: rect.width * (1 - fraction), height: rect.height) : CGSize(width: rect.width, height: rect.height * (1 - fraction))
+            let size1 = horizontal ? CGSize(width: safeRect.width * fraction, height: safeRect.height) : CGSize(width: safeRect.width, height: safeRect.height * fraction)
+            let size2 = horizontal ? CGSize(width: safeRect.width * (1 - fraction), height: safeRect.height) : CGSize(width: safeRect.width, height: safeRect.height * (1 - fraction))
             let ratio = max(aspectRatio(size1), aspectRatio(size2))
             if ratio < bestRatio {
                 bestRatio = ratio
@@ -625,11 +633,11 @@ struct MacAssetAllocationView: View {
         let tailRect: CGRect
 
         if horizontal {
-            headRect = CGRect(x: rect.minX, y: rect.minY, width: rect.width * fraction, height: rect.height)
-            tailRect = CGRect(x: rect.minX + rect.width * fraction, y: rect.minY, width: rect.width * (1 - fraction), height: rect.height)
+            headRect = CGRect(x: safeRect.minX, y: safeRect.minY, width: safeRect.width * fraction, height: safeRect.height)
+            tailRect = CGRect(x: safeRect.minX + safeRect.width * fraction, y: safeRect.minY, width: safeRect.width * (1 - fraction), height: safeRect.height)
         } else {
-            headRect = CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: rect.height * fraction)
-            tailRect = CGRect(x: rect.minX, y: rect.minY + rect.height * fraction, width: rect.width, height: rect.height * (1 - fraction))
+            headRect = CGRect(x: safeRect.minX, y: safeRect.minY, width: safeRect.width, height: safeRect.height * fraction)
+            tailRect = CGRect(x: safeRect.minX, y: safeRect.minY + safeRect.height * fraction, width: safeRect.width, height: safeRect.height * (1 - fraction))
         }
 
         return squarify(items: head, in: headRect) + squarify(items: tail, in: tailRect)
@@ -697,8 +705,8 @@ struct MacAssetAllocationView: View {
         let fill = treemapColor(for: item)
         let x = rect.frame.minX * containerSize.width + padding
         let y = rect.frame.minY * containerSize.height + padding
-        let w = max(0, rect.frame.width * containerSize.width - padding * 2)
-        let h = max(0, rect.frame.height * containerSize.height - padding * 2)
+        let w = max(1, rect.frame.width * containerSize.width - padding * 2)
+        let h = max(1, rect.frame.height * containerSize.height - padding * 2)
 
         return ZStack {
             // Tappable overlay (transparent, centered via offset)
