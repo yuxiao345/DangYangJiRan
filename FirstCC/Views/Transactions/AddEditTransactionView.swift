@@ -2008,8 +2008,26 @@ struct AddEditTransactionView: View {
         syncAmountString()
     }
 
+    /// 校验借贷交易的两个账户中是否有且仅有一个借贷账户
+    static func validateLendingAccounts(_ fromType: AccountType?, _ toType: AccountType?) -> Bool {
+        AccountType.isValidLendingPair(fromType, toType)
+    }
+
     private func save() {
         guard let ledger = appContainer.currentLedger else { return }
+
+        // 借贷交易校验：必须有且仅有一个借贷账户参与
+        if type == .lending {
+            if selectedAccount == nil {
+                errorMessage = String(localized: "请选择账户")
+                return
+            }
+            if !Self.validateLendingAccounts(selectedAccount?.type, selectedToAccount?.type) {
+                errorMessage = String(localized: "借贷交易必须有且仅有一个借贷账户参与")
+                return
+            }
+        }
+
         do {
             if let existing = editing {
                 try updateExisting(existing, ledger: ledger)

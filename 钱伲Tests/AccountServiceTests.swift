@@ -338,4 +338,46 @@ final class AccountServiceTests: XCTestCase {
 
         XCTAssertEqual(service.calculateBalance(for: cash, context: context), -200)
     }
+
+    // MARK: - H: 借贷交易账户校验
+
+    /// H1: 两个非借贷账户 → 无效
+    func testH1_twoNonLending_invalid() {
+        XCTAssertFalse(AddEditTransactionView.validateLendingAccounts(.cash, .debitCard))
+    }
+
+    /// H2: 两个借贷账户 → 无效
+    func testH2_twoLending_invalid() {
+        XCTAssertFalse(AddEditTransactionView.validateLendingAccounts(.lending, .lending))
+    }
+
+    /// H3: 借贷+非借贷 → 有效
+    func testH3_lendingAndNonLending_valid() {
+        XCTAssertTrue(AddEditTransactionView.validateLendingAccounts(.lending, .cash))
+    }
+
+    /// H4: 非借贷+借贷 → 有效
+    func testH4_nonLendingAndLending_valid() {
+        XCTAssertTrue(AddEditTransactionView.validateLendingAccounts(.cash, .lending))
+    }
+
+    /// H5: 两个都未选 → 无效
+    func testH5_bothNil_invalid() {
+        XCTAssertFalse(AddEditTransactionView.validateLendingAccounts(nil, nil))
+    }
+
+    /// H6: 借贷+nil → 有效（toAccount 未选但主账户是借贷）
+    func testH6_lendingAndNil_valid() {
+        XCTAssertTrue(AddEditTransactionView.validateLendingAccounts(.lending, nil))
+    }
+
+    /// H7: nil+借贷 → 有效
+    func testH7_nilAndLending_valid() {
+        XCTAssertTrue(AddEditTransactionView.validateLendingAccounts(nil, .lending))
+    }
+
+    /// H8: nil+非借贷 → 无效
+    func testH8_nilAndNonLending_invalid() {
+        XCTAssertFalse(AddEditTransactionView.validateLendingAccounts(nil, .cash))
+    }
 }

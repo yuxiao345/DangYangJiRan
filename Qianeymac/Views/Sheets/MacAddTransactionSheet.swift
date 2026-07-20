@@ -1248,6 +1248,16 @@ struct MacAddTransactionSheet: View {
     private func save() {
         guard let ledger = appContainer.currentLedger, amount != 0 else { return }
         if isSplit { guard splitTotal == amount else { errorMessage = "拆分合计与总额不一致"; return } }
+        if type == .lending {
+            if selectedAccount == nil {
+                errorMessage = String(localized: "请选择账户")
+                return
+            }
+            if !AccountType.isValidLendingPair(selectedAccount?.type, selectedToAccount?.type) {
+                errorMessage = String(localized: "借贷交易必须有且仅有一个借贷账户参与")
+                return
+            }
+        }
         if let existing = editing {
             // Re-fetch to ensure we're working within the correct context
             let req = NSFetchRequest<Transaction>(entityName: "Transaction")

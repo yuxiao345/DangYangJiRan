@@ -44,3 +44,12 @@ enum AccountType: String, Codable, CaseIterable {
         }
     }
 }
+
+extension AccountType {
+    /// 校验借贷交易的两个账户：必须有且仅有一个是借贷账户
+    static func isValidLendingPair(_ fromType: AccountType?, _ toType: AccountType?) -> Bool {
+        let fromIsLending = fromType == .lending
+        let toIsLending = toType == .lending
+        return fromIsLending != toIsLending
+    }
+}
