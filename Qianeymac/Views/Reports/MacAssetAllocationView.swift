@@ -701,65 +701,73 @@ struct MacAssetAllocationView: View {
         let h = max(0, rect.frame.height * containerSize.height - padding * 2)
 
         return ZStack {
-            RoundedRectangle(cornerRadius: 6)
-                .fill(fill)
-                .shadow(color: .black.opacity(0.25), radius: 3, y: 2)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color.white.opacity(0.25), lineWidth: 0.5)
-                )
-
-            if w > 60, h > 36 {
-                // Asymmetric layout: name top-left, amount+% bottom-right
-                let pad = min(8, w * 0.06, h * 0.08)
-                VStack(spacing: 0) {
-                    HStack(alignment: .top) {
-                        HStack(spacing: 3) {
-                            Image(systemName: item.iconName)
-                                .font(.system(size: min(12, h * 0.35)))
-                                .foregroundStyle(.white.opacity(0.9))
-                            Text(item.name)
-                                .font(.system(size: min(11, w * 0.07), weight: .medium))
-                                .foregroundStyle(.white)
-                                .lineLimit(1)
-                        }
-                        Spacer()
-                    }
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        VStack(alignment: .trailing, spacing: 1) {
-                            CurrencyText(amount: abs(item.balance), currencyCode: currencyCode)
-                                .font(.system(size: min(13, w * 0.08), weight: .bold, design: .monospaced))
-                                .foregroundStyle(.white)
-                            Text(String(format: "%.1f%%", categoryPercentage(for: item) * 100))
-                                .font(.system(size: min(10, w * 0.06), design: .monospaced))
-                                .foregroundStyle(.white.opacity(0.7))
-                        }
+            // Tappable overlay (transparent, centered via offset)
+            Color.clear
+                .contentShape(Rectangle())
+                .frame(width: w, height: h)
+                .offset(x: x, y: y)
+                .onTapGesture {
+                    if let key = item.drillKey {
+                        withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) { drilled = key }
                     }
                 }
-                .padding(pad)
-            } else if w > 36, h > 20 {
-                Text(String(format: "%.0f%%", categoryPercentage(for: item) * 100))
-                    .font(.system(size: min(10, w * 0.15), weight: .bold, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.8))
+                .onHover { hovering in
+                    guard item.drillKey != nil else { return }
+                    #if canImport(AppKit)
+                    if hovering { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
+                    #endif
+                }
+
+            // Visual content (positioned absolutely via offset, animated opacity)
+            ZStack {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(fill)
+                    .shadow(color: .black.opacity(0.25), radius: 3, y: 2)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color.white.opacity(0.25), lineWidth: 0.5)
+                    )
+
+                if w > 60, h > 36 {
+                    let pad = min(8, w * 0.06, h * 0.08)
+                    VStack(spacing: 0) {
+                        HStack(alignment: .top) {
+                            HStack(spacing: 3) {
+                                Image(systemName: item.iconName)
+                                    .font(.system(size: min(12, h * 0.35)))
+                                    .foregroundStyle(.white.opacity(0.9))
+                                Text(item.name)
+                                    .font(.system(size: min(11, w * 0.07), weight: .medium))
+                                    .foregroundStyle(.white)
+                                    .lineLimit(1)
+                            }
+                            Spacer()
+                        }
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 1) {
+                                CurrencyText(amount: abs(item.balance), currencyCode: currencyCode)
+                                    .font(.system(size: min(13, w * 0.08), weight: .bold, design: .monospaced))
+                                    .foregroundStyle(.white)
+                                Text(String(format: "%.1f%%", categoryPercentage(for: item) * 100))
+                                    .font(.system(size: min(10, w * 0.06), design: .monospaced))
+                                    .foregroundStyle(.white.opacity(0.7))
+                            }
+                        }
+                    }
+                    .padding(pad)
+                } else if w > 36, h > 20 {
+                    Text(String(format: "%.0f%%", categoryPercentage(for: item) * 100))
+                        .font(.system(size: min(10, w * 0.15), weight: .bold, design: .monospaced))
+                        .foregroundStyle(.white.opacity(0.8))
+                }
             }
-        }
-        .frame(width: w, height: h)
-        .position(x: x + w / 2, y: y + h / 2)
-        .opacity(barProgress > 0 ? 1 : 0)
-        .animation(.spring(response: 0.6, dampingFraction: 0.65).delay(Double(treemapRects.firstIndex(where: { $0.id == rect.id }) ?? 0) * 0.05), value: barProgress)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            if let key = item.drillKey {
-                withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) { drilled = key }
-            }
-        }
-        .onHover { hovering in
-            guard item.drillKey != nil else { return }
-            #if canImport(AppKit)
-            if hovering { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
-            #endif
+            .frame(width: w, height: h)
+            .offset(x: x, y: y)
+            .opacity(barProgress > 0 ? 1 : 0)
+            .animation(.spring(response: 0.6, dampingFraction: 0.65).delay(Double(treemapRects.firstIndex(where: { $0.id == rect.id }) ?? 0) * 0.05), value: barProgress)
+            .allowsHitTesting(false)
         }
     }
 
