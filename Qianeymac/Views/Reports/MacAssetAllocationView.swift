@@ -614,7 +614,7 @@ struct MacAssetAllocationView: View {
                 }
             }
         )
-        .frame(height: 320)
+        .frame(height: 360)
         .padding(12)
         .glassCard(cornerRadius: 20)
         .designGrain()

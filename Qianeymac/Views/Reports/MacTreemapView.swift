@@ -128,64 +128,70 @@ struct MacTreemapView: View {
         let liabilityBlocks = buildBlocks(for: liabilityIndices, in: liabilityArea)
 
         // 5. 按方向分配矩形：横向 split 时左资产右负债，纵向 split 时上资产下负债
-        //    当负债侧占比过小时，强制使用纵向布局（占满整宽，撑出可见高度）
+        //    负债占比小时，按需给负债分配最小可见高度（每个块至少 50px），反推资产高度
         var result: [TreemapBlock] = []
         if twoSides {
             let assetFrac = CGFloat(assetWeight / (assetWeight + liabilityWeight))
             let liabilityFrac = 1 - assetFrac
 
-            // 负债占比极小时（如 < 15%），改用纵向布局给负债一个整行
-            // 这样负债块能获得完整高度而非被压缩成细条
-            let useVerticalSplit = liabilityFrac < 0.15 || !liabilityBlocks.isEmpty && assetBlocks.isEmpty
+            // 负债需要的高度：每个负债块至少 minBlockSide 高，向上取整到 gutter 整数倍
+            let liabilityCount = liabilityBlocks.count
+            let minLiabilityHeight = CGFloat(liabilityCount) * minBlockSide + CGFloat(max(0, liabilityCount - 1)) * gutter
+            // 在容器宽度下，负债区域需要的高度（按 minBlockSide 估算横向能容纳的负债块数）
+            // 简化策略：直接给负债按宽度计算最小高度
+            let estimatedLiabilityWidth = container.width * liabilityFrac
+            let blocksPerRow = max(1, Int(estimatedLiabilityWidth / (minBlockSide + gutter)))
+            let rowsNeeded = (liabilityCount + blocksPerRow - 1) / blocksPerRow
+            let requiredLiabilityHeight = CGFloat(rowsNeeded) * minBlockSide + CGFloat(max(0, rowsNeeded - 1)) * gutter
+            // 负债实际高度 = max(按比例, 最小需要)
+            let liabilityHeight = min(container.height * 0.5, max(requiredLiabilityHeight, container.height * liabilityFrac))
+            let actualAssetFrac = (container.height - liabilityHeight - gutter) / container.height
 
-            if useVerticalSplit {
-                // 纵向：上资产下负债
-                let splitY = container.minY + container.height * assetFrac
+            // 负债占比过小（< 25%）且需要纵向布局时
+            if liabilityHeight > container.height * liabilityFrac * 1.5 {
+                let liabilityRect = CGRect(
+                    x: container.minX,
+                    y: container.maxY - liabilityHeight,
+                    width: container.width,
+                    height: liabilityHeight
+                )
                 let assetRect = CGRect(
                     x: container.minX, y: container.minY,
                     width: container.width,
-                    height: container.height * assetFrac - gutter / 2
+                    height: max(40, container.height - liabilityHeight - gutter)
+                )
+                result += squarify(blocks: assetBlocks, in: assetRect)
+                result += squarify(blocks: liabilityBlocks, in: liabilityRect)
+            } else if container.width >= container.height {
+                // 横向：左资产右负债（按比例）
+                let splitX = container.minX + container.width * assetFrac
+                let assetRect = CGRect(
+                    x: container.minX, y: container.minY,
+                    width: container.width * assetFrac - gutter / 2,
+                    height: container.height
                 )
                 let liabilityRect = CGRect(
-                    x: container.minX, y: splitY + gutter / 2,
-                    width: container.width,
-                    height: max(60, container.height * liabilityFrac - gutter / 2)  // 最小高度保底
+                    x: splitX + gutter / 2, y: container.minY,
+                    width: container.width * liabilityFrac - gutter / 2,
+                    height: container.height
                 )
                 result += squarify(blocks: assetBlocks, in: assetRect)
                 result += squarify(blocks: liabilityBlocks, in: liabilityRect)
             } else {
-                // 横向：左资产右负债
-                let horizontal = container.width >= container.height
-                if horizontal {
-                    let splitX = container.minX + container.width * assetFrac
-                    let assetRect = CGRect(
-                        x: container.minX, y: container.minY,
-                        width: container.width * assetFrac - gutter / 2,
-                        height: container.height
-                    )
-                    let liabilityRect = CGRect(
-                        x: splitX + gutter / 2, y: container.minY,
-                        width: container.width * liabilityFrac - gutter / 2,
-                        height: container.height
-                    )
-                    result += squarify(blocks: assetBlocks, in: assetRect)
-                    result += squarify(blocks: liabilityBlocks, in: liabilityRect)
-                } else {
-                    // 容器是纵向（高 > 宽）时仍然用纵向 split
-                    let splitY = container.minY + container.height * assetFrac
-                    let assetRect = CGRect(
-                        x: container.minX, y: container.minY,
-                        width: container.width,
-                        height: container.height * assetFrac - gutter / 2
-                    )
-                    let liabilityRect = CGRect(
-                        x: container.minX, y: splitY + gutter / 2,
-                        width: container.width,
-                        height: container.height * liabilityFrac - gutter / 2
-                    )
-                    result += squarify(blocks: assetBlocks, in: assetRect)
-                    result += squarify(blocks: liabilityBlocks, in: liabilityRect)
-                }
+                // 容器纵向，按比例纵向 split
+                let splitY = container.minY + container.height * actualAssetFrac
+                let assetRect = CGRect(
+                    x: container.minX, y: container.minY,
+                    width: container.width,
+                    height: container.height * actualAssetFrac - gutter / 2
+                )
+                let liabilityRect = CGRect(
+                    x: container.minX, y: splitY + gutter / 2,
+                    width: container.width,
+                    height: container.height - (container.height * actualAssetFrac - gutter / 2) - gutter / 2
+                )
+                result += squarify(blocks: assetBlocks, in: assetRect)
+                result += squarify(blocks: liabilityBlocks, in: liabilityRect)
             }
         } else if assetIndices.isEmpty {
             result += squarify(blocks: liabilityBlocks, in: container)
