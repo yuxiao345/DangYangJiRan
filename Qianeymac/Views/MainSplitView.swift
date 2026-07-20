@@ -63,6 +63,9 @@ struct MainSplitView: View {
         .onReceive(NotificationCenter.default.publisher(for: .macMenuSearch)) { _ in
             showSearchSheet = true
         }
+        .onReceive(NotificationCenter.default.publisher(for: .macCreateLedger)) { _ in
+            showCreateLedgerSheet = true
+        }
         .sheet(isPresented: $showAddSheet) {
             MacAddTransactionSheet(prefillDate: selectedDate)
         }

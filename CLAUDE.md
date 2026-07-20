@@ -78,9 +78,9 @@ Target: `钱伲`, scheme: `钱伲`, bundle ID: `com.qianey.app`, container: `iCl
 
 ## Architecture
 
-**Stack:** SwiftUI (iOS 26+) + CoreData (`NSPersistentCloudKitContainer`) + CloudKit. No third-party dependencies.
+**Stack:** SwiftUI (iOS 18.0+, macOS 26.5+) + CoreData (`NSPersistentCloudKitContainer`) + CloudKit. No third-party dependencies.
 
-**DI pattern:** `AppContainer` is an `ObservableObject` injected as `@EnvironmentObject` at the app root. It holds `CoreDataStack` (which owns `NSPersistentCloudKitContainer`), all service instances, and `@Published var currentLedger: Ledger?`. Views read `appContainer.currentLedger` to determine the active ledger.
+**DI pattern:** `AppContainer` is a `@Observable @MainActor final class` injected via `.environment(appContainer)` + `@Environment(AppContainer.self)` at the app root. It holds `CoreDataStack` (which owns `NSPersistentCloudKitContainer`), all service instances, and `var currentLedger: Ledger?`. Views read `appContainer.currentLedger` to determine the active ledger.
 
 **Service layer:** Protocol-based. Every domain has `XxxServiceProtocol` + `XxxServiceImpl`. Services are instantiated in `AppContainer.init()`. They operate on `NSManagedObjectContext` (passed as parameter, never stored). All services are implemented: Ledger, Account, Transaction, Category, Template, Recurring, Member, Merchant, Project, Split, Budget, BankOCR, CreditCardStatement, Reconciliation, Currency, ExchangeRate, Export, Sync.
 
@@ -113,9 +113,9 @@ Target: `钱伲`, scheme: `钱伲`, bundle ID: `com.qianey.app`, container: `iCl
 | **总览/仪表盘** | `DashboardView` | `DashboardContentColumn` | `DashboardViewModel`, services |
 | **账户列表** | `AccountListView` | `AccountListContent` | services |
 | **账户详情** | `AccountDetailView` | `AccountDetailContent` | services |
-| **新增/编辑账户** | `AddEditAccountView` | 复用 iOS（共享） | `AddEditAccountView` |
+| **新增/编辑账户** | `AddEditAccountView` | `MacAccountEditSheet`（独立重写） | services |
 | **流水列表** | `TransactionListView` | `TransactionListContent` | `TransactionListOptions`, services |
-| **流水详情** | `TransactionDetailView`→`AddEditTransactionView(displayMode:)` | `TransactionDetailContent`→`MacAddTransactionSheet(displayMode:)` | - |
+| **流水详情** | `TransactionDetailView`（9 行 wrapper，调 `AddEditTransactionView(displayMode:)`）| `MacAddTransactionSheet(displayMode:)` 内联详情 | services |
 | **记一笔** | `AddEditTransactionView` | `MacAddTransactionSheet` | services |
 | **收支日历** | `CalendarStripView`+`CalendarDayCell` | 内置在 `TransactionListContent` | - |
 | **报表** | `ReportsView`（3种：分类占比+成员维度、收支趋势、多维分析） | `ReportDetailContent`（6种：分类占比+成员维度、收支趋势、资产变化、预算执行、资产配置、多维分析） | `ReportViewModel` |
@@ -125,29 +125,29 @@ Target: `钱伲`, scheme: `钱伲`, bundle ID: `com.qianey.app`, container: `iCl
 | **账本列表** | `LedgerListSettingsView`（Settings 内） | `SettingsContent` 内 | services |
 | **分类管理** | `CategoryListView`+`AddEditCategoryView` | `MacCategoryListView`+`MacCategoryEditSheet` | services |
 | **成员管理** | `MemberListView` | `MacMemberListView`+`MacMemberEditSheet` | services |
-| **商户管理** | `MerchantListView`（Settings 内） | `MacMerchantListView`+`MacMerchantEditSheet` ⚠️ 导航未挂载 | services |
-| **项目管理** | `ProjectListView`（Settings 内） | `MacProjectListView`+`MacProjectEditSheet` ⚠️ 导航未挂载 | services |
-| **周期账管理** | RecurringListView（Settings 内） | `MacRecurringListView`+`MacAddEditRecurringView` ⚠️ 导航未挂载 | services |
-| **模板管理** | TemplateListView（Settings 内） | `MacTemplateListView`+`MacAddEditTemplateView` ⚠️ 导航未挂载 | services |
+| **商户管理** | `MerchantListView`（Settings 内） | `MacMerchantListView`+`MacMerchantEditSheet`（已挂载到 `SettingsWindow` sheet） | services |
+| **项目管理** | `ProjectListView`（Settings 内） | `MacProjectListView`+`MacProjectEditSheet`（已挂载到 `SettingsWindow` sheet） | services |
+| **周期账管理** | RecurringListView（Settings 内） | `MacRecurringListView`+`MacAddEditRecurringView`（已挂载到 `SettingsWindow` sheet） | services |
+| **模板管理** | TemplateListView（Settings 内） | `MacTemplateListView`+`MacAddEditTemplateView`（已挂载到 `SettingsWindow` sheet） | services |
 | **预算详情** | `BudgetBookDetailView` | `BudgetBookDetailMacView` | `AddEditBudgetItemView`, services |
-| **预算列表** | `BudgetBookListView` | 复用（`#if os(macOS)` 条件编译） | `BudgetBookListView` |
-| **新增/编辑预算** | `AddEditBudgetBookView` | 复用 iOS（共享） | `AddEditBudgetBookView` |
-| **数据导出** | `ExportView` | `MacExportView` ⚠️ 导航未挂载 | `ExportServiceProtocol` |
+| **预算列表** | `BudgetBookListView` | `MacBudgetBookListView`（独立重写） | `BudgetService` |
+| **新增/编辑预算** | `AddEditBudgetBookView` | `MacAddEditBudgetBookView`（独立重写） | services |
+| **数据导出** | `ExportView` | `MacExportView`（已挂载到 `SettingsWindow` sheet） | `ExportServiceProtocol` |
 | **共享管理** | `CloudSharingView`+`LedgerSettingsView` | `CloudSharingDelegate`+`ShareBadgeView`（toolbar） | `SyncServiceImpl`, `CloudKitShareCoordinator` |
 | **信用卡对账** | `CreditCardReconciliationView` | 暂缓 | services |
-| **分期管理** | `Installments/` 目录 | 不做 | - |
+| **分期管理** | 暂缓（`Installments/` 目录为空，待定）| 不做 | - |
 | **拆分交易管理** | `SplitDetailView`+`SplitEntryRowView`+`SplitFormView` | 内置在 `MacAddTransactionSheet` | - |
 | **App 锁** | `AppLockView` | 不做（macOS 安全模型不同） | `BiometricAuth` |
-| **Onboarding** | 已替换为仪表盘引导 | 已替换为仪表盘引导 | - |
+| **Onboarding** | `OnboardingView`+`CreateLedgerView`（首启时显示）| 无（`MainSplitView` 直接显示空 ledger 状态）| - |
 
-> ⚠️ 标记的文件已实现但未挂载到 `MacLedgerDetailView` 导航中（仅链接了分类和成员管理），需要补充导航入口。
+> ✅ 所有 Mac 管理 view 已通过 `SettingsWindow.swift:142-151` 的 sheet 形式挂载（`MacLedgerDetailView` 旧路径已弃用）。
 
 ### 共享层（两个 target 都编译）
 
 - **Models:** 所有 `Models/CoreData/*Entity.swift`、`Models/Enums/*.swift`
 - **Services:** 所有 `Services/Protocols/`、`Services/Implementations/`
 - **Design System:** `Font+Design.swift`、`Color+Design.swift`、`GlassModifiers.swift`
-- **ViewModels:** `DashboardViewModel`、`SearchViewModel`、`ReportViewModel`、`AccountListViewModel`
+- **ViewModels:** `DashboardViewModel`、`SearchViewModel`、`ReportViewModel`（`AccountListViewModel` 死代码，0 处引用，待清理）
 - **Extensions:** `Date+Display`、`Color+Hex`、`Color+Expense`、`Transaction+Grouping` 等
 - **Utilities:** `CurrencyFormatter`、`DateFormatters`、`ChineseExpressionParser`、`DiagnosticLog` 等
 - **Components:** `CurrencyText`、`TransactionRowView`、`PixelProgressBar`、`NumpadAmountField`、`SearchablePickerView`、`DatePickerButton`
@@ -161,7 +161,7 @@ Target: `钱伲`, scheme: `钱伲`, bundle ID: `com.qianey.app`, container: `iCl
 
 ### 添加新文件到 Mac target
 
-Mac target 使用显式 Sources 列表（非自动同步）。新增共享文件时，需要同时加到 `project.pbxproj` 中 Mac target（`9AB5F8AC2FCD51C400F5044E`）的 Sources phase。
+Mac target 使用 `PBXFileSystemSynchronizedRootGroup`（Xcode 16+ 同步组机制，自动同步整个目录）。新增 Swift 文件**不需要**手动加 pbxproj。
 
 ## Sharing (CKShare)
 
@@ -319,4 +319,4 @@ Mac 报表位于 `Qianeymac/Views/Reports/`，使用独立组件拼装（非复�
 
 ### 现有条目数
 
-719 条目（zh-Hans + en 全覆盖）。
+约 11750 行 String Catalog（条目数随项目自然增长）。

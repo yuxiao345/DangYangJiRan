@@ -46,3 +46,6 @@ ghostty-*.txt
 
 # Claude Code worktrees
 .claude/worktrees/
+
+# Claude Code local settings (contains personal permissions/API keys)
+.claude/settings.local.json
