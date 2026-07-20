@@ -128,25 +128,18 @@ struct MacTreemapView: View {
         let liabilityBlocks = buildBlocks(for: liabilityIndices, in: liabilityArea)
 
         // 5. 按方向分配矩形：横向 split 时左资产右负债，纵向 split 时上资产下负债
+        //    当负债侧占比过小时，强制使用纵向布局（占满整宽，撑出可见高度）
         var result: [TreemapBlock] = []
         if twoSides {
-            let horizontal = container.width >= container.height
             let assetFrac = CGFloat(assetWeight / (assetWeight + liabilityWeight))
-            if horizontal {
-                let splitX = container.minX + container.width * assetFrac
-                let assetRect = CGRect(
-                    x: container.minX, y: container.minY,
-                    width: container.width * assetFrac - gutter / 2,
-                    height: container.height
-                )
-                let liabilityRect = CGRect(
-                    x: splitX + gutter / 2, y: container.minY,
-                    width: container.width * (1 - assetFrac) - gutter / 2,
-                    height: container.height
-                )
-                result += squarify(blocks: assetBlocks, in: assetRect)
-                result += squarify(blocks: liabilityBlocks, in: liabilityRect)
-            } else {
+            let liabilityFrac = 1 - assetFrac
+
+            // 负债占比极小时（如 < 15%），改用纵向布局给负债一个整行
+            // 这样负债块能获得完整高度而非被压缩成细条
+            let useVerticalSplit = liabilityFrac < 0.15 || !liabilityBlocks.isEmpty && assetBlocks.isEmpty
+
+            if useVerticalSplit {
+                // 纵向：上资产下负债
                 let splitY = container.minY + container.height * assetFrac
                 let assetRect = CGRect(
                     x: container.minX, y: container.minY,
@@ -156,10 +149,43 @@ struct MacTreemapView: View {
                 let liabilityRect = CGRect(
                     x: container.minX, y: splitY + gutter / 2,
                     width: container.width,
-                    height: container.height * (1 - assetFrac) - gutter / 2
+                    height: max(60, container.height * liabilityFrac - gutter / 2)  // 最小高度保底
                 )
                 result += squarify(blocks: assetBlocks, in: assetRect)
                 result += squarify(blocks: liabilityBlocks, in: liabilityRect)
+            } else {
+                // 横向：左资产右负债
+                let horizontal = container.width >= container.height
+                if horizontal {
+                    let splitX = container.minX + container.width * assetFrac
+                    let assetRect = CGRect(
+                        x: container.minX, y: container.minY,
+                        width: container.width * assetFrac - gutter / 2,
+                        height: container.height
+                    )
+                    let liabilityRect = CGRect(
+                        x: splitX + gutter / 2, y: container.minY,
+                        width: container.width * liabilityFrac - gutter / 2,
+                        height: container.height
+                    )
+                    result += squarify(blocks: assetBlocks, in: assetRect)
+                    result += squarify(blocks: liabilityBlocks, in: liabilityRect)
+                } else {
+                    // 容器是纵向（高 > 宽）时仍然用纵向 split
+                    let splitY = container.minY + container.height * assetFrac
+                    let assetRect = CGRect(
+                        x: container.minX, y: container.minY,
+                        width: container.width,
+                        height: container.height * assetFrac - gutter / 2
+                    )
+                    let liabilityRect = CGRect(
+                        x: container.minX, y: splitY + gutter / 2,
+                        width: container.width,
+                        height: container.height * liabilityFrac - gutter / 2
+                    )
+                    result += squarify(blocks: assetBlocks, in: assetRect)
+                    result += squarify(blocks: liabilityBlocks, in: liabilityRect)
+                }
             }
         } else if assetIndices.isEmpty {
             result += squarify(blocks: liabilityBlocks, in: container)
