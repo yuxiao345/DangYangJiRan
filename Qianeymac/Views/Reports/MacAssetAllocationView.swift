@@ -614,9 +614,9 @@ struct MacAssetAllocationView: View {
 
         for i in 0..<(items.count - 1) {
             cumulative += abs(items[i].balance)
-            let fraction = CGFloat(truncating: (cumulative / total) as NSNumber)
-            let size1 = horizontal ? CGSize(width: safeRect.width * fraction, height: safeRect.height) : CGSize(width: safeRect.width, height: safeRect.height * fraction)
-            let size2 = horizontal ? CGSize(width: safeRect.width * (1 - fraction), height: safeRect.height) : CGSize(width: safeRect.width, height: safeRect.height * (1 - fraction))
+            let frac = CGFloat(truncating: (cumulative / total) as NSNumber)
+            let size1 = horizontal ? CGSize(width: safeRect.width * frac, height: safeRect.height) : CGSize(width: safeRect.width, height: safeRect.height * frac)
+            let size2 = horizontal ? CGSize(width: safeRect.width * (1 - frac), height: safeRect.height) : CGSize(width: safeRect.width, height: safeRect.height * (1 - frac))
             let ratio = max(aspectRatio(size1), aspectRatio(size2))
             if ratio < bestRatio {
                 bestRatio = ratio
@@ -627,17 +627,19 @@ struct MacAssetAllocationView: View {
         let head = Array(items[0..<bestSplit])
         let tail = Array(items[bestSplit...])
         let headTotal = head.reduce(Decimal.zero) { $0 + abs($1.balance) }
-        let fraction = min(1, max(0, CGFloat(truncating: (headTotal / total) as NSNumber)))
+        let frac = min(1, max(0, CGFloat(truncating: (headTotal / total) as NSNumber)))
 
         let headRect: CGRect
         let tailRect: CGRect
 
         if horizontal {
-            headRect = CGRect(x: safeRect.minX, y: safeRect.minY, width: safeRect.width * fraction, height: safeRect.height)
-            tailRect = CGRect(x: safeRect.minX + safeRect.width * fraction, y: safeRect.minY, width: safeRect.width * (1 - fraction), height: safeRect.height)
+            let tailWidth = max(0, safeRect.width * (1 - frac))
+            headRect = CGRect(x: safeRect.minX, y: safeRect.minY, width: safeRect.width * frac, height: safeRect.height)
+            tailRect = CGRect(x: safeRect.minX + safeRect.width * frac, y: safeRect.minY, width: tailWidth, height: safeRect.height)
         } else {
-            headRect = CGRect(x: safeRect.minX, y: safeRect.minY, width: safeRect.width, height: safeRect.height * fraction)
-            tailRect = CGRect(x: safeRect.minX, y: safeRect.minY + safeRect.height * fraction, width: safeRect.width, height: safeRect.height * (1 - fraction))
+            let tailHeight = max(0, safeRect.height * (1 - frac))
+            headRect = CGRect(x: safeRect.minX, y: safeRect.minY, width: safeRect.width, height: safeRect.height * frac)
+            tailRect = CGRect(x: safeRect.minX, y: safeRect.minY + safeRect.height * frac, width: safeRect.width, height: tailHeight)
         }
 
         return squarify(items: head, in: headRect) + squarify(items: tail, in: tailRect)
