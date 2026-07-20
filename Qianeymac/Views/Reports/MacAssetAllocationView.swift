@@ -551,15 +551,21 @@ struct MacAssetAllocationView: View {
             guard totalAll > 0 else { return [] }
 
             let assetFrac = CGFloat(truncating: (totalAssets / totalAll) as NSNumber)
-            let dividerW: CGFloat = 0.012  // thin divider between zones
+            let minZoneFrac: CGFloat = 0.08  // 保证每侧最小占比，防止某侧被压到看不见
+            let dividerW: CGFloat = 0.012     // thin divider between zones
+
+            // 保证左右都有最小占比，防止 liability zone 宽度过小导致无法点击
+            let safeAssetFrac = min(assetFrac, 1 - minZoneFrac - dividerW)
+            let safeLiabFrac = max(1 - assetFrac, minZoneFrac)
 
             var result: [TreemapRect] = []
             if !assetItems.isEmpty {
-                let zone = CGRect(x: 0, y: 0, width: max(0, assetFrac - dividerW / 2), height: 1)
+                let zone = CGRect(x: 0, y: 0, width: safeAssetFrac, height: 1)
                 result += squarify(items: assetItems, in: zone)
             }
             if !liabilityItems.isEmpty {
-                let zone = CGRect(x: min(1, assetFrac + dividerW / 2), y: 0, width: max(0, 1 - assetFrac - dividerW / 2), height: 1)
+                let liabStart = min(1, safeAssetFrac + dividerW)
+                let zone = CGRect(x: liabStart, y: 0, width: safeLiabFrac, height: 1)
                 result += squarify(items: liabilityItems, in: zone)
             }
             return result
@@ -575,7 +581,8 @@ struct MacAssetAllocationView: View {
     private var dividerX: CGFloat? {
         guard drilled == nil, filter == .all, totalAssets + totalLiabilities > 0 else { return nil }
         let assetFrac = CGFloat(truncating: (totalAssets / (totalAssets + totalLiabilities)) as NSNumber)
-        if assetFrac < 0.08 || assetFrac > 0.92 { return nil }
+        let minZoneFrac: CGFloat = 0.08
+        if assetFrac < minZoneFrac || assetFrac > 1 - minZoneFrac { return nil }
         return assetFrac
     }
 
