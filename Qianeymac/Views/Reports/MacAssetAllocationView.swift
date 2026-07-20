@@ -698,7 +698,7 @@ struct MacAssetAllocationView: View {
                 )
                 .contentShape(Rectangle())
                 .frame(width: cellW, height: cellH)
-                .offset(x: cellX + cellW / 2, y: cellY + cellH / 2)
+                .position(x: cellX + cellW / 2, y: cellY + cellH / 2)
                 .onTapGesture {
                     if let key = item.drillKey {
                         withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) { drilled = key }
@@ -762,7 +762,7 @@ struct MacAssetAllocationView: View {
                 }
             }
             .frame(width: cellW, height: cellH)
-            .offset(x: cellX + cellW / 2, y: cellY + cellH / 2)
+            .position(x: cellX + cellW / 2, y: cellY + cellH / 2)
             .opacity(barProgress > 0 ? 1 : 0)
             .animation(.spring(response: 0.6, dampingFraction: 0.65).delay(Double(treemapRects.firstIndex(where: { $0.id == rect.id }) ?? 0) * 0.05), value: barProgress)
             .allowsHitTesting(false)
