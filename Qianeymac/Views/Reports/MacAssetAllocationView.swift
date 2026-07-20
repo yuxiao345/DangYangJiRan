@@ -603,42 +603,18 @@ struct MacAssetAllocationView: View {
             ? drillNodes.reduce(Decimal.zero) { $0 + abs($1.balance) }
             : (totalAssets + totalLiabilities)
 
-        let centerLabel: String
-        let centerValue: String
-        let centerSubLabel: String?
-        if drilled != nil {
-            centerLabel = String(localized: "净资产值")
-            centerValue = CurrencyFormatter.formatAdaptive(amount: netWorth, currencyCode: currencyCode)
-            centerSubLabel = String(localized: "点击返回")
-        } else {
-            centerLabel = String(localized: "净资产值")
-            centerValue = CurrencyFormatter.formatAdaptive(amount: netWorth, currencyCode: currencyCode)
-            centerSubLabel = "\(displayNodes.count) " + String(localized: "项")
-        }
-
-        return SunburstView(
+        return MacTreemapView(
             nodes: displayNodes,
             total: displayTotal,
-            centerLabel: centerLabel,
-            centerValue: centerValue,
-            centerSubLabel: centerSubLabel,
-            isDrilled: drilled != nil,
             onSelect: { node in
                 if let key = node.drillKey, drilled == nil {
                     withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
                         drilled = key
                     }
-                } else if drilled != nil {
-                    // L2 直接点击扇区不做操作
-                }
-            },
-            onReturnToRoot: {
-                withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
-                    drilled = nil
                 }
             }
         )
-        .frame(height: 260)
+        .frame(height: 320)
         .padding(12)
         .glassCard(cornerRadius: 20)
         .designGrain()
