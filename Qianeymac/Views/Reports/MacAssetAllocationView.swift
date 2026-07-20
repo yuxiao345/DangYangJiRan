@@ -654,14 +654,12 @@ struct MacAssetAllocationView: View {
             let padding: CGFloat = 4
 
             ZStack(alignment: .topLeading) {
-                // Vertical divider line between assets / liabilities
-                if let divX = dividerX {
-                    let divXpx = divX * size.width
-                    Rectangle()
-                        .fill(Color.designOnSurfaceVariant.opacity(0.15))
-                        .frame(width: 1, height: size.height * 0.9)
-                        .position(x: divXpx, y: size.height / 2)
-                }
+                // Debug: show container size
+                Text(String(format: "size: %.0fx%.0f", size.width, size.height))
+                    .font(.system(size: 8, design: .monospaced))
+                    .foregroundStyle(.blue)
+                    .padding(4)
+                    .background(Color.white.opacity(0.8))
 
                 // Treemap cells
                 ForEach(treemapRects) { rect in
