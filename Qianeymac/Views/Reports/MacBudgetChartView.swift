@@ -42,6 +42,39 @@ private extension View {
     }
 }
 
+// MARK: - Flip Indicator (hover to reveal)
+
+private struct FlipIndicatorModifier: ViewModifier {
+    let showOnHover: Bool
+    @State private var isHovering = false
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(alignment: .topTrailing) {
+                if showOnHover ? isHovering : true {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .font(.system(size: 9))
+                        .foregroundStyle(Color.designOnSurfaceVariant.opacity(showOnHover ? (isHovering ? 0.6 : 0) : 0.4))
+                        .padding(12)
+                }
+            }
+            .onContinuousHover { phase in
+                switch phase {
+                case .active:
+                    withAnimation(.easeInOut(duration: 0.15)) { isHovering = true }
+                case .ended:
+                    withAnimation(.easeInOut(duration: 0.15)) { isHovering = false }
+                }
+            }
+    }
+}
+
+private extension View {
+    func flipIndicator(showOnHover: Bool = false) -> some View {
+        modifier(FlipIndicatorModifier(showOnHover: showOnHover))
+    }
+}
+
 struct MacBudgetChartView: View {
     let items: [BudgetItemData]
     let books: [BudgetBook]
@@ -54,8 +87,8 @@ struct MacBudgetChartView: View {
     @State private var expandedCardIDs: Set<UUID> = []
     @State private var animTimeProgress: Double = 0
     @State private var animBudgetProgress: Double = 0
-    @State private var summaryCardHeight: CGFloat = 0
     @State private var burnRateRevealProgress: Double = 0
+    @State private var isBurnRateFlipped = false
 
     var body: some View {
         bodyContent
@@ -92,7 +125,8 @@ struct MacBudgetChartView: View {
                             .padding(.horizontal, 24)
                             .padding(.vertical, 12)
                         }
-                    }
+                        .scrollClipDisabled()
+}
                     .padding(.bottom, 24)
                 }
             }
@@ -161,13 +195,6 @@ struct MacBudgetChartView: View {
         HStack(alignment: .top, spacing: 8) {
             progressCard(s)
                 .frame(maxWidth: .infinity)
-                .background(
-                    GeometryReader { geo in
-                        Color.clear
-                            .onAppear { summaryCardHeight = geo.size.height }
-                            .onChange(of: geo.size.height) { _, new in summaryCardHeight = new }
-                    }
-                )
 
             VStack(spacing: 8) {
                 HStack(alignment: .top, spacing: 8) {
@@ -175,10 +202,9 @@ struct MacBudgetChartView: View {
                     controlledCard.frame(maxWidth: .infinity)
                 }
                 burnRateCard
-                    .frame(maxHeight: summaryCardHeight > 0 ? .infinity : nil)
+                    .frame(height: 87)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: summaryCardHeight > 0 ? summaryCardHeight : nil)
         }
     }
 
@@ -246,9 +272,23 @@ struct MacBudgetChartView: View {
         .hoverTilt()
     }
 
-    // MARK: - Burn Rate Card (📶 消耗速率)
+    // MARK: - Burn Rate Card (📶 消耗速率，支持翻转)
 
     private var burnRateCard: some View {
+        ZStack {
+            if isBurnRateFlipped {
+                burnRateBack
+            } else {
+                burnRateFront
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .rotation3DEffect(.degrees(isBurnRateFlipped ? 180 : 0), axis: (x: 0, y: 1, z: 0))
+        .animation(.spring(response: 0.5, dampingFraction: 0.7), value: isBurnRateFlipped)
+        .onTapGesture { withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) { isBurnRateFlipped.toggle() } }
+    }
+
+    private var burnRateFront: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(String(localized: "消耗速率"))
                 .font(.system(size: 9, weight: .semibold))
@@ -265,12 +305,11 @@ struct MacBudgetChartView: View {
             }
         }
         .padding(12)
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .glassCard(cornerRadius: 14)
-        .hoverTilt()
+        .flipIndicator(showOnHover: true)
         .task {
             burnRateRevealProgress = 0
-            // 延迟到下一帧，确保首帧以 progress=0 渲染完成后再启动动画
             DispatchQueue.main.async {
                 withAnimation(.easeOut(duration: 4.0)) { burnRateRevealProgress = 1 }
             }
@@ -281,6 +320,98 @@ struct MacBudgetChartView: View {
                 withAnimation(.easeOut(duration: 4.0)) { burnRateRevealProgress = 1 }
             }
         }
+    }
+
+    private var burnRateBack: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(String(localized: "消耗分析"))
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(Color.designOnSurfaceVariant)
+
+            if burnRateData.isEmpty {
+                Text(String(localized: "暂无数据"))
+                    .font(.system(size: 9))
+                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                burnRateAnalysisContent
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .glassCard(cornerRadius: 14)
+        .flipIndicator(showOnHover: true)
+    }
+
+    // MARK: - Burn Rate Analysis Content
+
+    private var burnRateAnalysisContent: some View {
+        let analysis = BurnRateAnalysis(buckets: burnRateData)
+        return VStack(alignment: .leading, spacing: 6) {
+            // 第一行：峰值区间 + 整体节奏（左右结构）
+            HStack(alignment: .top, spacing: 8) {
+                if let peak = analysis.peakBucket {
+                    analysisRow(
+                        icon: "exclamationmark.triangle.fill",
+                        iconColor: peakColor(peak),
+                        title: String(localized: "峰值区间"),
+                        body: peakLabel(peak)
+                    )
+                }
+
+                analysisRow(
+                    icon: analysis.isAccelerating ? "arrow.up.right" : "arrow.down.right",
+                    iconColor: analysis.isAccelerating ? Color.designAccentRed : .blue,
+                    title: String(localized: "整体节奏"),
+                    body: analysis.rhythmText
+                )
+            }
+
+            // 第二行：建议（单独一行）
+            if !analysis.suggestion.isEmpty {
+                analysisRow(
+                    icon: "lightbulb.fill",
+                    iconColor: Color.designPrimaryFixedDim,
+                    title: String(localized: "建议"),
+                    body: analysis.suggestion
+                )
+            }
+
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func analysisRow(icon: String, iconColor: Color, title: String, body: String) -> some View {
+        HStack(alignment: .top, spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 8))
+                .foregroundStyle(iconColor)
+                .frame(width: 10)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(Color.designOnSurfaceVariant)
+                Text(body)
+                    .font(.system(size: 8))
+                    .foregroundStyle(Color.designOnSurface.opacity(0.8))
+                    .lineLimit(3)
+            }
+        }
+    }
+
+    private func peakLabel(_ peak: BurnRateBucket) -> String {
+        let df = DateFormatter()
+        df.dateFormat = "M/d"
+        let start = df.string(from: peak.startDate)
+        let end = df.string(from: peak.endDate)
+        let amount = CurrencyFormatter.formatDecimal(amount: peak.amount, fractionDigits: 0)
+        return "\(start)-\(end) 消耗\(amount)，为周期最高"
+    }
+
+    private func peakColor(_ peak: BurnRateBucket) -> Color {
+        let ratio = peak.maxAmount > 0 ? CGFloat(truncating: (peak.amount / peak.maxAmount) as NSNumber) : 0
+        let hue = (1.0 - ratio) * 0.33
+        return Color(hue: hue, saturation: 0.75, brightness: 0.85)
     }
 
     // MARK: - Overview progress bars (左半部分)
@@ -476,6 +607,7 @@ private struct BudgetCardView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .glassCard(cornerRadius: 14)
         .hoverTilt()
+        .flipIndicator(showOnHover: true)
     }
 
     // MARK: - Back: Trend Chart + Pace
@@ -611,12 +743,75 @@ private func weeklySmoothed(_ daily: [DailySpendingPoint]) -> [DailySpendingPoin
             result.append(DailySpendingPoint(date: weekStart, amount: weekTotal))
             weekStart = cal.date(byAdding: .day, value: 1, to: weekEnd) ?? point.date
             weekEnd = cal.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
-            weekTotal = 0
         }
         weekTotal += point.amount
     }
     result.append(DailySpendingPoint(date: weekStart, amount: weekTotal))
     return result
+}
+
+// MARK: - Burn Rate Analysis
+
+/// 根据 BurnRateBucket 数据生成分析结论
+private struct BurnRateAnalysis {
+    let buckets: [BurnRateBucket]
+
+    /// 消耗最高的桶
+    var peakBucket: BurnRateBucket? {
+        buckets.max(by: { $0.amount < $1.amount })
+    }
+
+    /// 是否加速中（后半段均值 > 前半段均值）
+    var isAccelerating: Bool {
+        guard buckets.count >= 2 else { return false }
+        let mid = buckets.count / 2
+        let firstHalf = buckets.prefix(mid).map(\.amount)
+        let secondHalf = buckets.suffix(buckets.count - mid).map(\.amount)
+        let firstAvg = firstHalf.reduce(0, +) / Decimal(firstHalf.count)
+        let secondAvg = secondHalf.reduce(0, +) / Decimal(secondHalf.count)
+        return secondAvg > firstAvg
+    }
+
+    /// 整体节奏描述
+    var rhythmText: String {
+        guard buckets.count >= 2 else { return String(localized: "数据不足") }
+        let mid = buckets.count / 2
+        let firstHalf = Array(buckets.prefix(mid))
+        let secondHalf = Array(buckets.suffix(buckets.count - mid))
+        let firstAvg = firstHalf.map(\.amount).reduce(0, +) / Decimal(max(1, firstHalf.count))
+        let secondAvg = secondHalf.map(\.amount).reduce(0, +) / Decimal(max(1, secondHalf.count))
+        let df = DateFormatter()
+        df.dateFormat = "M/d"
+        let firstStart = df.string(from: firstHalf.first?.startDate ?? Date())
+        let firstEnd = df.string(from: firstHalf.last?.endDate ?? Date())
+        let secondStart = df.string(from: secondHalf.first?.startDate ?? Date())
+        let secondEnd = df.string(from: secondHalf.last?.endDate ?? Date())
+        let ratio = firstAvg > 0 ? secondAvg / firstAvg : 0
+        if secondAvg > firstAvg * Decimal(1.2) {
+            return String(localized: "后半段（\(secondStart)-\(secondEnd)）消耗明显加快，约为前半段\(String(format: "%.0f", Double(truncating: ratio as NSNumber) * 100))%")
+        } else if secondAvg < firstAvg * Decimal(0.8) {
+            return String(localized: "后半段（\(secondStart)-\(secondEnd)）消耗放缓，约为前半段\(String(format: "%.0f", Double(truncating: ratio as NSNumber) * 100))%")
+        } else {
+            return String(localized: "节奏平稳，前后两段消耗接近")
+        }
+    }
+
+    /// 建议文字
+    var suggestion: String {
+        guard let peak = peakBucket else { return "" }
+        let ratio = peak.maxAmount > 0 ? Double(truncating: (peak.amount / peak.maxAmount) as NSNumber) : 0
+        if ratio >= 0.85 {
+            let df = DateFormatter()
+            df.dateFormat = "M/d"
+            let start = df.string(from: peak.startDate)
+            let end = df.string(from: peak.endDate)
+            return String(localized: "近期消耗强度极高（\(start)-\(end)），建议关注该区间的支出项目")
+        } else if isAccelerating {
+            return String(localized: "消耗呈上升趋势，建议留意近期预算执行情况")
+        } else {
+            return String(localized: "整体节奏可控，保持当前消费习惯")
+        }
+    }
 }
 
 // MARK: - Burn Rate Bar Chart (多米诺骨牌动画，Animatable 驱动)
