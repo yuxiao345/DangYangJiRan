@@ -703,17 +703,23 @@ struct MacAssetAllocationView: View {
     private func treemapCell(rect: TreemapRect, containerSize: CGSize, padding: CGFloat) -> some View {
         let item = rect.item
         let fill = treemapColor(for: item)
-        let x = rect.frame.minX * containerSize.width + padding
-        let y = rect.frame.minY * containerSize.height + padding
-        let w = max(1, rect.frame.width * containerSize.width - padding * 2)
-        let h = max(1, rect.frame.height * containerSize.height - padding * 2)
+        // Absolute pixel position of the cell's top-left corner
+        let cellX = rect.frame.minX * containerSize.width
+        let cellY = rect.frame.minY * containerSize.height
+        let cellW = max(1, rect.frame.width * containerSize.width)
+        let cellH = max(1, rect.frame.height * containerSize.height)
+        // Inner content area after padding
+        let x = cellX + padding
+        let y = cellY + padding
+        let w = max(1, cellW - padding * 2)
+        let h = max(1, cellH - padding * 2)
 
         return ZStack {
-            // Tappable overlay (transparent, centered via offset)
+            // Tappable overlay
             Color.clear
                 .contentShape(Rectangle())
-                .frame(width: w, height: h)
-                .offset(x: x, y: y)
+                .frame(width: cellW, height: cellH)
+                .offset(x: cellX + cellW / 2, y: cellY + cellH / 2)
                 .onTapGesture {
                     if let key = item.drillKey {
                         withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) { drilled = key }
@@ -726,7 +732,7 @@ struct MacAssetAllocationView: View {
                     #endif
                 }
 
-            // Visual content (positioned absolutely via offset, animated opacity)
+            // Visual content
             ZStack {
                 RoundedRectangle(cornerRadius: 6)
                     .fill(fill)
@@ -735,6 +741,11 @@ struct MacAssetAllocationView: View {
                         RoundedRectangle(cornerRadius: 6)
                             .stroke(Color.white.opacity(0.25), lineWidth: 0.5)
                     )
+                // Debug: show actual pixel bounds (always visible but tiny)
+                Text(String(format: "%.0f,%.0f", cellX, cellY))
+                    .font(.system(size: 5, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.4))
+                    .allowsHitTesting(false)
 
                 if w > 60, h > 36 {
                     let pad = min(8, w * 0.06, h * 0.08)
@@ -771,8 +782,8 @@ struct MacAssetAllocationView: View {
                         .foregroundStyle(.white.opacity(0.8))
                 }
             }
-            .frame(width: w, height: h)
-            .offset(x: x, y: y)
+            .frame(width: cellW, height: cellH)
+            .offset(x: cellX + cellW / 2, y: cellY + cellH / 2)
             .opacity(barProgress > 0 ? 1 : 0)
             .animation(.spring(response: 0.6, dampingFraction: 0.65).delay(Double(treemapRects.firstIndex(where: { $0.id == rect.id }) ?? 0) * 0.05), value: barProgress)
             .allowsHitTesting(false)
