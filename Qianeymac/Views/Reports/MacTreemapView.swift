@@ -288,11 +288,19 @@ struct MacTreemapView: View {
                             .padding(pad)
                         }
                     }
-                } else if frame.width > 40, frame.height > 26 {
-                    // 小块：只显示图标
-                    Image(systemName: node.iconName)
-                        .font(.system(size: min(14, frame.width * 0.22), weight: .medium))
-                        .foregroundStyle(.white.opacity(0.9))
+                } else if frame.width > 32, frame.height > 22 {
+                    // 小块：图标居中显示（避免贴左上角）
+                    ZStack {
+                        Circle()
+                            .fill(Color.white.opacity(0.12))
+                            .frame(
+                                width: min(frame.width, frame.height) * 0.55,
+                                height: min(frame.width, frame.height) * 0.55
+                            )
+                        Image(systemName: node.iconName)
+                            .font(.system(size: min(frame.width, frame.height) * 0.32, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.9))
+                    }
                 }
             }
             .frame(width: frame.width, height: frame.height)
