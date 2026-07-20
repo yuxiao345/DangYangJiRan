@@ -278,6 +278,7 @@ struct MacBudgetChartView: View {
         ZStack {
             if isBurnRateFlipped {
                 burnRateBack
+                    .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
             } else {
                 burnRateFront
             }
