@@ -121,7 +121,10 @@ struct MacTreemapView: View {
         }
 
         let horizontal = rect.width >= rect.height
-        let side = horizontal ? rect.height : rect.width
+        // 减去 gutter 后用于分配的"有效短边"
+        let rawSide = horizontal ? rect.height : rect.width
+        let effectiveSide = max(1, rawSide - gutter)
+        let side = effectiveSide
 
         // 找最佳分组：贪心扫描，最小化最差长宽比
         var bestSplit = 1
@@ -151,16 +154,26 @@ struct MacTreemapView: View {
         let remainingRect: CGRect
 
         if horizontal {
+            // 左侧 row 列 + gutter + 右侧 rest
             rowRect = CGRect(x: rect.minX, y: rect.minY, width: rowThickness, height: rect.height)
-            remainingRect = CGRect(x: rect.minX + rowThickness, y: rect.minY,
-                                   width: max(0, rect.width - rowThickness), height: rect.height)
+            remainingRect = CGRect(
+                x: rect.minX + rowThickness + gutter,
+                y: rect.minY,
+                width: max(0, rect.width - rowThickness - gutter),
+                height: rect.height
+            )
         } else {
+            // 上方 row + gutter + 下方 rest
             rowRect = CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: rowThickness)
-            remainingRect = CGRect(x: rect.minX, y: rect.minY + rowThickness,
-                                   width: rect.width, height: max(0, rect.height - rowThickness))
+            remainingRect = CGRect(
+                x: rect.minX,
+                y: rect.minY + rowThickness + gutter,
+                width: rect.width,
+                height: max(0, rect.height - rowThickness - gutter)
+            )
         }
 
-        let laidOut = layoutRow(row, in: rowRect, side: side, horizontal: horizontal)
+        let laidOut = layoutRow(row, in: rowRect, side: rowRect.height > 0 ? rowRect.height : rowRect.width, horizontal: horizontal)
         let tail = squarifyRecursive(rest, in: remainingRect)
         return laidOut + tail
     }
