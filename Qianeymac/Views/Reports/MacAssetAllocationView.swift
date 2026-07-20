@@ -27,7 +27,7 @@ struct MacAssetAllocationView: View {
 
     @State private var animTrigger = false
     @State private var barProgress: Double = 0
-    @State private var selectedBar: String?
+    @State private var hoveredBar: String?
     /// 瀑布图下钻目标（nil = L1 类型聚合视图；非 nil = L2 该类型账户明细）
     @State private var drilled: DrillKey?
 
@@ -280,7 +280,7 @@ struct MacAssetAllocationView: View {
     }
 
     /// L1 点选类型柱 → 下钻；汇总条/叶子账户柱不响应。
-    /// selectedBar 由 chartXSelection 的悬停命中提供，值为柱子的唯一 axisKey（= 节点 id）。
+    /// hoveredBar 由 chartOverlay 的 onContinuousHover 提供，值为柱子的唯一 axisKey。
     private func handleSelection(_ axisKey: String?) {
         guard drilled == nil, let axisKey else { return }
         if let node = aggregatedNodes().first(where: { $0.id == axisKey && $0.drillKey != nil }) {
@@ -330,10 +330,24 @@ struct MacAssetAllocationView: View {
                     .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.35))
                     .lineStyle(StrokeStyle(lineWidth: 1.5))
             }
-            .chartXSelection(value: $selectedBar)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                handleSelection(selectedBar)
+            .chartOverlay { proxy in
+                GeometryReader { geo in
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .onContinuousHover { phase in
+                            switch phase {
+                            case .active(let location):
+                                if let key = proxy.value(atX: location.x, as: String.self) {
+                                    hoveredBar = key
+                                }
+                            case .ended:
+                                hoveredBar = nil
+                            }
+                        }
+                        .onTapGesture {
+                            handleSelection(hoveredBar)
+                        }
+                }
             }
             .chartBackground { _ in
                 LinearGradient(
@@ -747,7 +761,7 @@ struct MacAssetAllocationView: View {
     private func triggerAnimations() {
         animTrigger = false
         barProgress = 0
-        selectedBar = nil
+        hoveredBar = nil
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
             withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
