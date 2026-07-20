@@ -385,19 +385,20 @@ struct MacBudgetChartView: View {
     private func analysisRow(icon: String, iconColor: Color, title: String, body: String) -> some View {
         HStack(alignment: .top, spacing: 5) {
             Image(systemName: icon)
-                .font(.system(size: 8))
+                .font(.system(size: 9))
                 .foregroundStyle(iconColor)
-                .frame(width: 10)
-            VStack(alignment: .leading, spacing: 1) {
+                .frame(width: 12)
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 8, weight: .semibold))
+                    .font(.system(size: 9, weight: .semibold))
                     .foregroundStyle(Color.designOnSurfaceVariant)
                 Text(body)
-                    .font(.system(size: 8))
-                    .foregroundStyle(Color.designOnSurface.opacity(0.8))
+                    .font(.system(size: 9))
+                    .foregroundStyle(Color.designOnSurface.opacity(0.85))
                     .lineLimit(3)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func peakLabel(_ peak: BurnRateBucket) -> String {
