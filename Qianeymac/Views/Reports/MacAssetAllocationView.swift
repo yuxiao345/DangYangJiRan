@@ -619,7 +619,7 @@ struct MacAssetAllocationView: View {
         let head = Array(items[0..<bestSplit])
         let tail = Array(items[bestSplit...])
         let headTotal = head.reduce(Decimal.zero) { $0 + abs($1.balance) }
-        let fraction = CGFloat(truncating: (headTotal / total) as NSNumber)
+        let fraction = min(1, max(0, CGFloat(truncating: (headTotal / total) as NSNumber)))
 
         let headRect: CGRect
         let tailRect: CGRect
