@@ -98,44 +98,44 @@ struct MacTreemapView: View {
         let liabilityFrac = liabilityWeight / totalWeight
 
         if !assetItems.isEmpty && !liabilityItems.isEmpty && liabilityFrac > dividerThreshold {
-            // 负债占比 > 30%：分两区
             return layoutSplit(assetItems: assetItems, liabilityItems: liabilityItems, assetFrac: assetWeight / totalWeight, in: layoutRect)
         } else if !assetItems.isEmpty && !liabilityItems.isEmpty {
-            // 负债占比 ≤ 30%：负债用底部窄条（保留完整宽度 + 最小可见高度）
-            // 强制负债 squarify 区域是"宽 > 高"，让 row 沿垂直方向铺，
-            // 所有负债 tile 都获得完整宽度方向的可见性
+            // 负债用底部窄条；按 tile 数 × 70px 估算高度
             let liabilityCount = liabilityItems.count
-            // 负债高度 = 每个 tile 至少 70px + gutter 间隔
-            let liabilityHeight = max(
-                layoutRect.height * 0.2,
-                CGFloat(liabilityCount) * 70 + CGFloat(max(0, liabilityCount - 1)) * paddingInner
-            )
-            // 但不超过容器高度的 40%
-            let finalLiabilityHeight = min(layoutRect.height * 0.4, liabilityHeight)
-            let assetHeight = layoutRect.height - finalLiabilityHeight - paddingInner
+            let desiredLiabilityHeight = CGFloat(liabilityCount) * 70 + CGFloat(max(0, liabilityCount - 1)) * paddingInner
+            let liabilityHeight = min(layoutRect.height * 0.4, max(layoutRect.height * 0.2, desiredLiabilityHeight))
+            let assetHeight = layoutRect.height - liabilityHeight - paddingInner
 
-            // 负债区域：强制宽度 > 高度（水平 row）
-            // 用 80% 宽度作为负债区，剩余 20% 给资产（保留左侧大空间感）
-            // 但更稳妥：负债区域直接 100% 宽度但极矮高度
-            let liabilityWidth = layoutRect.width
-            // 强制横向 row：负债容器是 width × liabilityHeight，且 width > height
-            // 通过给负债区足够的高度，squarify 会自动选择横向 row
-            let liabilityRect = CGRect(
-                x: layoutRect.minX,
-                y: layoutRect.maxY - finalLiabilityHeight,
-                width: liabilityWidth,
-                height: finalLiabilityHeight
-            )
             let assetRect = CGRect(
                 x: layoutRect.minX, y: layoutRect.minY,
                 width: layoutRect.width,
                 height: max(minTileSide, assetHeight)
             )
+            let liabilityRect = CGRect(
+                x: layoutRect.minX, y: layoutRect.maxY - liabilityHeight,
+                width: layoutRect.width,
+                height: liabilityHeight
+            )
+
+            // 把负债按"按权重分配"铺成横向 row：每个负债 tile 获得宽度按比例，高度 = liabilityHeight
+            // 这样 tile 高度恒定（liabilityHeight），宽度按比例，强制可见
             var result = squarify(items: assetItems, in: assetRect)
-            result += squarify(items: liabilityItems, in: liabilityRect)
+            // 对负债用 simple strip 布局（替代 squarify）：按 weight 比例分配宽度
+            let totalLiabilityWeight = liabilityItems.reduce(0) { $0 + $1.weight }
+            if totalLiabilityWeight > 0 {
+                let scaleMode = currentScaleMode
+                let usableWidth = liabilityRect.width - paddingInner * CGFloat(max(0, liabilityItems.count - 1))
+                var xOffset = liabilityRect.minX
+                for item in liabilityItems {
+                    let frac = CGFloat(item.weight / totalLiabilityWeight)
+                    let tileWidth = max(minTileSide, usableWidth * frac)
+                    let frame = CGRect(x: xOffset, y: liabilityRect.minY, width: tileWidth, height: liabilityRect.height)
+                    result.append(PositionedBlock(item: item, frame: frame, scaleMode: scaleMode))
+                    xOffset += tileWidth + paddingInner
+                }
+            }
             return result
         } else {
-            // 单一递归 squarify
             return squarify(items: sortedItems, in: layoutRect)
         }
     }
@@ -323,7 +323,41 @@ struct MacTreemapView: View {
             )
             result.append(PositionedBlock(item: item, frame: frame, scaleMode: currentScaleMode))
         }
+
+        // 后置几何校验：任何 tile 的 min(w,h) < minTileSide 强制放大到 minTileSide
+        // 这会"借用"相邻 tile 的空间，迭代直到全部满足
+        enforceMinimumTileSize(blocks: &result, containerRect: rect)
+
         return result
+    }
+
+    /// 迭代强制每个 tile 至少 minTileSide × minTileSide
+    /// 通过调整相邻 tile 的大小，把空间从大 tile 转给小 tile
+    private func enforceMinimumTileSize(blocks: inout [PositionedBlock], containerRect: CGRect) {
+        let minSide: CGFloat = minTileSide
+        let maxIterations = 5
+        for _ in 0..<maxIterations {
+            var needsAdjustment = false
+            for i in 0..<blocks.count {
+                var block = blocks[i]
+                if block.frame.width < minSide || block.frame.height < minSide {
+                    needsAdjustment = true
+                    // 强制放大到 minSide，保持原位置中心不变
+                    let newW = max(block.frame.width, minSide)
+                    let newH = max(block.frame.height, minSide)
+                    let dx = (newW - block.frame.width) / 2
+                    let dy = (newH - block.frame.height) / 2
+                    block.frame = CGRect(
+                        x: block.frame.minX - dx,
+                        y: block.frame.minY - dy,
+                        width: newW,
+                        height: newH
+                    )
+                    blocks[i] = block
+                }
+            }
+            if !needsAdjustment { break }
+        }
     }
 
     /// 忠实翻译 d3-hierarchy/src/treemap/squarify.js
