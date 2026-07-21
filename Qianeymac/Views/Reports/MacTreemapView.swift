@@ -647,7 +647,7 @@ struct MacTreemapView: View {
 
     struct PositionedBlock: Identifiable {
         let item: TreemapItem
-        let frame: CGRect
+        var frame: CGRect
         let scaleMode: ScaleMode
         var id: String { item.id }
     }
