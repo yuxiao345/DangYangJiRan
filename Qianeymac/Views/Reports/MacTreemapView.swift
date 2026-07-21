@@ -124,11 +124,30 @@ struct MacTreemapView: View {
             let totalLiabilityWeight = liabilityItems.reduce(0) { $0 + $1.weight }
             if totalLiabilityWeight > 0 {
                 let scaleMode = currentScaleMode
-                let usableWidth = liabilityRect.width - paddingInner * CGFloat(max(0, liabilityItems.count - 1))
+                let totalGutter = paddingInner * CGFloat(max(0, liabilityItems.count - 1))
+                let usableWidth = max(1, liabilityRect.width - totalGutter)
+
+                // 计算总所需宽度：保底 minTileSide 后按比例分配
+                // 如果总所需宽度 > usableWidth，按比例缩小所有 tile
+                var rawWidths = liabilityItems.map { item in
+                    max(minTileSide, usableWidth * CGFloat(item.weight / totalLiabilityWeight))
+                }
+                let totalRaw = rawWidths.reduce(0, +)
+                if totalRaw > usableWidth {
+                    // 等比缩小到 usableWidth（每个 tile 仍保底 minTileSide，溢出的部分由分配处理）
+                    let excess = totalRaw - usableWidth
+                    let reducible = rawWidths.reduce(0) { $0 + max(0, $1 - minTileSide) }
+                    if reducible > 0 {
+                        let scale = max(0, 1 - excess / reducible)
+                        rawWidths = rawWidths.map { w in
+                            max(minTileSide, w * scale)
+                        }
+                    }
+                }
+
                 var xOffset = liabilityRect.minX
-                for item in liabilityItems {
-                    let frac = CGFloat(item.weight / totalLiabilityWeight)
-                    let tileWidth = max(minTileSide, usableWidth * frac)
+                for (idx, item) in liabilityItems.enumerated() {
+                    let tileWidth = rawWidths[idx]
                     let frame = CGRect(x: xOffset, y: liabilityRect.minY, width: tileWidth, height: liabilityRect.height)
                     result.append(PositionedBlock(item: item, frame: frame, scaleMode: scaleMode))
                     xOffset += tileWidth + paddingInner
