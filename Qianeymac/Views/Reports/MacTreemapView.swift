@@ -26,7 +26,7 @@ struct MacTreemapView: View {
     private let phi: CGFloat = (1 + sqrt(5)) / 2
 
     /// 内边距（gutter）：tile 之间的间距
-    private let paddingInner: CGFloat = 14
+    private let paddingInner: CGFloat = 10
 
     /// 外边距：容器四周
     private let paddingOuter: CGFloat = 4
@@ -92,23 +92,25 @@ struct MacTreemapView: View {
 
         if !assetItems.isEmpty && !liabilityItems.isEmpty && liabilityFrac > dividerThreshold {
             // 负债占比 > 30%：分两区
-            print("[treemap] liabilityFrac=\(liabilityFrac), split")
             return layoutSplit(assetItems: assetItems, liabilityItems: liabilityItems, assetFrac: assetWeight / totalWeight, in: layoutRect)
         } else if !assetItems.isEmpty && !liabilityItems.isEmpty {
-            print("[treemap] liabilityFrac=\(liabilityFrac), liabilityCount=\(liabilityItems.count), edgeColumn")
-            // 负债占比 ≤ 30%：负债缩到边缘窄列，至少 minLiabilityWidth 像素可见
-            let minLiabilityWidth: CGFloat = 80
-            let liabilityRect = CGRect(
-                x: layoutRect.maxX - minLiabilityWidth,
-                y: layoutRect.minY,
-                width: minLiabilityWidth,
-                height: layoutRect.height
-            )
+            // 负债占比 ≤ 30%：负债用底部窄条（保留完整宽度 + 最小可见高度）
+            // 估算负债所需高度：每个 tile 至少 minTileSide 高度 + gutter
+            let liabilityCount = liabilityItems.count
+            let estimatedNeededHeight = CGFloat(liabilityCount) * minTileSide + CGFloat(max(0, liabilityCount - 1)) * paddingInner
+            // 负债高度 = max(估算最小值, 容器高度的 20%)，但不超过 50%
+            let liabilityHeight = min(layoutRect.height * 0.5, max(estimatedNeededHeight, layoutRect.height * 0.2))
+            let assetHeight = max(minTileSide, layoutRect.height - liabilityHeight - paddingInner)
+
             let assetRect = CGRect(
-                x: layoutRect.minX,
-                y: layoutRect.minY,
-                width: max(minTileSide, layoutRect.width - minLiabilityWidth - paddingInner),
-                height: layoutRect.height
+                x: layoutRect.minX, y: layoutRect.minY,
+                width: layoutRect.width,
+                height: assetHeight
+            )
+            let liabilityRect = CGRect(
+                x: layoutRect.minX, y: layoutRect.maxY - liabilityHeight,
+                width: layoutRect.width,
+                height: liabilityHeight
             )
             var result = squarify(items: assetItems, in: assetRect)
             result += squarify(items: liabilityItems, in: liabilityRect)
