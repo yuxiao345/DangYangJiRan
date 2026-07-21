@@ -94,13 +94,17 @@ struct MacTreemapView: View {
         }
     }
 
-    /// 计算负债区高度：每个 tile 至少 liabilityTileMinHeight，但不超过容器 40%
+    /// 计算负债区高度：每个 tile 至少 minTileSide，保证 tile 不变成像素点
+    /// 上限 50%，超过则按比例压缩但绝不低于"每 tile 至少 minTileSide"
     private func computeLiabilityHeight(tileCount: Int, in rect: CGRect) -> CGFloat {
-        let desiredHeight = CGFloat(tileCount) * liabilityTileMinHeight
-            + CGFloat(max(0, tileCount - 1)) * paddingInner
-        let minHeight = rect.height * 0.2
-        let maxHeight = rect.height * 0.4
-        return min(maxHeight, max(minHeight, desiredHeight))
+        let hardMin = CGFloat(tileCount) * minTileSide + CGFloat(max(0, tileCount - 1)) * paddingInner
+        let upperBound = rect.height * 0.5
+        let lowerBound = rect.height * 0.2
+        // 优先级：硬最小值 > 上限取上限 > 下限取下限
+        if hardMin > upperBound {
+            return hardMin  // 即使超出 50%，也必须满足每 tile 至少 minTileSide
+        }
+        return max(lowerBound, min(upperBound, hardMin))
     }
 
     /// Strip layout：按 weight 比例分配宽度，高度恒定 = rect.height
@@ -130,11 +134,25 @@ struct MacTreemapView: View {
     /// 计算 strip layout 中每个 tile 的宽度
     /// - 保底 minTileSide
     /// - 累积超出可用宽度时等比缩小非保底部分
+    /// - 即使全保底场景也严格保证总宽 ≤ usableWidth
     private func computeStripWidths(
         items: [TreemapItem],
         totalWeight: Double,
         usableWidth: CGFloat
     ) -> [CGFloat] {
+        guard !items.isEmpty else { return [] }
+        let n = CGFloat(items.count)
+        // 硬保底总宽：所有 item 至少 minTileSide，总 gutter = paddingInner * (n-1)
+        let hardFloorWidth = n * minTileSide + max(0, n - 1) * paddingInner
+
+        if hardFloorWidth >= usableWidth {
+            // 极端场景：保底就已经超出可用宽度
+            // 按可用宽度均匀分配每个 tile，最少 1px
+            let perTile = max(1, (usableWidth - max(0, n - 1) * paddingInner) / n)
+            return Array(repeating: perTile, count: items.count)
+        }
+
+        // 标准场景：按比例分配，保底 minTileSide
         var widths = items.map { item in
             max(minTileSide, usableWidth * CGFloat(item.weight / totalWeight))
         }
@@ -145,6 +163,10 @@ struct MacTreemapView: View {
             if reducible > 0 {
                 let scale = max(0, 1 - excess / reducible)
                 widths = widths.map { w in max(minTileSide, w * scale) }
+            } else {
+                // reducible=0（所有都被保底），按可用宽度均分
+                let perTile = max(1, (usableWidth - max(0, n - 1) * paddingInner) / n)
+                return Array(repeating: perTile, count: items.count)
             }
         }
         return widths
@@ -260,6 +282,11 @@ struct MacTreemapView: View {
                     .font(.system(size: min(frame.width, frame.height) * 0.32, weight: .medium))
                     .foregroundStyle(.white.opacity(0.9))
             }
+        } else {
+            // 极小块：仅图标（无背景胶囊），保证 tile 永远有内容
+            Image(systemName: node.iconName)
+                .font(.system(size: min(frame.width, frame.height) * 0.5, weight: .medium))
+                .foregroundStyle(.white.opacity(0.8))
         }
     }
 
