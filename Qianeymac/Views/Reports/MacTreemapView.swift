@@ -93,6 +93,24 @@ struct MacTreemapView: View {
         if !assetItems.isEmpty && !liabilityItems.isEmpty && liabilityFrac > dividerThreshold {
             // 负债占比 > 30%：分两区
             return layoutSplit(assetItems: assetItems, liabilityItems: liabilityItems, assetFrac: assetWeight / totalWeight, in: layoutRect)
+        } else if !assetItems.isEmpty && !liabilityItems.isEmpty {
+            // 负债占比 ≤ 30%：负债缩到边缘窄列，至少 minLiabilityWidth 像素可见
+            let minLiabilityWidth: CGFloat = 80
+            let liabilityRect = CGRect(
+                x: layoutRect.maxX - minLiabilityWidth,
+                y: layoutRect.minY,
+                width: minLiabilityWidth,
+                height: layoutRect.height
+            )
+            let assetRect = CGRect(
+                x: layoutRect.minX,
+                y: layoutRect.minY,
+                width: max(minTileSide, layoutRect.width - minLiabilityWidth - paddingInner),
+                height: layoutRect.height
+            )
+            var result = squarify(items: assetItems, in: assetRect)
+            result += squarify(items: liabilityItems, in: liabilityRect)
+            return result
         } else {
             // 单一递归 squarify
             return squarify(items: sortedItems, in: layoutRect)
