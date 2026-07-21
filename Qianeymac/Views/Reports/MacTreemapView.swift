@@ -343,7 +343,7 @@ struct MacTreemapView: View {
     }
 
     /// d3 的 row(...) 几何布局：把 row 中的元素按比例铺在容器一条窄带上
-    /// 返回 [(x, y, width, height), ...]
+    /// 每个 tile 在自己的边界上 inset paddingInner/2，让相邻 tile 之间自然产生 paddingInner 间距
     private func layoutRowBlocks(
         row: [CGFloat],
         dx0: CGFloat,
@@ -353,15 +353,21 @@ struct MacTreemapView: View {
         let rowSum = row.reduce(0, +)
         guard rowSum > 0 else { return [] }
         let horizontal = dx0 >= dy0
+        let halfPad = paddingInner / 2
 
         if horizontal {
             // row 是垂直方向的窄条，贴在容器右侧
-            let stripWidth = rowSum / dy0  // row 厚度 = 总面积 / 长边
+            let stripWidth = rowSum / dy0
             var y: CGFloat = 0
             return row.map { value in
                 let h = value / stripWidth
-                let x = dx0 - stripWidth
-                let block = (x: x, y: y, width: stripWidth, height: h)
+                let x = dx0 - stripWidth + halfPad  // tile 右边界 = strip 右边界（不 inset）
+                let block = (
+                    x: x + halfPad,                  // tile 左边界 inset halfPad
+                    y: y + halfPad,                  // 上 inset
+                    width: max(1, stripWidth - paddingInner),  // 宽缩 paddingInner
+                    height: max(1, h - paddingInner)          // 高缩 paddingInner
+                )
                 y += h
                 return block
             }
@@ -371,8 +377,13 @@ struct MacTreemapView: View {
             var x: CGFloat = 0
             return row.map { value in
                 let w = value / stripHeight
-                let y = dy0 - stripHeight
-                let block = (x: x, y: y, width: w, height: stripHeight)
+                let y = dy0 - stripHeight + halfPad
+                let block = (
+                    x: x + halfPad,
+                    y: y + halfPad,
+                    width: max(1, w - paddingInner),
+                    height: max(1, stripHeight - paddingInner)
+                )
                 x += w
                 return block
             }
@@ -380,15 +391,22 @@ struct MacTreemapView: View {
     }
 
     /// 计算 row 占据后的剩余 rect（相对当前原点）
+    /// 剩余 rect 也需要 inset paddingInner/2，让下一个递归层级的 tile 与当前 row 间距一致
     private func computeRestRect(row: [CGFloat], dx0: CGFloat, dy0: CGFloat) -> CGRect {
         let rowSum = row.reduce(0, +)
         let horizontal = dx0 >= dy0
+        let halfPad = paddingInner / 2
         if horizontal {
             let stripWidth = rowSum / dy0
-            return CGRect(x: 0, y: 0, width: dx0 - stripWidth, height: dy0)
+            // row 占用 stripWidth（+ 半 padding 在左右各半），剩余 rect 从 (0, 0) 开始，宽度减去 row + halfPad
+            return CGRect(x: 0, y: 0,
+                          width: max(1, dx0 - stripWidth - halfPad),
+                          height: max(1, dy0 - paddingInner))
         } else {
             let stripHeight = rowSum / dx0
-            return CGRect(x: 0, y: 0, width: dx0, height: dy0 - stripHeight)
+            return CGRect(x: 0, y: 0,
+                          width: max(1, dx0 - paddingInner),
+                          height: max(1, dy0 - stripHeight - halfPad))
         }
     }
 
