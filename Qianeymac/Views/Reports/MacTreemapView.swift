@@ -117,46 +117,97 @@ struct MacTreemapView: View {
                 height: liabilityHeight
             )
 
-            // 把负债按"按权重分配"铺成横向 row：每个负债 tile 获得宽度按比例，高度 = liabilityHeight
-            // 这样 tile 高度恒定（liabilityHeight），宽度按比例，强制可见
-            var result = squarify(items: assetItems, in: assetRect)
-            // 对负债用 simple strip 布局（替代 squarify）：按 weight 比例分配宽度
-            let totalLiabilityWeight = liabilityItems.reduce(0) { $0 + $1.weight }
-            if totalLiabilityWeight > 0 {
-                let scaleMode = currentScaleMode
-                let totalGutter = paddingInner * CGFloat(max(0, liabilityItems.count - 1))
-                let usableWidth = max(1, liabilityRect.width - totalGutter)
+            // 资产 + 负债都使用 strip layout：按 weight 比例分配宽度，高度恒定
+            // 这样能避免 squarify 的边界 case（tile 被压到接近 0）
+            let scaleMode = currentScaleMode
 
-                // 计算总所需宽度：保底 minTileSide 后按比例分配
-                // 如果总所需宽度 > usableWidth，按比例缩小所有 tile
-                var rawWidths = liabilityItems.map { item in
-                    max(minTileSide, usableWidth * CGFloat(item.weight / totalLiabilityWeight))
-                }
-                let totalRaw = rawWidths.reduce(0, +)
-                if totalRaw > usableWidth {
-                    // 等比缩小到 usableWidth（每个 tile 仍保底 minTileSide，溢出的部分由分配处理）
-                    let excess = totalRaw - usableWidth
-                    let reducible = rawWidths.reduce(0) { $0 + max(0, $1 - minTileSide) }
-                    if reducible > 0 {
-                        let scale = max(0, 1 - excess / reducible)
-                        rawWidths = rawWidths.map { w in
-                            max(minTileSide, w * scale)
-                        }
-                    }
-                }
-
-                var xOffset = liabilityRect.minX
-                for (idx, item) in liabilityItems.enumerated() {
-                    let tileWidth = rawWidths[idx]
-                    let frame = CGRect(x: xOffset, y: liabilityRect.minY, width: tileWidth, height: liabilityRect.height)
-                    result.append(PositionedBlock(item: item, frame: frame, scaleMode: scaleMode))
-                    xOffset += tileWidth + paddingInner
+            // 资产区 strip layout
+            let totalAssetWeight = assetItems.reduce(0) { $0 + $1.weight }
+            var assetResult: [PositionedBlock] = []
+            if totalAssetWeight > 0 {
+                let totalAssetGutter = paddingInner * CGFloat(max(0, assetItems.count - 1))
+                let assetUsableWidth = max(1, assetRect.width - totalAssetGutter)
+                let assetWidths = computeStripWidths(items: assetItems, totalWeight: totalAssetWeight, usableWidth: assetUsableWidth)
+                var xOffset = assetRect.minX
+                for (idx, item) in assetItems.enumerated() {
+                    let frame = CGRect(
+                        x: xOffset, y: assetRect.minY,
+                        width: assetWidths[idx], height: assetRect.height
+                    )
+                    assetResult.append(PositionedBlock(item: item, frame: frame, scaleMode: scaleMode))
+                    xOffset += assetWidths[idx] + paddingInner
                 }
             }
-            return result
+
+            // 负债区 strip layout
+            let totalLiabilityWeight = liabilityItems.reduce(0) { $0 + $1.weight }
+            var liabilityResult: [PositionedBlock] = []
+            if totalLiabilityWeight > 0 {
+                let totalLiabGutter = paddingInner * CGFloat(max(0, liabilityItems.count - 1))
+                let liabUsableWidth = max(1, liabilityRect.width - totalLiabGutter)
+                let liabWidths = computeStripWidths(items: liabilityItems, totalWeight: totalLiabilityWeight, usableWidth: liabUsableWidth)
+                var xOffset = liabilityRect.minX
+                for (idx, item) in liabilityItems.enumerated() {
+                    let frame = CGRect(
+                        x: xOffset, y: liabilityRect.minY,
+                        width: liabWidths[idx], height: liabilityRect.height
+                    )
+                    liabilityResult.append(PositionedBlock(item: item, frame: frame, scaleMode: scaleMode))
+                    xOffset += liabWidths[idx] + paddingInner
+                }
+            }
+
+            return assetResult + liabilityResult
         } else {
-            return squarify(items: sortedItems, in: layoutRect)
+            // 单一类型：也用 strip layout（避免 squarify 边界 case）
+            return stripLayout(items: sortedItems, in: layoutRect)
         }
+    }
+
+    /// Strip layout：按 weight 比例分配宽度，高度恒定 = rect.height
+    /// 适合 tile 数量不多（≤10）的场景，绝对不会越界
+    private func stripLayout(items: [TreemapItem], in rect: CGRect) -> [PositionedBlock] {
+        guard !items.isEmpty else { return [] }
+        let totalWeight = items.reduce(0) { $0 + $1.weight }
+        guard totalWeight > 0 else { return [] }
+        let totalGutter = paddingInner * CGFloat(max(0, items.count - 1))
+        let usableWidth = max(1, rect.width - totalGutter)
+        let widths = computeStripWidths(items: items, totalWeight: totalWeight, usableWidth: usableWidth)
+
+        var result: [PositionedBlock] = []
+        var xOffset = rect.minX
+        for (idx, item) in items.enumerated() {
+            let frame = CGRect(
+                x: xOffset, y: rect.minY,
+                width: widths[idx], height: rect.height
+            )
+            result.append(PositionedBlock(item: item, frame: frame, scaleMode: currentScaleMode))
+            xOffset += widths[idx] + paddingInner
+        }
+        return result
+    }
+
+    /// 计算 strip layout 中每个 tile 的宽度
+    /// - 保底 minTileSide
+    /// - 累积超出可用宽度时等比缩小非保底部分
+    private func computeStripWidths(
+        items: [TreemapItem],
+        totalWeight: Double,
+        usableWidth: CGFloat
+    ) -> [CGFloat] {
+        var widths = items.map { item in
+            max(minTileSide, usableWidth * CGFloat(item.weight / totalWeight))
+        }
+        let totalRaw = widths.reduce(0, +)
+        if totalRaw > usableWidth {
+            let excess = totalRaw - usableWidth
+            let reducible = widths.reduce(0) { $0 + max(0, $1 - minTileSide) }
+            if reducible > 0 {
+                let scale = max(0, 1 - excess / reducible)
+                widths = widths.map { w in max(minTileSide, w * scale) }
+            }
+        }
+        return widths
     }
 
     /// 缩放模式：固定线性（保留真实占比，直观看到大小关系）
