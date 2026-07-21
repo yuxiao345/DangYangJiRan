@@ -229,222 +229,167 @@ struct MacTreemapView: View {
     /// 参考 d3-hierarchy/src/treemap/squarify.js
     private func squarify(items: [TreemapItem], in rect: CGRect) -> [PositionedBlock] {
         guard !items.isEmpty else { return [] }
-        guard items.count > 1 else {
+        if items.count == 1 {
             return [PositionedBlock(item: items[0], frame: rect, scaleMode: currentScaleMode)]
         }
 
-        let totalArea = rect.width * rect.height
         let totalWeight = items.reduce(0) { $0 + $1.weight }
-        guard totalWeight > 0, totalArea > 0 else { return [] }
+        guard totalWeight > 0, rect.width > 0, rect.height > 0 else { return [] }
 
-        // 把 weight 转换为 area（保持线性比例）
-        // 外置 padding 已被 inset 扣减，layoutRect 内总面积 = totalArea
-        var areas: [CGFloat] = items.map { CGFloat($0.weight / totalWeight) * totalArea }
+        // weight → area（线性）
+        let totalArea = rect.width * rect.height
+        var values = items.map { CGFloat($0.weight / totalWeight) * totalArea }
 
-        // 后置最小可见性校验：面积不能太小
+        // 后置最小可见性校验
         let minArea = minTileSide * minTileSide
-        var overflow = false
-        for i in 0..<areas.count where areas[i] < minArea {
-            areas[i] = minArea
-            overflow = true
+        var needsRescale = false
+        for i in 0..<values.count where values[i] < minArea {
+            values[i] = minArea
+            needsRescale = true
         }
-        // 重新归一化
-        let sumArea = areas.reduce(0, +)
-        if sumArea > 0 {
-            areas = areas.map { $0 * totalArea / sumArea }
+        if needsRescale {
+            let sum = values.reduce(0, +)
+            if sum > 0 {
+                values = values.map { $0 * totalArea / sum }
+            }
         }
 
-        // 计算 dx/dy（剩余空间的短边和长边）
-        let dx = rect.width
-        let dy = rect.height
-        let stack = squarifyRecursive(
-            values: areas,
-            rowValues: [],
-            rowMin: .greatestFiniteMagnitude,
-            rowMax: -1,
-            dx: dx,
-            dy: dy
+        // 调用 d3 算法（忠实翻译 squarify.js）
+        let positioned = d3Squarify(
+            values: values,
+            dx: rect.width,
+            dy: rect.height
         )
 
-        // 把堆叠结果展开为 PositionedBlock 列表
-        return layoutStack(stack, in: rect, items: items, areas: areas)
+        // 匹配 items（按 weight 降序）
+        var sortedItems = items.sorted { $0.weight > $1.weight }
+        var result: [PositionedBlock] = []
+        for p in positioned {
+            guard !sortedItems.isEmpty else { break }
+            let item = sortedItems.removeFirst()
+            let frame = CGRect(
+                x: rect.minX + p.x,
+                y: rect.minY + p.y,
+                width: p.width,
+                height: p.height
+            )
+            result.append(PositionedBlock(item: item, frame: frame, scaleMode: currentScaleMode))
+        }
+        return result
     }
 
-    /// Bruls 2000 递归核心
-    /// 输入：剩余 values, 当前 row, dx/dy
-    /// 输出：堆叠结构 [(value, scale, x, y, width, height), ...]
-    private func squarifyRecursive(
+    /// 忠实翻译 d3-hierarchy/src/treemap/squarify.js
+    /// 输出：相对 (0,0) 的坐标，绝对坐标由 squarify 添加 rect.minX/minY
+    private func d3Squarify(
         values: [CGFloat],
-        rowValues: [CGFloat],
-        rowMin: CGFloat,
-        rowMax: CGFloat,
         dx: CGFloat,
         dy: CGFloat
-    ) -> [(value: CGFloat, x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat)] {
-        let shortSide = min(dx, dy)
-
-        // 找最佳分割点
-        var bestRow: [CGFloat] = []
-        var bestRest: [CGFloat] = values
-        var bestScore = CGFloat.greatestFiniteMagnitude
-
-        var currentRow = rowValues
-        var currentMin = rowMin
-        var currentMax = rowMax
-        let sum = currentRow.reduce(0, +)
-
-        for i in 0..<values.count {
-            let value = values[i]
-            let newRow = currentRow + [value]
-            let newMin = min(currentMin, value)
-            let newMax = max(currentMax, value)
-            let newSum = sum + value
-
-            if shortSide > 0 {
-                let score = worstRatio(
-                    rowMin: newMin, rowMax: newMax,
-                    rowSum: newSum, shortSide: shortSide
-                )
-                if score < bestScore {
-                    bestScore = score
-                    bestRow = newRow
-                    bestRest = Array(values[(i + 1)...])
-                    currentMin = newMin
-                    currentMax = newMax
-                } else {
-                    // score 变差，停止当前 row
-                    break
-                }
-            } else {
-                break
-            }
+    ) -> [(x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat)] {
+        // 边界 case：只有一个值
+        if values.count == 1 {
+            return [(x: 0, y: 0, width: dx, height: dy)]
         }
 
-        // 简化：直接选 row = bestRow
-        if bestRow.isEmpty {
-            // 不应该发生，但保护一下
-            return values.map { ($0, 0, 0, 0, 0) }
-        }
-
-        // 计算 row 的几何位置
-        let rowSum = bestRow.reduce(0, +)
-        let rowThickness = shortSide > 0 ? rowSum / shortSide : 0
-        let rowScale = rowThickness > 0 ? shortSide / rowThickness : 0  // 不直接用，保留作 scale 概念
-
-        var positioned: [(value: CGFloat, x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat)] = []
-
-        // 沿短边方向铺 row
-        let isHorizontalRow = dx >= dy
-        if isHorizontalRow {
-            // row 在底部沿 x 排列
-            let rowX = dx - rowThickness
-            var offsetY: CGFloat = 0
-            for value in bestRow {
-                let h = rowThickness > 0 ? value / rowThickness * rowScale * 0 + (rowSum / rowThickness) * (value / rowSum) * 0 + (value / rowSum) * shortSide : 0
-                _ = h // unused
-                let itemH = value / rowThickness * shortSide
-                let itemW = rowThickness
-                positioned.append((value, rowX, offsetY, itemW, itemH))
-                offsetY += itemH
-            }
-        } else {
-            // row 在右侧沿 y 排列
-            let rowY = dy - rowThickness
-            var offsetX: CGFloat = 0
-            for value in bestRow {
-                let itemW = value / rowThickness * shortSide
-                let itemH = rowThickness
-                positioned.append((value, offsetX, rowY, itemW, itemH))
-                offsetX += itemW
-            }
-        }
-
-        // 剩余空间递归
-        let restArea = bestRest.reduce(0, +)
-        guard restArea > 0 else {
-            return positioned
-        }
-
-        // 计算剩余 rect
-        var restRect: CGRect = .zero
-        if isHorizontalRow {
-            restRect = CGRect(x: 0, y: 0,
-                              width: dx - rowThickness,
-                              height: dy)
-        } else {
-            restRect = CGRect(x: 0, y: 0,
-                              width: dx,
-                              height: dy - rowThickness)
-        }
-
-        let restPositioned = squarifyRecursive(
-            values: bestRest,
-            rowValues: [],
-            rowMin: .greatestFiniteMagnitude,
-            rowMax: -1,
-            dx: restRect.width,
-            dy: restRect.height
-        )
-
-        // 把 restPositioned 的坐标转换到剩余 rect 内
-        let restTranslated = restPositioned.map { p in
-            (p.value, p.x + restRect.minX, p.y + restRect.minY, p.width, p.height)
-        }
-
-        return positioned + restTranslated
+        // 递归算法（d3 风格）
+        return squarifyImpl(row: [], values: values, dx0: dx, dy0: dy)
     }
 
-    /// 计算 row 的 worst aspect ratio（按 d3 公式）
-    /// worst = max(rowMax/beta, beta/rowMin)
-    /// alpha = max(dy/dx, dx/dy) / (rowSum * phi)
-    /// beta = rowSum² * alpha
-    private func worstRatio(rowMin: CGFloat, rowMax: CGFloat, rowSum: CGFloat, shortSide: CGFloat) -> CGFloat {
-        guard rowMin > 0, rowSum > 0, shortSide > 0 else { return .greatestFiniteMagnitude }
-        let alpha = (1.0) / (rowSum * phi)  // 简化：假设正方形容器
+    /// Bruls 2000 算法核心
+    private func squarifyImpl(
+        row: [CGFloat],
+        values: [CGFloat],
+        dx0: CGFloat,
+        dy0: CGFloat
+    ) -> [(x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat)] {
+        if values.count == 0 {
+            // 没有剩余 → 布局当前 row
+            return layoutRowBlocks(row: row, dx0: dx0, dy0: dy0)
+        }
+
+        let value = values[0]
+        let newRow = row + [value]
+
+        // 计算当前 row 的 worst AR
+        let currentWorst = row.isEmpty ? .infinity : worst(row: row, dx0: dx0, dy0: dy0)
+        let newWorst = worst(row: newRow, dx0: dx0, dy0: dy0)
+
+        // 如果加入新项后 worst 不变差，继续扩展 row
+        // 否则布局当前 row，递归处理剩余 values
+        if row.isEmpty || newWorst <= currentWorst {
+            return squarifyImpl(row: newRow, values: Array(values.dropFirst()), dx0: dx0, dy0: dy0)
+        } else {
+            // 关闭当前 row，布局它
+            let rowBlocks = layoutRowBlocks(row: row, dx0: dx0, dy0: dy0)
+            // 剩余空间递归（d3 用 strip 简化处理）
+            let restRect = computeRestRect(row: row, dx0: dx0, dy0: dy0)
+            let restBlocks = squarifyImpl(row: [], values: values, dx0: restRect.width, dy0: restRect.height)
+            // 把 restBlocks 偏移到 restRect 位置
+            let offsetX = restRect.minX
+            let offsetY = restRect.minY
+            return rowBlocks + restBlocks.map { (x: $0.x + offsetX, y: $0.y + offsetY, width: $0.width, height: $0.height) }
+        }
+    }
+
+    /// d3 的 worst(row, dx0, dy0) 计算
+    private func worst(row: [CGFloat], dx0: CGFloat, dy0: CGFloat) -> CGFloat {
+        guard !row.isEmpty, dx0 > 0, dy0 > 0 else { return .infinity }
+        let rowMax = row.max()!
+        let rowMin = row.min()!
+        let rowSum = row.reduce(0, +)
+        guard rowMin > 0, rowSum > 0 else { return .infinity }
+        let alpha = max(dx0 / dy0, dy0 / dx0) / (rowSum * phi)
         let beta = rowSum * rowSum * alpha
         return max(rowMax / beta, beta / rowMin)
     }
 
-    /// 把堆叠结果展开为 PositionedBlock（按 rect 偏移）
-    private func layoutStack(
-        _ stack: [(value: CGFloat, x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat)],
-        in rect: CGRect,
-        items: [TreemapItem],
-        areas: [CGFloat]
-    ) -> [PositionedBlock] {
-        // 按 value 降序顺序匹配 items
-        var sortedItems = items.sorted { $0.weight > $1.weight }
-        var result: [PositionedBlock] = []
+    /// d3 的 row(...) 几何布局：把 row 中的元素按比例铺在容器一条窄带上
+    /// 返回 [(x, y, width, height), ...]
+    private func layoutRowBlocks(
+        row: [CGFloat],
+        dx0: CGFloat,
+        dy0: CGFloat
+    ) -> [(x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat)] {
+        guard !row.isEmpty, dx0 > 0, dy0 > 0 else { return [] }
+        let rowSum = row.reduce(0, +)
+        guard rowSum > 0 else { return [] }
+        let horizontal = dx0 >= dy0
 
-        for placement in stack {
-            // 找到对应 item（按 area 匹配）
-            guard !sortedItems.isEmpty else { break }
-            let targetArea = placement.value
-
-            // 找最接近 targetArea 的 item
-            var bestIdx = 0
-            var bestDiff = CGFloat.greatestFiniteMagnitude
-            for (i, item) in sortedItems.enumerated() {
-                let totalArea = areas.reduce(0, +)
-                let itemArea = totalArea > 0 ? CGFloat(item.weight / items.reduce(0) { $0 + $1.weight }) * totalArea : 0
-                let diff = abs(itemArea - targetArea)
-                if diff < bestDiff {
-                    bestDiff = diff
-                    bestIdx = i
-                }
+        if horizontal {
+            // row 是垂直方向的窄条，贴在容器右侧
+            let stripWidth = rowSum / dy0  // row 厚度 = 总面积 / 长边
+            var y: CGFloat = 0
+            return row.map { value in
+                let h = value / stripWidth
+                let x = dx0 - stripWidth
+                let block = (x: x, y: y, width: stripWidth, height: h)
+                y += h
+                return block
             }
-
-            let item = sortedItems.remove(at: bestIdx)
-            let frame = CGRect(
-                x: rect.minX + placement.x,
-                y: rect.minY + placement.y,
-                width: placement.width,
-                height: placement.height
-            )
-            result.append(PositionedBlock(item: item, frame: frame, scaleMode: currentScaleMode))
+        } else {
+            // row 是水平方向的窄条，贴在容器底部
+            let stripHeight = rowSum / dx0
+            var x: CGFloat = 0
+            return row.map { value in
+                let w = value / stripHeight
+                let y = dy0 - stripHeight
+                let block = (x: x, y: y, width: w, height: stripHeight)
+                x += w
+                return block
+            }
         }
+    }
 
-        return result
+    /// 计算 row 占据后的剩余 rect（相对当前原点）
+    private func computeRestRect(row: [CGFloat], dx0: CGFloat, dy0: CGFloat) -> CGRect {
+        let rowSum = row.reduce(0, +)
+        let horizontal = dx0 >= dy0
+        if horizontal {
+            let stripWidth = rowSum / dy0
+            return CGRect(x: 0, y: 0, width: dx0 - stripWidth, height: dy0)
+        } else {
+            let stripHeight = rowSum / dx0
+            return CGRect(x: 0, y: 0, width: dx0, height: dy0 - stripHeight)
+        }
     }
 
     // MARK: - Scale Mode Tracking
