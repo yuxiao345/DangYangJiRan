@@ -95,22 +95,34 @@ struct MacTreemapView: View {
             return layoutSplit(assetItems: assetItems, liabilityItems: liabilityItems, assetFrac: assetWeight / totalWeight, in: layoutRect)
         } else if !assetItems.isEmpty && !liabilityItems.isEmpty {
             // 负债占比 ≤ 30%：负债用底部窄条（保留完整宽度 + 最小可见高度）
-            // 估算负债所需高度：每个 tile 至少 minTileSide 高度 + gutter
+            // 强制负债 squarify 区域是"宽 > 高"，让 row 沿垂直方向铺，
+            // 所有负债 tile 都获得完整宽度方向的可见性
             let liabilityCount = liabilityItems.count
-            let estimatedNeededHeight = CGFloat(liabilityCount) * minTileSide + CGFloat(max(0, liabilityCount - 1)) * paddingInner
-            // 负债高度 = max(估算最小值, 容器高度的 20%)，但不超过 50%
-            let liabilityHeight = min(layoutRect.height * 0.5, max(estimatedNeededHeight, layoutRect.height * 0.2))
-            let assetHeight = max(minTileSide, layoutRect.height - liabilityHeight - paddingInner)
+            // 负债高度 = 每个 tile 至少 70px + gutter 间隔
+            let liabilityHeight = max(
+                layoutRect.height * 0.2,
+                CGFloat(liabilityCount) * 70 + CGFloat(max(0, liabilityCount - 1)) * paddingInner
+            )
+            // 但不超过容器高度的 40%
+            let finalLiabilityHeight = min(layoutRect.height * 0.4, liabilityHeight)
+            let assetHeight = layoutRect.height - finalLiabilityHeight - paddingInner
 
+            // 负债区域：强制宽度 > 高度（水平 row）
+            // 用 80% 宽度作为负债区，剩余 20% 给资产（保留左侧大空间感）
+            // 但更稳妥：负债区域直接 100% 宽度但极矮高度
+            let liabilityWidth = layoutRect.width
+            // 强制横向 row：负债容器是 width × liabilityHeight，且 width > height
+            // 通过给负债区足够的高度，squarify 会自动选择横向 row
+            let liabilityRect = CGRect(
+                x: layoutRect.minX,
+                y: layoutRect.maxY - finalLiabilityHeight,
+                width: liabilityWidth,
+                height: finalLiabilityHeight
+            )
             let assetRect = CGRect(
                 x: layoutRect.minX, y: layoutRect.minY,
                 width: layoutRect.width,
-                height: assetHeight
-            )
-            let liabilityRect = CGRect(
-                x: layoutRect.minX, y: layoutRect.maxY - liabilityHeight,
-                width: layoutRect.width,
-                height: liabilityHeight
+                height: max(minTileSide, assetHeight)
             )
             var result = squarify(items: assetItems, in: assetRect)
             result += squarify(items: liabilityItems, in: liabilityRect)
@@ -121,14 +133,9 @@ struct MacTreemapView: View {
         }
     }
 
-    /// 选择缩放模式
+    /// 缩放模式：固定线性（保留真实占比，直观看到大小关系）
     private func chooseScaleMode() -> ScaleMode {
-        let amounts = nodes.map { abs(NSDecimalNumber(decimal: $0.balance).doubleValue) }
-        guard let maxAmt = amounts.max(), let minAmt = amounts.min(), maxAmt > 0 else { return .sqrt }
-        let ratio = maxAmt / max(minAmt, 1)
-        if ratio <= 100 { return .linear }
-        if ratio <= 10000 { return .sqrt }
-        return .log
+        return .linear
     }
 
     /// 计算缩放后的权重
