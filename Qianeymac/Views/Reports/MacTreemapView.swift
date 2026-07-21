@@ -92,8 +92,10 @@ struct MacTreemapView: View {
 
         if !assetItems.isEmpty && !liabilityItems.isEmpty && liabilityFrac > dividerThreshold {
             // 负债占比 > 30%：分两区
+            print("[treemap] liabilityFrac=\(liabilityFrac), split")
             return layoutSplit(assetItems: assetItems, liabilityItems: liabilityItems, assetFrac: assetWeight / totalWeight, in: layoutRect)
         } else if !assetItems.isEmpty && !liabilityItems.isEmpty {
+            print("[treemap] liabilityFrac=\(liabilityFrac), liabilityCount=\(liabilityItems.count), edgeColumn")
             // 负债占比 ≤ 30%：负债缩到边缘窄列，至少 minLiabilityWidth 像素可见
             let minLiabilityWidth: CGFloat = 80
             let liabilityRect = CGRect(
