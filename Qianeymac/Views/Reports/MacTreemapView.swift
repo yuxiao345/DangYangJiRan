@@ -73,8 +73,15 @@ struct MacTreemapView: View {
         let scaleMode = chooseScaleMode()
         let rawWeights = computeWeights(mode: scaleMode)
 
-        // 2. 后置极小块合并 → 生成 TreemapItem（带"其他" fallback）
-        let items = groupTinyItems(nodes: nodes, weights: rawWeights)
+        // 2. 不合并极小块 —— 每个账户独立 tile，由 squarify + minArea 保底保证可见性
+        let items: [TreemapItem] = nodes.enumerated().map { idx, node in
+            TreemapItem(
+                id: node.id,
+                node: node,
+                weight: rawWeights[idx],
+                isAggregated: false
+            )
+        }
 
         // 3. 排序（降序）
         let sortedItems = items.sorted { $0.weight > $1.weight }
@@ -281,6 +288,18 @@ struct MacTreemapView: View {
             if sum > 0 {
                 values = values.map { $0 * totalArea / sum }
             }
+        }
+
+        // 进一步保证：每个 tile 的最短边至少 minTileSide
+        // 这通过最小面积（minTileSide²）作为绝对下界实现
+        // 后置在 layoutResult 阶段：检测每个 placed block 的 min(w,h)，如果 < minTileSide 就强制放大
+        // 但放大后总面积会超过容器，所以必须再次归一化（按"保底后总面积"作为容器面积）
+        // 这里采用 d3 风格的"backing scale"：保底 sum 后用 (totalArea / backingSum) 做最终 scale
+        let backingSum = values.reduce(0, +)
+        if backingSum > totalArea {
+            // 所有 tile 都被保底到 minArea，总面积超过容器 → 按比例缩小
+            let scale = totalArea / backingSum
+            values = values.map { $0 * scale }
         }
 
         // 调用 d3 算法（忠实翻译 squarify.js）
