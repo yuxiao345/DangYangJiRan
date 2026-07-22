@@ -1069,17 +1069,13 @@ final class ReportViewModel {
         let trendStart = Calendar.current.startOfDay(for: dim.burnRateStart(bookStart: book.startDate))
         let trendEnd = Calendar.current.startOfDay(for: Date())
 
-        // Per-category trend: only meaningful when matchBudgetItems is true
-        if book.matchBudgetItems {
-            var trendByCat: [UUID: [DailySpendingPoint]] = [:]
-            for item in items {
-                guard let cat = item.category else { continue }
-                trendByCat[item.id] = budgetService.dailySpending(in: trendStart...trendEnd, categoryID: cat.id, ledgerID: ledger.id, context: context)
-            }
-            dailyTrendByCategory = trendByCat
-        } else {
-            dailyTrendByCategory = [:]
+        // Per-category trend: always calculate regardless of matchBudgetItems
+        var trendByCat: [UUID: [DailySpendingPoint]] = [:]
+        for item in items {
+            guard let cat = item.category else { continue }
+            trendByCat[item.id] = budgetService.dailySpending(in: trendStart...trendEnd, categoryID: cat.id, ledgerID: ledger.id, context: context)
         }
+        dailyTrendByCategory = trendByCat
 
         // 消耗速率：matchBudgetItems 决定范围
         let burnPoints: [DailySpendingPoint]
