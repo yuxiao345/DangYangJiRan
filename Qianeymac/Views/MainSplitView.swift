@@ -24,6 +24,7 @@ struct MainSplitView: View {
     @State private var isCreatingShare = false
     @State private var shareParticipants: [User] = []
     @State private var participantAvatars: [UUID: NSImage] = [:]
+    @State private var participantsTask: Task<Void, Never>?
     private let contactStore = CNContactStore()
     private let recurringTimer = Timer.publish(every: 21600, on: .main, in: .common).autoconnect()
 
@@ -237,17 +238,50 @@ struct MainSplitView: View {
         appContainer.currentLedger?.isShared ?? false
     }
 
+    /// 加载 toolbar 分享徽章所需的参与者列表。
+    /// 自动修复：若本地 `isShared == false` 但 `shareRecordName` 已有值
+    /// （如首次在本设备接受他端发来的 share，repair 尚未触发），会同步
+    /// `discoverShare` + `syncParticipants` 补齐状态。非共享账本零网络开销。
     private func loadParticipants() {
-        guard let ledger = appContainer.currentLedger, ledger.isShared else {
+        participantsTask?.cancel()
+        participantsTask = Task { @MainActor in
+            await refreshParticipants()
+        }
+    }
+
+    @MainActor
+    private func refreshParticipants() async {
+        guard let ledger = appContainer.currentLedger else {
             shareParticipants = []
             participantAvatars = [:]
             return
+        }
+        if !ledger.isShared,
+           let recordName = ledger.shareRecordName, !recordName.isEmpty,
+           let syncService = appContainer.syncService {
+            do {
+                if let share = try await syncService.discoverShare(for: ledger) {
+                    ledger.isShared = true
+                    do { try appContainer.viewContext.save() }
+                    catch { DiagnosticLog.log("refreshParticipants save FAILED: \(error.localizedDescription)") }
+                    try await syncService.syncParticipants(share: share, for: ledger)
+                    DiagnosticLog.log("refreshParticipants auto-repair OK: ledger=\(ledger.name) share=\(share.recordID.recordName)")
+                } else {
+                    DiagnosticLog.log("refreshParticipants discoverShare nil: ledger=\(ledger.name) recordName=\(recordName)")
+                }
+            } catch {
+                DiagnosticLog.log("refreshParticipants discoverShare FAILED for \(ledger.name): \(error.localizedDescription)")
+            }
         }
         let users = (ledger.members as? Set<User>)?.sorted(by: { $0.joinedAt < $1.joinedAt }) ?? []
         shareParticipants = users
         let currentIDs = Set(users.map(\.id))
         participantAvatars = participantAvatars.filter { currentIDs.contains($0.key) }
-        loadContactAvatars(for: users)
+        // 跳过缓存已命中的成员，避免每次切换账本重复查 Contacts
+        let missingAvatars = users.filter { participantAvatars[$0.id] == nil }
+        if !missingAvatars.isEmpty {
+            loadContactAvatars(for: missingAvatars)
+        }
     }
 
     private func loadContactAvatars(for users: [User]) {

@@ -227,6 +227,7 @@
 		9B863D6EE456400A886BF4FE /* DonutChartContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C66C0A248C949A08F849676 /* DonutChartContent.swift */; };
 		9DDFB9E1B80A2E556EDF6639 /* LedgerSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D8132C4EDFBAEEC7935A871 /* LedgerSettingsView.swift */; };
 		9ED1E16F7B46F3CAA63E7BAC /* BankOCRServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1491176FAE7F344BACF32F91 /* BankOCRServiceProtocol.swift */; };
+		9EEC8553E633E7215974753A /* AccountAllocationItem+Aggregate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2003AB9FBA8CF16B3F2DF283 /* AccountAllocationItem+Aggregate.swift */; };
 		9F88E48A319445199EDDC0B4 /* View+ErrorAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36D3759D43EE47A08A8421BE /* View+ErrorAlert.swift */; };
 		A002DB644D0C4A9689DD993E /* ProjectEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 166ACBC82D434F528E9568A7 /* ProjectEntity.swift */; };
 		A01E8519E514A3B21C8C581A /* DiagnosticLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78E03226D9E2C5452E1F5F3C /* DiagnosticLog.swift */; };
@@ -317,7 +318,6 @@
 		FD2C9721768BC0DECAFBD9EA /* LedgerRole.swift in Sources */ = {isa = PBXBuildFile; fileRef = 123B9066865398E03B8DD922 /* LedgerRole.swift */; };
 		FD91B103255DEB923850049C /* CloudKitConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FD37181CF946710701C84CD /* CloudKitConfig.swift */; };
 		FFD3CC4FA09133AB7E0CFC53 /* AccountDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89DBFB59681FF75B16E21478 /* AccountDetailView.swift */; };
-		9EEC8553E633E7215974753A /* AccountAllocationItem+Aggregate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2003AB9FBA8CF16B3F2DF283 /* AccountAllocationItem+Aggregate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -380,6 +380,7 @@
 		1E2DCACB16BA4534A2BD913F /* LedgerEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedgerEntity.swift; sourceTree = "<group>"; };
 		1F11A80E181707BCA833B204 /* BankLogoPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankLogoPickerView.swift; sourceTree = "<group>"; };
 		1FD60ED36414C665A9E3DF7F /* ReportsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportsView.swift; sourceTree = "<group>"; };
+		2003AB9FBA8CF16B3F2DF283 /* AccountAllocationItem+Aggregate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AccountAllocationItem+Aggregate.swift"; sourceTree = "<group>"; };
 		25BD8B7423ECB057766F757C /* BankLogoPresets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankLogoPresets.swift; sourceTree = "<group>"; };
 		26B6D818A9814FD5A0945FCA /* MemberSplitDonutContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberSplitDonutContent.swift; sourceTree = "<group>"; };
 		297D1C5A7B4E05864B4F68D9 /* ReconciliationServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReconciliationServiceProtocol.swift; sourceTree = "<group>"; };
@@ -533,7 +534,6 @@
 		FB18074394D7CADFC89B2D67 /* CurrencyServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyServiceProtocol.swift; sourceTree = "<group>"; };
 		FD9C98A4532441F197C92D1E /* SplitFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitFormView.swift; sourceTree = "<group>"; };
 		FFDB4DF6538746E0A70203A4 /* RecurringRuleEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringRuleEntity.swift; sourceTree = "<group>"; };
-		2003AB9FBA8CF16B3F2DF283 /* AccountAllocationItem+Aggregate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AccountAllocationItem+Aggregate.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
