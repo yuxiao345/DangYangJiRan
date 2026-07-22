@@ -142,7 +142,7 @@ struct DashboardContentColumn: View {
                 HStack(spacing: 4) {
                     Image(systemName: change >= 0 ? "arrow.up.right" : "arrow.down.right")
                         .font(.system(size: 10, weight: .bold))
-                    Text("\(change >= 0 ? "+" : "")\(CurrencyFormatter.formatDecimal(amount: change, fractionDigits: 0)) (\(String(format: "%.1f", Double(truncating: pct as NSNumber)))%)")
+                    Text("\(change >= 0 ? "+" : "")\(CurrencyFormatter.formatDecimal(amount: change, fractionDigits: 2)) (\(String(format: "%.1f", Double(truncating: pct as NSNumber)))%)")
                         .font(.designMonoData)
                     Text("较上月")
                         .font(.designBodyCaption)

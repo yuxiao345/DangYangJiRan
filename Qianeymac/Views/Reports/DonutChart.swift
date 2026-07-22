@@ -139,7 +139,7 @@ struct DonutChart: View {
             Text(centerTitle)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(Color.designOnSurfaceVariant)
-            CurrencyText(amount: totalExpense, currencyCode: "", size: 20, foregroundColor: Color.designOnSurface)
+            CurrencyText(amount: totalExpense, currencyCode: "", size: 20, foregroundColor: Color.designOnSurface, fractionDigits: 0)
                 .fontWeight(.black)
         }
     }

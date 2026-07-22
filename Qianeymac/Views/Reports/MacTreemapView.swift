@@ -255,7 +255,7 @@ struct MacTreemapView: View {
                     HStack {
                         Spacer()
                         VStack(alignment: .trailing, spacing: 1) {
-                            Text(formatAmount(abs(node.balance)))
+                            Text(CurrencyFormatter.formatCompactNumber(abs(node.balance).doubleValue))
                                 .font(.system(size: min(12, frame.width * 0.085), weight: .bold, design: .rounded))
                                 .foregroundStyle(.white)
                                 .lineLimit(1)
@@ -302,17 +302,6 @@ struct MacTreemapView: View {
         let amount = NSDecimalNumber(decimal: abs(block.item.node.balance)).doubleValue
         let totalDouble = NSDecimalNumber(decimal: total).doubleValue
         return totalDouble > 0 ? amount / totalDouble : 0
-    }
-
-    private func formatAmount(_ amount: Decimal) -> String {
-        let amountDouble = NSDecimalNumber(decimal: amount).doubleValue
-        if amountDouble >= 100000 {
-            return String(format: "%.0f万", amountDouble / 10000)
-        } else if amountDouble >= 10000 {
-            return String(format: "%.1f万", amountDouble / 10000)
-        } else {
-            return String(format: "%.0f", amountDouble)
-        }
     }
 
     // MARK: - Types

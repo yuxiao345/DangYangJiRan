@@ -360,7 +360,7 @@ struct AdvancedFilterPanel: View {
             } label: {
                 HStack {
                     if let v = value.wrappedValue, v != 0 {
-                        Text("¥\(v)")
+                        Text(CurrencyFormatter.formatDecimal(amount: v, currencyCode: appContainer.currentCurrencyCode))
                             .font(.caption)
                             .foregroundStyle(.primary)
                     } else {

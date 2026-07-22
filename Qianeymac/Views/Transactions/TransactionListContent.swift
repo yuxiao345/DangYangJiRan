@@ -168,7 +168,7 @@ struct TransactionListContent: View {
                     .font(.designLabel)
                     .foregroundStyle(Color.designPrimaryFixedDim)
                     .frame(width: 16, alignment: .leading)
-                Text(CurrencyFormatter.formatAdaptive(amount: summaryIncome, currencyCode: currency))
+                Text(CurrencyFormatter.formatDecimal(amount: summaryIncome, currencyCode: currency))
                     .font(.designMonoDataSmall)
                     .foregroundStyle(Color.designPrimaryFixedDim)
             }
@@ -179,7 +179,7 @@ struct TransactionListContent: View {
                     .foregroundStyle(Color.designAccentRed)
                     .frame(width: 16, alignment: .leading)
                     .padding(.leading, 16)
-                Text(CurrencyFormatter.formatAdaptive(amount: summaryExpense, currencyCode: currency))
+                Text(CurrencyFormatter.formatDecimal(amount: summaryExpense, currencyCode: currency))
                     .font(.designMonoDataSmall)
                     .foregroundStyle(Color.designAccentRed)
             }
@@ -245,7 +245,7 @@ struct TransactionListContent: View {
 
                             // Hover amount — positioned top‑left inside the cell, no background
                             if hoveredDayID == d.id, d.expenseAmount > 0 {
-                                Text(CurrencyFormatter.formatAdaptive(amount: d.expenseAmount, currencyCode: currency))
+                                Text(CurrencyFormatter.formatDecimal(amount: d.expenseAmount, currencyCode: currency))
                                     .font(.system(size: 9, weight: .medium, design: .monospaced))
                                     .foregroundStyle(Color.designOnSurface)
                                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

@@ -36,6 +36,10 @@ final class AppContainer {
 
     // App state
     var currentLedger: Ledger?
+    /// Active ledger's currency code, falling back to CNY when no ledger is loaded.
+    var currentCurrencyCode: String {
+        currentLedger?.defaultCurrencyCode ?? "CNY"
+    }
     var syncStatus: SyncStatus = .synced
     var isAuthenticated: Bool = false
     var currentUserRecordID: String?

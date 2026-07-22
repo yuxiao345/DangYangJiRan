@@ -31,7 +31,9 @@ struct MacAssetAllocationView: View {
     /// 瀑布图下钻目标（nil = L1 类型聚合视图；非 nil = L2 该类型账户明细）
     @State private var drilled: DrillKey?
 
-    private var currencyCode: String { "CNY" }
+    @Environment(AppContainer.self) private var appContainer
+
+    private var currencyCode: String { appContainer.currentCurrencyCode }
 
     // MARK: - Drill-down Model
 

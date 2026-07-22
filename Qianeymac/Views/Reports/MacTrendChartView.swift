@@ -4,6 +4,10 @@ import Charts
 struct MacTrendChartView: View {
     let dataPoints: [TrendDataPoint]
 
+    @Environment(AppContainer.self) private var appContainer
+
+    private var currencyCode: String { appContainer.currentCurrencyCode }
+
     @State private var selectedDate: String?
     @State private var showIncome = true
     @State private var showExpense = true
@@ -274,7 +278,7 @@ struct MacTrendChartView: View {
         .chartYAxis {
             AxisMarks { _ in
                 AxisGridLine()
-                AxisValueLabel(format: Decimal.FormatStyle.Currency(code: "CNY").precision(.fractionLength(0)))
+                AxisValueLabel(format: Decimal.FormatStyle.Currency(code: currencyCode).precision(.fractionLength(0)))
             }
         }
         .chartLegend(.hidden)

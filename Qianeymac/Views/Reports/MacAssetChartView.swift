@@ -4,6 +4,10 @@ import Charts
 struct MacAssetChartView: View {
     let dataPoints: [AssetDataPoint]
 
+    @Environment(AppContainer.self) private var appContainer
+
+    private var currencyCode: String { appContainer.currentCurrencyCode }
+
     @State private var showAssets = false
     @State private var showLiabilities = false
     @State private var showNet = true
@@ -244,7 +248,7 @@ struct MacAssetChartView: View {
         .chartYAxis {
             AxisMarks { _ in
                 AxisGridLine()
-                AxisValueLabel(format: Decimal.FormatStyle.Currency(code: "CNY").precision(.fractionLength(0)))
+                AxisValueLabel(format: Decimal.FormatStyle.Currency(code: currencyCode).precision(.fractionLength(0)))
             }
         }
         .chartLegend(.hidden)

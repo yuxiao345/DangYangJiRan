@@ -75,7 +75,7 @@ struct CreditCardReconciliationView: View {
                             .foregroundStyle(.red)
                             .fontWeight(.semibold)
                     } else {
-                        Text("差额 ¥0")
+                        Text("差额 \(CurrencyFormatter.formatDecimal(amount: 0, currencyCode: account.currencyCode))")
                             .font(.designBodySmall)
                             .foregroundStyle(.secondary)
                     }
@@ -348,7 +348,7 @@ struct AddEditStatementView: View {
     private var amountSection: some View {
         Section("银行账单金额") {
             HStack {
-                Text("¥").foregroundStyle(.secondary)
+                Text(CurrencyFormatter.currencySymbol(for: account.currencyCode)).foregroundStyle(.secondary)
                 TextField("账单金额", value: $bankAmount, format: .number)
                     .keyboardType(.decimalPad)
             }
