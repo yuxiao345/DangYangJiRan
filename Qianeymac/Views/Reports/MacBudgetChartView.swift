@@ -113,21 +113,17 @@ struct MacBudgetChartView: View {
                 if items.isEmpty {
                     emptyBudgetView
                 } else {
-                    VStack(spacing: 0) {
-                        summaryCard
-                            .padding(.horizontal, 24)
-                            .padding(.top, 12)
+                    // Summary card: fixed at top, NOT in the ScrollView
+                    summaryCard
+                        .padding(.horizontal, 24)
+                        .padding(.top, 12)
 
-                        ScrollView {
-                            VStack(spacing: 0) {
-                                flatItemList
-                            }
+                    // Budget item list: scrolls BEHIND the summary card
+                    ScrollView {
+                        flatItemList
                             .padding(.horizontal, 24)
                             .padding(.vertical, 12)
-                        }
-                        .scrollClipDisabled()
-}
-                    .padding(.bottom, 24)
+                    }
                 }
             }
         }
