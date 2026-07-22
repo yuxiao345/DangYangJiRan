@@ -72,13 +72,3 @@ struct PixelProgressBar: View, Animatable {
     }
 }
 
-struct PixelBlock: View {
-    let color: Color
-    let size: CGFloat
-
-    var body: some View {
-        RoundedRectangle(cornerRadius: 1)
-            .fill(color)
-            .frame(width: size, height: size)
-    }
-}

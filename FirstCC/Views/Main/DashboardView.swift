@@ -305,12 +305,7 @@ struct DashboardView: View {
     }
 
     private func budgetProgressColor(_ progress: Double) -> Color {
-        if progress > 1.0 { return .designAccentRed }
-        switch progress {
-        case ..<0.5: return .designPrimaryFixedDim
-        case ..<0.8: return .yellow
-        default: return .orange
-        }
+        Color.progressTint(for: progress)
     }
 
     private func refresh() {

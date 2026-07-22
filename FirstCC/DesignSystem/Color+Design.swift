@@ -121,4 +121,33 @@ extension Color {
     static var designAccentGreen: Color              { dynamicColor(lightHex: "#006d35", darkHex: "#00ff7f") }
     static var designAccentPurple: Color             { dynamicColor(lightHex: "#7521ff", darkHex: "#d1bcff") }
     static var designAccentRed: Color                { dynamicColor(lightHex: "#ba1a1a", darkHex: "#ffb4ab") }
+
+    // MARK: Progress state — 进度条 4 档阈值语义
+    // Warning / Caution 底层用系统色，自动适配 light/dark。
+    // 4 档阈值切色见 `Color.progressTint(for:)`。
+
+    static var designProgressWarning: Color {
+        #if os(iOS)
+        Color(uiColor: .systemYellow)
+        #elseif os(macOS)
+        Color(nsColor: .systemYellow)
+        #endif
+    }
+
+    static var designProgressCaution: Color {
+        #if os(iOS)
+        Color(uiColor: .systemOrange)
+        #elseif os(macOS)
+        Color(nsColor: .systemOrange)
+        #endif
+    }
+
+    /// 4 档阈值切色：>100% 红 / 80-100% 橙 / 50-80% 黄 / <50% 绿。
+    /// iOS / macOS 共用，iOS 3 处 + macOS 2 处调用点统一收口。
+    static func progressTint(for ratio: Double) -> Color {
+        if ratio > 1.0  { return .designAccentRed }
+        if ratio >= 0.8 { return .designProgressCaution }
+        if ratio >= 0.5 { return .designProgressWarning }
+        return .designAccentGreen
+    }
 }

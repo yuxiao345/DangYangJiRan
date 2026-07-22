@@ -21,10 +21,10 @@ private struct BudgetSpendingLine: View {
                 CurrencyText(amount: spent, currencyCode: currency, size: 12, foregroundColor: ratio > 1.0 ? .designAccentRed : Color.designOnSurface)
                 Text("/").font(.designBodySmall).foregroundStyle(.secondary)
                 CurrencyText(amount: budget, currencyCode: currency, size: 11, foregroundColor: .secondary)
-                Text("\(Int(pct))%").font(.designBodySmall).foregroundStyle(progressColor(ratio))
+                Text("\(Int(pct))%").font(.designBodySmall).foregroundStyle(Color.progressTint(for: ratio))
             }
             if budget > 0 {
-                PixelProgressBar(progress: min(animRatio, 1.0), tint: progressColor(ratio))
+                PixelProgressBar(progress: min(animRatio, 1.0), tint: Color.progressTint(for: ratio))
             }
         }
         .task {

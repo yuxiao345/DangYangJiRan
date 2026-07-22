@@ -261,26 +261,26 @@ struct TransactionListContent: View {
                                     GeometryReader { geo in
                                         let trackW = geo.size.width / 6
                                         VStack(spacing: 1.5) {
-                                            // Income bar (red)
+                                            // Income bar (green)
                                             ZStack(alignment: .leading) {
                                                 RoundedRectangle(cornerRadius: 1)
                                                     .fill(Color.designOnSurfaceVariant.opacity(0.12))
                                                     .frame(width: trackW, height: 2)
                                                 if incIntensity > 0 {
                                                     RoundedRectangle(cornerRadius: 1)
-                                                        .fill(Color.designAccentRed.opacity(0.7))
+                                                        .fill(Color.designAccentGreen.opacity(0.7))
                                                         .frame(width: trackW * incIntensity, height: 2)
                                                 }
                                             }
                                             .frame(width: trackW, height: 2)
-                                            // Expense bar (green)
+                                            // Expense bar (red)
                                             ZStack(alignment: .leading) {
                                                 RoundedRectangle(cornerRadius: 1)
                                                     .fill(Color.designOnSurfaceVariant.opacity(0.12))
                                                     .frame(width: trackW, height: 2)
                                                 if expIntensity > 0 {
                                                     RoundedRectangle(cornerRadius: 1)
-                                                        .fill(Color.designAccentGreen.opacity(0.75))
+                                                        .fill(Color.designAccentRed.opacity(0.75))
                                                         .frame(width: trackW * expIntensity, height: 2)
                                                 }
                                             }

@@ -217,7 +217,7 @@ struct DashboardContentColumn: View {
                     .foregroundStyle(isBudgetHovered ? Color.designAccentGreen : Color.secondary)
                     .offset(x: isBudgetHovered ? 2 : 0)
             }
-            PixelProgressBar(progress: min(animBudgetPercent, 1), tint: progressColor(animBudgetPercent), totalBlocks: 20)
+            PixelProgressBar(progress: min(animBudgetPercent, 1), tint: Color.progressTint(for: animBudgetPercent), totalBlocks: 20)
             HStack {
                 Text("已支出 \(CurrencyFormatter.formatDecimal(amount: spent, fractionDigits: 0, showAbs: true))")
                     .font(.designBodyCaption)

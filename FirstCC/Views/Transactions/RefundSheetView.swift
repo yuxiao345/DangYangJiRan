@@ -163,7 +163,7 @@ struct RefundSheetView: View {
                         Spacer()
                         PixelProgressBar(
                             progress: min(refundFraction, 1.0),
-                            tint: refundFraction > 1.0 ? Color.designAccentRed : Color.designPrimaryFixedDim,
+                            tint: refundFraction > 1.0 ? Color.designAccentRed : Color.designAccentGreen,
                             totalBlocks: 20
                         )
                         .frame(width: 80, height: 6)

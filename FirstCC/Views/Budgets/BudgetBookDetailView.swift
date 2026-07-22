@@ -221,12 +221,7 @@ struct BudgetBookDetailView: View {
     }
 
     private func progressColor(_ progress: Double) -> Color {
-        if progress > 1.0 { return .red }
-        switch progress {
-        case ..<0.5: return .green
-        case ..<0.8: return .yellow
-        default: return .orange
-        }
+        Color.progressTint(for: progress)
     }
 
     private var currency: String { book.ledger?.defaultCurrencyCode ?? "CNY" }

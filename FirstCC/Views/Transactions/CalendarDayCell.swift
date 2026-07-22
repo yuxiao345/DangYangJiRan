@@ -43,31 +43,31 @@ struct CalendarDayCell: View {
                         .frame(height: 28)
 
                     // Dual mini progress bars — fixed 1/3 cell width, centered below the date.
-                    // Red bar (top) = income; green bar (bottom) = expense.
+                    // Green bar (top) = income; red bar (bottom) = expense.
                     if isCurrentMonth {
                         GeometryReader { geo in
                             let trackW = geo.size.width / 3
                             VStack(spacing: 2) {
-                                // Income bar (red)
+                                // Income bar (green)
                                 ZStack(alignment: .leading) {
                                     RoundedRectangle(cornerRadius: 1.5)
                                         .fill(Color.designOnSurfaceVariant.opacity(0.12))
                                         .frame(width: trackW, height: 2.5)
                                     if incomeIntensity > 0 {
                                         RoundedRectangle(cornerRadius: 1.5)
-                                            .fill(Color.designAccentRed.opacity(0.7))
+                                            .fill(Color.designAccentGreen.opacity(0.7))
                                             .frame(width: trackW * incomeIntensity, height: 2.5)
                                     }
                                 }
                                 .frame(width: trackW, height: 2.5)
-                                // Expense bar (green)
+                                // Expense bar (red)
                                 ZStack(alignment: .leading) {
                                     RoundedRectangle(cornerRadius: 1.5)
                                         .fill(Color.designOnSurfaceVariant.opacity(0.12))
                                         .frame(width: trackW, height: 2.5)
                                     if expenseIntensity > 0 {
                                         RoundedRectangle(cornerRadius: 1.5)
-                                            .fill(Color.designAccentGreen.opacity(0.75))
+                                            .fill(Color.designAccentRed.opacity(0.75))
                                             .frame(width: trackW * expenseIntensity, height: 2.5)
                                     }
                                 }

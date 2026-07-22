@@ -1,12 +1,7 @@
 import SwiftUI
 @preconcurrency import CoreData
 
-func progressColor(_ p: Double) -> Color {
-    if p > 1.0 { return .designAccentRed }
-    if p > 0.8 { return .orange }
-    if p > 0.5 { return .yellow }
-    return .designPrimaryFixedDim
-}
+// 进度条 4 档阈值切色已收口到 `Color.progressTint(for:)`，见 FirstCC/DesignSystem/Color+Design.swift。
 
 // View files split into Qianeymac/Views/:
 //   MainSplitView.swift, Dashboard/, Accounts/, Transactions/, Reports/, Settings/, Sheets/, Budget/, Components/
