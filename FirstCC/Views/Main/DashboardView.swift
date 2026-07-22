@@ -209,7 +209,7 @@ struct DashboardView: View {
 
             CurrencyText(amount: abs(amount), currencyCode: ledgerCurrency, showSign: false, size: 22, foregroundColor: color, fractionDigits: 0)
 
-            PixelProgressBar(progress: progress, tint: color.opacity(0.6), totalBlocks: 20)
+            PixelProgressBar(progress: progress, tint: color, totalBlocks: 20)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)

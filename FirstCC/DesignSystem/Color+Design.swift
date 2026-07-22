@@ -70,7 +70,7 @@ extension Color {
 
     // Primary-fixed (stronger accent variants)
     static var designPrimaryFixed: Color             { dynamicColor(lightHex: "#1b7a42", darkHex: "#63ff93") }
-    static var designPrimaryFixedDim: Color          { dynamicColor(lightHex: "#006d35", darkHex: "#00e471") }
+    static var designPrimaryFixedDim: Color          { designAccentGreen }
     static var designOnPrimaryFixed: Color           { dynamicColor(lightHex: "#00210c", darkHex: "#00210b") }
     static var designOnPrimaryFixedVariant: Color    { dynamicColor(lightHex: "#005226", darkHex: "#005224") }
 
