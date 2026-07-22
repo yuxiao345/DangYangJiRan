@@ -626,9 +626,10 @@ private struct BudgetCardView: View {
                     .font(.system(size: 9)).foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
             }
 
-            // Mini trend chart (weekly smoothed, animated)
+            // Mini trend chart (rolling average, animated)
             if !trendData.isEmpty {
-                let smoothed = weeklySmoothed(trendData)
+                let smoothed = rollingAverage(trendData)
+                let maxAmt = smoothed.map(\.amount).max() ?? 1
                 Chart(smoothed) { point in
                     AreaMark(
                         x: .value("Date", point.date),
@@ -651,6 +652,7 @@ private struct BudgetCardView: View {
                     .interpolationMethod(.catmullRom)
                     .lineStyle(StrokeStyle(lineWidth: 1))
                 }
+                .chartYScale(domain: 0...(maxAmt * 1.2))
                 .mask(alignment: .leading) {
                     Rectangle().scaleEffect(x: trendLineProgress, y: 1, anchor: .leading)
                 }
@@ -725,9 +727,52 @@ private struct BudgetCardView: View {
     }
 }
 
-// MARK: - Weekly Trend Helper
+// MARK: - Rolling Average Trend Helper
 
-/// 将每日数据聚合为周数据，平滑趋势曲线
+/// Rolling average: distributes each transaction's amount evenly across `windowDays` centered on the transaction day.
+/// This flattens sparse spikes (e.g. monthly ¥128 subscription → ¥30/day for 7 days)
+/// while preserving the total. Each day's amount = sum of all transaction contributions that day.
+private func rollingAverage(_ daily: [DailySpendingPoint], windowDays: Int = 7) -> [DailySpendingPoint] {
+    guard !daily.isEmpty else { return [] }
+    let cal = Calendar.current
+
+    // Build a daily map: date → total amount per day
+    var dailyTotals: [Date: Decimal] = [:]
+    for point in daily {
+        let day = cal.startOfDay(for: point.date)
+        dailyTotals[day, default: .zero] += point.amount
+    }
+
+    guard let minDay = dailyTotals.keys.min(), let maxDay = dailyTotals.keys.max() else { return [] }
+
+    var result: [DailySpendingPoint] = []
+    var current = minDay
+    while current <= maxDay {
+        // For each past transaction within windowDays-1 days, compute decay contribution
+        // Transaction on day t with amount A:
+        //   current==t        → A (100%)
+        //   current==t+1      → A × (windowDays-1)/windowDays
+        //   current==t+2      → A × (windowDays-2)/windowDays
+        //   ...
+        //   current==t+windowDays-1 → A × 1/windowDays
+        var rolling: Decimal = .zero
+        for daysAgo in 0..<windowDays {
+            if let txDay = cal.date(byAdding: .day, value: -daysAgo, to: current),
+               let amt = dailyTotals[txDay] {
+                let decay = Decimal(windowDays - daysAgo) / Decimal(windowDays)
+                rolling += amt * decay
+            }
+        }
+        if rolling > 0 || result.isEmpty {
+            result.append(DailySpendingPoint(date: current, amount: rolling))
+        }
+        current = cal.date(byAdding: .day, value: 1, to: current) ?? current
+    }
+
+    return result
+}
+
+/// Legacy weekly aggregation — kept for reference, replaced by rollingAverage above.
 private func weeklySmoothed(_ daily: [DailySpendingPoint]) -> [DailySpendingPoint] {
     guard !daily.isEmpty else { return [] }
     let cal = Calendar.current
