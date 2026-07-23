@@ -35,6 +35,9 @@ struct MainSplitView: View {
         } detail: {
             NavigationStack(path: $navigationPath) {
                 mainColumnContent
+                    .navigationDestination(for: ReportType.self) { reportType in
+                        ReportDetailContent(reportType: reportType)
+                    }
                     .onChange(of: selection) { _, _ in
                         // 切换侧边栏时清空导航路径，防止残留的 pushed view（如账户明细）
                         // 在新 root view 中找不到匹配的 .navigationDestination 而产生运行时警告
@@ -143,7 +146,6 @@ struct MainSplitView: View {
                                        selected: selection == .reports && selectedReportType == type,
                                        isChild: true)
                                 .onTapGesture {
-                                    navigationPath = NavigationPath()
                                     selection = .reports
                                     selectedReportType = type
                                 }
@@ -190,20 +192,13 @@ struct MainSplitView: View {
     private var mainColumnContent: some View {
         switch selection {
         case .dashboard:
-            DashboardContentColumn(onNavigate: { type in
-                selection = .reports
-                selectedReportType = type
-            })
+            DashboardContentColumn(navigationPath: $navigationPath)
         case .accounts:
             AccountListContent()
         case .transactions:
             TransactionListContent(selectedDate: $selectedDate)
         case .reports:
-            if let type = selectedReportType {
-                ReportDetailContent(reportType: type)
-            } else {
-                Color.clear.onAppear { selectedReportType = .trend }
-            }
+            ReportDetailContent(reportType: selectedReportType ?? .trend)
         }
     }
 

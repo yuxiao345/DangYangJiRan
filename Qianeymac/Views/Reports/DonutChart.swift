@@ -50,22 +50,26 @@ struct DonutChart: View {
             if showTopBar { topBar }
             GeometryReader { geo in
                 let size = geo.size
-                let center = CGPoint(x: size.width / 2, y: size.height / 2)
+                let panelVisible = (explodedIndex ?? hoveredIndex) != nil && (explodedIndex ?? hoveredIndex)! < categories.count
+                let panelShift: CGFloat = panelVisible ? -50 : 0
+                let panelGap: CGFloat = 30
+                let halfPanelWidth: CGFloat = 70
+                let adjustedCenter = CGPoint(x: size.width / 2 + panelShift, y: size.height / 2)
                 let rawRadius = min(size.width, size.height) / 2
                 let radius = rawRadius - 14
 
                 ZStack {
                     ForEach(Array(categories.enumerated()), id: \.element.id) { index, item in
-                        sliceView(for: index, item: item, center: center, radius: radius)
+                        sliceView(for: index, item: item, center: adjustedCenter, radius: radius)
                     }
 
                     centerLabel
-                        .position(center)
+                        .position(adjustedCenter)
                         .allowsHitTesting(false)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                infoPanel(size: size)
+                infoPanel(size: size, radius: radius, panelShift: panelShift, panelGap: panelGap, halfPanelWidth: halfPanelWidth)
             }
             .frame(height: 220)
             .padding(.horizontal, 12)
@@ -146,45 +150,43 @@ struct DonutChart: View {
 
     // MARK: - Info Panel
 
-    private func infoPanel(size: CGSize) -> some View {
+    private func infoPanel(size: CGSize, radius: CGFloat, panelShift: CGFloat, panelGap: CGFloat, halfPanelWidth: CGFloat) -> some View {
         Group {
             if let idx = explodedIndex ?? hoveredIndex, idx < categories.count {
                 let item = categories[idx]
-                HStack {
-                    Spacer()
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack(spacing: 6) {
-                            Circle()
-                                .fill(Color(hex: item.colorHex) ?? .gray)
-                                .frame(width: 10, height: 10)
-                            Text(item.name)
-                                .font(.designBodyMedium)
-                                .foregroundStyle(Color.designOnSurface)
-                        }
-                        Divider()
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(String(localized: "金额"))
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(Color.designOnSurfaceVariant)
-                            CurrencyText(amount: item.amount, currencyCode: "", size: 18, foregroundColor: Color.designOnSurface)
-                                .fontWeight(.bold)
-                        }
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(String(localized: "占比"))
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(Color.designOnSurfaceVariant)
-                            Text(String(format: "%.1f%%", item.percentage * 100))
-                                .font(.system(size: 20, weight: .bold, design: .monospaced))
-                                .foregroundStyle(Color.designOnSurface)
-                        }
+                // donut center shifted left by panelShift, radius outward; panel positioned to the right with panelGap
+                let panelLeftX = size.width / 2 + panelShift + radius + panelGap
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(Color(hex: item.colorHex) ?? .gray)
+                            .frame(width: 10, height: 10)
+                        Text(item.name)
+                            .font(.designBodyMedium)
+                            .foregroundStyle(Color.designOnSurface)
                     }
-                    .padding(16)
-                    .frame(width: 140)
-                    .glassCard(cornerRadius: 12)
-                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                    .padding(.trailing, 4)
-                    .padding(.top, (size.height - 160) / 2)
+                    Divider()
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(String(localized: "金额"))
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(Color.designOnSurfaceVariant)
+                        CurrencyText(amount: item.amount, currencyCode: "", size: 18, foregroundColor: Color.designOnSurface)
+                            .fontWeight(.bold)
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(String(localized: "占比"))
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(Color.designOnSurfaceVariant)
+                        Text(String(format: "%.1f%%", item.percentage * 100))
+                            .font(.system(size: 20, weight: .bold, design: .monospaced))
+                            .foregroundStyle(Color.designOnSurface)
+                    }
                 }
+                .padding(16)
+                .frame(width: 140)
+                .glassCard(cornerRadius: 12)
+                .transition(.opacity.combined(with: .offset(x: -50)))
+                .position(x: panelLeftX + halfPanelWidth, y: size.height / 2)
             }
         }
     }

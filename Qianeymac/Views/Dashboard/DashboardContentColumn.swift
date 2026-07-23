@@ -5,6 +5,7 @@ import Charts
 struct DashboardContentColumn: View {
     @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
+    var navigationPath: Binding<NavigationPath>
     @State private var viewModel = DashboardViewModel(
         accountService: AccountServiceImpl(), transactionService: TransactionServiceImpl()
     )
@@ -14,9 +15,6 @@ struct DashboardContentColumn: View {
     @State private var animExpenseFrac: Double = 0
     @State private var animBalanceFrac: Double = 0
     @State private var animBudgetPercent: Double = 0
-
-    /// 导航回调：点击驾驶舱卡片跳转到对应报表
-    var onNavigate: ((ReportType) -> Void)?
 
     // MARK: - Category Card State
     @State private var categoryPieProgress: Double = 0
@@ -113,6 +111,10 @@ struct DashboardContentColumn: View {
         appContainer.currentLedger?.defaultCurrencyCode ?? "CNY"
     }
 
+    private func navigate(to report: ReportType) {
+        navigationPath.wrappedValue.append(report)
+    }
+
     // MARK: - 净资产
 
     private var netWorthCard: some View {
@@ -120,9 +122,9 @@ struct DashboardContentColumn: View {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("净资产")
-                        .font(.designLabel)
+                        .font(.designBodyMedium.weight(.bold))
                         .foregroundStyle(Color.designOnSurfaceVariant)
-                        .tracking(1.2)
+                        .tracking(0.4)
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Text(CurrencyFormatter.currencySymbol(for: currencyCode))
                             .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
@@ -164,7 +166,7 @@ struct DashboardContentColumn: View {
         .onHover { inside in
             if inside { NSCursor.pointingHand.push() } else { NSCursor.pop() }
         }
-        .onTapGesture { onNavigate?(.assets) }
+        .onTapGesture { navigate(to: .assets) }
         .overlay(alignment: .topTrailing) {
             Circle()
                 .fill(Color.designPrimaryFixedDim.opacity(0.15))
@@ -188,9 +190,9 @@ struct DashboardContentColumn: View {
     private func metricCell(label: String, amount: Decimal, frac: Double, color: Color) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
-                .font(.designLabelSmall)
+                .font(.designBodyMedium.weight(.semibold))
                 .foregroundStyle(Color.designOnSurfaceVariant)
-                .tracking(1.0)
+                .tracking(0.4)
             CurrencyText(amount: amount, currencyCode: currencyCode, showSign: false, size: 22, foregroundColor: color, fractionDigits: 0)
             PixelProgressBar(progress: frac, tint: color.opacity(0.6), totalBlocks: 20)
         }
@@ -273,11 +275,17 @@ struct DashboardContentColumn: View {
 
         return VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("资产配置")
-                    .font(.designBodyMedium.weight(.bold))
-                    .foregroundStyle(Color.designOnSurface)
-                    .contentShape(Rectangle())
-                    .onTapGesture { onNavigate?(.allocation) }
+                if allocationDrilled == nil {
+                    Text("资产配置")
+                        .font(.designBodyMedium.weight(.bold))
+                        .foregroundStyle(Color.designOnSurface)
+                        .contentShape(Rectangle())
+                        .onTapGesture { navigate(to: .allocation) }
+                } else {
+                    Text("资产配置")
+                        .font(.designBodyMedium.weight(.bold))
+                        .foregroundStyle(Color.designOnSurface)
+                }
 
                 if let key = allocationDrilled {
                     Spacer()
@@ -434,7 +442,7 @@ struct DashboardContentColumn: View {
     private var burnRateCard: some View {
         VStack(alignment: .leading, spacing: 6) {
             Button {
-                onNavigate?(.budget)
+                navigate(to: .budget)
             } label: {
                 HStack {
                     Text("消耗速率")
@@ -469,7 +477,7 @@ struct DashboardContentColumn: View {
     private var categoryOverviewCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button {
-                onNavigate?(.category)
+                navigate(to: .category)
             } label: {
                 HStack {
                     Text("支出分类")
