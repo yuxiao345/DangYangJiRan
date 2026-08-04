@@ -1067,9 +1067,13 @@ struct MacAddTransactionSheet: View {
                 ToolbarItem(placement: .confirmationAction) { Button("保存") { save() }.disabled(amount == 0 || selectedAccount == nil) }
             } else {
                 ToolbarItem(placement: .cancellationAction) { Button("关闭") { dismiss() } }
-                if let t = editing, canRefund(t) { ToolbarItem(placement: .primaryAction) { Button("退款") { showRefundSheet = true } } }
-                ToolbarItem(placement: .primaryAction) { Button("编辑") { enterEditMode() } }
-                ToolbarItem(placement: .destructiveAction) { Button("删除", role: .destructive) { deleteTarget = editing } }
+                ToolbarItemGroup(placement: .primaryAction) {
+                    HStack(spacing: 12) {
+                        if let t = editing, canRefund(t) { Button("退款") { showRefundSheet = true } }
+                        Button("编辑") { enterEditMode() }
+                        Button("删除", role: .destructive) { deleteTarget = editing }
+                    }
+                }
             }
         }
     }
