@@ -56,6 +56,7 @@ struct ReportDetailContent: View {
     @State private var showCustomRange = false
     @State private var bookPickerHighlighted = false
     @State private var selectedDimension: DimensionType = .merchant
+    @State private var selectedTransaction: Transaction?
 
     // Custom range: year + month state
     @State private var startYear = Calendar.current.component(.year, from: Self.defaultStartDate)
@@ -85,7 +86,7 @@ struct ReportDetailContent: View {
                     categoryType: $viewModel.categoryType,
                     onCategoryTap: { viewModel.selectCategory($0) },
                     onCenterTap: { viewModel.goBack() },
-                    onSelectTransaction: nil,
+                    onSelectTransaction: { tx in self.selectedTransaction = tx },
                     isMemberSplitOn: $viewModel.isShowingMemberSplit,
                     memberDonutCategories: viewModel.memberDonutCategories,
                     memberTotalExpense: viewModel.memberDonutCategories.map(\.amount).reduce(0, +),
@@ -132,6 +133,9 @@ struct ReportDetailContent: View {
         }
         .frame(maxHeight: .infinity, alignment: .top)
         .designScreen()
+        .sheet(item: $selectedTransaction) { t in
+            MacAddTransactionSheet(editing: t, displayMode: true)
+        }
         .task(id: reportType) {
             viewModel.isShowingMemberSplit = false
             showCustomRange = false
