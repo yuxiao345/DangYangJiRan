@@ -507,14 +507,15 @@ final class BudgetServiceTests: XCTestCase {
         let ledger = makeLedger()
         let account = makeAccount("现金", ledger)
         let cat = makeCategory("餐饮", ledger)
-        // 预算书覆盖全年，current period 是本月（2026年7月）
+        // 预算书覆盖全年，current period 由当前日期决定
         let book = makeBook("2026预算", start: date(2026, 1, 1), end: date(2026, 12, 31), ledger)
         let item = makeItem(amount: 3000, period: .monthly, category: cat, book: book)
 
         // 上个月的交易
-        makeTx(amount: -900, date: date(2026, 6, 20), category: cat, account: account, ledger: ledger)
+        let lastMonth = Calendar.current.date(byAdding: .month, value: -1, to: Date())!
+        makeTx(amount: -900, date: lastMonth, category: cat, account: account, ledger: ledger)
         // 本月的交易
-        makeTx(amount: -400, date: date(2026, 7, 10), category: cat, account: account, ledger: ledger)
+        makeTx(amount: -400, date: Date(), category: cat, account: account, ledger: ledger)
 
         let thisMonthSpending = service.currentPeriodSpending(for: item, context: context)
         // currentPeriodSpending 只含本月
