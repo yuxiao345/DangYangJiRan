@@ -21,9 +21,12 @@ protocol BudgetServiceProtocol {
     func cumulativeSpending(for item: BudgetItem, context: NSManagedObjectContext) -> Decimal
     func totalBudget(for book: BudgetBook) -> Decimal
     func totalCumulativeSpending(for book: BudgetBook, context: NSManagedObjectContext) -> Decimal
+    func totalCumulativeSpending(in range: ClosedRange<Date>, for book: BudgetBook, context: NSManagedObjectContext) -> Decimal
     func totalCurrentPeriodSpending(for book: BudgetBook, context: NSManagedObjectContext) -> Decimal
+    func totalCurrentPeriodSpending(in range: ClosedRange<Date>, for book: BudgetBook, context: NSManagedObjectContext) -> Decimal
     func totalCurrentPeriodBudget(for book: BudgetBook) -> Decimal
     func unbudgetedCategorySpending(for book: BudgetBook, context: NSManagedObjectContext) -> [(Category, Decimal)]
+    func unbudgetedCategorySpending(in range: ClosedRange<Date>, for book: BudgetBook, context: NSManagedObjectContext) -> [(Category, Decimal)]
     func categorySpending(in range: ClosedRange<Date>, for book: BudgetBook, context: NSManagedObjectContext) -> [UUID: Decimal]
 
     /// 通用本月支出（不依赖预算书），和各项内部计算使用完全一致的筛选逻辑

@@ -96,6 +96,22 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
         return spending(in: clippedRange(currentMonthRange(), to: book), category: nil, book: book, context: context)
     }
 
+    func totalCumulativeSpending(in range: ClosedRange<Date>, for book: BudgetBook, context: NSManagedObjectContext) -> Decimal {
+        let cal = Calendar.current
+        let start = max(range.lowerBound, cal.startOfDay(for: book.startDate))
+        let end = min(range.upperBound, Date())
+        return spending(in: start...end, category: nil, book: book, context: context)
+    }
+
+    func totalCurrentPeriodSpending(in range: ClosedRange<Date>, for book: BudgetBook, context: NSManagedObjectContext) -> Decimal {
+        let cal = Calendar.current
+        let monthStart = cal.date(from: cal.dateComponents([.year, .month], from: range.lowerBound)) ?? range.lowerBound
+        let monthEnd = cal.date(byAdding: DateComponents(month: 1, day: -1), to: monthStart) ?? range.lowerBound
+        let clippedStart = max(cal.startOfDay(for: monthStart), cal.startOfDay(for: book.startDate))
+        let clippedEnd = min(cal.endOfDay(for: monthEnd), range.upperBound)
+        return spending(in: clippedStart...clippedEnd, category: nil, book: book, context: context)
+    }
+
     func totalCurrentPeriodBudget(for book: BudgetBook) -> Decimal {
         // 只汇总顶层预算项（无预算祖先的），子预算是子限额而非独立封套
         return rootBudgetItems(for: book).reduce(into: Decimal(0)) { total, item in
@@ -104,6 +120,10 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
     }
 
     func unbudgetedCategorySpending(for book: BudgetBook, context: NSManagedObjectContext) -> [(Category, Decimal)] {
+        return unbudgetedCategorySpending(in: currentMonthRange(), for: book, context: context)
+    }
+
+    func unbudgetedCategorySpending(in range: ClosedRange<Date>, for book: BudgetBook, context: NSManagedObjectContext) -> [(Category, Decimal)] {
         // 匹配模式下，没有"非预算项"的概念——所有未匹配分类的支出都不计入本预算
         guard !book.matchBudgetItems else { return [] }
         guard let ledger = book.ledger else { return [] }
@@ -121,8 +141,8 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
         }
 
         // 用原始（非展开）按分类支出，避免子分类交易被重复计入未预算的父分类
-        let range = clippedRange(currentMonthRange(), to: book)
-        let txs = fetchExpenseTransactions(in: range, ledgerID: ledger.id, context: context)
+        let clipped = clippedRange(range, to: book)
+        let txs = fetchExpenseTransactions(in: clipped, ledgerID: ledger.id, context: context)
         var rawByCat: [UUID: Decimal] = [:]
         for t in txs {
             guard let catID = t.category?.id else { continue }
