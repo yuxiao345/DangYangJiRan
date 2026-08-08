@@ -126,8 +126,14 @@ struct DashboardView: View {
                                 Text(formattedBalance)
                                     .font(.designDisplayMobile)
                             } else {
-                                Text("*****")
-                                    .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
+                                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                                    ForEach(0..<4, id: \.self) { _ in
+                                        Circle()
+                                            .fill(Color.designOnSurfaceVariant.opacity(0.5))
+                                            .frame(width: 4, height: 4)
+                                            .offset(y: 12)
+                                    }
+                                }
                             }
                         }
                         .foregroundStyle(Color.designOnSurface)
