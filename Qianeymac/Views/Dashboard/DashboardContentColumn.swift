@@ -11,6 +11,7 @@ struct DashboardContentColumn: View {
     )
     @State private var showBudgetDetail = false
     @State private var isBudgetHovered = false
+    @State private var showNetWorth = true
     @State private var animIncomeFrac: Double = 0
     @State private var animExpenseFrac: Double = 0
     @State private var animBalanceFrac: Double = 0
@@ -129,11 +130,19 @@ struct DashboardContentColumn: View {
                         Text(CurrencyFormatter.currencySymbol(for: currencyCode))
                             .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
                             .foregroundStyle(Color.designPrimaryFixedDim)
-                        Text(CurrencyFormatter.formatDecimal(amount: viewModel.totalBalance, fractionDigits: 2))
+                        Text(showNetWorth ? CurrencyFormatter.formatDecimal(amount: viewModel.totalBalance, fractionDigits: 2) : "***")
                             .font(.designDisplayMobile)
                             .foregroundStyle(Color.designOnSurface)
                             .tracking(-0.6)
                     }
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) { showNetWorth.toggle() }
+                    } label: {
+                        Image(systemName: showNetWorth ? "eye" : "eye.slash")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Color.designOnSurfaceVariant)
+                    }
+                    .buttonStyle(.plain)
                 }
                 Spacer()
                 Image(systemName: "chevron.right")

@@ -8,6 +8,7 @@ struct DashboardView: View {
     @State private var showAddSheet = false
     @State private var editingTransaction: Transaction?
     @State private var showBreakdown = false
+    @State private var showNetWorth = false
     // Progress bar animated values (0→target on appear/data load)
     @State private var displayBudgetFraction: Double = 0
     @State private var displayIncomeFrac: Double = 0
@@ -100,16 +101,27 @@ struct DashboardView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("净资产")
-                        .font(.designLabel)
-                        .foregroundStyle(Color.designOnSurfaceVariant)
-                        .tracking(1.2)
+                    HStack(spacing: 4) {
+                        Text("净资产")
+                            .font(.designLabel)
+                            .foregroundStyle(Color.designOnSurfaceVariant)
+                            .tracking(1.2)
+
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) { showNetWorth.toggle() }
+                        } label: {
+                            Image(systemName: showNetWorth ? "eye" : "eye.slash")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(Color.designOnSurfaceVariant)
+                        }
+                        .buttonStyle(.plain)
+                    }
 
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Text(CurrencyFormatter.currencySymbol(for: ledgerCurrency))
                             .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
                             .foregroundStyle(Color.designPrimaryFixedDim)
-                        Text(formattedBalance)
+                        Text(showNetWorth ? formattedBalance : "***")
                             .font(.designDisplayMobile)
                             .foregroundStyle(Color.designOnSurface)
                             .tracking(-0.6)
