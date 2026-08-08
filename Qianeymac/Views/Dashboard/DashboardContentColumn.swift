@@ -135,7 +135,7 @@ struct DashboardContentColumn: View {
                                 Text(CurrencyFormatter.formatDecimal(amount: viewModel.totalBalance, fractionDigits: 2))
                                     .font(.designDisplayMobile)
                             } else {
-                                HStack(alignment: .firstTextBaseline, spacing: 5) {
+                                HStack(alignment: .firstTextBaseline, spacing: 7) {
                                     ForEach(0..<5, id: \.self) { _ in
                                         CircleDot()
                                     }
@@ -598,8 +598,8 @@ private struct CircleDot: View {
     var body: some View {
         Circle()
             .fill(Color.designOnSurfaceVariant.opacity(isHovered ? 0.85 : 0.5))
-            .frame(width: 14, height: 14)
-            .offset(y: -8)
+            .frame(width: 12, height: 12)
+            .offset(y: -6)
             .animation(.easeInOut(duration: 0.25), value: isHovered)
             .onHover { inside in
                 isHovered = inside

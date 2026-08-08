@@ -126,7 +126,7 @@ struct DashboardView: View {
                                 Text(formattedBalance)
                                     .font(.designDisplayMobile)
                             } else {
-                                HStack(alignment: .firstTextBaseline, spacing: 5) {
+                                HStack(alignment: .firstTextBaseline, spacing: 7) {
                                     ForEach(0..<5, id: \.self) { idx in
                                         CircleDot()
                                     }
@@ -360,8 +360,8 @@ private struct CircleDot: View {
     var body: some View {
         Circle()
             .fill(Color.designOnSurfaceVariant.opacity(isHovered ? 0.85 : 0.5))
-            .frame(width: 14, height: 14)
-            .offset(y: -8) // 14px圆心对齐24pt字体的x-height中心
+            .frame(width: 12, height: 12)
+            .offset(y: -6) // 14px圆心对齐24pt字体的x-height中心
             .animation(.easeInOut(duration: 0.25), value: isHovered)
             .onHover { inside in
                 isHovered = inside
