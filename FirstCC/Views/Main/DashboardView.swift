@@ -128,13 +128,9 @@ struct DashboardView: View {
                             } else {
                                 HStack(alignment: .lastTextBaseline, spacing: 4) {
                                     ForEach(0..<4, id: \.self) { _ in
-                                        Text(" ")
-                                            .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
-                                            .baselineOffset(-13)
-                                            .foregroundStyle(.clear)
-                                        + Text("●")
-                                            .font(.custom("JetBrainsMono-Medium", fixedSize: 10))
-                                            .baselineOffset(-13)
+                                        Text("●")
+                                            .font(.system(size: 11, weight: .regular, design: .default))
+                                            .baselineOffset(-4)
                                             .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
                                     }
                                 }
