@@ -126,12 +126,9 @@ struct DashboardView: View {
                                 Text(formattedBalance)
                                     .font(.designDisplayMobile)
                             } else {
-                                HStack(alignment: .lastTextBaseline, spacing: 4) {
-                                    ForEach(0..<4, id: \.self) { _ in
-                                        Text("●")
-                                            .font(.system(size: 11, weight: .regular, design: .default))
-                                            .baselineOffset(-4)
-                                            .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+                                HStack(alignment: .firstTextBaseline, spacing: 5) {
+                                    ForEach(0..<5, id: \.self) { idx in
+                                        CircleDot()
                                     }
                                 }
                             }
@@ -352,5 +349,22 @@ struct DashboardView: View {
                 self.displayExpenseFrac = eFrac
             }
         }
+    }
+}
+
+// MARK: - Privacy Placeholder Dot
+
+private struct CircleDot: View {
+    @State private var isHovered = false
+
+    var body: some View {
+        Circle()
+            .fill(Color.designOnSurfaceVariant.opacity(isHovered ? 0.85 : 0.5))
+            .frame(width: 14, height: 14)
+            .offset(y: -8) // 14px圆心对齐24pt字体的x-height中心
+            .animation(.easeInOut(duration: 0.25), value: isHovered)
+            .onHover { inside in
+                isHovered = inside
+            }
     }
 }
