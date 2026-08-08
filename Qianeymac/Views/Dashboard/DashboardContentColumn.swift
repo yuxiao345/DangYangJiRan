@@ -135,12 +135,16 @@ struct DashboardContentColumn: View {
                                 Text(CurrencyFormatter.formatDecimal(amount: viewModel.totalBalance, fractionDigits: 2))
                                     .font(.designDisplayMobile)
                             } else {
-                                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                                HStack(alignment: .lastTextBaseline, spacing: 4) {
                                     ForEach(0..<4, id: \.self) { _ in
-                                        Circle()
-                                            .fill(Color.designOnSurfaceVariant.opacity(0.5))
-                                            .frame(width: 4, height: 4)
-                                            .offset(y: 12)
+                                        Text(" ")
+                                            .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
+                                            .baselineOffset(-13)
+                                            .foregroundStyle(.clear)
+                                        + Text("●")
+                                            .font(.custom("JetBrainsMono-Medium", fixedSize: 10))
+                                            .baselineOffset(-13)
+                                            .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
                                     }
                                 }
                             }
