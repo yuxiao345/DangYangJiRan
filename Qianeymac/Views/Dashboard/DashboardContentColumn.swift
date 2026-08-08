@@ -19,6 +19,7 @@ struct DashboardContentColumn: View {
 
     // MARK: - Category Card State
     @State private var categoryPieProgress: Double = 0
+    @State private var categoryPieTrigger: Int = 0
     @State private var categoryExplodedIndex: Int? = 0
     @State private var categoryHoveredIndex: Int?
     @State private var selectedTransaction: Transaction?
@@ -59,6 +60,12 @@ struct DashboardContentColumn: View {
         .onAppear { loadAll() }
         .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in loadAll() }
         .onChange(of: appContainer.currentLedger?.id) { _, _ in loadAll() }
+        .onChange(of: categoryPieTrigger) { _, _ in
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 50_000_000)
+                withAnimation(.easeOut(duration: 0.9)) { categoryPieProgress = 1 }
+            }
+        }
         .sheet(isPresented: $showBudgetDetail) {
             if let book = viewModel.activeBudgetBook {
                 BudgetBookDetailMacView(book: book)
@@ -102,10 +109,7 @@ struct DashboardContentColumn: View {
         // Animate category pie
         categoryPieProgress = 0
         categoryExplodedIndex = 0
-        Task {
-            try? await Task.sleep(nanoseconds: 50_000_000)
-            withAnimation(.easeOut(duration: 0.9)) { categoryPieProgress = 1 }
-        }
+        categoryPieTrigger += 1
     }
 
     private var currencyCode: String {
@@ -228,7 +232,6 @@ struct DashboardContentColumn: View {
         let spent = viewModel.budgetSpent
         let limit = viewModel.budgetLimit
         let percent = limit > 0 ? Double(truncating: (spent / limit) as NSNumber) : 0
-        let remaining = limit - spent
         return VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("本月预算")
@@ -315,7 +318,7 @@ struct DashboardContentColumn: View {
                     } label: {
                         HStack(spacing: 3) {
                             Image(systemName: "chevron.left")
-                            Text(String(localized: "全部"))
+                            Text("全部")
                             Text("·")
                             Image(systemName: key.iconName).font(.system(size: 10))
                             Text(key.displayName)
@@ -370,44 +373,29 @@ struct DashboardContentColumn: View {
         let isL2 = allocationDrilled != nil
 
         // Pre-compute waterfall segments with stable index-based IDs
-        struct Segment: Identifiable {
-            let id: Int
-            let axisKey: String   // 唯一 X 分类键（= node.id），避免同名类型两侧挤到同一 X 位置
-            let label: String     // X 轴显示名
-            let yStart: Decimal
-            let yEnd: Decimal
-            let isSummary: Bool
-            let isAsset: Bool
-        }
-
-        var segments: [Segment] = []
+        var segments: [WaterfallSegment] = []
         var idx = 0
         var running = Decimal.zero
         for item in assetNodes {
             let end = running + item.balance
-            segments.append(Segment(id: idx, axisKey: item.id, label: item.name, yStart: running, yEnd: end, isSummary: false, isAsset: true))
+            segments.append(WaterfallSegment(id: idx, axisKey: item.id, label: item.name, yStart: running, yEnd: end, isSummary: false, isAsset: true))
             idx += 1; running = end
         }
         if !isL2 {
-            segments.append(Segment(id: idx, axisKey: "summary|assets", label: String(localized: "总资产"), yStart: 0, yEnd: totalAssets, isSummary: true, isAsset: true))
+            segments.append(WaterfallSegment(id: idx, axisKey: "summary|assets", label: "总资产", yStart: 0, yEnd: totalAssets, isSummary: true, isAsset: true))
             idx += 1; running = totalAssets
         }
         for item in liabNodes {
             let absBal = abs(item.balance)
             let end = running - absBal
-            segments.append(Segment(id: idx, axisKey: item.id, label: item.name, yStart: running, yEnd: end, isSummary: false, isAsset: false))
+            segments.append(WaterfallSegment(id: idx, axisKey: item.id, label: item.name, yStart: running, yEnd: end, isSummary: false, isAsset: false))
             idx += 1; running = end
         }
         if !isL2 {
-            segments.append(Segment(id: idx, axisKey: "summary|net", label: String(localized: "净资产"), yStart: 0, yEnd: viewModel.totalBalance, isSummary: true, isAsset: viewModel.totalBalance >= 0))
+            segments.append(WaterfallSegment(id: idx, axisKey: "summary|net", label: "净资产", yStart: 0, yEnd: viewModel.totalBalance, isSummary: true, isAsset: viewModel.totalBalance >= 0))
         }
 
         // Connector: dashed line tracing running total across non-summary bars
-        struct ConnectorPoint: Identifiable {
-            let id: Int
-            let axisKey: String
-            let value: Decimal
-        }
         let connectorData = segments.filter { !$0.isSummary }.map { ConnectorPoint(id: $0.id, axisKey: $0.axisKey, value: $0.yEnd) }
 
         // axisKey → 显示名映射，供 X 轴标签渲染
@@ -533,7 +521,7 @@ struct DashboardContentColumn: View {
                 DonutChart(
                     categories: viewModel.categoryOverviewItems,
                     totalExpense: viewModel.categoryOverviewTotal,
-                    centerTitle: String(localized: "本月支出"),
+                    centerTitle: "本月支出",
                     isDrilledDown: false,
                     showTopBar: false,
                     categoryType: .constant(.expense),
@@ -590,6 +578,22 @@ struct DashboardContentColumn: View {
         .glassCard(cornerRadius: 20)
     }
 
+}
+
+struct WaterfallSegment: Identifiable {
+    let id: Int
+    let axisKey: String
+    let label: String
+    let yStart: Decimal
+    let yEnd: Decimal
+    let isSummary: Bool
+    let isAsset: Bool
+}
+
+struct ConnectorPoint: Identifiable {
+    let id: Int
+    let axisKey: String
+    let value: Decimal
 }
 
 // MARK: - Privacy Placeholder Dot

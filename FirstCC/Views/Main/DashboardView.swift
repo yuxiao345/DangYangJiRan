@@ -321,9 +321,7 @@ struct DashboardView: View {
     }
 
     private func formatBudgetAmount(_ amount: Decimal) -> String {
-        let symbol = CurrencyFormatter.currencySymbol(for: ledgerCurrency)
-        let raw = CurrencyFormatter.formatDecimal(amount: amount, fractionDigits: 0, showAbs: true)
-        return "\(symbol)\(raw)"
+        CurrencyFormatter.formatDecimal(amount: amount, currencyCode: ledgerCurrency, fractionDigits: 0, showAbs: true)
     }
 
     private func budgetProgressColor(_ progress: Double) -> Color {
