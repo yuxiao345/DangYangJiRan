@@ -121,10 +121,17 @@ struct DashboardView: View {
                         Text(CurrencyFormatter.currencySymbol(for: ledgerCurrency))
                             .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
                             .foregroundStyle(Color.designPrimaryFixedDim)
-                        Text(showNetWorth ? formattedBalance : "*****")
-                            .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
-                            .foregroundStyle(Color.designOnSurface)
-                            .tracking(-0.6)
+                        Group {
+                            if showNetWorth {
+                                Text(formattedBalance)
+                                    .font(.designDisplayMobile)
+                            } else {
+                                Text("*****")
+                                    .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
+                            }
+                        }
+                        .foregroundStyle(Color.designOnSurface)
+                        .tracking(-0.6)
                     }
                 }
 
