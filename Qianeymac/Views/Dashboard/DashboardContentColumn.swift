@@ -599,7 +599,7 @@ private struct CircleDot: View {
         Circle()
             .fill(Color.designOnSurfaceVariant.opacity(isHovered ? 0.85 : 0.5))
             .frame(width: 12, height: 12)
-            .offset(x: 2, y: -5)
+            .offset(x: 3, y: -4)
             .animation(.easeInOut(duration: 0.25), value: isHovered)
             .onHover { inside in
                 isHovered = inside
