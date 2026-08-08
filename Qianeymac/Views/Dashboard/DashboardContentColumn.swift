@@ -130,8 +130,8 @@ struct DashboardContentColumn: View {
                         Text(CurrencyFormatter.currencySymbol(for: currencyCode))
                             .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
                             .foregroundStyle(Color.designPrimaryFixedDim)
-                        Text(showNetWorth ? CurrencyFormatter.formatDecimal(amount: viewModel.totalBalance, fractionDigits: 2) : "***")
-                            .font(.designDisplayMobile)
+                        Text(showNetWorth ? CurrencyFormatter.formatDecimal(amount: viewModel.totalBalance, fractionDigits: 2) : "*****")
+                            .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
                             .foregroundStyle(Color.designOnSurface)
                             .tracking(-0.6)
                     }

@@ -121,8 +121,8 @@ struct DashboardView: View {
                         Text(CurrencyFormatter.currencySymbol(for: ledgerCurrency))
                             .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
                             .foregroundStyle(Color.designPrimaryFixedDim)
-                        Text(showNetWorth ? formattedBalance : "***")
-                            .font(.designDisplayMobile)
+                        Text(showNetWorth ? formattedBalance : "*****")
+                            .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
                             .foregroundStyle(Color.designOnSurface)
                             .tracking(-0.6)
                     }
