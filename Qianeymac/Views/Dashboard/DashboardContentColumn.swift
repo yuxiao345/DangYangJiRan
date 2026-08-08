@@ -11,7 +11,7 @@ struct DashboardContentColumn: View {
     )
     @State private var showBudgetDetail = false
     @State private var isBudgetHovered = false
-    @State private var showNetWorth = true
+    @State private var showNetWorth = false
     @State private var animIncomeFrac: Double = 0
     @State private var animExpenseFrac: Double = 0
     @State private var animBalanceFrac: Double = 0
@@ -122,10 +122,20 @@ struct DashboardContentColumn: View {
         VStack(spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("净资产")
-                        .font(.designBodyMedium.weight(.bold))
-                        .foregroundStyle(Color.designOnSurfaceVariant)
-                        .tracking(0.4)
+                    HStack(spacing: 6) {
+                        Text("净资产")
+                            .font(.designBodyMedium.weight(.bold))
+                            .foregroundStyle(Color.designOnSurfaceVariant)
+                            .tracking(0.4)
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) { showNetWorth.toggle() }
+                        } label: {
+                            Image(systemName: showNetWorth ? "eye" : "eye.slash")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(Color.designOnSurfaceVariant)
+                        }
+                        .buttonStyle(.plain)
+                    }
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Text(CurrencyFormatter.currencySymbol(for: currencyCode))
                             .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
@@ -145,14 +155,6 @@ struct DashboardContentColumn: View {
                         .foregroundStyle(Color.designOnSurface)
                         .tracking(-0.6)
                     }
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.2)) { showNetWorth.toggle() }
-                    } label: {
-                        Image(systemName: showNetWorth ? "eye" : "eye.slash")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Color.designOnSurfaceVariant)
-                    }
-                    .buttonStyle(.plain)
                 }
                 Spacer()
                 Image(systemName: "chevron.right")
