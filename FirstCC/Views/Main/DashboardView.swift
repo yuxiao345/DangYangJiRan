@@ -9,6 +9,11 @@ struct DashboardView: View {
     @State private var editingTransaction: Transaction?
     @State private var showBreakdown = false
     @State private var showNetWorth = false
+    @State private var dotsPhase: DotsRevealPhase = .showingDots
+    @State private var currentEffect: AmountHideEffect = .gentle
+    @State private var amountIsVisible: Bool = true  // 默认 true（显示），init 后归零
+    @State private var dotAnimationTask: Task<Void, Never>?
+    @State private var amountAnimationTask: Task<Void, Never>?
     // Progress bar animated values (0→target on appear/data load)
     @State private var displayBudgetFraction: Double = 0
     @State private var displayIncomeFrac: Double = 0
@@ -108,7 +113,7 @@ struct DashboardView: View {
                             .tracking(1.2)
 
                         Button {
-                            withAnimation(.easeInOut(duration: 0.2)) { showNetWorth.toggle() }
+                            toggleNetWorth()
                         } label: {
                             Image(systemName: showNetWorth ? "eye" : "eye.slash")
                                 .font(.system(size: 13, weight: .medium))
@@ -121,20 +126,7 @@ struct DashboardView: View {
                         Text(CurrencyFormatter.currencySymbol(for: ledgerCurrency))
                             .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
                             .foregroundStyle(Color.designPrimaryFixedDim)
-                        Group {
-                            if showNetWorth {
-                                Text(formattedBalance)
-                                    .font(.designDisplayMobile)
-                            } else {
-                                HStack(alignment: .firstTextBaseline, spacing: 7) {
-                                    ForEach(0..<5, id: \.self) { idx in
-                                        CircleDot()
-                                    }
-                                }
-                            }
-                        }
-                        .foregroundStyle(Color.designOnSurface)
-                        .tracking(-0.6)
+                        blurredAmountView
                     }
                 }
 
@@ -202,6 +194,65 @@ struct DashboardView: View {
                 .offset(x: 20, y: -20)
         }
     }
+
+    // MARK: - Blurred Amount View
+
+    /// 净资产金额显示，多阶段动画：
+    /// - 显示金额：圆点逐个消失 → 金额动画出现
+    /// - 隐藏金额：金额动画消失 → 圆点逐个出现
+    private var blurredAmountView: some View {
+        ZStack(alignment: Alignment(horizontal: .leading, vertical: .lastTextBaseline)) {
+            dotsView
+            amountView
+        }
+        .foregroundStyle(Color.designOnSurface)
+        .tracking(-0.6)
+    }
+
+    @ViewBuilder
+    private var amountView: some View {
+        switch dotsPhase {
+        case .showingAmount, .amountDisappearing:
+            Text(formattedBalance)
+                .font(.designDisplayMobile)
+                .modifier(AmountEffectModifier(effect: currentEffect, isVisible: amountIsVisible))
+        default:
+            Text("")
+                .font(.designDisplayMobile)
+        }
+    }
+
+    @ViewBuilder
+    private var dotsView: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 7) {
+            ForEach(0..<5, id: \.self) { idx in
+                CircleDot()
+                    .opacity(dotOpacity(for: idx))
+                    .animation(.easeOut(duration: 0.15).delay(Double(idx) * 0.06), value: dotsPhase)
+            }
+        }
+    }
+
+    /// 根据当前相位和 dot index 计算透明度
+    private func dotOpacity(for idx: Int) -> Double {
+        switch dotsPhase {
+        case .showingDots:
+            return 1.0
+        case .dotsDisappearing:
+            // 从右到左逐个消失
+            return idx > (4 - dotsDisappearingIndex) ? 0.0 : 1.0
+        case .showingAmount, .amountDisappearing:
+            return 0.0
+        case .dotsAppearing:
+            // 从左到右逐个出现（关眼睛时）
+            return idx <= dotsAppearingIndex ? 1.0 : 0.0
+        }
+    }
+
+    /// dotsDisappearing 阶段当前消失到第几个（0=刚开始, 5=全消失）
+    @State private var dotsDisappearingIndex: Int = 0
+    /// dotsAppearing 阶段当前出现到第几个（0=全不可见, 5=全出现）
+    @State private var dotsAppearingIndex: Int = 0
 
     // MARK: - Income / Expense Grid
 
@@ -328,6 +379,74 @@ struct DashboardView: View {
         Color.progressTint(for: progress)
     }
 
+    private func toggleNetWorth() {
+        currentEffect = AmountHideEffect.random
+
+        if dotsPhase == .showingDots || dotsPhase == .dotsAppearing {
+            // --- 开眼睛：圆点消失 → 金额出现 ---
+            startDotsDisappearing()
+        } else if dotsPhase == .showingAmount {
+            // --- 关眼睛：金额消失 → 圆点出现 ---
+            startAmountDisappearing()
+        }
+    }
+
+    /// 阶段1：圆点从右到左逐个消失
+    private func startDotsDisappearing() {
+        dotAnimationTask?.cancel()
+        dotsDisappearingIndex = 0
+        dotsPhase = .dotsDisappearing
+
+        dotAnimationTask = Task { @MainActor in
+            // 逐步增加消失的点数（0...5: 0=刚开始, 5=全部消失）
+            for i in 0...5 {
+                try? await Task.sleep(for: .milliseconds(60))
+                dotsDisappearingIndex = i
+            }
+            // 圆点全部消失，切换到金额显示
+            try? await Task.sleep(for: .milliseconds(100))
+            startAmountAppearing()
+        }
+    }
+
+    /// 阶段2：金额动画出现
+    private func startAmountAppearing() {
+        dotsPhase = .showingAmount
+        // 先隐藏（触发消失动画的终点），下一帧再显示（触发动画起点）
+        amountIsVisible = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+            amountIsVisible = true
+        }
+    }
+
+    /// 阶段3：金额动画消失
+    private func startAmountDisappearing() {
+        amountAnimationTask?.cancel()
+        dotsPhase = .amountDisappearing
+        amountIsVisible = false
+
+        amountAnimationTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(currentEffect.duration + 0.1))
+            startDotsAppearing()
+        }
+    }
+
+    /// 阶段4：圆点从左到右逐个出现
+    private func startDotsAppearing() {
+        dotAnimationTask?.cancel()
+        dotsAppearingIndex = 0
+        dotsPhase = .dotsAppearing
+
+        dotAnimationTask = Task { @MainActor in
+            for i in 0...5 {
+                try? await Task.sleep(for: .milliseconds(60))
+                dotsAppearingIndex = i
+            }
+            try? await Task.sleep(for: .milliseconds(100))
+            dotsPhase = .showingDots
+        }
+    }
+
     private func refresh() {
         guard let ledger = appContainer.currentLedger else { return }
         viewModel.load(ledger: ledger, context: modelContext, budgetService: appContainer.budgetService)
@@ -336,6 +455,7 @@ struct DashboardView: View {
         displayBudgetFraction = 0
         displayIncomeFrac = 0
         displayExpenseFrac = 0
+        amountIsVisible = true
         let maxRef = max(abs(viewModel.monthlyIncome), abs(viewModel.monthlyExpense))
         let bFrac = viewModel.budgetFraction
         let iFrac = maxRef > 0 ? Double(truncating: (abs(viewModel.monthlyIncome) / maxRef) as NSNumber) : 0
@@ -351,6 +471,94 @@ struct DashboardView: View {
 }
 
 // MARK: - Privacy Placeholder Dot
+
+// MARK: - Dots Reveal Phase
+
+/// 圆点和金额切换的多阶段动画状态机
+enum DotsRevealPhase: Equatable {
+    case showingDots       // 默认，圆点显示
+    case dotsDisappearing  // 圆点逐个消失（开眼睛第一阶段）
+    case showingAmount     // 金额显示
+    case amountDisappearing // 金额消失（关眼睛第一阶段）
+    case dotsAppearing     // 圆点逐个出现（关眼睛第二阶段）
+}
+
+/// 金额隐藏动画效果，随机选中一种
+enum AmountHideEffect: CaseIterable {
+    case gentle    // 柔和淡入淡出
+    case slam      // 砸下去消失
+    case ripple    // 涟漪扩散消失
+    case echo      // 反复放大消失
+    case spotlight // 聚光效果
+
+    static var random: AmountHideEffect {
+        allCases.randomElement()!
+    }
+}
+
+/// 每个效果对应的 ViewModifier，isVisible 控制显隐
+struct AmountEffectModifier: ViewModifier {
+    let effect: AmountHideEffect
+    let isVisible: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(isVisible ? 1 : 0)
+            .scaleEffect(isVisible ? 1 : effect.scale)
+            .offset(y: isVisible ? 0 : effect.offsetY)
+            .brightness(isVisible ? 0 : effect.brightness)
+            .animation(effect.effectAnimation, value: isVisible)
+    }
+}
+
+extension AmountHideEffect {
+    var effectAnimation: Animation {
+        switch self {
+        case .gentle:    return .easeInOut(duration: 0.6)
+        case .slam:       return .easeIn(duration: 0.15)
+        case .ripple:     return .easeOut(duration: 0.35)
+        case .echo:       return .easeInOut(duration: 0.4)
+        case .spotlight: return .easeInOut(duration: 0.5)
+        }
+    }
+
+    var duration: Double {
+        switch self {
+        case .gentle:    return 0.6
+        case .slam:       return 0.15
+        case .ripple:     return 0.35
+        case .echo:       return 0.4
+        case .spotlight: return 0.5
+        }
+    }
+
+    /// 消失时放大/缩小的倍数
+    var scale: CGFloat {
+        switch self {
+        case .gentle:    return 0.8
+        case .slam:      return 1.3
+        case .ripple:    return 0.5
+        case .echo:      return 2.0
+        case .spotlight: return 1.0
+        }
+    }
+
+    /// 消失时的 Y 轴偏移
+    var offsetY: CGFloat {
+        switch self {
+        case .slam:      return -30
+        default:         return 0
+        }
+    }
+
+    /// 消失时的亮度增益
+    var brightness: Double {
+        switch self {
+        case .spotlight: return 0.8
+        default:         return 0
+        }
+    }
+}
 
 private struct CircleDot: View {
     @State private var isHovered = false
