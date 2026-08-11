@@ -62,6 +62,7 @@ struct RefundSheetView: View {
             }
             .onAppear {
                 amount = maxRefund
+                date = original.date
                 syncAmountString()
             }
         }
@@ -300,6 +301,7 @@ struct RefundSheetView: View {
             try appContainer.transactionService.createRefund(
                 for: original,
                 amount: amount,
+                date: date,
                 context: modelContext
             )
             onDone()

@@ -1334,7 +1334,7 @@ struct MacAddTransactionSheet: View {
         } else if let refundOriginal = refundingOriginal {
             // Refund: use the dedicated service method
             do {
-                _ = try appContainer.transactionService.createRefund(for: refundOriginal, amount: amount, context: modelContext)
+                _ = try appContainer.transactionService.createRefund(for: refundOriginal, amount: amount, date: date, context: modelContext)
                 dismiss()
             } catch { errorMessage = error.localizedDescription }
         } else {

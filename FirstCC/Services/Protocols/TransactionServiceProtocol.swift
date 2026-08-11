@@ -16,6 +16,7 @@ protocol TransactionServiceProtocol {
     func createRefund(
         for original: Transaction,
         amount: Decimal,
+        date: Date?,
         context: NSManagedObjectContext
     ) throws -> Transaction
     func fetchTransactions(

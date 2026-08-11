@@ -58,10 +58,12 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
     func createRefund(
         for original: Transaction,
         amount: Decimal,
+        date: Date?,
         context: NSManagedObjectContext
     ) throws -> Transaction {
         let absAmount = abs(amount)
         let signedAmount: Decimal = original.type == .expense ? absAmount : -absAmount
+        let refundDate = date ?? Date()
         let refund = Transaction(
             type: original.type,
             amount: signedAmount,
@@ -69,7 +71,7 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
             exchangeRate: original.exchangeRateValue,
             convertedAmount: original.amount != 0 ? original.convertedAmount.map { $0 / original.amount * signedAmount } : nil,
             note: "退款: \(original.note ?? "")",
-            date: Date(),
+            date: refundDate,
             refundGroupId: original.id,
             refundAmount: amount,
             account: original.account,
