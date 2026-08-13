@@ -422,10 +422,10 @@ struct QuerySpendingIntent: AppIntent {
     static var description = IntentDescription("查询指定时间范围内的支出总额")
 
     @Parameter(title: "开始日期")
-    var startDate: Date
+    var startDate: Date?
 
     @Parameter(title: "结束日期")
-    var endDate: Date
+    var endDate: Date?
 
     @Parameter(title: "分类")
     var category: CategoryEntity?
@@ -433,7 +433,9 @@ struct QuerySpendingIntent: AppIntent {
     @Dependency(AppContainer.self) private var container: AppContainer
 
     static var parameterSummary: some ParameterSummary {
-        Summary("查询 \(\.$startDate) 到 \(\.$endDate) 的支出") {
+        Summary("查询支出") {
+            \.$startDate
+            \.$endDate
             \.$category
         }
     }
@@ -445,21 +447,40 @@ struct QuerySpendingIntent: AppIntent {
         }
 
         let context = container.viewContext
-        let range = startDate...endDate
+
+        // Infer date range: use provided dates or default to current month
+        let (range, dateDescription): (ClosedRange<Date>, String) = resolveDateRange()
 
         if let cat = category {
-            let spending = try container.budgetService.totalExpense(in: range, ledger: ledger, context: context)
-            return .result(dialog: "在 \(formatDate(startDate)) 到 \(formatDate(endDate)) 期间，分类「\(cat.name)」支出 \(spending) 元")
+            // Category-specific spending: compute via categorySpending
+            let allSpending = try container.budgetService.categorySpending(
+                in: range, for: ledger.budgetBooks.first { $0.isActive } ?? ledger.budgetBooks.first!,
+                context: context
+            )
+            let catTotal = allSpending[cat.id] ?? 0
+            return .result(dialog: "\(dateDescription)，分类「\(cat.name)」支出 \(catTotal) 元")
         } else {
             let total = try container.budgetService.totalExpense(in: range, ledger: ledger, context: context)
-            return .result(dialog: "在 \(formatDate(startDate)) 到 \(formatDate(endDate)) 期间，总支出 \(total) 元")
+            return .result(dialog: "\(dateDescription)，总支出 \(total) 元")
         }
     }
 
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "M月d日"
-        return formatter.string(from: date)
+    @MainActor
+    private func resolveDateRange() -> (ClosedRange<Date>, String) {
+        let calendar = Calendar.current
+        let now = Date()
+
+        if let start = startDate, let end = endDate {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "M月d日"
+            let desc = "\(formatter.string(from: start))到\(formatter.string(from: end))"
+            return (start...end, desc)
+        }
+
+        // Default to current month
+        let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
+        let endOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: startOfMonth)!
+        return (startOfMonth...endOfMonth, "本月")
     }
 }
 
