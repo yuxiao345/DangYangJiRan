@@ -125,6 +125,7 @@ struct SearchView: View {
             isExpanded: $viewModel.isFilterPanelExpanded,
             selectedCategoryIDs: $viewModel.selectedCategoryIDs,
             selectedMemberIDs: $viewModel.selectedMemberIDs,
+            selectedMerchantIDs: $viewModel.selectedMerchantIDs,
             selectedProjectIDs: $viewModel.selectedProjectIDs,
             dateFrom: $viewModel.dateFrom,
             dateTo: $viewModel.dateTo,

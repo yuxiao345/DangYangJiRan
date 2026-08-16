@@ -84,6 +84,18 @@ struct AddEditTransactionView: View {
     @State private var splitItems: [SplitItemDraft] = []
     @State private var selectedSplitItemID: UUID?
     @State private var splitAmountString: String = ""
+    @State private var activeSplitPicker: ActiveSplitPicker?
+
+    private struct ActiveSplitPicker: Identifiable {
+        let id = UUID()
+        let splitItemID: UUID
+        let field: SplitFieldType
+    }
+
+    private enum SplitFieldType: String, CaseIterable, Identifiable {
+        case category, member, merchant, project
+        var id: Self { self }
+    }
 
     // Exchange rate
     @State private var exchangeRate: Decimal?
@@ -204,6 +216,9 @@ struct AddEditTransactionView: View {
             }
             .sheet(isPresented: $showDatePicker) {
                 datePickerSheet
+            }
+            .sheet(item: $activeSplitPicker) { picker in
+                splitPickerContent(for: picker)
             }
     }
 
@@ -1238,54 +1253,85 @@ struct AddEditTransactionView: View {
                         }
                     }
                     HStack(spacing: 8) {
-                        splitSubMenu(label: "分类", value: item.category?.name) {
-                            ForEach(categories) { cat in
-                                let indent = cat.parent != nil ? "    " : ""
-                                Button {
-                                    if let idx = splitItems.firstIndex(where: { $0.id == item.id }) {
-                                        splitItems[idx].category = cat
-                                    }
-                                } label: {
-                                    Label("\(indent)\(cat.name)", systemImage: cat.iconName)
+                        Button {
+                            activeSplitPicker = ActiveSplitPicker(splitItemID: item.id, field: .category)
+                        } label: {
+                            HStack(spacing: 4) {
+                                if let cat = item.category {
+                                    Text(cat.name).font(.designBodySmall).foregroundStyle(Color.designOnSurface)
+                                } else {
+                                    Text("分类").font(.designBodySmall).foregroundStyle(Color.designOnSurfaceVariant)
                                 }
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .font(.system(size: 8))
+                                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
                             }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.designSurfaceContainer)
+                            .clipShape(Capsule())
                         }
+                        .buttonStyle(.plain)
                         if let cat = item.category, (cat.children?.count ?? 0) > 0 {
                             Text("含子分类").font(.system(size: 9)).foregroundStyle(.orange)
                         }
-                        splitSubMenu(label: "成员", value: item.member?.name) {
-                            ForEach(members) { m in
-                                Button {
-                                    if let idx = splitItems.firstIndex(where: { $0.id == item.id }) {
-                                        splitItems[idx].member = m
-                                    }
-                                } label: {
-                                    Label(m.name, systemImage: m.avatar)
+                        Button {
+                            activeSplitPicker = ActiveSplitPicker(splitItemID: item.id, field: .member)
+                        } label: {
+                            HStack(spacing: 4) {
+                                if let m = item.member {
+                                    Text(m.name).font(.designBodySmall).foregroundStyle(Color.designOnSurface)
+                                } else {
+                                    Text("成员").font(.designBodySmall).foregroundStyle(Color.designOnSurfaceVariant)
                                 }
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .font(.system(size: 8))
+                                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
                             }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.designSurfaceContainer)
+                            .clipShape(Capsule())
                         }
-                        splitSubMenu(label: "商家", value: item.merchant?.name) {
-                            ForEach(merchants) { m in
-                                Button {
-                                    if let idx = splitItems.firstIndex(where: { $0.id == item.id }) {
-                                        splitItems[idx].merchant = m
-                                    }
-                                } label: {
-                                    Label(m.name, systemImage: "bag")
+                        .buttonStyle(.plain)
+                        Button {
+                            activeSplitPicker = ActiveSplitPicker(splitItemID: item.id, field: .merchant)
+                        } label: {
+                            HStack(spacing: 4) {
+                                if let m = item.merchant {
+                                    Text(m.name).font(.designBodySmall).foregroundStyle(Color.designOnSurface)
+                                } else {
+                                    Text("商家").font(.designBodySmall).foregroundStyle(Color.designOnSurfaceVariant)
                                 }
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .font(.system(size: 8))
+                                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
                             }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.designSurfaceContainer)
+                            .clipShape(Capsule())
                         }
-                        splitSubMenu(label: "项目", value: item.project?.name) {
-                            ForEach(projects) { p in
-                                Button {
-                                    if let idx = splitItems.firstIndex(where: { $0.id == item.id }) {
-                                        splitItems[idx].project = p
-                                    }
-                                } label: {
-                                    Label(p.name, systemImage: "folder")
+                        .buttonStyle(.plain)
+                        Button {
+                            activeSplitPicker = ActiveSplitPicker(splitItemID: item.id, field: .project)
+                        } label: {
+                            HStack(spacing: 4) {
+                                if let p = item.project {
+                                    Text(p.name).font(.designBodySmall).foregroundStyle(Color.designOnSurface)
+                                } else {
+                                    Text("项目").font(.designBodySmall).foregroundStyle(Color.designOnSurfaceVariant)
                                 }
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .font(.system(size: 8))
+                                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
                             }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.designSurfaceContainer)
+                            .clipShape(Capsule())
                         }
+                        .buttonStyle(.plain)
                     }
                     TextField("备注", text: Binding(
                         get: { item.note },
@@ -1329,6 +1375,71 @@ struct AddEditTransactionView: View {
             .padding(.vertical, 4)
             .background(Color.designSurfaceContainer)
             .clipShape(Capsule())
+        }
+    }
+
+    // MARK: - Split Picker
+
+    private func splitPickerContent(for picker: ActiveSplitPicker) -> some View {
+        guard let idx = splitItems.firstIndex(where: { $0.id == picker.splitItemID }) else {
+            return AnyView(EmptyView())
+        }
+        let item = splitItems[idx]
+        switch picker.field {
+        case .category:
+            return AnyView(SearchablePickerView(
+                title: "选择分类",
+                items: categories,
+                itemLabel: { cat in
+                    let cnt = (cat.children?.count ?? 0)
+                    return cnt > 0 ? "\(cat.name) · 含\(cnt)项" : cat.name
+                },
+                itemIcon: { $0.iconName },
+                itemColor: { Color(hex: $0.colorHex) },
+                recentKey: "recent_split_category",
+                indentLevel: { item in var depth = 0; var p = item.parent; while p != nil { depth += 1; p = p?.parent }; return depth },
+                childrenProvider: { Array($0.children ?? []) },
+                selection: Binding(
+                    get: { splitItems[idx].category },
+                    set: { splitItems[idx].category = $0 }
+                )
+            ))
+        case .member:
+            return AnyView(SearchablePickerView(
+                title: "选择成员",
+                items: members,
+                itemLabel: { $0.name },
+                itemIcon: { $0.avatar },
+                recentKey: "recent_split_member",
+                selection: Binding(
+                    get: { splitItems[idx].member },
+                    set: { splitItems[idx].member = $0 }
+                )
+            ))
+        case .merchant:
+            return AnyView(SearchablePickerView(
+                title: "选择商家",
+                items: merchants,
+                itemLabel: { $0.name },
+                itemIcon: { _ in "bag" },
+                recentKey: "recent_split_merchant",
+                selection: Binding(
+                    get: { splitItems[idx].merchant },
+                    set: { splitItems[idx].merchant = $0 }
+                )
+            ))
+        case .project:
+            return AnyView(SearchablePickerView(
+                title: "选择项目",
+                items: projects,
+                itemLabel: { $0.name },
+                itemIcon: { _ in "folder" },
+                recentKey: "recent_split_project",
+                selection: Binding(
+                    get: { splitItems[idx].project },
+                    set: { splitItems[idx].project = $0 }
+                )
+            ))
         }
     }
 

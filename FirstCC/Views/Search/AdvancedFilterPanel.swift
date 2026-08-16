@@ -10,6 +10,7 @@ struct AdvancedFilterPanel: View {
 
     @Binding var selectedCategoryIDs: Set<UUID>
     @Binding var selectedMemberIDs: Set<UUID>
+    @Binding var selectedMerchantIDs: Set<UUID>
     @Binding var selectedProjectIDs: Set<UUID>
     @Binding var dateFrom: Date?
     @Binding var dateTo: Date?
@@ -22,6 +23,7 @@ struct AdvancedFilterPanel: View {
 
     @State private var categories: [Category] = []
     @State private var members: [Member] = []
+    @State private var merchants: [Merchant] = []
     @State private var projects: [Project] = []
 
     @State private var presentedSheet: FilterSheetType?
@@ -37,7 +39,7 @@ struct AdvancedFilterPanel: View {
     @State private var dateSheetSelection = Date()
 
     private enum FilterSheetType: Identifiable {
-        case category, member, project
+        case category, member, merchant, project
         var id: Self { self }
     }
 
@@ -95,6 +97,7 @@ struct AdvancedFilterPanel: View {
             switch sheet {
             case .category: categoryPicker
             case .member: memberPicker
+            case .merchant: merchantPicker
             case .project: projectPicker
             }
         }
@@ -140,6 +143,19 @@ struct AdvancedFilterPanel: View {
                 )
             }
 
+            // Merchant
+            if !merchants.isEmpty {
+                MultiSelectChipRow(
+                    title: "商家",
+                    items: merchants,
+                    itemIcon: { _ in "storefront.fill" },
+                    itemColor: { _ in .designAccentRed },
+                    recentKey: "recent_merchant_filter",
+                    selectedIDs: $selectedMerchantIDs,
+                    onMore: { presentedSheet = .merchant }
+                )
+            }
+
             // Project
             if !projects.isEmpty {
                 MultiSelectChipRow(
@@ -170,6 +186,7 @@ struct AdvancedFilterPanel: View {
                 Button {
                     selectedCategoryIDs.removeAll()
                     selectedMemberIDs.removeAll()
+                    selectedMerchantIDs.removeAll()
                     selectedProjectIDs.removeAll()
                     dateFrom = nil; dateTo = nil
                     amountMin = nil; amountMax = nil
@@ -499,6 +516,7 @@ struct AdvancedFilterPanel: View {
             if amountMin != nil || amountMax != nil { p.append(String(localized: "金额")) }
             if !selectedCategoryIDs.isEmpty { p.append(String(localized: "分类(\(selectedCategoryIDs.count))")) }
             if !selectedMemberIDs.isEmpty { p.append(String(localized: "成员(\(selectedMemberIDs.count))")) }
+            if !selectedMerchantIDs.isEmpty { p.append(String(localized: "商家(\(selectedMerchantIDs.count))")) }
             if !selectedProjectIDs.isEmpty { p.append(String(localized: "项目(\(selectedProjectIDs.count))")) }
             if !keyword.isEmpty { p.append(String(localized: "关键词")) }
             return p
@@ -539,6 +557,16 @@ struct AdvancedFilterPanel: View {
         )
     }
 
+    private var merchantPicker: some View {
+        MultiSelectPickerView(
+            title: String(localized: "商家"), items: merchants,
+            itemLabel: { $0.name }, itemIcon: { _ in "storefront.fill" },
+            itemColor: { _ in .designAccentRed },
+            recentKey: "recent_merchant_filter",
+            selection: $selectedMerchantIDs
+        )
+    }
+
     private var projectPicker: some View {
         MultiSelectPickerView(
             title: String(localized: "项目"), items: projects,
@@ -555,6 +583,7 @@ struct AdvancedFilterPanel: View {
         guard let ledger = appContainer.currentLedger else { return }
         categories = (try? appContainer.categoryService.fetchCategories(for: ledger, type: nil, context: modelContext)) ?? []
         members = (try? appContainer.memberService.fetchMembers(for: ledger, context: modelContext))?.filter { $0.isActive } ?? []
+        merchants = (try? appContainer.merchantService.fetchMerchants(for: ledger, context: modelContext))?.filter { $0.isActive } ?? []
         projects = (try? appContainer.projectService.fetchProjects(for: ledger, context: modelContext))?.filter { $0.isActive } ?? []
     }
 }
