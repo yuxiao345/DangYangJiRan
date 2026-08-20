@@ -19,7 +19,21 @@ struct CalendarStripView: View {
     var monthTitle: String { selectedMonth.monthDisplay }
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 2), count: 7)
-    private let weekLabels = ["一", "二", "三", "四", "五", "六", "日"]
+
+    /// 7 天的短星期标签，按当前 locale 的 firstWeekday 排序（zh-Hans: 一二三四五六日，en: Sun-Sat）
+    private var weekLabels: [String] {
+        let cal = Calendar.current
+        let ref = Date()
+        // 找本周第一天，然后向后取 7 天
+        let weekday = cal.component(.weekday, from: ref)
+        let firstWeekday = cal.firstWeekday
+        let offset = (firstWeekday - weekday + 7) % 7
+        guard let weekStart = cal.date(byAdding: .day, value: -offset, to: ref) else { return [] }
+        return (0..<7).map { offset in
+            let date = cal.date(byAdding: .day, value: offset, to: weekStart)!
+            return date.formatted(.dateTime.weekday(.short))
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {

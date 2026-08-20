@@ -393,7 +393,14 @@ struct MonthYearPicker: View {
     let minDate: Date
     let maxDate: Date
 
-    private static let months = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"]
+    private var months: [String] {
+        let cal = Calendar.current
+        let year = cal.component(.year, from: Date())
+        return (1...12).compactMap { month -> String? in
+            guard let date = cal.date(from: DateComponents(year: year, month: month, day: 1)) else { return nil }
+            return date.formatted(.dateTime.month(.wide))
+        }
+    }
 
     private var minYear: Int {
         Calendar.current.component(.year, from: minDate)
@@ -425,7 +432,7 @@ struct MonthYearPicker: View {
                     }
                 )) {
                     ForEach(0..<12, id: \.self) { index in
-                        Text(Self.months[index]).tag(index)
+                        Text(months[index]).tag(index)
                     }
                 }
                 .pickerStyle(.menu)
