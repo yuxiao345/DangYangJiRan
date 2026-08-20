@@ -106,6 +106,7 @@ struct ReportsView: View {
                     }
                 }
             }
+            .scrollClipDisabled()
             .navigationTitle("报表")
             .navigationDestination(item: $selectedTransaction) { tx in
                 TransactionDetailView(transaction: tx)

@@ -100,20 +100,14 @@ struct TransactionListView: View {
             }
             if !options.contains(.hideTypeFilter) {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Menu {
-                        Button("全部") { filterType = nil }
-                        Button(TransactionType.expense.displayName) { filterType = .expense }
-                        Button(TransactionType.income.displayName) { filterType = .income }
-                        Button(TransactionType.transfer.displayName) { filterType = .transfer }
-                        Button(TransactionType.lending.displayName) { filterType = .lending }
-
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: filterType != nil ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                            Text(filterType?.displayName ?? "全部")
-                                .font(.designBodySmall)
-                        }
+                    Picker("类型筛选", selection: $filterType) {
+                        Text("全部").tag(Optional<TransactionType>.none)
+                        Text(TransactionType.expense.displayName).tag(Optional<TransactionType>.some(.expense))
+                        Text(TransactionType.income.displayName).tag(Optional<TransactionType>.some(.income))
+                        Text(TransactionType.transfer.displayName).tag(Optional<TransactionType>.some(.transfer))
+                        Text(TransactionType.lending.displayName).tag(Optional<TransactionType>.some(.lending))
                     }
+                    .pickerStyle(.menu)
                 }
             }
         }

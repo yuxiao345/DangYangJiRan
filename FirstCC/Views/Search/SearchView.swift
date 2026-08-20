@@ -211,18 +211,13 @@ struct SearchView: View {
 
     private var sortMenu: some View {
         Menu {
-            ForEach(SearchViewModel.SortOrder.allCases, id: \.self) { order in
-                Button {
-                    viewModel.sortOrder = order
-                } label: {
-                    HStack {
-                        Text(LocalizedStringKey(order.displayName))
-                        if viewModel.sortOrder == order {
-                            Image(systemName: "checkmark")
-                        }
-                    }
+            Picker("排序", selection: $viewModel.sortOrder) {
+                ForEach(SearchViewModel.SortOrder.allCases, id: \.self) { order in
+                    Text(LocalizedStringKey(order.displayName)).tag(order)
                 }
             }
+            .pickerStyle(.inline)
+            .labelsHidden()
         } label: {
             Image(systemName: "arrow.up.arrow.down")
                 .font(.system(size: 14))

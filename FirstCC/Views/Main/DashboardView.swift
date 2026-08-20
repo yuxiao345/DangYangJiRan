@@ -75,6 +75,7 @@ struct DashboardView: View {
                     }
                 }
             }
+            .scrollClipDisabled()
             .designScreen()
             .navigationTitle(appContainer.currentLedger?.name ?? "小金库")
             .toolbar {

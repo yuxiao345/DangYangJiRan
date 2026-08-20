@@ -367,6 +367,7 @@ struct AddEditTransactionView: View {
                 }
                 .padding(16)
             }
+            .scrollClipDisabled()
 
             // Bottom: numpad + save button (hidden in view mode)
             if !isViewing {
@@ -890,14 +891,16 @@ struct AddEditTransactionView: View {
         .overlay(alignment: .bottom) {
             // Currency chip
             Menu {
-                ForEach(currencies, id: \.self) { code in
-                    Button {
-                        selectedCurrencyCode = code
-                        exchangeRate = nil
-                        if needsExchangeRate { fetchExchangeRate() }
-                    } label: {
-                        Text("\(code) (\(currencyName(code)))")
+                Picker("币种", selection: $selectedCurrencyCode) {
+                    ForEach(currencies, id: \.self) { code in
+                        Text("\(code) (\(currencyName(code)))").tag(code)
                     }
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+                .onChange(of: selectedCurrencyCode) { _, newCode in
+                    exchangeRate = nil
+                    if needsExchangeRate { fetchExchangeRate() }
                 }
             } label: {
                 HStack(spacing: 4) {

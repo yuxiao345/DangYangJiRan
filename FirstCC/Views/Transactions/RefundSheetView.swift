@@ -38,6 +38,7 @@ struct RefundSheetView: View {
                     }
                     .padding(16)
                 }
+                .scrollClipDisabled()
 
                 // Bottom numpad
                 if showNumpad {

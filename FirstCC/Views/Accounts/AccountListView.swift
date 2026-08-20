@@ -17,6 +17,7 @@ struct AccountListView: View {
             }
             .padding(16)
         }
+        .scrollClipDisabled()
         .designScreen()
         .navigationTitle("账户")
         .toolbar {

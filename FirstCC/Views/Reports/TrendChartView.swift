@@ -88,6 +88,7 @@ struct TrendChartView: View {
                 }
                 .padding(.vertical, 8)
             }
+            .scrollClipDisabled()
         }
     }
 

@@ -26,6 +26,7 @@ struct AccountDetailView: View {
             }
             .padding(16)
         }
+        .scrollClipDisabled()
         .designScreen()
         .navigationTitle(LocalizedStringKey(account.name))
         .toolbar {
