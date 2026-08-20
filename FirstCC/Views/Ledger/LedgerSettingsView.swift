@@ -478,7 +478,7 @@ private enum DummyDataSeeder {
         let merchants = fetchMerchants(ledger: ledger, context: context)
 
         guard !accounts.isEmpty, !expenseCategories.isEmpty else {
-            print("[DummyDataSeeder] 缺少账户或支出分类，跳过生成。")
+            print(String(localized: "[DummyDataSeeder] 缺少账户或支出分类，跳过生成。"))
             return
         }
 
@@ -587,7 +587,7 @@ private enum DummyDataSeeder {
 
         try? context.save()
 
-        print("[DummyDataSeeder] 完成：支出 \(totalExpenseCount) 笔，收入 \(totalIncomeCount) 笔")
+        print(String(localized: "[DummyDataSeeder] 完成：支出 \(totalExpenseCount) 笔，收入 \(totalIncomeCount) 笔"))
     }
 
     // MARK: Helpers

@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct DatePickerButton: View {
-    let title: String
+    let title: LocalizedStringKey
     @Binding var date: Date
     var displayedComponents: DatePickerComponents = .date
 

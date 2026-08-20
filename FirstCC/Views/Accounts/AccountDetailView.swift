@@ -151,9 +151,9 @@ struct AccountDetailView: View {
         }
     }
 
-    private func creditInfoRow<Content: View>(label: String, @ViewBuilder value: () -> Content) -> some View {
+    private func creditInfoRow<Content: View>(label: LocalizedStringKey, @ViewBuilder value: () -> Content) -> some View {
         HStack {
-            Text(LocalizedStringKey(label))
+            Text(label)
                 .font(.designBodyMedium)
                 .foregroundStyle(Color.designOnSurfaceVariant)
             Spacer()

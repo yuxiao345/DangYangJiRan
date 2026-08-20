@@ -46,7 +46,7 @@ struct BudgetBookDetailView: View {
 
     private static let monthFormatter: DateFormatter = {
         let f = DateFormatter()
-        f.dateFormat = "yyyy年M月"
+        f.setLocalizedDateFormatFromTemplate("yyyyMMMM")
         return f
     }()
 
@@ -225,14 +225,14 @@ struct BudgetBookDetailView: View {
         .padding(.vertical, 4)
     }
 
-    private func budgetSummaryBlock(label: String, spent: Decimal, budget: Decimal, currency: String) -> some View {
+    private func budgetSummaryBlock(label: LocalizedStringKey, spent: Decimal, budget: Decimal, currency: String) -> some View {
         let ratio = budget > 0 ? NSDecimalNumber(decimal: spent / budget).doubleValue : 0
         let pct = ratio * 100
         let progress = min(ratio, 1.0)
 
         return VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .firstTextBaseline) {
-                Text(LocalizedStringKey(label))
+                Text(label)
                     .font(.designBodyMedium)
                 Spacer()
                 CurrencyText(amount: spent, currencyCode: currency, size: 15, foregroundColor: ratio > 1.0 ? .red : .primary)
@@ -290,14 +290,14 @@ struct BudgetBookDetailView: View {
         }
     }
 
-    private func budgetSpendingLine(label: String, spent: Decimal, budget: Decimal, currency: String) -> some View {
+    private func budgetSpendingLine(label: LocalizedStringKey, spent: Decimal, budget: Decimal, currency: String) -> some View {
         let ratio = budget > 0 ? NSDecimalNumber(decimal: spent / budget).doubleValue : 0
         let pct = ratio * 100
         let progress = min(ratio, 1.0)
 
         return VStack(spacing: 2) {
             HStack(alignment: .firstTextBaseline) {
-                Text(LocalizedStringKey(label))
+                Text(label)
                     .font(.designBodySmall)
                     .foregroundStyle(.secondary)
                 Spacer()

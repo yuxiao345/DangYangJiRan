@@ -297,9 +297,15 @@ struct AdvancedFilterPanel: View {
             showDateSheet = true
         } label: {
             HStack {
-                Text(date.wrappedValue?.formatted(date: .numeric, time: .omitted) ?? label)
-                    .font(.caption)
-                    .foregroundStyle(date.wrappedValue != nil ? .primary : .secondary)
+                if let d = date.wrappedValue {
+                    Text(d.formatted(date: .numeric, time: .omitted))
+                        .font(.caption)
+                        .foregroundStyle(.primary)
+                } else {
+                    Text(label)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 Image(systemName: "calendar")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)

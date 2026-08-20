@@ -140,9 +140,9 @@ struct TransactionRowView: View {
         if transaction.type == .transfer {
             let counterparty = transaction.toAccount?.name ?? "—"
             if transaction.amount < 0 {
-                return "转账至\(NSLocalizedString(counterparty, comment: ""))"
+                return String(localized: "转账至\(counterparty)")
             } else {
-                return "转账自\(NSLocalizedString(counterparty, comment: ""))"
+                return String(localized: "转账自\(counterparty)")
             }
         }
         return transaction.category?.name ?? transaction.type.displayName

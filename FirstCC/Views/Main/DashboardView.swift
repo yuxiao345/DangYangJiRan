@@ -274,9 +274,9 @@ struct DashboardView: View {
         }
     }
 
-    private func metricCard(label: String, amount: Decimal, progress: Double, color: Color) -> some View {
+    private func metricCard(label: LocalizedStringKey, amount: Decimal, progress: Double, color: Color) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(LocalizedStringKey(label))
+            Text(label)
                 .font(.designLabelSmall)
                 .foregroundStyle(Color.designOnSurfaceVariant)
                 .tracking(1.0)

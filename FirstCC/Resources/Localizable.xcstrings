@@ -12310,6 +12310,125 @@
             "value" : "Default Currency"
           }
         },
+    "转账至%@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transfer to %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "转账至%@"
+          }
+        }
+      }
+    },
+    "转账自%@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transfer from %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "转账自%@"
+          }
+        }
+      }
+    },
+    "[MerchantList] 删除商家失败: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[MerchantList] Failed to delete merchant: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[MerchantList] 删除商家失败: %@"
+          }
+        }
+      }
+    },
+    "[MerchantList] 添加商家失败: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[MerchantList] Failed to add merchant: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[MerchantList] 添加商家失败: %@"
+          }
+        }
+      }
+    },
+    "[MerchantList] 编辑商家失败: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[MerchantList] Failed to edit merchant: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[MerchantList] 编辑商家失败: %@"
+          }
+        }
+      }
+    },
+    "[DummyDataSeeder] 缺少账户或支出分类，跳过生成。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[DummyDataSeeder] Missing accounts or expense categories; skipping generation."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[DummyDataSeeder] 缺少账户或支出分类，跳过生成。"
+          }
+        }
+      }
+    },
+    "[DummyDataSeeder] 完成：支出%lld笔，收入%lld笔" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[DummyDataSeeder] Done: %lld expense, %lld income"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[DummyDataSeeder] 完成：支出%lld笔，收入%lld笔"
+          }
+        }
+      }
+    },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",

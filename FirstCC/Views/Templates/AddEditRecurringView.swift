@@ -62,7 +62,7 @@ struct AddEditRecurringView: View {
 
                 Section("账户") {
                     Button { openPicker(.account) } label: {
-                        pickerRow(label: type == .transfer ? "转出账户" : "付款账户", value: selectedAccount?.name)
+                        pickerRow(label: type == .transfer ? LocalizedStringKey("转出账户") : LocalizedStringKey("付款账户"), value: selectedAccount?.name)
                     }
                     if type == .transfer {
                         Button { openPicker(.toAccount) } label: {
@@ -217,9 +217,9 @@ struct AddEditRecurringView: View {
         return desc
     }
 
-    private func pickerRow(label: String, value: String?) -> some View {
+    private func pickerRow(label: LocalizedStringKey, value: String?) -> some View {
         HStack {
-            Text(LocalizedStringKey(label)).foregroundStyle(Color.designOnSurface)
+            Text(label).foregroundStyle(Color.designOnSurface)
             Spacer()
             if let value {
                 Text(LocalizedStringKey(value)).foregroundStyle(.secondary)
