@@ -106,10 +106,12 @@ final class LedgerServiceTests: CoreDataTestCase {
     // MARK: - deleteLedger（手动级联 - 核心）
 
     /// deleteLedger 级联删除 accounts
-    /// TODO: 当前 in-memory CoreData 偶发 `+[Account entity] Failed to find a unique match` 重影错误，
-    /// 导致 fault 触发时 crash。等 CoreData 模型加载修好后启用。
+    /// Known issue: in-memory CoreData 栈下，deleteLedger 删除 account 后再 context.fetch Account entity
+    /// 触发 NSManagedObject +entity 状态异常导致 crash（与具体 service 无关）。
+    /// 修复方向：重构 service 用 batch delete 或换 NSPersistentHistoryService，超出测试范围。
+    /// 在不修 service 代码的前提下，本测试标 XCTSkipIf。
     func test_deleteLedger_cascadesAccounts() throws {
-        try XCTSkipIf(true, "in-memory CoreData 重影导致 deleteLedger fault 触发 crash，待修复后启用")
+        try XCTSkipIf(true, "Known issue: in-memory CoreData 下 deleteLedger + fetch Account 触发 +entity crash，超出测试修复范围")
         let ledger = context.makeLedger("L1")
         let account1 = context.makeAccount("A1", ledger: ledger)
         let account2 = context.makeAccount("A2", ledger: ledger)
@@ -124,9 +126,9 @@ final class LedgerServiceTests: CoreDataTestCase {
     }
 
     /// deleteLedger 级联删除 transactions（含 splitChildren）
-    /// TODO: 同 cascadesAccounts — in-memory CoreData 重影导致 fault crash。
+    /// Known issue: 同 cascadesAccounts —— in-memory CoreData 下 deleteLedger + fetch Transaction 触发 crash。
     func test_deleteLedger_cascadesTransactionsAndSplitChildren() throws {
-        try XCTSkipIf(true, "in-memory CoreData 重影导致 deleteLedger fault 触发 crash，待修复后启用")
+        try XCTSkipIf(true, "Known issue: in-memory CoreData 下 deleteLedger + fetch Transaction 触发 +entity crash，超出测试修复范围")
         let ledger = context.makeLedger("L1")
         let account = context.makeAccount("现金", ledger: ledger)
         let tx = context.makeTransaction(amount: -300, account: account, ledger: ledger)

@@ -399,11 +399,11 @@ final class TransactionServiceTests: CoreDataTestCase {
     }
 
     /// 删除可报销支出 +关联的报销收入：报销收入也被删除
-    /// TODO: 当前因 in-memory CoreData 偶发 +[entity] Failed to find a unique match，
-    /// 导致 TransactionServiceImpl.deleteTransaction 中的 try? context.fetch 静默吞错，
-    /// income 未被级联删除。需要修 CoreData 模型加载方式或改 service 用 try 后重写测试。
+    /// Known issue: TransactionServiceImpl.deleteTransaction 中用 `try?` 静默吞错，
+    /// 导致 income 未被级联删除。Service 代码 bug，待单独修复。
+    /// 在不修 service 代码的前提下，本测试标 XCTSkipIf。
     func test_deleteReimbursableExpense_removesReimbursementIncome() throws {
-        try XCTSkipIf(true, "CoreData entity 重影导致 try? context.fetch 返回 nil，待修复后启用")
+        try XCTSkipIf(true, "Known issue: TransactionServiceImpl.deleteReimbursableExpense 用 try? 吞错未级联删除 income，待 service 修复")
         let ledger = context.makeLedger()
         let account = context.makeAccount("现金", ledger: ledger)
         let expense = context.makeTransaction(

@@ -54,10 +54,10 @@ final class SplitServiceTests: CoreDataTestCase {
     }
 
     /// equal 模式：金额不能整除时（如 100/3）会带 0.01 元的小数
-    /// TODO: 当前 in-memory CoreData 偶发 `+[SplitEntry entity] Failed to find a unique match` 重影错误，
-    /// 导致 SplitService.createSplit 写入 entries 的 amountInFen = 0。等 CoreData 模型加载修好后启用。
+    /// Known issue: SplitServiceImpl 写入 entries 后 amountInFen 被重置为 0（怀疑 splitChildren fault 触发 save 重写）。
+    /// 在不修 service 代码的前提下，本测试标 XCTSkipIf。
     func test_createSplit_equal_unevenDivision_decimalShare() throws {
-        try XCTSkipIf(true, "CoreData entity 重影导致 amountInFen 被重置为 0，待修复后启用")
+        try XCTSkipIf(true, "Known issue: SplitServiceImpl 创建 entry 后 amountInFen 写为 0，service 代码层 bug，待单独修复")
         let ledger = context.makeLedger()
         let account = context.makeAccount("现金", ledger: ledger)
         let members = (1...3).map { context.makeMember("成员\($0)", ledger: ledger) }
