@@ -16,6 +16,7 @@ extension Notification.Name {
 
 @main
 struct QianeymacApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var appContainer = AppContainer()
     @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .system
     @State private var storesLoaded = false

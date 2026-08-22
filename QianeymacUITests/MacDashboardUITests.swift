@@ -43,28 +43,35 @@ final class MacHappyPathUITests: XCTestCase {
     // MARK: - Test 2: 创建 ledger 进入主界面
 
     /// 创建 ledger 后进入主界面（侧边栏 + content）
-    /// -UITEST_MODE 提供 in-memory store，每个测试干净状态
-    ///
-    /// Known issue: macOS app 主窗口需 SceneDelegate 初始化 + scenePhase.active，
-    /// XCUITest 只触发 launch 不唤醒 scene → 窗口长时间不出现（已实测 120s 不够）。
-    /// 退化为只验证 launch + process alive（与 test_launch_appStarts 等效）。
-    /// 启用完整 UI 流程测试需要解决 SceneDelegate 唤醒问题（在 UI testing 范围内）。
+    /// -UITEST_MODE + AppDelegate NSApp.activate() 让 macOS 窗口在 5s 内出现
     func test_createLedger_entersMainView() throws {
         let app = MacUITestCase().launchApp()
-        sleep(30)
-        XCTAssertTrue(app.state == .runningForeground || app.state == .runningBackground,
-                      "App 进程应运行（state=\(app.state.rawValue)）")
+
+        // 等主窗口出现（方案 A 修复后 ~5s）
+        let window = app.windows.firstMatch
+        XCTAssertTrue(window.waitForExistence(timeout: 30),
+                      "主窗口应在 30s 内出现")
+
+        // 验证窗口有内容（避免空白启动）
+        XCTAssertGreaterThan(window.children(matching: .any).count, 0,
+                             "窗口应有内容")
     }
 
     // MARK: - Test 3: Dashboard HIG 验证
 
     /// Dashboard 关键区域符合 macOS HIG：toolbar + sidebar + 净资产卡片
-    /// Known issue: 同 test_createLedger_entersMainView（窗口不出现）
+    /// AppDelegate NSApp.activate() 修复后 macOS 窗口在 ~5s 内出现
     func test_dashboard_higCompliance() throws {
         let app = MacUITestCase().launchApp()
-        sleep(30)
-        XCTAssertTrue(app.state == .runningForeground || app.state == .runningBackground,
-                      "App 进程应运行（state=\(app.state.rawValue)）")
+
+        let window = app.windows.firstMatch
+        XCTAssertTrue(window.waitForExistence(timeout: 30),
+                      "主窗口应在 30s 内出现")
+
+        // Dashboard 净资产卡片（app 启动后默认进入 Dashboard）
+        let netWorthCard = app.otherElements["mac-dashboard-net-worth-card"]
+        XCTAssertTrue(netWorthCard.waitForExistence(timeout: 15),
+                      "Dashboard 净资产卡片应存在")
     }
 
     // MARK: - Test 4: 切换 ledger（依赖多 ledger 测试 fixture，保留 disabled）
