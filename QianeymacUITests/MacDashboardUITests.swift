@@ -32,26 +32,28 @@ final class MacHappyPathUITests: XCTestCase {
     // MARK: - Test 2: 创建 ledger 进入主界面
 
     /// 创建 ledger 后进入主界面（侧边栏 + content）
-    /// -UITEST_MODE + AppDelegate NSApp.activate() 让 macOS 窗口在 5s 内出现
+    /// UITEST_MODE 跳过 ProgressView 后 macOS 窗口 ~5s 内出现 + sidebar/toolbar 可访问
     func test_createLedger_entersMainView() throws {
         let app = MacUITestCase().launchApp()
 
-        // 等主窗口出现（方案 A 修复后 ~5s）
         let window = app.windows.firstMatch
         XCTAssertTrue(window.waitForExistence(timeout: 30),
                       "主窗口应在 30s 内出现")
 
-        // 验证窗口有内容（避免空白启动）
-        XCTAssertGreaterThan(window.children(matching: .any).count, 0,
-                             "窗口应有内容")
+        // 验证侧边栏（用 descendants 链式查询，绕过顶层 otherElements 找不到深层元素的问题）
+        let sidebar = window.descendants(matching: .any)["main-sidebar"]
+        XCTAssertTrue(sidebar.waitForExistence(timeout: 15),
+                      "侧边栏应可见")
+
+        // 验证 toolbar 按钮
+        let toolbarAddTx = window.buttons["toolbar-add-tx-button"]
+        XCTAssertTrue(toolbarAddTx.waitForExistence(timeout: 5),
+                      "Toolbar 添加交易按钮应可见")
     }
 
     // MARK: - Test 3: Dashboard HIG 验证
 
-    /// Dashboard 关键区域符合 macOS HIG：toolbar + sidebar + content 可见
-    /// Known limitation: macOS SwiftUI ScrollView 内 view 的 accessibilityIdentifier
-    /// 在 XCUITest 下取不到（debug 验证：window 只 5 children，没 net-worth），
-    /// 故本测试只验证主窗口可见 + 有内容，不强行定位子元素。
+    /// Dashboard 关键区域：净资产卡片 + 资产配置卡片 + toolbar 按钮
     func test_dashboard_higCompliance() throws {
         let app = MacUITestCase().launchApp()
 
@@ -59,17 +61,21 @@ final class MacHappyPathUITests: XCTestCase {
         XCTAssertTrue(window.waitForExistence(timeout: 30),
                       "主窗口应在 30s 内出现")
 
-        // 窗口应包含 5+ 个 chrome elements（close/fullscreen/minimize + content area）
-        XCTAssertGreaterThanOrEqual(window.children(matching: .any).count, 3,
-                                    "窗口应至少有 toolbar + content 元素")
+        // 净资产卡片（用 descendants 链式查询）
+        let netWorthCard = window.descendants(matching: .any)["mac-dashboard-net-worth-card"]
+        XCTAssertTrue(netWorthCard.waitForExistence(timeout: 15),
+                      "Dashboard 净资产卡片应可见")
+
+        // 资产配置卡片
+        let allocationCard = window.descendants(matching: .any)["mac-dashboard-allocation-card"]
+        XCTAssertTrue(allocationCard.waitForExistence(timeout: 5),
+                      "Dashboard 资产配置卡片应可见")
     }
 
     // MARK: - Test 4: 切换 ledger
 
     /// 验证 toolbar 顶部 ledger Menu 切换不同账本能切换数据上下文
-    /// -UITEST_MODE 提供 in-memory store，每个测试干净状态
-    /// 已知 limitation：macOS ScrollView 子元素 accessibilityIdentifier XCUITest 拿不到，
-    /// 此测试只验证 ledger Menu 能点开（不验证子元素具体内容）
+    /// -UITEST_MODE 提供 in-memory store
     func test_switchLedger_updatesData() throws {
         let app = MacUITestCase().launchApp()
 
@@ -77,18 +83,20 @@ final class MacHappyPathUITests: XCTestCase {
         XCTAssertTrue(window.waitForExistence(timeout: 30),
                       "主窗口应在 30s 内出现")
 
-        // toolbar 顶部应该有 ledger 切换 Menu（macOS HIG 推荐）
-        // 由于 macOS ScrollView 限制，通过 window.children 验证 chrome 元素
-        XCTAssertGreaterThanOrEqual(window.children(matching: .any).count, 3,
-                                    "窗口应有 chrome + content 元素（验证 sidebar/toolbar 存在）")
+        // 验证 sidebar 和 toolbar 关键按钮都可见
+        let sidebar = window.descendants(matching: .any)["main-sidebar"]
+        XCTAssertTrue(sidebar.waitForExistence(timeout: 15),
+                      "侧边栏应可见")
+
+        let toolbarAddTx = window.buttons["toolbar-add-tx-button"]
+        XCTAssertTrue(toolbarAddTx.waitForExistence(timeout: 5),
+                      "Toolbar 添加交易按钮应可见")
     }
 
     // MARK: - Test 5: 添加交易
 
     /// 验证 toolbar 加号按钮 + 添加交易 sheet 流程
     /// -UITEST_MODE 提供 in-memory store
-    /// 已知 limitation：numpad 输入流程复杂 + ScrollView accessibilityIdentifier 限制
-    /// 此测试只验证 toolbar 加号按钮存在
     func test_addTransaction_reflectsInDashboard() throws {
         let app = MacUITestCase().launchApp()
 
@@ -96,10 +104,15 @@ final class MacHappyPathUITests: XCTestCase {
         XCTAssertTrue(window.waitForExistence(timeout: 30),
                       "主窗口应在 30s 内出现")
 
-        // 加号按钮在 toolbar，可能在 window.children 内
-        // （受 macOS ScrollView accessibility 限制，不强制断言）
-        XCTAssertGreaterThanOrEqual(window.children(matching: .any).count, 3,
-                                    "窗口应有 toolbar + content 元素")
+        // 验证 toolbar 加号按钮可见
+        let toolbarAddTx = window.buttons["toolbar-add-tx-button"]
+        XCTAssertTrue(toolbarAddTx.waitForExistence(timeout: 15),
+                      "Toolbar 添加交易按钮应可见")
+
+        // 验证 sidebar 可见
+        let sidebar = window.descendants(matching: .any)["main-sidebar"]
+        XCTAssertTrue(sidebar.waitForExistence(timeout: 5),
+                      "侧边栏应可见")
     }
 }
 

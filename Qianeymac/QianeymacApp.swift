@@ -46,7 +46,10 @@ struct QianeymacApp: App {
 
     var body: some Scene {
         WindowGroup {
-            if storesLoaded {
+            // UITEST_MODE 跳过 ProgressView（loadStores 在 in-memory 模式下也应秒完成，
+            // 但 ProgressView 持有的 .task 在 XCUITest 环境下可能因 scenePhase 未 active
+            // 而不触发；UI 测试需要直接看到 MainSplitView 而不是 ProgressView）
+            if storesLoaded || ProcessInfo.processInfo.arguments.contains("-UITEST_MODE") {
                 MainSplitView()
                     .environment(\.managedObjectContext, appContainer.viewContext)
                     .environment(appContainer)
