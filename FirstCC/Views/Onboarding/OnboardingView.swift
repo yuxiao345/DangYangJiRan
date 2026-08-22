@@ -31,11 +31,13 @@ struct OnboardingView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
+                    .accessibilityIdentifier("onboarding-create-ledger-button")
 
                 }
                 .padding(.horizontal, 40)
             }
             .padding(.bottom, 60)
         }
+        .accessibilityIdentifier("onboarding-view")
     }
 }

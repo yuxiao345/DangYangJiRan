@@ -23,7 +23,7 @@ import XCTest
 /// 注意：本文件位于 钱伲UITests/ 目录，但需要 Xcode UI Test target 包含此目录才能运行。
 /// pbxproj 配置需通过 Xcode GUI 添加 UI Test target（参考 File → New → Target → UI Testing Bundle），
 /// 或手动配置（参考 QianeymacUITests 已有的 pbxproj 块）。
-final class QianyiHappyPathUITests: XCTestCase {
+final class QianyiUITests: XCTestCase {
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -46,12 +46,25 @@ final class QianyiHappyPathUITests: XCTestCase {
         let onboarding = app.otherElements["onboarding-view"]
         XCTAssertTrue(onboarding.waitForExistence(timeout: 5), "Onboarding 应出现")
 
-        // TODO: 点击"创建账本"按钮，进入 CreateLedgerView，填写名称，保存
-        // 由于 onboarding identifier 未在 Phase A 中覆盖，此测试作为占位
+        // 点"创建账本"按钮（进入 CreateLedgerView）
+        app.buttons["onboarding-create-ledger-button"].tap()
 
-        // 验证 5 个 tab 存在（仅当 app 已登录）
+        // 等创建账本视图出现
+        let createLedgerView = app.otherElements["create-ledger-view"]
+        XCTAssertTrue(createLedgerView.waitForExistence(timeout: 5), "创建账本视图应出现")
+
+        // 填写账本名称
+        let nameField = app.textFields["create-ledger-name-field"]
+        XCTAssertTrue(nameField.waitForExistence(timeout: 3))
+        nameField.tap()
+        nameField.typeText("测试账本")
+
+        // 点"创建"按钮
+        app.buttons["create-ledger-save-button"].tap()
+
+        // 验证进入主界面（5 个 tab 出现）
         let dashboardTab = app.tabBars.buttons["tab-dashboard"]
-        XCTAssertTrue(dashboardTab.waitForExistence(timeout: 3), "Dashboard tab 应存在")
+        XCTAssertTrue(dashboardTab.waitForExistence(timeout: 5), "Dashboard tab 应出现，进入主界面成功")
     }
 
     // MARK: - Test 2: 添加交易反映到 Dashboard

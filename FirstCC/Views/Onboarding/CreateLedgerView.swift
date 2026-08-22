@@ -18,18 +18,21 @@ struct CreateLedgerView: View {
             Form {
                 Section("账本信息") {
                     TextField("账本名称", text: $name)
+                        .accessibilityIdentifier("create-ledger-name-field")
                     Picker("类型", selection: $ledgerType) {
                         ForEach(LedgerType.allCases, id: \.self) { type in
                             Label(type.displayName, systemImage: type.systemIcon)
                                 .tag(type)
                         }
                     }
+                    .accessibilityIdentifier("create-ledger-type-picker")
                     Picker("默认货币", selection: $currencyCode) {
                         Text("人民币 (CNY)").tag("CNY")
                         Text("美元 (USD)").tag("USD")
                         Text("欧元 (EUR)").tag("EUR")
                         Text("日元 (JPY)").tag("JPY")
                     }
+                    .accessibilityIdentifier("create-ledger-currency-picker")
                 }
             }
             .navigationTitle("创建账本")
@@ -40,8 +43,10 @@ struct CreateLedgerView: View {
                         createLedger()
                     }
                     .disabled(name.isEmpty)
+                    .accessibilityIdentifier("create-ledger-save-button")
                 }
             }
+            .accessibilityIdentifier("create-ledger-view")
         }
     }
 
