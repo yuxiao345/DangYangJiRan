@@ -87,6 +87,7 @@ struct MacSearchView: View {
                 .focused($isFocused)
                 .autocorrectionDisabled()
                 .font(.designBodyMedium)
+                .accessibilityIdentifier("mac-search-field")
 
             if !viewModel.searchText.isEmpty {
                 Button {

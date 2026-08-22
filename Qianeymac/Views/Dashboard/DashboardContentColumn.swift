@@ -33,7 +33,9 @@ struct DashboardContentColumn: View {
         ScrollView {
             VStack(spacing: 16) {
                 netWorthCard
+                    .accessibilityIdentifier("mac-dashboard-net-worth-card")
                 allocationCard
+                    .accessibilityIdentifier("mac-dashboard-allocation-card")
                 incomeExpenseRow
                 if viewModel.hasBudget {
                     HStack(alignment: .top, spacing: 12) {

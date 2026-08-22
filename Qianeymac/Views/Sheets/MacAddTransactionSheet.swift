@@ -379,6 +379,7 @@ struct MacAddTransactionSheet: View {
                 .padding(.vertical, 8).padding(.horizontal, 12)
                 .background(RoundedRectangle(cornerRadius: 8).fill(Color.designSurfaceContainer.opacity(showNumpad ? 0.3 : 0)))
             }
+            .accessibilityIdentifier("mac-add-tx-amount-field")
             .buttonStyle(.plain)
             .frame(maxWidth: .infinity)
 
@@ -1064,7 +1065,11 @@ struct MacAddTransactionSheet: View {
         if displayMode {
             if isEditing {
                 ToolbarItem(placement: .cancellationAction) { Button("取消") { cancelEditing() } }
-                ToolbarItem(placement: .confirmationAction) { Button("保存") { save() }.disabled(amount == 0 || selectedAccount == nil) }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("保存") { save() }
+                        .disabled(amount == 0 || selectedAccount == nil)
+                        .accessibilityIdentifier("mac-add-tx-save-button")
+                }
             } else {
                 ToolbarItem(placement: .cancellationAction) { Button("关闭") { dismiss() } }
                 ToolbarItemGroup(placement: .primaryAction) {

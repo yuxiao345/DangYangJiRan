@@ -32,6 +32,7 @@ struct MainSplitView: View {
         NavigationSplitView {
             sidebar
                 .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 240)
+                .accessibilityIdentifier("main-sidebar")
         } detail: {
             NavigationStack(path: $navigationPath) {
                 mainColumnContent
@@ -126,11 +127,13 @@ struct MainSplitView: View {
             Button { showSearchSheet = true } label: {
                 Image(systemName: "magnifyingglass")
             }
+            .accessibilityIdentifier("toolbar-search-button")
         }
         ToolbarItem(placement: .primaryAction) {
             Button { showAddSheet = true } label: {
                 Image(systemName: "plus")
             }
+            .accessibilityIdentifier("toolbar-add-tx-button")
         }
     }
 

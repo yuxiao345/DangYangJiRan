@@ -100,6 +100,7 @@ struct TransactionListContent: View {
                                 } label: {
                                     TransactionRowView(transaction: t)
                                         .padding(.vertical, 2)
+                                        .accessibilityIdentifier("mac-tx-list-cell")
                                 }
                                 .buttonStyle(.plain)
                             }

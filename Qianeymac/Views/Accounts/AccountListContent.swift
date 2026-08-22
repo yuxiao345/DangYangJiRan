@@ -20,14 +20,17 @@ struct AccountListContent: View {
                     .foregroundStyle(Color.designOnSurfaceVariant)
                     .padding(24)
                     .frame(maxWidth: .infinity)
+                    .accessibilityIdentifier("mac-account-list-empty-state")
             } else {
                 ScrollView {
                     VStack(spacing: 20) {
                         totalAssetsCard
+                            .accessibilityIdentifier("mac-account-list-total-assets-card")
                         accountGroupsView
                     }
                     .padding(24)
                 }
+                .accessibilityIdentifier("mac-account-list")
             }
         }
         .designScreen()

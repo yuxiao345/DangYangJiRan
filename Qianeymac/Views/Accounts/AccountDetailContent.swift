@@ -12,11 +12,13 @@ struct AccountDetailContent: View {
         ScrollView {
             VStack(spacing: 20) {
                 heroCard
+                    .accessibilityIdentifier("mac-account-detail-hero-card")
                 creditCardSection
                 transactionList
             }
             .padding(24)
         }
+        .accessibilityIdentifier("mac-account-detail")
         .designScreen()
         .navigationTitle("")
         .onAppear(perform: load)

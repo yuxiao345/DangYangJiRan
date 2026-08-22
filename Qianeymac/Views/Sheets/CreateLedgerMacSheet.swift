@@ -17,6 +17,7 @@ struct CreateLedgerMacSheet: View {
             Form {
                 Section("账本信息") {
                     TextField("名称", text: $name)
+                    .accessibilityIdentifier("create-ledger-mac-name-field")
                     Picker("货币", selection: $currencyCode) {
                         ForEach(currencies, id: \.self) { c in Text(c).tag(c) }
                     }
@@ -26,7 +27,11 @@ struct CreateLedgerMacSheet: View {
             .navigationTitle("新增账本")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { Button("创建") { create() }.disabled(name.isEmpty) }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("创建") { create() }
+                        .disabled(name.isEmpty)
+                        .accessibilityIdentifier("create-ledger-mac-save-button")
+                }
             }
             .alert("创建失败", isPresented: .constant(errorMessage != nil)) {
                 Button("好") { errorMessage = nil }
