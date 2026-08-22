@@ -20,6 +20,11 @@ final class CoreDataStack {
     private let privateURL: URL
     private let sharedURL: URL
 
+    /// Whether the stack was launched in UI test mode (`-UITEST_MODE`).
+    /// In this mode: use in-memory store, skip CloudKit entirely.
+    /// Detection happens in `init()` so all downstream branches see a consistent state.
+    let isUITestMode: Bool
+
     /// Timestamp of the most recent successful CloudKit import event.
     /// Used by `waitForImportSettled` to detect when initial sync is complete.
     private(set) var lastImportEventTime: Date = Date()
@@ -27,6 +32,11 @@ final class CoreDataStack {
     let cloudKitAvailable: Bool
 
     init() {
+        isUITestMode = ProcessInfo.processInfo.arguments.contains("-UITEST_MODE")
+        if isUITestMode {
+            DiagnosticLog.log("CoreDataStack: UITEST_MODE detected, using in-memory store + skipping CloudKit")
+        }
+
         guard let modelURL = Bundle.main.url(forResource: "FirstCC", withExtension: "momd") else {
             fatalError("CoreDataStack: FirstCC.momd not found")
         }
@@ -34,7 +44,9 @@ final class CoreDataStack {
             fatalError("CoreDataStack: Failed to load NSManagedObjectModel")
         }
 
-        cloudKitAvailable = FileManager.default.ubiquityIdentityToken != nil
+        // In UITEST_MODE: force cloudKitAvailable=false so all CloudKit branches are skipped.
+        // Real production behavior unchanged when -UITEST_MODE is not passed.
+        cloudKitAvailable = !isUITestMode && FileManager.default.ubiquityIdentityToken != nil
         DiagnosticLog.log("CoreDataStack: cloudKitAvailable=\(cloudKitAvailable)")
 
         container = NSPersistentCloudKitContainer(name: "FirstCC", managedObjectModel: model)
@@ -45,31 +57,46 @@ final class CoreDataStack {
         privateURL = appSupport.appendingPathComponent("FirstCC.sqlite")
         sharedURL = appSupport.appendingPathComponent("FirstCC.shared.sqlite")
 
-        let privateDescription = NSPersistentStoreDescription(url: privateURL)
-        privateDescription.configuration = "Private"
-        if cloudKitAvailable {
-            let privateOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: CloudKitConfig.containerIdentifier)
-            privateOptions.databaseScope = .private
-            privateDescription.cloudKitContainerOptions = privateOptions
-        }
-        privateDescription.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
-        privateDescription.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
-
-        if cloudKitAvailable {
-            let sharedDescription = NSPersistentStoreDescription(url: sharedURL)
-            sharedDescription.configuration = "Shared"
-            let sharedOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: CloudKitConfig.containerIdentifier)
-            sharedOptions.databaseScope = .shared
-            sharedDescription.cloudKitContainerOptions = sharedOptions
-            container.persistentStoreDescriptions = [privateDescription, sharedDescription]
+        if isUITestMode {
+            // In-memory store: fresh state per test run, no SQLite pollution,
+            // no CloudKit, fast load. The container's class (NSPersistentCloudKitContainer)
+            // is harmless here because no store description has cloudKitContainerOptions set.
+            let memDescription = NSPersistentStoreDescription()
+            memDescription.type = NSInMemoryStoreType
+            memDescription.configuration = "Private"
+            container.persistentStoreDescriptions = [memDescription]
         } else {
-            container.persistentStoreDescriptions = [privateDescription]
+            let privateDescription = NSPersistentStoreDescription(url: privateURL)
+            privateDescription.configuration = "Private"
+            if cloudKitAvailable {
+                let privateOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: CloudKitConfig.containerIdentifier)
+                privateOptions.databaseScope = .private
+                privateDescription.cloudKitContainerOptions = privateOptions
+            }
+            privateDescription.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
+            privateDescription.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
+
+            if cloudKitAvailable {
+                let sharedDescription = NSPersistentStoreDescription(url: sharedURL)
+                sharedDescription.configuration = "Shared"
+                let sharedOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: CloudKitConfig.containerIdentifier)
+                sharedOptions.databaseScope = .shared
+                sharedDescription.cloudKitContainerOptions = sharedOptions
+                container.persistentStoreDescriptions = [privateDescription, sharedDescription]
+            } else {
+                container.persistentStoreDescriptions = [privateDescription]
+            }
         }
 
         container.viewContext.automaticallyMergesChangesFromParent = true
         container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
 
-        // CloudKit event logging for sync diagnostics
+        // CloudKit event logging: skip in UITEST_MODE (no CloudKit container in use).
+        guard !isUITestMode else {
+            DiagnosticLog.log("CoreDataStack: init complete (in-memory, CloudKit skipped)")
+            return
+        }
+
         NotificationCenter.default.addObserver(
             forName: NSPersistentCloudKitContainer.eventChangedNotification,
             object: container,

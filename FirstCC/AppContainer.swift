@@ -58,7 +58,14 @@ final class AppContainer {
         self.coreDataStack = stack
         CoreDataStack.shared = stack
 
-        cloudKitContainer = CKContainer(identifier: CloudKitConfig.containerIdentifier)
+        // In UITEST_MODE, skip CloudKit container creation entirely so UI tests
+        // don't touch iCloud account/network state. CoreDataStack itself also
+        // switches to in-memory store when isUITestMode.
+        if stack.isUITestMode {
+            cloudKitContainer = nil
+        } else {
+            cloudKitContainer = CKContainer(identifier: CloudKitConfig.containerIdentifier)
+        }
 
         // Services (protocols will be updated to take NSManagedObjectContext)
         ledgerService = LedgerServiceImpl()
