@@ -67,11 +67,13 @@ struct TransactionListView: View {
                                     TransactionRowView(transaction: transaction)
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityIdentifier("tx-list-cell")
                             }
                         }
                     }
                 }
                 .padding(16)
+                .accessibilityIdentifier("tx-list")
             }
         }
         .id(refreshVersion)
@@ -96,6 +98,7 @@ struct TransactionListView: View {
                     Button { showAddSheet = true } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityIdentifier("tx-add-button")
                 }
             }
             if !options.contains(.hideTypeFilter) {

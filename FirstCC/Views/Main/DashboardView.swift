@@ -31,8 +31,11 @@ struct DashboardView: View {
                 VStack(spacing: 0) {
                     VStack(spacing: 16) {
                         heroBalanceCard
+                            .accessibilityIdentifier("dashboard-hero-balance-card")
                         incomeExpenseGrid
+                            .accessibilityIdentifier("dashboard-income-expense-grid")
                         budgetCard
+                            .accessibilityIdentifier("dashboard-budget-card")
                     }
                     .padding(16)
 
@@ -46,6 +49,7 @@ struct DashboardView: View {
                         }
                         .font(.designBodyCaption)
                         .foregroundStyle(Color.designAccentGreen)
+                        .accessibilityIdentifier("dashboard-recent-tx-all-link")
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 16)
@@ -83,6 +87,7 @@ struct DashboardView: View {
                     Button { showAddSheet = true } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityIdentifier("dashboard-add-tx-button")
                 }
             }
             .onAppear { refresh() }

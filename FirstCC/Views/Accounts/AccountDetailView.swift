@@ -34,6 +34,7 @@ struct AccountDetailView: View {
                 Button { showEditSheet = true } label: {
                     Image(systemName: "pencil")
                 }
+                .accessibilityIdentifier("account-edit-button")
             }
         }
         .sheet(isPresented: $showEditSheet, onDismiss: { load() }) {

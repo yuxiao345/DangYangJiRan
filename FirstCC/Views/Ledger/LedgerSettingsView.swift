@@ -41,17 +41,20 @@ struct LedgerSettingsView: View {
             Form {
             Section("基本信息") {
                 TextField("账本名称", text: $name)
+                    .accessibilityIdentifier("ledger-settings-name-field")
                 Picker("类型", selection: $type) {
                     ForEach(LedgerType.allCases, id: \.self) { t in
                         Label(t.displayName, systemImage: t.systemIcon).tag(t)
                     }
                 }
+                .accessibilityIdentifier("ledger-settings-type-picker")
                 Picker("默认货币", selection: $currencyCode) {
                     ForEach(currencies, id: \.self) { code in
                         Text("\(code) (\(currencyName(code)))").tag(code)
                     }
                 }
                 .disabled(true)
+                .accessibilityIdentifier("ledger-settings-currency-picker")
             }
 
             Section {

@@ -283,9 +283,11 @@ struct AddEditTransactionView: View {
                     Group {
                         // Type switcher
                         typeSwitcher
+                            .accessibilityIdentifier("add-tx-type-switcher")
 
                         // Amount display + toggles
                         amountSection
+                            .accessibilityIdentifier("add-tx-amount-field")
                     }
 
                     // Cross-currency transfer: dest amount
@@ -297,6 +299,7 @@ struct AddEditTransactionView: View {
                         // Account grid
                         if !accounts.isEmpty {
                             accountGridSection
+                                .accessibilityIdentifier("add-tx-account-picker")
                         }
 
                         // To-account for transfer/lending
@@ -307,6 +310,7 @@ struct AddEditTransactionView: View {
                         // Category grid (not split/transfer/lending)
                         if !isSplit, type != .transfer, type != .lending {
                             categoryGridSection
+                                .accessibilityIdentifier("add-tx-category-picker")
                             if let cat = selectedCategory, (cat.children?.count ?? 0) > 0 {
                                 Text("已选择上级分类「\(cat.name)」，可展开选择更具体的子分类")
                                     .font(.caption).foregroundStyle(.orange)
@@ -480,6 +484,7 @@ struct AddEditTransactionView: View {
             ToolbarItem(placement: .primaryAction) {
                 Button("保存") { save() }
                     .disabled(!canSave)
+                    .accessibilityIdentifier("add-tx-save-button")
             }
         } else {
             ToolbarItem(placement: .primaryAction) {
@@ -495,6 +500,7 @@ struct AddEditTransactionView: View {
                     Button(role: .destructive) { showDeleteAlert = true } label: {
                         Label("删除", systemImage: "trash")
                     }
+                    .accessibilityIdentifier("tx-detail-delete-button")
                 }
             }
         }

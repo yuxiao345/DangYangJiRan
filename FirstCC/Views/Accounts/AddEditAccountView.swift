@@ -51,6 +51,7 @@ struct AddEditAccountView: View {
             Form {
                 Section("基本信息") {
                     TextField("账户名称", text: $name)
+                        .accessibilityIdentifier("account-add-name-field")
 
                     if isEditing {
                         HStack {
@@ -66,6 +67,7 @@ struct AddEditAccountView: View {
                                     .tag(type)
                             }
                         }
+                        .accessibilityIdentifier("account-add-type-picker")
                     }
 
                     if accountType == .other {
@@ -87,6 +89,7 @@ struct AddEditAccountView: View {
                         }
                     }
                     .disabled(isEditing)
+                    .accessibilityIdentifier("account-add-currency-picker")
 
                     Button {
                         showLogoPicker = true
@@ -157,6 +160,7 @@ struct AddEditAccountView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("保存") { save() }
                         .disabled(name.isEmpty)
+                        .accessibilityIdentifier("account-add-save-button")
                 }
             }
             .onAppear { loadExistingCustomTypes() }

@@ -20,6 +20,7 @@ struct LedgerListView: View {
                                 .foregroundStyle(ledger.isShared ? Color.designPrimaryFixed : Color.designPrimaryContainer)
                             Text(ledger.name)
                                 .font(.designBodyMedium)
+                                .accessibilityIdentifier("ledger-list-row-\(ledger.name)")
                             if ledger.isShared {
                                 Image(systemName: "person.2.fill")
                                     .font(.caption2)
@@ -78,11 +79,13 @@ struct LedgerListView: View {
             }
         }
         .navigationTitle("账本管理")
+        .accessibilityIdentifier("ledger-list")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { showCreateSheet = true } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityIdentifier("ledger-add-button")
             }
         }
         .onAppear(perform: load)

@@ -13,10 +13,12 @@ struct AccountListView: View {
         ScrollView {
             VStack(spacing: 24) {
                 totalAssetsCard
+                    .accessibilityIdentifier("account-list-total-assets-card")
                 accountGroupsView
             }
             .padding(16)
         }
+        .accessibilityIdentifier("account-list")
         .scrollClipDisabled()
         .designScreen()
         .navigationTitle("账户")
@@ -25,6 +27,7 @@ struct AccountListView: View {
                 Button { showAddSheet = true } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityIdentifier("account-add-button")
             }
         }
         .sheet(isPresented: $showAddSheet, onDismiss: { loadAccounts() }) {

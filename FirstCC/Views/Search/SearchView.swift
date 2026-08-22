@@ -98,6 +98,7 @@ struct SearchView: View {
                 .textFieldStyle(.plain)
                 .focused($isFocused)
                 .autocorrectionDisabled()
+                .accessibilityIdentifier("search-field")
 
             if !viewModel.searchText.isEmpty {
                 Button {
@@ -239,11 +240,13 @@ struct SearchView: View {
                                 }
                                 .opacity(0)
                             }
+                            .accessibilityIdentifier("search-result-cell")
                     }
                 }
             }
         }
         .listStyle(.insetGrouped)
+        .accessibilityIdentifier("search-results-list")
     }
 
     private var groupedResults: [(key: String, value: [Transaction])] {
