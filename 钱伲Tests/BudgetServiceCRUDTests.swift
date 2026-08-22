@@ -152,17 +152,20 @@ final class BudgetServiceCRUDTests: CoreDataTestCase {
 
     // MARK: - 聚合计算
 
-    /// totalBudget 返回所有 active item 总和（按 periodCount 缩放）
-    /// Known issue: periodCount 默认值让 totalBudget 等于 amount * 12（年覆盖）。
-    /// 测试期望按"月预算"理解，但 service 实现是 periodCount * amount。
-    func disabled_test_totalBudget_sumsAllItems() throws {
-        throw XCTSkip("Known issue: totalBudget = periodCount * amount, periodCount 默认 12，结果 ≠ amount 求和")
+    /// totalBudget 返回所有 active item 总和（年化视图：amount × periodCount）
+    /// periodCount 是从 BudgetBook.startDate→endDate 跨度计算的属性，
+    /// BudgetBook.init 默认 1 年跨度 → periodCount = 12（年总预算 = 月预算 × 12）
+    func test_totalBudget_sumsAllItems() throws {
         let ledger = context.makeLedger("L")
         let book = makeBudgetBook("B", ledger: ledger)
         _ = makeBudgetItem(amount: 500, book: book)
         _ = makeBudgetItem(amount: 300, book: book)
         _ = makeBudgetItem(amount: 200, book: book, isActive: false)
-        _ = service.totalBudget(for: book)
+
+        let total = service.totalBudget(for: book)
+
+        // 期望: (500 + 300) × 12 = 9600（年化，isActive=false 排除）
+        XCTAssertEqual(total, 9600)
     }
 
     /// totalCumulativeSpending 累计从预算起点到现在的支出
