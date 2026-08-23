@@ -25,7 +25,7 @@ struct TransactionDetailList: View {
                     .padding(.leading, 8)
                 Spacer()
                 CurrencyText(amount: totalExpense, currencyCode: "", size: 18, foregroundColor: Color.designOnSurface)
-                    .fontWeight(.bold)
+                    .bold()
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 12)

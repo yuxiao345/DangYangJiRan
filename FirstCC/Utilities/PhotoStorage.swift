@@ -34,6 +34,6 @@ enum PhotoStorage {
     }
 
     private static var documentsDir: URL {
-        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        URL.documentsDirectory
     }
 }

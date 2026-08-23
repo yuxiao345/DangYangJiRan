@@ -27,10 +27,13 @@ struct MacTemplateListView: View {
             .padding(.bottom, 12)
 
             if templates.isEmpty {
-                Text("暂无模板")
-                    .foregroundStyle(Color.designOnSurfaceVariant)
-                    .padding(24)
-                    .frame(maxWidth: .infinity)
+                ContentUnavailableView(
+                    "暂无模板",
+                    systemImage: "doc.text",
+                    description: Text("点击右上角 + 添加模板")
+                )
+                .padding(24)
+                .frame(maxWidth: .infinity)
             } else {
                 List {
                     ForEach(templates) { template in

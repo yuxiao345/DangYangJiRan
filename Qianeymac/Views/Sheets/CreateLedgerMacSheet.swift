@@ -34,7 +34,7 @@ struct CreateLedgerMacSheet: View {
                 }
             }
             .alert("创建失败", isPresented: .constant(errorMessage != nil)) {
-                Button("好") { errorMessage = nil }
+                // System default OK button auto-dismisses the alert.
             } message: { Text(errorMessage ?? "") }
         }
         .frame(width: 400, height: 280)

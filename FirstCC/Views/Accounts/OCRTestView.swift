@@ -263,7 +263,7 @@ struct OCRTestView: View {
                         if let amount = item.amount {
                             Text(amount, format: .number.precision(.fractionLength(2)))
                                 .font(.designBodyMedium)
-                                .fontWeight(.bold)
+                                .bold()
                                 .foregroundStyle(amount < 0 ? .red : .green)
                         }
                     }

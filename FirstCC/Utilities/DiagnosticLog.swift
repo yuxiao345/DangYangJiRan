@@ -12,8 +12,7 @@ enum DiagnosticLog {
 
 #if DEBUG
     private static var logFileURL: URL? {
-        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
-        return docs?.appendingPathComponent("sharing_diag.log")
+        URL.documentsDirectory.appending(path: "sharing_diag.log")
     }
 #endif
 

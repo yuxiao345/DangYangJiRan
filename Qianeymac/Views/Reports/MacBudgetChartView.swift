@@ -1,18 +1,18 @@
 import SwiftUI
-import Combine
 import Charts
 
 // MARK: - Budget Card Hover State
 
-private final class CardHoverState: ObservableObject {
-    @Published var mouseOffset: CGPoint = .zero
-    @Published var isHovering = false
+@Observable
+private final class CardHoverState {
+    var mouseOffset: CGPoint = .zero
+    var isHovering = false
 }
 
 // MARK: - Reusable Hover Tilt Modifier
 
 private struct HoverTiltModifier: ViewModifier {
-    @StateObject private var hover = CardHoverState()
+    @State private var hover = CardHoverState()
 
     func body(content: Content) -> some View {
         content
@@ -211,7 +211,7 @@ struct MacBudgetChartView: View {
                 .font(.designBodyCaption)
                 .foregroundStyle(Color.designOnSurfaceVariant)
             CurrencyText(amount: s.totalSpent, currencyCode: "", showSign: false, size: 20, foregroundColor: Color.designAccentRed, fractionDigits: 0)
-                .fontWeight(.bold)
+                .bold()
 
             overviewTimeBar(s)
             overviewBudgetBar(s)
@@ -458,7 +458,7 @@ struct MacBudgetChartView: View {
                 .font(.designBodyCaption)
                 .foregroundStyle(Color.designOnSurfaceVariant)
             CurrencyText(amount: amount, currencyCode: "", showSign: false, size: 18, foregroundColor: color, fractionDigits: 0)
-                .fontWeight(.bold)
+                .bold()
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
@@ -579,7 +579,7 @@ private struct BudgetCardView: View {
                 size: 16,
                 foregroundColor: item.isOverBudget ? Color.designAccentRed : Color.designOnSurface
             )
-            .fontWeight(.bold)
+            .bold()
 
             HStack(spacing: 4) {
                 Text(item.period.displayName)

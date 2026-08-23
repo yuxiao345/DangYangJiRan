@@ -31,6 +31,7 @@ struct CreditCardReconciliationView: View {
                 Button { showAddSheet = true } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel(Text("添加对账单"))
             }
         }
         .sheet(isPresented: $showAddSheet, onDismiss: { loadStatements() }) {
@@ -396,7 +397,7 @@ struct AddEditStatementView: View {
                         }
                         Spacer()
                         Text(txn.amount, format: .number.precision(.fractionLength(2)))
-                            .font(.designBodySmall).fontWeight(.bold).foregroundStyle(.red)
+                            .font(.designBodySmall.weight(.bold)).foregroundStyle(.red)
                         Image(systemName: "pencil.circle")
                             .font(.designBodySmall)
                             .foregroundStyle(Color.designPrimaryContainer)
@@ -440,7 +441,7 @@ struct AddEditStatementView: View {
                 Spacer()
                 if let amount = match.bankItem.amount {
                     Text(amount, format: .number.precision(.fractionLength(2)))
-                        .font(.designBodySmall).fontWeight(.bold).foregroundStyle(.red)
+                        .font(.designBodySmall.weight(.bold)).foregroundStyle(.red)
                 }
                 matchBadge(match, action: action)
             }
@@ -561,7 +562,7 @@ struct AddEditStatementView: View {
 
     private func miniStat(_ label: String, _ value: String, _ color: Color) -> some View {
         VStack(spacing: 1) {
-            Text(value).font(.designBodySmall).fontWeight(.bold).foregroundStyle(color)
+            Text(value).font(.designBodySmall.weight(.bold)).foregroundStyle(color)
             Text(LocalizedStringKey(label)).font(.designBodySmall).foregroundStyle(.secondary)
         }
     }

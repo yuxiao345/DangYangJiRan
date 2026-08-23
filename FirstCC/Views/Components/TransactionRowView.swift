@@ -1,7 +1,9 @@
 import SwiftUI
 
 struct TransactionRowView: View {
-    @ObservedObject var transaction: Transaction
+    // NSManagedObject refreshes via NotificationCenter.transactionDidChange —
+    // not through ObservableObject. Don't add @ObservedObject here.
+    let transaction: Transaction
 
     #if os(macOS)
     private let titleFont: Font = .designBodySmall.weight(.medium)

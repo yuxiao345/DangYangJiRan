@@ -1,4 +1,5 @@
 import SwiftUI
+@preconcurrency import CoreData
 
 struct SearchView: View {
     @Environment(AppContainer.self) private var appContainer
@@ -33,6 +34,11 @@ struct SearchView: View {
         }
         .onChange(of: viewModel.searchText) { _, _ in
             viewModel.scheduleSearch(context: modelContext)
+        }
+        .navigationDestination(for: NSManagedObjectID.self) { id in
+            if let tx = modelContext.object(with: id) as? Transaction {
+                TransactionDetailView(transaction: tx)
+            }
         }
         .designScreen()
         .alert(String(localized: "保存筛选"), isPresented: $showSaveAlert) {
@@ -107,6 +113,7 @@ struct SearchView: View {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(Color.designOnSurfaceVariant)
                 }
+                .accessibilityLabel(Text("清空搜索"))
                 .buttonStyle(.plain)
             }
         }
@@ -235,7 +242,7 @@ struct SearchView: View {
                     ForEach(group.value, id: \.objectID) { transaction in
                         TransactionRowView(transaction: transaction)
                             .background {
-                                NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
+                                NavigationLink(value: transaction.objectID) {
                                     EmptyView()
                                 }
                                 .opacity(0)

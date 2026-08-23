@@ -27,37 +27,42 @@ struct ProjectListView: View {
     private func projectListView(_ projects: [Project], isSearching: Bool) -> some View {
         List {
             if projects.isEmpty {
-                Text(isSearching ? "无匹配结果" : "暂无项目，点击右上角 + 添加")
-                    .foregroundStyle(Color.designOnSurfaceVariant)
+                ContentUnavailableView(
+                    isSearching ? "无匹配结果" : "暂无项目",
+                    systemImage: "folder.badge.plus",
+                    description: Text("点击右上角 + 添加项目")
+                )
             }
             ForEach(projects) { project in
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Image(systemName: "folder")
-                            .foregroundStyle(Color.designPrimaryContainer)
-                        Text(LocalizedStringKey(project.name))
-                            .font(.designBodyMedium)
-                        Spacer()
-                        if !project.isActive {
-                            Text("已结束").font(.designBodySmall).foregroundStyle(Color.designOnSurfaceVariant)
+                Button { editingProject = project } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Image(systemName: "folder")
+                                .foregroundStyle(Color.designPrimaryContainer)
+                            Text(LocalizedStringKey(project.name))
+                                .font(.designBodyMedium)
+                            Spacer()
+                            if !project.isActive {
+                                Text("已结束").font(.designBodySmall).foregroundStyle(Color.designOnSurfaceVariant)
+                            }
                         }
-                    }
-                    if let desc = project.desc, !desc.isEmpty {
-                        Text(desc)
-                            .font(.designBodySmall)
-                            .foregroundStyle(Color.designOnSurfaceVariant)
-                            .lineLimit(1)
-                    }
-                    if let budget = project.budget {
-                        HStack(spacing: 2) {
-                            Text("\(String(localized: "预算")):")
+                        if let desc = project.desc, !desc.isEmpty {
+                            Text(desc)
                                 .font(.designBodySmall)
-                            CurrencyText(amount: budget, currencyCode: ledgerCurrency, size: 11, foregroundColor: .designPrimaryContainer)
+                                .foregroundStyle(Color.designOnSurfaceVariant)
+                                .lineLimit(1)
+                        }
+                        if let budget = project.budget {
+                            HStack(spacing: 2) {
+                                Text("\(String(localized: "预算")):")
+                                    .font(.designBodySmall)
+                                CurrencyText(amount: budget, currencyCode: ledgerCurrency, size: 11, foregroundColor: .designPrimaryContainer)
+                            }
                         }
                     }
+                    .contentShape(Rectangle())
                 }
-                .contentShape(Rectangle())
-                .onTapGesture { editingProject = project }
+                .buttonStyle(.plain)
                 .swipeActions {
                     Button(role: .destructive) {
                         try? appContainer.projectService.deleteProject(project, context: modelContext)
@@ -73,6 +78,7 @@ struct ProjectListView: View {
                 Button { showAddSheet = true } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel(Text("添加项目"))
             }
         }
         .sheet(isPresented: $showAddSheet) { AddEditProjectView(ledger: effectiveLedger) }

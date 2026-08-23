@@ -51,11 +51,9 @@ final class CoreDataStack {
 
         container = NSPersistentCloudKitContainer(name: "FirstCC", managedObjectModel: model)
 
-        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
-            fatalError("CoreDataStack: Application Support directory not found")
-        }
-        privateURL = appSupport.appendingPathComponent("FirstCC.sqlite")
-        sharedURL = appSupport.appendingPathComponent("FirstCC.shared.sqlite")
+        let appSupport = URL.applicationSupportDirectory
+        privateURL = appSupport.appending(path: "FirstCC.sqlite")
+        sharedURL = appSupport.appending(path: "FirstCC.shared.sqlite")
 
         if isUITestMode {
             // In-memory store: fresh state per test run, no SQLite pollution,
@@ -256,7 +254,7 @@ final class CoreDataStack {
                 return
             }
             DiagnosticLog.log("CoreDataStack: waiting for import settle... last import \(String(format: "%.1f", sinceLastImport))s ago")
-            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            try? await Task.sleep(for: .milliseconds(1500))
         }
     }
 
@@ -380,7 +378,7 @@ final class CoreDataStack {
             } catch {
                 DiagnosticLog.log("CoreDataStack: initializeSchema attempt \(attempt)/3 FAIL: \(error.localizedDescription)")
                 if attempt < 3 {
-                    try? await Task.sleep(nanoseconds: 3_000_000_000)
+                    try? await Task.sleep(for: .seconds(3))
                 }
             }
         }

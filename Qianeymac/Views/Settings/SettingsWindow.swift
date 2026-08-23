@@ -58,16 +58,17 @@ private struct LedgerSettingsContent: View {
     @State private var recurringCount = 0
     @State private var budgetCount = 0
 
-    // Sheet state for management views
-    @State private var sheetAccounts = false
-    @State private var sheetCategories = false
-    @State private var sheetMembers = false
-    @State private var sheetMerchants = false
-    @State private var sheetProjects = false
-    @State private var sheetBudgets = false
-    @State private var sheetTemplates = false
-    @State private var sheetRecurring = false
+    // Sheet state for management views — single optional drives all 7 sheets via .sheet(item:).
+    // The `ledger` payload lets us drop the inner `if let ledger = effectiveLedger` guard.
+    @State private var managementSheet: ManagementSheet?
     @State private var sheetExport = false
+
+    private struct ManagementSheet: Identifiable {
+        let id = UUID()
+        let ledger: Ledger?  // nil for sheets that don't need a ledger (e.g. accounts)
+        let kind: Kind
+        enum Kind { case accounts, categories, members, merchants, projects, budgets, templates, recurring }
+    }
 
     // Share state
     @State private var cloudShare: CKShare?
@@ -140,14 +141,18 @@ private struct LedgerSettingsContent: View {
         } message: {
             Text(shareError ?? "未知错误")
         }
-        .sheet(isPresented: $sheetAccounts) { MacAccountListView() }
-        .sheet(isPresented: $sheetCategories) { if let ledger = effectiveLedger { MacCategoryListView(ledger: ledger) } }
-        .sheet(isPresented: $sheetMembers) { if let ledger = effectiveLedger { MacMemberListView(ledger: ledger) } }
-        .sheet(isPresented: $sheetMerchants) { if let ledger = effectiveLedger { MacMerchantListView(ledger: ledger) } }
-        .sheet(isPresented: $sheetProjects) { if let ledger = effectiveLedger { MacProjectListView(ledger: ledger) } }
-        .sheet(isPresented: $sheetBudgets) { if let ledger = effectiveLedger { MacBudgetBookListView(ledger: ledger) } }
-        .sheet(isPresented: $sheetTemplates) { if let ledger = effectiveLedger { MacTemplateListView(ledger: ledger) } }
-        .sheet(isPresented: $sheetRecurring) { if let ledger = effectiveLedger { MacRecurringListView(ledger: ledger) } }
+        .sheet(item: $managementSheet) { item in
+            switch item.kind {
+            case .accounts:   MacAccountListView()
+            case .categories: MacCategoryListView(ledger: item.ledger!)
+            case .members:    MacMemberListView(ledger: item.ledger!)
+            case .merchants:  MacMerchantListView(ledger: item.ledger!)
+            case .projects:   MacProjectListView(ledger: item.ledger!)
+            case .budgets:    MacBudgetBookListView(ledger: item.ledger!)
+            case .templates:  MacTemplateListView(ledger: item.ledger!)
+            case .recurring:  MacRecurringListView(ledger: item.ledger!)
+            }
+        }
         .sheet(isPresented: $sheetExport) { MacExportView() }
     }
 
@@ -234,21 +239,21 @@ private struct LedgerSettingsContent: View {
                 .padding(.bottom, 4)
 
             VStack(spacing: 0) {
-                managementRow("账户管理", icon: "creditcard", count: accountCount) { sheetAccounts = true }
+                managementRow("账户管理", icon: "creditcard", count: accountCount) { presentSheet(.accounts) }
                 Divider()
-                managementRow("分类管理", icon: "square.grid.2x2", count: categoryCount) { sheetCategories = true }
+                managementRow("分类管理", icon: "square.grid.2x2", count: categoryCount) { presentSheet(.categories) }
                 Divider()
-                managementRow("联系人管理", icon: "person.2", count: memberCount) { sheetMembers = true }
+                managementRow("联系人管理", icon: "person.2", count: memberCount) { presentSheet(.members) }
                 Divider()
-                managementRow("商家管理", icon: "building.2", count: merchantCount) { sheetMerchants = true }
+                managementRow("商家管理", icon: "building.2", count: merchantCount) { presentSheet(.merchants) }
                 Divider()
-                managementRow("项目管理", icon: "folder", count: projectCount) { sheetProjects = true }
+                managementRow("项目管理", icon: "folder", count: projectCount) { presentSheet(.projects) }
                 Divider()
-                managementRow("预算管理", icon: "chart.pie", count: budgetCount) { sheetBudgets = true }
+                managementRow("预算管理", icon: "chart.pie", count: budgetCount) { presentSheet(.budgets) }
                 Divider()
-                managementRow("模板管理", icon: "doc.text", count: templateCount) { sheetTemplates = true }
+                managementRow("模板管理", icon: "doc.text", count: templateCount) { presentSheet(.templates) }
                 Divider()
-                managementRow("周期账管理", icon: "repeat", count: recurringCount) { sheetRecurring = true }
+                managementRow("周期账管理", icon: "repeat", count: recurringCount) { presentSheet(.recurring) }
                 Divider()
                 managementRow("数据导出", icon: "square.and.arrow.up", count: nil) { sheetExport = true }
             }
@@ -256,6 +261,17 @@ private struct LedgerSettingsContent: View {
             .frame(maxWidth: .infinity, alignment: .center)
         }
         .padding(.horizontal, 40)
+    }
+
+    private func presentSheet(_ kind: ManagementSheet.Kind) {
+        // Sheets that don't need a ledger payload can show immediately;
+        // ledger-scoped sheets wait until there's an active ledger.
+        if kind == .accounts {
+            managementSheet = ManagementSheet(ledger: nil, kind: kind)
+            return
+        }
+        guard let ledger = appContainer.currentLedger else { return }
+        managementSheet = ManagementSheet(ledger: ledger, kind: kind)
     }
 
     private func managementRow(

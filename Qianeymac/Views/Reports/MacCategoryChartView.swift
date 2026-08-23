@@ -150,7 +150,7 @@ struct MacCategoryChartView: View {
         barProgress = 0
         pieProgress = 0
         Task {
-            try? await Task.sleep(nanoseconds: 50_000_000)
+            try? await Task.sleep(for: .milliseconds(50))
             withAnimation(.spring(response: 0.6, dampingFraction: 0.65)) { barProgress = 1 }
             withAnimation(.easeOut(duration: 0.9)) { pieProgress = 1 }
         }

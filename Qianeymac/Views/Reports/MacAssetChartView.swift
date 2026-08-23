@@ -119,7 +119,7 @@ struct MacAssetChartView: View {
                     .font(.designBodyCaption)
                     .foregroundStyle(isOn ? Color.designOnSurfaceVariant : Color.designOnSurfaceVariant.opacity(0.4))
                 CurrencyText(amount: amount, currencyCode: "", showSign: false, size: 20, foregroundColor: isOn ? color : color.opacity(0.3), fractionDigits: 0)
-                    .fontWeight(.bold)
+                    .bold()
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)

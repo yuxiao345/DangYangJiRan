@@ -119,7 +119,7 @@ struct SearchablePickerView<Item: Identifiable & Hashable>: View {
         if searchText.isEmpty {
             return items
         }
-        var matched = items.filter { itemLabel($0).localizedCaseInsensitiveContains(searchText) }
+        var matched = items.filter { itemLabel($0).localizedStandardContains(searchText) }
         if let provider = childrenProvider {
             var seen = Set(matched.map { $0.id })
             for item in matched {
@@ -151,7 +151,9 @@ struct SearchablePickerView<Item: Identifiable & Hashable>: View {
         }
         .padding(.leading, CGFloat(level) * 24)
         .contentShape(Rectangle())
-        .onTapGesture {
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction {
             if isSelected {
                 selection = nil
             } else {

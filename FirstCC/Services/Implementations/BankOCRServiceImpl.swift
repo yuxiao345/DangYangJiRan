@@ -208,10 +208,10 @@ final class BankOCRServiceImpl: BankOCRServiceProtocol {
 
     private func parseCSVAmount(_ raw: String) -> Decimal? {
         let trimmed = raw.trimmingCharacters(in: .whitespaces)
-            .replacingOccurrences(of: "¥", with: "")
-            .replacingOccurrences(of: "￥", with: "")
-            .replacingOccurrences(of: ",", with: "")
-            .replacingOccurrences(of: " ", with: "")
+            .replacing("¥", with: "")
+            .replacing("￥", with: "")
+            .replacing(",", with: "")
+            .replacing(" ", with: "")
 
         guard let value = Decimal(string: trimmed), value != 0 else { return nil }
         return value > 0 ? -value : value
@@ -326,8 +326,8 @@ final class BankOCRServiceImpl: BankOCRServiceProtocol {
         }
 
         desc = desc.replacingOccurrences(of: #"^\s*\d{1,3}\s+"#, with: "", options: .regularExpression)
-        desc = desc.replacingOccurrences(of: "¥", with: "")
-        desc = desc.replacingOccurrences(of: "￥", with: "")
+        desc = desc.replacing("¥", with: "")
+        desc = desc.replacing("￥", with: "")
         desc = desc.trimmingCharacters(in: .whitespaces)
 
         return BankTransactionItem(
@@ -354,7 +354,7 @@ final class BankOCRServiceImpl: BankOCRServiceProtocol {
               let numRange = Range(match.range(at: 2), in: text) else { return nil }
 
         let fullMatchStr = String(text[fullRange])
-        let numStr = String(text[numRange]).replacingOccurrences(of: ",", with: "")
+        let numStr = String(text[numRange]).replacing(",", with: "")
 
         let hasSign = match.range(at: 1).location != NSNotFound
         var isNegative = false

@@ -197,7 +197,7 @@ struct CategoryPieChartView: View {
                 foregroundColor: Color.designOnSurface,
                 fractionDigits: 0
             )
-            .fontWeight(.bold)
+            .bold()
         }
         .padding(12)
     }
@@ -412,7 +412,7 @@ struct CategoryPieChartView: View {
                 Spacer()
 
                 CurrencyText(amount: totalExpense, currencyCode: "", size: 15, foregroundColor: Color.designOnSurface)
-                    .fontWeight(.bold)
+                    .bold()
             }
             .padding(.horizontal, 12)
             .padding(.bottom, 8)

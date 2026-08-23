@@ -28,23 +28,28 @@ struct MemberListView: View {
     private func memberListView(_ members: [Member], isSearching: Bool) -> some View {
         List {
             if members.isEmpty {
-                Text(isSearching ? "无匹配结果" : "暂无联系人")
-                    .foregroundStyle(Color.designOnSurfaceVariant)
+                ContentUnavailableView(
+                    isSearching ? "无匹配结果" : "暂无联系人",
+                    systemImage: "person.crop.circle.badge.plus",
+                    description: Text("点击右上角 + 添加联系人")
+                )
             }
             ForEach(members) { member in
-                HStack {
-                    Image(systemName: member.avatar)
-                        .foregroundStyle(Color.designPrimaryContainer)
-                    Text(LocalizedStringKey(member.name))
-                    Spacer()
-                    if !member.isActive {
-                        Text("已停用")
-                            .font(.designBodySmall)
-                            .foregroundStyle(Color.designOnSurfaceVariant)
+                Button { editingMember = member } label: {
+                    HStack {
+                        Image(systemName: member.avatar)
+                            .foregroundStyle(Color.designPrimaryContainer)
+                        Text(LocalizedStringKey(member.name))
+                        Spacer()
+                        if !member.isActive {
+                            Text("已停用")
+                                .font(.designBodySmall)
+                                .foregroundStyle(Color.designOnSurfaceVariant)
+                        }
                     }
+                    .contentShape(Rectangle())
                 }
-                .contentShape(Rectangle())
-                .onTapGesture { editingMember = member }
+                .buttonStyle(.plain)
                 .swipeActions {
                     Button(role: .destructive) {
                         try? appContainer.memberService.deleteMember(member, context: modelContext)
@@ -62,6 +67,7 @@ struct MemberListView: View {
                 Button { showAddAlert = true } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel(Text("添加联系人"))
             }
         }
         .alert("添加联系人", isPresented: $showAddAlert) {

@@ -27,10 +27,13 @@ struct MacCategoryListView: View {
             .padding(.bottom, 12)
 
             if flatExpense.isEmpty && flatIncome.isEmpty {
-                Text("暂无分类")
-                    .foregroundStyle(Color.designOnSurfaceVariant)
-                    .padding(24)
-                    .frame(maxWidth: .infinity)
+                ContentUnavailableView(
+                    "暂无分类",
+                    systemImage: "square.grid.2x2",
+                    description: Text("点击右上角 + 添加分类")
+                )
+                .padding(24)
+                .frame(maxWidth: .infinity)
             } else {
                 List {
                     if !flatExpense.isEmpty {

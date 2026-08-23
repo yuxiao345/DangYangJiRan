@@ -50,7 +50,7 @@ struct MacMerchantEditSheet: View {
             }
         }
         .alert("保存失败", isPresented: .constant(errorMessage != nil)) {
-            Button("好") { errorMessage = nil }
+            // System default OK button auto-dismisses the alert.
         } message: { Text(errorMessage ?? "") }
         .onAppear {
             if let m = editing {

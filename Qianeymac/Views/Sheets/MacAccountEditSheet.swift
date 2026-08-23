@@ -89,7 +89,7 @@ struct MacAccountEditSheet: View {
         .onAppear { loadExistingCustomTypes() }
         .onChange(of: accountType) { _, _ in loadExistingCustomTypes() }
         .alert("保存失败", isPresented: .constant(errorMessage != nil)) {
-            Button("好") { errorMessage = nil }
+            // System default OK button auto-dismisses the alert.
         } message: { Text(errorMessage ?? "") }
     }
 

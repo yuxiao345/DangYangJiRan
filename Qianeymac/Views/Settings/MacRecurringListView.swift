@@ -27,10 +27,13 @@ struct MacRecurringListView: View {
             .padding(.bottom, 12)
 
             if rules.isEmpty {
-                Text("暂无周期账")
-                    .foregroundStyle(Color.designOnSurfaceVariant)
-                    .padding(24)
-                    .frame(maxWidth: .infinity)
+                ContentUnavailableView(
+                    "暂无周期账",
+                    systemImage: "repeat",
+                    description: Text("点击右上角 + 添加周期账")
+                )
+                .padding(24)
+                .frame(maxWidth: .infinity)
             } else {
                 List {
                     if !activeRules.isEmpty {

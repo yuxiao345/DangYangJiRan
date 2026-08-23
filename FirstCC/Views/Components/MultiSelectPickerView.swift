@@ -50,7 +50,7 @@ struct MultiSelectPickerView<Item: Identifiable & Hashable>: View where Item.ID 
 
     private var filteredItems: [Item] {
         guard !searchText.isEmpty else { return [] }
-        return items.filter { itemLabel($0).localizedCaseInsensitiveContains(searchText) }
+        return items.filter { itemLabel($0).localizedStandardContains(searchText) }
     }
 
     var body: some View {

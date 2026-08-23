@@ -171,7 +171,7 @@ struct DonutChart: View {
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(Color.designOnSurfaceVariant)
                         CurrencyText(amount: item.amount, currencyCode: "", size: 18, foregroundColor: Color.designOnSurface)
-                            .fontWeight(.bold)
+                            .bold()
                     }
                     VStack(alignment: .leading, spacing: 4) {
                         Text(String(localized: "占比"))

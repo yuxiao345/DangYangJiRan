@@ -14,7 +14,7 @@ struct OnboardingView: View {
 
                 Text("钱伲")
                     .font(.largeTitle)
-                    .fontWeight(.bold)
+                    .bold()
 
                 Text("家庭记账，一目了然")
                     .font(.designBodyMedium)

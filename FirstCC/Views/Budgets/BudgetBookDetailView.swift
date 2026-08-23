@@ -120,6 +120,7 @@ struct BudgetBookDetailView: View {
                 Button { showAddSheet = true } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel(Text("添加预算项"))
                 .disabled(!isCurrentMonth)
             }
         }
@@ -167,6 +168,7 @@ struct BudgetBookDetailView: View {
                 Image(systemName: "chevron.left")
                     .font(.designBodyMedium)
             }
+            .accessibilityLabel(Text("上个月"))
             .buttonStyle(.plain)
             .disabled(isAtOldestMonth)
 
@@ -283,9 +285,15 @@ struct BudgetBookDetailView: View {
 
         return Group {
             if let cat = item.category {
-                rowContent.onTapGesture { navCategory = cat }
+                rowContent
+                    .onTapGesture { navCategory = cat }
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityAction { navCategory = cat }
             } else {
-                rowContent.onTapGesture { editingItem = item }
+                rowContent
+                    .onTapGesture { editingItem = item }
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityAction { editingItem = item }
             }
         }
     }

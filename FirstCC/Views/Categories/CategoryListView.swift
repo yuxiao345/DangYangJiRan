@@ -22,7 +22,7 @@ struct CategoryListView: View {
     /// 搜索过滤 — 搜索激活时按名称过滤；搜索时同步禁用拖拽排序避免索引错位。
     private func displayed(_ categories: [Category]) -> [Category] {
         guard !searchText.isEmpty else { return categories }
-        return categories.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+        return categories.filter { $0.name.localizedStandardContains(searchText) }
     }
 
     private var isSearching: Bool { !searchText.isEmpty }
@@ -62,6 +62,7 @@ struct CategoryListView: View {
                 Button { showAddSheet = true } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel(Text("添加分类"))
             }
         }
         .environment(\.editMode, .constant(isSearching ? .inactive : .active))
@@ -122,6 +123,10 @@ struct CategoryListView: View {
         .padding(.leading, category.parent != nil ? 24 : 0)
         .contentShape(Rectangle())
         .onTapGesture { editingCategory = category }
+        // Row has a nested Toggle, so wrapping in Button would conflict.
+        // Expose to VoiceOver as a button instead.
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction { editingCategory = category }
     }
 
     // MARK: - Toggle

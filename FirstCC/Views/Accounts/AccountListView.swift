@@ -11,7 +11,7 @@ struct AccountListView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
+            LazyVStack(spacing: 24) {
                 totalAssetsCard
                     .accessibilityIdentifier("account-list-total-assets-card")
                 accountGroupsView
@@ -27,6 +27,7 @@ struct AccountListView: View {
                 Button { showAddSheet = true } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel(Text("添加账户"))
                 .accessibilityIdentifier("account-add-button")
             }
         }

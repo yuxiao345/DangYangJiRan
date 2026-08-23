@@ -64,7 +64,7 @@ struct DashboardContentColumn: View {
         .onChange(of: appContainer.currentLedger?.id) { _, _ in loadAll() }
         .onChange(of: categoryPieTrigger) { _, _ in
             Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 50_000_000)
+                try? await Task.sleep(for: .milliseconds(50))
                 withAnimation(.easeOut(duration: 0.9)) { categoryPieProgress = 1 }
             }
         }

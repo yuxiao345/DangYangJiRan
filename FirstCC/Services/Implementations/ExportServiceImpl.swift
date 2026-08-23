@@ -82,7 +82,7 @@ struct ExportServiceImpl: ExportServiceProtocol {
 
     private func escapeCSV(_ field: String) -> String {
         if field.contains(",") || field.contains("\"") || field.contains("\n") {
-            let escaped = field.replacingOccurrences(of: "\"", with: "\"\"")
+            let escaped = field.replacing("\"", with: "\"\"")
             return "\"\(escaped)\""
         }
         return field

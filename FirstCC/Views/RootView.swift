@@ -34,7 +34,7 @@ struct RootView: View {
             AppLockView()
         }
         .alert("共享失败", isPresented: Binding(get: { appContainer.shareErrorMessage != nil }, set: { if !$0 { appContainer.shareErrorMessage = nil } })) {
-            Button("好") { appContainer.shareErrorMessage = nil }
+            // System default OK button auto-dismisses the alert.
         } message: {
             Text(appContainer.shareErrorMessage ?? "")
         }

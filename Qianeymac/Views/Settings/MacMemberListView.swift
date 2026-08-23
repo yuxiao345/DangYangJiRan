@@ -26,7 +26,12 @@ struct MacMemberListView: View {
                     memberRow(member)
                 }
                 if members.isEmpty {
-                    Text("暂无联系人").foregroundStyle(Color.designOnSurfaceVariant).padding(.top, 20)
+                    ContentUnavailableView(
+                        "暂无联系人",
+                        systemImage: "person.crop.circle.badge.plus",
+                        description: Text("点击右上角 + 添加联系人")
+                    )
+                    .padding(.top, 20)
                 }
             }
             .padding(24).frame(maxWidth: 600)

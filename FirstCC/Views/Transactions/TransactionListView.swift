@@ -49,21 +49,18 @@ struct TransactionListView: View {
 
                 LazyVStack(spacing: 12) {
                     if transactions.isEmpty {
-                        VStack(spacing: 8) {
-                            Image(systemName: "tray")
-                                .font(.system(size: 36))
-                                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
-                            Text(selectedDay != nil ? "当天没有交易记录" : "暂无交易记录")
-                                .font(.designBodyMedium)
-                                .foregroundStyle(Color.designOnSurfaceVariant)
-                        }
-                        .padding(.top, 60)
+                        ContentUnavailableView(
+                            selectedDay != nil ? "当天没有交易记录" : "暂无交易记录",
+                            systemImage: "tray",
+                            description: Text("点击右上角 + 开始记一笔")
+                        )
+                        .padding(.top, 40)
                     } else {
                         let fullSettlementIDs = Set(transactions.compactMap(\.reimbursedById))
                         ForEach(groupedByDate, id: \.key) { group in
                             dateSectionHeader(dateKey: group.key, transactions: group.value, fullMonthSettlementIDs: fullSettlementIDs)
                             ForEach(group.value, id: \.objectID) { transaction in
-                                NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
+                                NavigationLink(value: transaction.objectID) {
                                     TransactionRowView(transaction: transaction)
                                 }
                                 .buttonStyle(.plain)
@@ -98,6 +95,7 @@ struct TransactionListView: View {
                     Button { showAddSheet = true } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityLabel(Text("记一笔"))
                     .accessibilityIdentifier("tx-add-button")
                 }
             }

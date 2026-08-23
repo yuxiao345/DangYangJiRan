@@ -515,6 +515,7 @@ struct AdvancedFilterPanel: View {
 
     // MARK: - Summary (collapsed)
 
+    @ViewBuilder
     private var activeSummary: some View {
         let parts: [String] = {
             var p: [String] = []
@@ -528,15 +529,12 @@ struct AdvancedFilterPanel: View {
             return p
         }()
 
-        if parts.isEmpty {
-            return AnyView(EmptyView())
-        }
-        return AnyView(
+        if !parts.isEmpty {
             Text(parts.joined(separator: " · "))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
-        )
+        }
     }
 
     // MARK: - Pickers

@@ -20,8 +20,11 @@ struct AccountsManagementView: View {
     var body: some View {
         List {
             if filteredAccounts.isEmpty {
-                Text(searchText.isEmpty ? "暂无账户，点击右上角 + 添加" : "无匹配结果")
-                    .foregroundStyle(.secondary)
+                ContentUnavailableView(
+                    searchText.isEmpty ? "暂无账户" : "无匹配结果",
+                    systemImage: "creditcard",
+                    description: Text("点击右上角 + 添加账户")
+                )
             } else {
                 ForEach(accountGroups, id: \.type) { group in
                     Section(group.type.displayName) {
@@ -49,6 +52,7 @@ struct AccountsManagementView: View {
                 Button { showAddSheet = true } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel(Text("添加账户"))
             }
         }
         .sheet(isPresented: $showAddSheet, onDismiss: { loadAccounts() }) {
@@ -81,23 +85,25 @@ struct AccountsManagementView: View {
     }
 
     private func accountRow(_ account: Account) -> some View {
-        HStack {
-            accountIcon(account)
-            VStack(alignment: .leading) {
-                Text(LocalizedStringKey(account.name))
-                Text(account.currencyCode)
+        Button { editingAccount = account } label: {
+            HStack {
+                accountIcon(account)
+                VStack(alignment: .leading) {
+                    Text(LocalizedStringKey(account.name))
+                    Text(account.currencyCode)
+                        .font(.designBodySmall)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                let bal = balances[account.id] ?? 0
+                CurrencyText(amount: bal, currencyCode: account.currencyCode, showSign: true, size: 15, foregroundColor: bal >= 0 ? .green : .red)
+                Image(systemName: "chevron.right")
                     .font(.designBodySmall)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
             }
-            Spacer()
-            let bal = balances[account.id] ?? 0
-            CurrencyText(amount: bal, currencyCode: account.currencyCode, showSign: true, size: 15, foregroundColor: bal >= 0 ? .green : .red)
-            Image(systemName: "chevron.right")
-                .font(.designBodySmall)
-                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+            .contentShape(Rectangle())
         }
-        .contentShape(Rectangle())
-        .onTapGesture { editingAccount = account }
+        .buttonStyle(.plain)
         .swipeActions(edge: .trailing) {
             Button {
                 account.isArchived = !account.isArchived

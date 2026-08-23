@@ -2,7 +2,9 @@ import SwiftUI
 @preconcurrency import CoreData
 
 struct AccountDetailView: View {
-    @ObservedObject var account: Account
+    // NSManagedObject refreshes via NotificationCenter.transactionDidChange —
+    // not through ObservableObject. Don't add @ObservedObject here.
+    let account: Account
     @Environment(\.managedObjectContext) private var modelContext
     @Environment(AppContainer.self) private var appContainer
     @State private var balance: Decimal = 0

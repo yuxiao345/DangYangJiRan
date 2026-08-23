@@ -22,31 +22,33 @@ struct PendingReimbursementView: View {
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(expenses) { expense in
-                    HStack {
-                        Image(systemName: selectedIDs.contains(expense.id)
-                              ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(selectedIDs.contains(expense.id) ? .blue : .secondary)
-                            .font(.title3)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(LocalizedStringKey(expense.category?.name ?? ""))
-                                .font(.designBodyMedium)
-                            if let note = expense.note, !note.isEmpty {
-                                Text(note)
+                    Button { toggle(expense.id) } label: {
+                        HStack {
+                            Image(systemName: selectedIDs.contains(expense.id)
+                                  ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(selectedIDs.contains(expense.id) ? .blue : .secondary)
+                                .font(.title3)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(LocalizedStringKey(expense.category?.name ?? ""))
+                                    .font(.designBodyMedium)
+                                if let note = expense.note, !note.isEmpty {
+                                    Text(note)
+                                        .font(.designBodySmall)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                }
+                            }
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 2) {
+                                CurrencyText(amount: abs(expense.amount), currencyCode: expense.currencyCode, size: 17)
+                                Text(expense.date.formatted(date: .abbreviated, time: .omitted))
                                     .font(.designBodySmall)
                                     .foregroundStyle(.secondary)
-                                    .lineLimit(1)
                             }
                         }
-                        Spacer()
-                        VStack(alignment: .trailing, spacing: 2) {
-                            CurrencyText(amount: abs(expense.amount), currencyCode: expense.currencyCode, size: 17)
-                            Text(expense.date.formatted(date: .abbreviated, time: .omitted))
-                                .font(.designBodySmall)
-                                .foregroundStyle(.secondary)
-                        }
+                        .contentShape(Rectangle())
                     }
-                    .contentShape(Rectangle())
-                    .onTapGesture { toggle(expense.id) }
+                    .buttonStyle(.plain)
                 }
             }
         }

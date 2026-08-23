@@ -63,12 +63,15 @@ struct AddEditCategoryView: View {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 10) {
                                     ForEach(suggestedIcons, id: \.self) { icon in
-                                        Image(systemName: icon)
-                                            .font(.title3)
-                                            .frame(width: 44, height: 44)
-                                            .background(icon == iconName ? Color.blue.opacity(0.2) : Color.gray.opacity(0.08))
-                                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                                            .onTapGesture { iconName = icon }
+                                        Button { iconName = icon } label: {
+                                            Image(systemName: icon)
+                                                .font(.title3)
+                                                .frame(width: 44, height: 44)
+                                                .background(icon == iconName ? Color.blue.opacity(0.2) : Color.gray.opacity(0.08))
+                                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                        }
+                                        .buttonStyle(.plain)
+                                        .accessibilityLabel(Text(icon))
                                     }
                                 }
                             }
@@ -77,12 +80,15 @@ struct AddEditCategoryView: View {
                     }
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 8) {
                         ForEach(iconOptions, id: \.self) { icon in
-                            Image(systemName: icon)
-                                .font(.title3)
-                                .frame(width: 44, height: 44)
-                                .background(icon == iconName ? Color.blue.opacity(0.2) : .clear)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                                .onTapGesture { iconName = icon }
+                            Button { iconName = icon } label: {
+                                Image(systemName: icon)
+                                    .font(.title3)
+                                    .frame(width: 44, height: 44)
+                                    .background(icon == iconName ? Color.blue.opacity(0.2) : .clear)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(Text(icon))
                         }
                     }
                 }
@@ -90,15 +96,18 @@ struct AddEditCategoryView: View {
                 Section("颜色") {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 8) {
                         ForEach(colorOptions, id: \.self) { color in
-                            Circle()
-                                .fill(Color(hex: color))
-                                .frame(width: 32, height: 32)
-                                .overlay(
-                                    Circle()
-                                        .stroke(color == colorHex ? Color.primary : .clear, lineWidth: 2)
-                                )
-                                .padding(4)
-                                .onTapGesture { colorHex = color }
+                            Button { colorHex = color } label: {
+                                Circle()
+                                    .fill(Color(hex: color))
+                                    .frame(width: 32, height: 32)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(color == colorHex ? Color.primary : .clear, lineWidth: 2)
+                                    )
+                                    .padding(4)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(Text("颜色选项"))
                         }
                     }
                 }

@@ -22,10 +22,12 @@ struct TemplateListView: View {
                     .foregroundStyle(.secondary)
             }
             ForEach(templates) { template in
-                templateRow(template)
-                    .contentShape(Rectangle())
-                    .onTapGesture { editingTemplate = template }
-                    .swipeActions {
+                Button { editingTemplate = template } label: {
+                    templateRow(template)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .swipeActions {
                         Button(role: .destructive) {
                             try? appContainer.templateService.deleteTemplate(template, context: modelContext)
                             loadTemplates()
@@ -39,6 +41,7 @@ struct TemplateListView: View {
                 Button { showAddSheet = true } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel(Text("添加模板"))
             }
         }
         .sheet(isPresented: $showAddSheet, onDismiss: { loadTemplates() }) {
@@ -52,11 +55,10 @@ struct TemplateListView: View {
 
     private func templateRow(_ t: TransactionTemplate) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: t.category?.iconName ?? t.type.systemIcon)
+            let category = t.category
+            Image(systemName: category?.iconName ?? t.type.systemIcon)
                 .font(.title3)
-                .foregroundStyle(t.category != nil
-                    ? Color(hex: t.category!.colorHex)
-                    : .blue)
+                .foregroundStyle(category.map { Color(hex: $0.colorHex) } ?? .blue)
                 .frame(width: 32)
 
             VStack(alignment: .leading, spacing: 2) {

@@ -27,7 +27,7 @@ struct SearchableList<Item: Identifiable, Content: View>: View {
 
     private var filteredItems: [Item] {
         guard !searchText.isEmpty else { return items }
-        return items.filter { $0[keyPath: searchKey].localizedCaseInsensitiveContains(searchText) }
+        return items.filter { $0[keyPath: searchKey].localizedStandardContains(searchText) }
     }
 
     var body: some View {

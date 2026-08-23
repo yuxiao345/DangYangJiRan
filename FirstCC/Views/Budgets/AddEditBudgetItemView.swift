@@ -87,7 +87,7 @@ struct AddEditBudgetItemView: View {
             else { periodLocked = false; lockedByCategory = "" }
         }
         .alert(Text("提示"), isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
-            Button("好") { errorMessage = nil }
+            // System default OK button auto-dismisses the alert.
         } message: {
             Text(errorMessage ?? "")
         }
@@ -181,7 +181,7 @@ struct AddEditBudgetItemView: View {
                                     .padding(.vertical, 6)
                                 }
                                 .buttonStyle(.plain)
-                                let shown = categories.filter { categorySearchText.isEmpty || $0.name.localizedCaseInsensitiveContains(categorySearchText) }
+                                let shown = categories.filter { categorySearchText.isEmpty || $0.name.localizedStandardContains(categorySearchText) }
                                 ForEach(shown) { cat in
                                     let depth = categoryDepth(cat)
                                     let hasChildren = (cat.children?.count ?? 0) > 0

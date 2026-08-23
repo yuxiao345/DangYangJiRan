@@ -27,10 +27,13 @@ struct MacProjectListView: View {
             .padding(.bottom, 12)
 
             if projects.isEmpty {
-                Text("暂无项目")
-                    .foregroundStyle(Color.designOnSurfaceVariant)
-                    .padding(24)
-                    .frame(maxWidth: .infinity)
+                ContentUnavailableView(
+                    "暂无项目",
+                    systemImage: "folder.badge.plus",
+                    description: Text("点击右上角 + 添加项目")
+                )
+                .padding(24)
+                .frame(maxWidth: .infinity)
             } else {
                 List {
                     ForEach(projects) { project in

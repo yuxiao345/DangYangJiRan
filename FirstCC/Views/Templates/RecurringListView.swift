@@ -46,6 +46,7 @@ struct RecurringListView: View {
                 Button { showAddSheet = true } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel(Text("添加周期账"))
             }
         }
         .sheet(isPresented: $showAddSheet) {
@@ -73,7 +74,8 @@ struct RecurringListView: View {
 
     private func ruleRow(_ rule: RecurringRule) -> some View {
         let t = rule.template
-        return HStack(spacing: 12) {
+        return Button { editingRule = rule } label: {
+            HStack(spacing: 12) {
             Image(systemName: t?.category?.iconName ?? t?.type.systemIcon ?? "arrow.triangle.2.circlepath")
                 .font(.title3)
                 .foregroundStyle(categoryColor(t))
@@ -127,9 +129,10 @@ struct RecurringListView: View {
                 }
             }
         }
+        }
         .padding(.vertical, 2)
         .contentShape(Rectangle())
-        .onTapGesture { editingRule = rule }
+        .buttonStyle(.plain)
         .swipeActions(edge: .trailing) {
             Button {
                 try? appContainer.recurringService.toggleActive(for: rule, context: modelContext)

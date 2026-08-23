@@ -29,28 +29,33 @@ struct MerchantListView: View {
     private func merchantListView(_ merchants: [Merchant], isSearching: Bool) -> some View {
         List {
             if merchants.isEmpty {
-                Text(isSearching ? "无匹配结果" : "暂无商家，点击右上角 + 添加")
-                    .foregroundStyle(Color.designOnSurfaceVariant)
+                ContentUnavailableView(
+                    isSearching ? "无匹配结果" : "暂无商家",
+                    systemImage: "storefront",
+                    description: Text("点击右上角 + 添加商家")
+                )
             }
             ForEach(merchants) { merchant in
-                HStack {
-                    Image(systemName: "storefront")
-                        .foregroundStyle(Color.designSecondary)
-                    VStack(alignment: .leading) {
-                        Text(LocalizedStringKey(merchant.name))
-                        if let cat = merchant.category, !cat.isEmpty {
-                            Text(cat)
-                                .font(.designBodySmall)
-                                .foregroundStyle(Color.designOnSurfaceVariant)
+                Button { editingMerchant = merchant } label: {
+                    HStack {
+                        Image(systemName: "storefront")
+                            .foregroundStyle(Color.designSecondary)
+                        VStack(alignment: .leading) {
+                            Text(LocalizedStringKey(merchant.name))
+                            if let cat = merchant.category, !cat.isEmpty {
+                                Text(cat)
+                                    .font(.designBodySmall)
+                                    .foregroundStyle(Color.designOnSurfaceVariant)
+                            }
+                        }
+                        Spacer()
+                        if !merchant.isActive {
+                            Text("已停用").font(.designBodySmall).foregroundStyle(Color.designOnSurfaceVariant)
                         }
                     }
-                    Spacer()
-                    if !merchant.isActive {
-                        Text("已停用").font(.designBodySmall).foregroundStyle(Color.designOnSurfaceVariant)
-                    }
+                    .contentShape(Rectangle())
                 }
-                .contentShape(Rectangle())
-                .onTapGesture { editingMerchant = merchant }
+                .buttonStyle(.plain)
                 .swipeActions {
                     Button(role: .destructive) {
                         do {
@@ -71,6 +76,7 @@ struct MerchantListView: View {
                 Button { showAddAlert = true } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel(Text("添加商家"))
             }
         }
         .alert("添加商家", isPresented: $showAddAlert) {

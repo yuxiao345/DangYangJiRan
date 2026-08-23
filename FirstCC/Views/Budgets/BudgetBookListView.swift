@@ -25,7 +25,7 @@ struct BudgetBookListView: View {
                     .foregroundStyle(.secondary)
             }
             ForEach(books) { book in
-                NavigationLink(destination: budgetDetailDestination(for: book)) {
+                NavigationLink(value: book.objectID) {
                     bookRow(book)
                 }
                 .swipeActions(edge: .leading) {
@@ -73,6 +73,11 @@ struct BudgetBookListView: View {
         }
         .onChange(of: editingBook) { _, newValue in
             if newValue == nil { reloadBooks() }
+        }
+        .navigationDestination(for: NSManagedObjectID.self) { id in
+            if let book = modelContext.object(with: id) as? BudgetBook {
+                budgetDetailDestination(for: book)
+            }
         }
         .onAppear(perform: loadBooks)
     }

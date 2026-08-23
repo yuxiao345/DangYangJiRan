@@ -1,6 +1,8 @@
 import SwiftUI
+@preconcurrency import CoreData
 
 struct MainTabView: View {
+    @Environment(\.managedObjectContext) private var modelContext
     @State private var selectedTab = 0
 
     var body: some View {
@@ -23,6 +25,11 @@ struct MainTabView: View {
 
             NavigationStack {
                 TransactionListView()
+            }
+            .navigationDestination(for: NSManagedObjectID.self) { id in
+                if let tx = modelContext.object(with: id) as? Transaction {
+                    TransactionDetailView(transaction: tx)
+                }
             }
                 .tabItem {
                     Label("流水", systemImage: "list.bullet")

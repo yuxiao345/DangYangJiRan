@@ -556,7 +556,7 @@ enum ChineseExpressionParser {
         var result = input
         // Remove noise phrases
         for phrase in noisePhrases {
-            result = result.replacingOccurrences(of: phrase, with: "")
+            result = result.replacing(phrase, with: "")
         }
         // "在X上/面" → extract X as keyword
         if let regex = try? NSRegularExpression(pattern: "在(.+?)(?:上|面|方面)"),

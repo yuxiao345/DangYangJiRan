@@ -1389,66 +1389,66 @@ struct AddEditTransactionView: View {
 
     // MARK: - Split Picker
 
+    @ViewBuilder
     private func splitPickerContent(for picker: ActiveSplitPicker) -> some View {
-        guard let idx = splitItems.firstIndex(where: { $0.id == picker.splitItemID }) else {
-            return AnyView(EmptyView())
-        }
-        let item = splitItems[idx]
-        switch picker.field {
-        case .category:
-            return AnyView(SearchablePickerView(
-                title: "选择分类",
-                items: categories,
-                itemLabel: { cat in
-                    let cnt = (cat.children?.count ?? 0)
-                    return cnt > 0 ? "\(cat.name) · 含\(cnt)项" : cat.name
-                },
-                itemIcon: { $0.iconName },
-                itemColor: { Color(hex: $0.colorHex) },
-                recentKey: "recent_split_category",
-                indentLevel: { item in var depth = 0; var p = item.parent; while p != nil { depth += 1; p = p?.parent }; return depth },
-                childrenProvider: { Array($0.children ?? []) },
-                selection: Binding(
-                    get: { splitItems[idx].category },
-                    set: { splitItems[idx].category = $0 }
+        if let idx = splitItems.firstIndex(where: { $0.id == picker.splitItemID }) {
+            let item = splitItems[idx]
+            switch picker.field {
+            case .category:
+                SearchablePickerView(
+                    title: "选择分类",
+                    items: categories,
+                    itemLabel: { cat in
+                        let cnt = (cat.children?.count ?? 0)
+                        return cnt > 0 ? "\(cat.name) · 含\(cnt)项" : cat.name
+                    },
+                    itemIcon: { $0.iconName },
+                    itemColor: { Color(hex: $0.colorHex) },
+                    recentKey: "recent_split_category",
+                    indentLevel: { item in var depth = 0; var p = item.parent; while p != nil { depth += 1; p = p?.parent }; return depth },
+                    childrenProvider: { Array($0.children ?? []) },
+                    selection: Binding(
+                        get: { splitItems[idx].category },
+                        set: { splitItems[idx].category = $0 }
+                    )
                 )
-            ))
-        case .member:
-            return AnyView(SearchablePickerView(
-                title: "选择成员",
-                items: members,
-                itemLabel: { $0.name },
-                itemIcon: { $0.avatar },
-                recentKey: "recent_split_member",
-                selection: Binding(
-                    get: { splitItems[idx].member },
-                    set: { splitItems[idx].member = $0 }
+            case .member:
+                SearchablePickerView(
+                    title: "选择成员",
+                    items: members,
+                    itemLabel: { $0.name },
+                    itemIcon: { $0.avatar },
+                    recentKey: "recent_split_member",
+                    selection: Binding(
+                        get: { splitItems[idx].member },
+                        set: { splitItems[idx].member = $0 }
+                    )
                 )
-            ))
-        case .merchant:
-            return AnyView(SearchablePickerView(
-                title: "选择商家",
-                items: merchants,
-                itemLabel: { $0.name },
-                itemIcon: { _ in "bag" },
-                recentKey: "recent_split_merchant",
-                selection: Binding(
-                    get: { splitItems[idx].merchant },
-                    set: { splitItems[idx].merchant = $0 }
+            case .merchant:
+                SearchablePickerView(
+                    title: "选择商家",
+                    items: merchants,
+                    itemLabel: { $0.name },
+                    itemIcon: { _ in "bag" },
+                    recentKey: "recent_split_merchant",
+                    selection: Binding(
+                        get: { splitItems[idx].merchant },
+                        set: { splitItems[idx].merchant = $0 }
+                    )
                 )
-            ))
-        case .project:
-            return AnyView(SearchablePickerView(
-                title: "选择项目",
-                items: projects,
-                itemLabel: { $0.name },
-                itemIcon: { _ in "folder" },
-                recentKey: "recent_split_project",
-                selection: Binding(
-                    get: { splitItems[idx].project },
-                    set: { splitItems[idx].project = $0 }
+            case .project:
+                SearchablePickerView(
+                    title: "选择项目",
+                    items: projects,
+                    itemLabel: { $0.name },
+                    itemIcon: { _ in "folder" },
+                    recentKey: "recent_split_project",
+                    selection: Binding(
+                        get: { splitItems[idx].project },
+                        set: { splitItems[idx].project = $0 }
+                    )
                 )
-            ))
+            }
         }
     }
 
@@ -1563,6 +1563,8 @@ struct AddEditTransactionView: View {
                     .padding(10)
                     .contentShape(Rectangle())
                     .onTapGesture { toggleLending(item.id) }
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityAction { toggleLending(item.id) }
                 }
                 if !selectedLendingIDs.isEmpty {
                     HStack {
@@ -1626,6 +1628,8 @@ struct AddEditTransactionView: View {
                     .padding(10)
                     .contentShape(Rectangle())
                     .onTapGesture { toggleExpense(expense.id) }
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityAction { toggleExpense(expense.id) }
                 }
 
                 if hiddenCount > 0 {
@@ -1834,7 +1838,7 @@ struct AddEditTransactionView: View {
 
     private func dismissNumpad() {
         if editingDestAmount {
-            destAmount = Decimal(string: destAmountString.replacingOccurrences(of: ",", with: "")) ?? 0
+            destAmount = Decimal(string: destAmountString.replacing(",", with: "")) ?? 0
             editingDestAmount = false
             destAmountString = destAmount != 0 ? CurrencyFormatter.decimalFormatter.string(from: destAmount as NSDecimalNumber) ?? "\(destAmount)" : ""
         }
@@ -1845,12 +1849,12 @@ struct AddEditTransactionView: View {
     }
 
     private func syncAmountFromString() {
-        amount = Decimal(string: amountString.replacingOccurrences(of: ",", with: "")) ?? 0
+        amount = Decimal(string: amountString.replacing(",", with: "")) ?? 0
     }
 
     private func syncSplitAmountToItem() {
         guard let id = selectedSplitItemID, let idx = splitItems.firstIndex(where: { $0.id == id }) else { return }
-        splitItems[idx].amount = Decimal(string: splitAmountString.replacingOccurrences(of: ",", with: "")) ?? 0
+        splitItems[idx].amount = Decimal(string: splitAmountString.replacing(",", with: "")) ?? 0
     }
 
     private func selectSplitItem(_ item: SplitItemDraft) {

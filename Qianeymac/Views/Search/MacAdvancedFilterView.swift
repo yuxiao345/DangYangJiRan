@@ -76,7 +76,7 @@ struct MacAdvancedFilterView: View {
         .onAppear { loadData() }
         .onChange(of: appContainer.currentLedger?.id) { _, _ in loadData() }
         .alert(amountError ?? "", isPresented: .constant(amountError != nil)) {
-            Button("好") { amountError = nil }
+            // System default OK button auto-dismisses the alert.
         } message: {
             Text(amountError ?? "")
         }
@@ -528,6 +528,7 @@ struct MacAdvancedFilterView: View {
 
     // MARK: - Summary (collapsed)
 
+    @ViewBuilder
     private var activeSummary: some View {
         let parts: [String] = {
             var p: [String] = []
@@ -541,13 +542,12 @@ struct MacAdvancedFilterView: View {
             return p
         }()
 
-        if parts.isEmpty { return AnyView(EmptyView()) }
-        return AnyView(
+        if !parts.isEmpty {
             Text(parts.joined(separator: " · "))
                 .font(.designBodySmall)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
-        )
+        }
     }
 
     // MARK: - Data Loading

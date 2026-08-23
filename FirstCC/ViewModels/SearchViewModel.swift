@@ -254,7 +254,7 @@ final class SearchViewModel {
         isSearching = true
         let text = searchText
         searchTask = Task {
-            try? await Task.sleep(nanoseconds: 300_000_000)
+            try? await Task.sleep(for: .milliseconds(300))
             guard !Task.isCancelled else { return }
             performSearch(text: text, context: context)
         }

@@ -57,7 +57,7 @@ struct RefundSheetView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("确认退款") { save() }
-                        .fontWeight(.bold)
+                        .bold()
                         .disabled(amount <= 0 || amountString.isEmpty || amount > maxRefund)
                 }
             }
@@ -285,7 +285,7 @@ struct RefundSheetView: View {
     }
 
     private func syncAmountFromString() {
-        amount = Decimal(string: amountString.replacingOccurrences(of: ",", with: "")) ?? 0
+        amount = Decimal(string: amountString.replacing(",", with: "")) ?? 0
     }
 
     // MARK: - Helpers

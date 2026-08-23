@@ -23,7 +23,7 @@ struct AccountListContent: View {
                     .accessibilityIdentifier("mac-account-list-empty-state")
             } else {
                 ScrollView {
-                    VStack(spacing: 20) {
+                    LazyVStack(spacing: 20) {
                         totalAssetsCard
                             .accessibilityIdentifier("mac-account-list-total-assets-card")
                         accountGroupsView

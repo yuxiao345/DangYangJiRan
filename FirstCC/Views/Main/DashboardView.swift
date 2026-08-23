@@ -56,19 +56,16 @@ struct DashboardView: View {
                     .padding(.bottom, 12)
 
                     if viewModel.recentTransactions.isEmpty {
-                        VStack(spacing: 8) {
-                            Image(systemName: "tray")
-                                .font(.system(size: 40))
-                                .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
-                            Text("本月暂无交易记录")
-                                .font(.designBodyMedium)
-                                .foregroundStyle(Color.designOnSurfaceVariant)
-                        }
-                        .padding(.top, 60)
+                        ContentUnavailableView(
+                            "本月暂无交易记录",
+                            systemImage: "tray",
+                            description: Text("点击右上角 + 开始记一笔")
+                        )
+                        .padding(.top, 40)
                     } else {
                         LazyVStack(spacing: 12) {
                             ForEach(viewModel.recentTransactions, id: \.objectID) { transaction in
-                                NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
+                                NavigationLink(value: transaction.objectID) {
                                     TransactionRowView(transaction: transaction)
                                 }
                                 .buttonStyle(.plain)
@@ -87,6 +84,7 @@ struct DashboardView: View {
                     Button { showAddSheet = true } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityLabel(Text("记一笔"))
                     .accessibilityIdentifier("dashboard-add-tx-button")
                 }
             }
@@ -102,6 +100,11 @@ struct DashboardView: View {
             }
             .sheet(item: $editingTransaction) { transaction in
                 AddEditTransactionView(editing: transaction)
+            }
+            .navigationDestination(for: NSManagedObjectID.self) { id in
+                if let tx = modelContext.object(with: id) as? Transaction {
+                    TransactionDetailView(transaction: tx)
+                }
             }
         }
     }
@@ -140,14 +143,12 @@ struct DashboardView: View {
 
                 if showBreakdown {
                     VStack(alignment: .leading, spacing: 4) {
-                        let assets = viewModel.accountBalances.values.filter { $0 > 0 }.reduce(Decimal.zero, +)
-                        let liabilities = abs(viewModel.accountBalances.values.filter { $0 < 0 }.reduce(Decimal.zero, +))
                         HStack(spacing: 4) {
                             Text("总资产")
                                 .font(.designBodyCaption)
                                 .foregroundStyle(Color.designOnSurfaceVariant)
                                 .frame(width: 36, alignment: .leading)
-                            CurrencyText(amount: assets, currencyCode: ledgerCurrency, size: 11, foregroundColor: Color.designPrimaryFixedDim)
+                            CurrencyText(amount: totalAssets, currencyCode: ledgerCurrency, size: 11, foregroundColor: Color.designPrimaryFixedDim)
                                 .frame(width: 78, alignment: .trailing)
                         }
                         HStack(spacing: 4) {
@@ -155,7 +156,7 @@ struct DashboardView: View {
                                 .font(.designBodyCaption)
                                 .foregroundStyle(Color.designOnSurfaceVariant)
                                 .frame(width: 36, alignment: .leading)
-                            CurrencyText(amount: liabilities, currencyCode: ledgerCurrency, size: 11, foregroundColor: Color.designAccentRed)
+                            CurrencyText(amount: totalLiabilities, currencyCode: ledgerCurrency, size: 11, foregroundColor: Color.designAccentRed)
                                 .frame(width: 78, alignment: .trailing)
                         }
                     }
@@ -375,6 +376,16 @@ struct DashboardView: View {
 
     private var ledgerCurrency: String {
         appContainer.currentLedger?.defaultCurrencyCode ?? "CNY"
+    }
+
+    /// Sum of positive balances (assets). Single-pass reduce over viewModel.accountBalances.
+    private var totalAssets: Decimal {
+        viewModel.accountBalances.values.reduce(Decimal.zero) { $0 + max($1, 0) }
+    }
+
+    /// Sum of negative balances as positive liabilities. Same single-pass reduce.
+    private var totalLiabilities: Decimal {
+        viewModel.accountBalances.values.reduce(Decimal.zero) { $0 + max(-$1, 0) }
     }
 
     private func formatBudgetAmount(_ amount: Decimal) -> String {

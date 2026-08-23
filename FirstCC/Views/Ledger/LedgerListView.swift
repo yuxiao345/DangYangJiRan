@@ -48,6 +48,7 @@ struct LedgerListView: View {
                             .foregroundStyle(Color.designOnSurfaceVariant)
                             .frame(width: 44, height: 44)
                     }
+                    .accessibilityLabel(Text("账本设置"))
                     .buttonStyle(.borderless)
 
                     Image(systemName: "checkmark")
@@ -58,6 +59,12 @@ struct LedgerListView: View {
                 }
                 .contentShape(Rectangle())
                 .onTapGesture { switchLedger(ledger) }
+                // The row has a nested Button (settings gear) so wrapping the
+                // whole HStack in Button would conflict. Expose it to VoiceOver
+                // as a button instead.
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { switchLedger(ledger) }
+                .accessibilityLabel(Text(ledger.name))
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     if ledgers.count > 1 && (!ledger.isShared || appContainer.isOwner(of: ledger)) {
                         Button(role: .destructive) {
@@ -85,6 +92,7 @@ struct LedgerListView: View {
                 Button { showCreateSheet = true } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel(Text("创建账本"))
                 .accessibilityIdentifier("ledger-add-button")
             }
         }

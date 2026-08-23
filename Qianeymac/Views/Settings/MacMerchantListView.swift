@@ -27,10 +27,13 @@ struct MacMerchantListView: View {
             .padding(.bottom, 12)
 
             if merchants.isEmpty {
-                Text("暂无商家")
-                    .foregroundStyle(Color.designOnSurfaceVariant)
-                    .padding(24)
-                    .frame(maxWidth: .infinity)
+                ContentUnavailableView(
+                    "暂无商家",
+                    systemImage: "storefront",
+                    description: Text("点击右上角 + 添加商家")
+                )
+                .padding(24)
+                .frame(maxWidth: .infinity)
             } else {
                 List {
                     ForEach(merchants) { merchant in

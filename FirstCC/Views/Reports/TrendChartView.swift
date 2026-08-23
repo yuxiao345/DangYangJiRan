@@ -59,7 +59,8 @@ struct TrendChartView: View {
         let years = yearSet
         if years.count >= 2 {
             let sorted = years.sorted()
-            return "\(sorted.first!) – \(sorted.last!)"
+            guard let first = sorted.first, let last = sorted.last else { return "" }
+            return "\(first) – \(last)"
         }
         if let y = years.first { return "\(y)" }
         return ""
@@ -142,7 +143,7 @@ struct TrendChartView: View {
                 foregroundColor: color,
                 fractionDigits: 0
             )
-            .fontWeight(.bold)
+            .bold()
             .lineLimit(1)
             .minimumScaleFactor(0.7)
         }

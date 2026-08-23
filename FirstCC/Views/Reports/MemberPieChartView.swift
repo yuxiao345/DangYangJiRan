@@ -90,7 +90,7 @@ struct MemberPieChartView: View {
                 size: 18,
                 foregroundColor: Color.designOnSurface
             )
-            .fontWeight(.bold)
+            .bold()
         }
         .padding(12)
     }
