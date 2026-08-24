@@ -249,7 +249,7 @@ struct ReportDetailContent: View {
                     } label: {
                         Text(viewModel.budgetBookName)
                             .lineLimit(1)
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.designBodyMedium)
                             .foregroundStyle(
                                 bookPickerHighlighted ? Color.designOnSurface : Color.designOnSurfaceVariant.opacity(0.7)
                             )
@@ -292,7 +292,7 @@ struct ReportDetailContent: View {
     private func pickerButton(label: String, isActive: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(label)
-                .font(.system(size: 12, weight: .medium))
+                .font(.designBodyMedium)
                 .foregroundStyle(
                     isActive ? Color.designOnSurface : Color.designOnSurfaceVariant.opacity(0.7)
                 )
@@ -327,7 +327,7 @@ struct ReportDetailContent: View {
                     Text(customRangeLabel)
                 }
             }
-            .font(.system(size: 12, weight: .medium))
+            .font(.designBodySmall)
             .foregroundStyle(
                 isCustomPeriod ? Color.designOnSurface : Color.designOnSurfaceVariant.opacity(0.7)
             )

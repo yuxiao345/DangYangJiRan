@@ -113,7 +113,7 @@ private struct CategoryBarRow: View {
 
                     if !isLeaf {
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 10))
+                            .font(.designLabelSmall)
                             .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
                     }
                 }

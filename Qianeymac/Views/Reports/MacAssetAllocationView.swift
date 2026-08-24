@@ -377,7 +377,7 @@ struct MacAssetAllocationView: View {
                     AxisValueLabel {
                         if let key = value.as(String.self) {
                             Text(axisLabelMap[key] ?? key)
-                                .font(.system(size: 11))
+                                .font(.designBodyCaption)
                                 .foregroundStyle(Color.designOnSurfaceVariant)
                         }
                     }
@@ -390,7 +390,7 @@ struct MacAssetAllocationView: View {
                     AxisValueLabel {
                         if let decimal = value.as(Decimal.self) {
                             Text(CurrencyFormatter.formatAdaptive(amount: decimal, currencyCode: currencyCode))
-                                .font(.system(size: 10, design: .monospaced))
+                                .font(.designMonoDataCompact)
                                 .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
                         }
                     }
@@ -422,7 +422,7 @@ struct MacAssetAllocationView: View {
                                 .frame(width: fillW, height: gaugeH)
                         }
                         Text(ratio, format: .percent.precision(.fractionLength(1)))
-                            .font(.system(size: 9, weight: .bold, design: .monospaced))
+                            .font(.designMicroLabel)
                             .foregroundStyle(ratioColor)
                     }
                     .padding(.horizontal, 7)
@@ -460,9 +460,9 @@ struct MacAssetAllocationView: View {
         } label: {
             HStack(spacing: 5) {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.designBodyCaption)
                 Image(systemName: key.iconName)
-                    .font(.system(size: 11))
+                    .font(.designBodyCaption)
                 Text(key.displayName)
                     .font(.designBodyCaption)
             }
@@ -495,11 +495,11 @@ struct MacAssetAllocationView: View {
     private func annotationText(for item: WaterfallItem) -> some View {
         if item.isSummary {
             Text(CurrencyFormatter.formatAdaptive(amount: item.runningEnd, currencyCode: currencyCode))
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .font(.designLabelSmall)
                 .foregroundStyle(Color.designOnSurfaceVariant)
         } else {
             Text(amountLabel(item.amount))
-                .font(.system(size: 9, design: .monospaced))
+                .font(.designMicroLabel)
                 .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.7))
         }
     }

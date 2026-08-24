@@ -129,4 +129,13 @@ extension Font {
         Font.custom("SpaceGrotesk-Regular", fixedSize: 12)
         #endif
     }()
+
+    /// Micro label — 9pt Regular SpaceGrotesk (macOS only, fixedSize for micro-labels that shouldn't scale)
+    static let designMicroLabel: Font = {
+        #if os(macOS)
+        Font.custom("SpaceGrotesk-Regular", fixedSize: 9)
+        #else
+        Font.custom("SpaceGrotesk-Regular", fixedSize: 9)
+        #endif
+    }()
 }

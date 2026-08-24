@@ -57,7 +57,7 @@ private struct FlipIndicatorModifier: ViewModifier {
             .overlay(alignment: .topTrailing) {
                 if showOnHover ? isHovering : true {
                     Image(systemName: "arrow.triangle.2.circlepath")
-                        .font(.system(size: 9))
+                        .font(.designMicroLabel)
                         .foregroundStyle(Color.designOnSurfaceVariant.opacity(showOnHover ? (isHovering ? 0.6 : 0) : 0.4))
                         .padding(12)
                 }
@@ -233,13 +233,13 @@ struct MacBudgetChartView: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 4) {
                 Image(systemName: "hare.fill").font(.system(size: 9)).foregroundStyle(Color.designAccentRed)
-                Text(String(localized: "超前花费")).font(.system(size: 9, weight: .semibold)).foregroundStyle(Color.designAccentRed)
+                Text(String(localized: "超前花费")).font(.designMicroLabel).foregroundStyle(Color.designAccentRed)
             }
             Text("\(aheadItems.count) \(String(localized: "项"))")
                 .font(.system(size: 18, weight: .bold, design: .monospaced))
                 .foregroundStyle(Color.designAccentRed)
             if aheadItems.isEmpty {
-                Text(String(localized: "暂无")).font(.system(size: 9)).foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
+                Text(String(localized: "暂无")).font(.designMicroLabel).foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
             } else {
                 Text(aheadItems.prefix(3).map(\.name).joined(separator: "、"))
                     .font(.system(size: 8)).foregroundStyle(Color.designOnSurfaceVariant).lineLimit(2)
@@ -256,13 +256,13 @@ struct MacBudgetChartView: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 4) {
                 Image(systemName: "tortoise.fill").font(.system(size: 9)).foregroundStyle(Color.blue)
-                Text(String(localized: "节奏可控")).font(.system(size: 9, weight: .semibold)).foregroundStyle(Color.blue)
+                Text(String(localized: "节奏可控")).font(.designMicroLabel).foregroundStyle(Color.blue)
             }
             Text("\(controlledItems.count) \(String(localized: "项"))")
                 .font(.system(size: 18, weight: .bold, design: .monospaced))
                 .foregroundStyle(Color.blue)
             if controlledItems.isEmpty {
-                Text(String(localized: "暂无")).font(.system(size: 9)).foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
+                Text(String(localized: "暂无")).font(.designMicroLabel).foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
             } else {
                 Text(controlledItems.prefix(3).map(\.name).joined(separator: "、"))
                     .font(.system(size: 8)).foregroundStyle(Color.designOnSurfaceVariant).lineLimit(2)
@@ -298,12 +298,12 @@ struct MacBudgetChartView: View {
     private var burnRateFront: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(String(localized: "消耗速率"))
-                .font(.system(size: 9, weight: .semibold))
+                .font(.designMicroLabel)
                 .foregroundStyle(Color.designOnSurfaceVariant)
 
             if burnRateData.isEmpty {
                 Text(String(localized: "暂无数据"))
-                    .font(.system(size: 9))
+                    .font(.designMicroLabel)
                     .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.vertical, 8)
@@ -343,12 +343,12 @@ struct MacBudgetChartView: View {
     private var burnRateBack: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(String(localized: "消耗分析"))
-                .font(.system(size: 9, weight: .semibold))
+                .font(.designMicroLabel)
                 .foregroundStyle(Color.designOnSurfaceVariant)
 
             if burnRateData.isEmpty {
                 Text(String(localized: "暂无数据"))
-                    .font(.system(size: 9))
+                    .font(.designMicroLabel)
                     .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -407,10 +407,10 @@ struct MacBudgetChartView: View {
                 .frame(width: 12)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(.designMicroLabel)
                     .foregroundStyle(Color.designOnSurfaceVariant)
                 Text(body)
-                    .font(.system(size: 9))
+                    .font(.designMicroLabel)
                     .foregroundStyle(Color.designOnSurface.opacity(0.85))
                     .lineLimit(3)
             }
@@ -443,12 +443,12 @@ struct MacBudgetChartView: View {
                     .foregroundStyle(Color.designOnSurfaceVariant)
                 Spacer()
                 Text(s.timeProgress, format: .percent.precision(.fractionLength(1)))
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(.designLabelSmall)
                     .foregroundStyle(Color.designPrimaryFixedDim)
             }
             PixelProgressBar(progress: min(animTimeProgress, 1.0), tint: Color.designPrimaryFixedDim.opacity(0.5), totalBlocks: 16)
             Text("\(s.elapsedDays) / \(s.totalDays) \(String(localized: "天"))")
-                .font(.system(size: 9, design: .monospaced))
+                .font(.designMicroLabel)
                 .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
         }
     }
@@ -463,12 +463,12 @@ struct MacBudgetChartView: View {
                     .foregroundStyle(Color.designOnSurfaceVariant)
                 Spacer()
                 Text(s.budgetProgress, format: .percent.precision(.fractionLength(1)))
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(.designLabelSmall)
                     .foregroundStyle(s.isOnTrack ? Color.blue : Color.designAccentRed)
             }
             PixelProgressBar(progress: min(animBudgetProgress, 1.0), tint: s.isOnTrack ? .blue : Color.designAccentRed)
             Text("\(spentStr) / \(budgetStr)")
-                .font(.system(size: 9, design: .monospaced))
+                .font(.designMicroLabel)
                 .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
         }
     }
@@ -633,7 +633,7 @@ private struct BudgetCardView: View {
                     foregroundColor: Color.designOnSurfaceVariant.opacity(0.7), fractionDigits: 0)
                 Spacer(minLength: 4)
                 Text(item.percentage, format: .percent.precision(.fractionLength(0)))
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.designMonoDataCompact)
                     .foregroundStyle(item.isOverBudget ? Color.designAccentRed : Color.designOnSurfaceVariant)
             }
 
@@ -663,7 +663,7 @@ private struct BudgetCardView: View {
                     .lineLimit(1)
                 Spacer()
                 Text(String(localized: "趋势"))
-                    .font(.system(size: 9)).foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+                    .font(.designMicroLabel).foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
             }
 
             // Mini trend chart (rolling average, animated)
@@ -701,7 +701,7 @@ private struct BudgetCardView: View {
             } else {
                 VStack(spacing: 4) {
                     Image(systemName: "chart.line.uptrend.xyaxis").font(.system(size: 24)).opacity(0.2)
-                    Text(String(localized: "暂无趋势数据")).font(.system(size: 9)).foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
+                    Text(String(localized: "暂无趋势数据")).font(.designMicroLabel).foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -719,10 +719,10 @@ private struct BudgetCardView: View {
     private var cardTimeBar: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack {
-                Text(String(localized: "时间")).font(.system(size: 9)).foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
+                Text(String(localized: "时间")).font(.designMicroLabel).foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
                 Spacer()
                 Text(item.timeProgress, format: .percent.precision(.fractionLength(0)))
-                    .font(.system(size: 9, design: .monospaced)).foregroundStyle(Color.designPrimaryFixedDim.opacity(0.6))
+                    .font(.designMicroLabel).foregroundStyle(Color.designPrimaryFixedDim.opacity(0.6))
             }
             PixelProgressBar(progress: min(animTime, 1.0), tint: Color.designPrimaryFixedDim.opacity(0.4), totalBlocks: 12)
         }
@@ -735,10 +735,10 @@ private struct BudgetCardView: View {
         let budgetStr = CurrencyFormatter.formatDecimal(amount: item.budgetAmount, fractionDigits: 0)
         return VStack(alignment: .leading, spacing: 2) {
             HStack {
-                Text(String(localized: "预算")).font(.system(size: 9)).foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
+                Text(String(localized: "预算")).font(.designMicroLabel).foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
                 Spacer()
                 Text("\(spentStr) / \(budgetStr)")
-                    .font(.system(size: 9, design: .monospaced)).foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
+                    .font(.designMicroLabel).foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
             }
             PixelProgressBar(progress: min(animBudget, 1.0),
                 tint: item.isOverBudget ? Color.designAccentRed : (Color(hex: item.colorHex) ?? .gray))
@@ -756,11 +756,11 @@ private struct BudgetCardView: View {
                 .font(.system(size: 9))
                 .foregroundStyle(isOnTrack ? Color.blue : Color.designAccentRed)
             Text(item.paceLabel)
-                .font(.system(size: 9))
+                .font(.designMicroLabel)
                 .foregroundStyle(isOnTrack ? Color.blue : Color.designAccentRed)
             Spacer(minLength: 4)
             Text(item.suggestionText)
-                .font(.system(size: 9))
+                .font(.designMicroLabel)
                 .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.7))
                 .lineLimit(1)
         }

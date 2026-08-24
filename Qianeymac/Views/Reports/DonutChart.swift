@@ -235,7 +235,7 @@ struct GlassPillToggle: View {
                     }
                 } label: {
                     Text(type == .expense ? String(localized: "支出") : String(localized: "收入"))
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.designBodyMedium)
                         .foregroundStyle(
                             selection == type
                                 ? Color.designOnSurface

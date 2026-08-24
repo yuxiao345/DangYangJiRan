@@ -176,14 +176,14 @@ private struct SunburstCenter: View {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 8, weight: .semibold))
                             Text(String(localized: "返回"))
-                                .font(.system(size: 9, weight: .medium))
+                                .font(.designMicroLabel)
                         }
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(Color.designPrimaryFixedDim)
                 } else {
                     Text(label)
-                        .font(.system(size: 9))
+                        .font(.designMicroLabel)
                         .foregroundStyle(Color.designOnSurfaceVariant)
                 }
 

@@ -224,7 +224,7 @@ struct MacTrendChartView: View {
                     .lineStyle(StrokeStyle(lineWidth: 1))
                     .annotation(position: .top, alignment: .top) {
                         Text(selected)
-                            .font(.system(size: 10))
+                            .font(.designLabelSmall)
                             .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
                     }
             }
@@ -294,14 +294,14 @@ struct MacTrendChartView: View {
         let n = net(for: dp)
         VStack(alignment: .leading, spacing: 4) {
             Text(dp.label)
-                .font(.system(size: 10, weight: .semibold))
+                .font(.designLabelSmall)
                 .foregroundStyle(Color.designOnSurfaceVariant)
                 .padding(.bottom, 2)
             if showIncome {
                 HStack(spacing: 4) {
                     Circle().fill(Color.designPrimaryFixedDim).frame(width: 5, height: 5)
                     Text("\(CurrencyFormatter.formatDecimal(amount: dp.income, fractionDigits: 0))")
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(.designMonoDataCompact)
                         .foregroundStyle(Color.designPrimaryFixedDim)
                 }
             }
@@ -309,7 +309,7 @@ struct MacTrendChartView: View {
                 HStack(spacing: 4) {
                     Circle().fill(Color.designAccentRed).frame(width: 5, height: 5)
                     Text("\(CurrencyFormatter.formatDecimal(amount: dp.expense, fractionDigits: 0, showAbs: true))")
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(.designMonoDataCompact)
                         .foregroundStyle(Color.designAccentRed)
                 }
             }

@@ -109,7 +109,7 @@ struct MacDimensionChartView: View {
                         }
                     } label: {
                         Text(dim.label)
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.designBodyMedium)
                             .foregroundStyle(
                                 selectedDimension == dim
                                     ? Color.designOnSurface

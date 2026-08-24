@@ -263,14 +263,14 @@ struct MacAssetChartView: View {
     private func assetTooltip(_ dp: AssetDataPoint) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(dp.label)
-                .font(.system(size: 10, weight: .semibold))
+                .font(.designLabelSmall)
                 .foregroundStyle(Color.designOnSurfaceVariant)
                 .padding(.bottom, 2)
             if showAssets {
                 HStack(spacing: 4) {
                     Circle().fill(Color.designPrimaryFixedDim).frame(width: 5, height: 5)
                     Text("\(CurrencyFormatter.formatDecimal(amount: dp.totalAssets, fractionDigits: 0))")
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(.designMonoDataCompact)
                         .foregroundStyle(Color.designPrimaryFixedDim)
                 }
             }
@@ -278,7 +278,7 @@ struct MacAssetChartView: View {
                 HStack(spacing: 4) {
                     Circle().fill(Color.designAccentRed).frame(width: 5, height: 5)
                     Text("\(CurrencyFormatter.formatDecimal(amount: dp.totalLiabilities, fractionDigits: 0))")
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(.designMonoDataCompact)
                         .foregroundStyle(Color.designAccentRed)
                 }
             }
