@@ -133,6 +133,7 @@ struct DonutChart: View {
             .position(center)
             .accessibilityLabel(Text("展开分类 \(index)"))
             .accessibilityAddTraits(.isButton)
+            .buttonStyle(.plain)
             .onTapGesture {
                 withAnimation(reduceMotion ? .none : .spring(response: 0.45, dampingFraction: 0.65)) {
                     explodedIndex = (explodedIndex == index) ? nil : index
@@ -145,7 +146,7 @@ struct DonutChart: View {
     private var centerLabel: some View {
         VStack(spacing: 2) {
             Text(centerTitle)
-                .font(.system(size: 12, weight: .medium))
+                .font(.designBodySmall)
                 .foregroundStyle(Color.designOnSurfaceVariant)
             CurrencyText(amount: totalExpense, currencyCode: "", size: 20, foregroundColor: Color.designOnSurface, fractionDigits: 0)
                 .fontWeight(.black)
@@ -172,17 +173,17 @@ struct DonutChart: View {
                     Divider()
                     VStack(alignment: .leading, spacing: 4) {
                         Text(String(localized: "金额"))
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.designBodyCaption)
                             .foregroundStyle(Color.designOnSurfaceVariant)
                         CurrencyText(amount: item.amount, currencyCode: "", size: 18, foregroundColor: Color.designOnSurface)
                             .bold()
                     }
                     VStack(alignment: .leading, spacing: 4) {
                         Text(String(localized: "占比"))
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.designBodyCaption)
                             .foregroundStyle(Color.designOnSurfaceVariant)
                         Text(item.percentage, format: .percent.precision(.fractionLength(1)))
-                            .font(.system(size: 20, weight: .bold, design: .monospaced))
+                            .font(.designMonoData)
                             .foregroundStyle(Color.designOnSurface)
                     }
                 }

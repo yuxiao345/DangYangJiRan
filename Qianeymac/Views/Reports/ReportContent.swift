@@ -51,6 +51,7 @@ struct ReportDetailContent: View {
 
     @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var viewModel = ReportViewModel()
     @State private var showCustomRange = false
@@ -66,6 +67,17 @@ struct ReportDetailContent: View {
 
     private static var defaultStartDate: Date {
         Calendar.current.date(byAdding: .month, value: -12, to: .now) ?? Date()
+    }
+
+    /// Animates the given closure unless accessibility reduce motion is enabled.
+    private func animating(_ body: () -> Void) {
+        if reduceMotion {
+            body()
+        } else {
+            animating {
+                body()
+            }
+        }
     }
 
     var body: some View {
@@ -186,7 +198,7 @@ struct ReportDetailContent: View {
                         label: option.label,
                         isActive: viewModel.allocationFilter == option,
                         action: {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            animating {
                                 viewModel.allocationFilter = option
                             }
                         }
@@ -198,7 +210,7 @@ struct ReportDetailContent: View {
                         label: dim.label,
                         isActive: viewModel.budgetViewDimension == dim,
                         action: {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            animating {
                                 viewModel.budgetViewDimension = dim
                             }
                         }
@@ -217,11 +229,11 @@ struct ReportDetailContent: View {
                             Button {
                                 bookPickerHighlighted = true
                                 viewModel.selectedBudgetBookID = book.id
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                animating {
                                     viewModel.budgetViewDimension = .overall
                                 }
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    animating {
                                         bookPickerHighlighted = false
                                     }
                                 }
@@ -299,7 +311,7 @@ struct ReportDetailContent: View {
                 label: period.label,
                 isActive: viewModel.selectedPeriod == period && !isCustomPeriod,
                 action: {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    animating {
                         viewModel.selectedPeriod = period
                     }
                 }

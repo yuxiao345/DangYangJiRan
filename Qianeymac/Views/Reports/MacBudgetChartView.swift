@@ -49,6 +49,7 @@ private extension View {
 
 private struct FlipIndicatorModifier: ViewModifier {
     let showOnHover: Bool
+    let reduceMotion: Bool
     @State private var isHovering = false
 
     func body(content: Content) -> some View {
@@ -62,6 +63,7 @@ private struct FlipIndicatorModifier: ViewModifier {
                 }
             }
             .onContinuousHover { phase in
+                guard !reduceMotion else { return }
                 switch phase {
                 case .active:
                     withAnimation(.easeInOut(duration: 0.15)) { isHovering = true }
@@ -73,8 +75,8 @@ private struct FlipIndicatorModifier: ViewModifier {
 }
 
 private extension View {
-    func flipIndicator(showOnHover: Bool = false) -> some View {
-        modifier(FlipIndicatorModifier(showOnHover: showOnHover))
+    func flipIndicator(showOnHover: Bool = false, reduceMotion: Bool = false) -> some View {
+        modifier(FlipIndicatorModifier(showOnHover: showOnHover, reduceMotion: reduceMotion))
     }
 }
 
@@ -287,6 +289,7 @@ struct MacBudgetChartView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .rotation3DEffect(.degrees(reduceMotion ? 0 : (isBurnRateFlipped ? 180 : 0)), axis: (x: 0, y: 1, z: 0))
         .animation(reduceMotion ? .none : .spring(response: 0.5, dampingFraction: 0.7), value: isBurnRateFlipped)
+        .buttonStyle(.plain)
         .accessibilityLabel(Text("翻转查看消耗速率详情"))
         .accessibilityAddTraits(.isButton)
         .onTapGesture { withAnimation(reduceMotion ? .none : .spring(response: 0.5, dampingFraction: 0.7)) { isBurnRateFlipped.toggle() } }
@@ -311,7 +314,7 @@ struct MacBudgetChartView: View {
         .padding(12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .glassCard(cornerRadius: 14)
-        .flipIndicator(showOnHover: true)
+        .flipIndicator(showOnHover: true, reduceMotion: reduceMotion)
         .onChange(of: burnRateData.map(\.id)) { _, _ in
             burnRateTask?.cancel()
             burnRateRevealProgress = 0
@@ -355,7 +358,7 @@ struct MacBudgetChartView: View {
         .padding(12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .glassCard(cornerRadius: 14)
-        .flipIndicator(showOnHover: true)
+        .flipIndicator(showOnHover: true, reduceMotion: reduceMotion)
     }
 
     // MARK: - Burn Rate Analysis Content
@@ -550,6 +553,7 @@ private struct BudgetCardView: View {
         .frame(height: cardHeight)
         .rotation3DEffect(.degrees(reduceMotion ? 0 : (isFlipped ? 180 : 0)), axis: (x: 0, y: 1, z: 0))
         .animation(reduceMotion ? .none : .spring(response: 0.5, dampingFraction: 0.7), value: isFlipped)
+        .buttonStyle(.plain)
         .accessibilityLabel(Text("翻转查看预算执行详情"))
         .accessibilityAddTraits(.isButton)
         .onTapGesture { withAnimation(reduceMotion ? .none : .spring(response: 0.5, dampingFraction: 0.7)) { isFlipped.toggle() } }
@@ -641,7 +645,7 @@ private struct BudgetCardView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .glassCard(cornerRadius: 14)
         .hoverTilt(reduceMotion: reduceMotion)
-        .flipIndicator(showOnHover: true)
+        .flipIndicator(showOnHover: true, reduceMotion: reduceMotion)
     }
 
     // MARK: - Back: Trend Chart + Pace

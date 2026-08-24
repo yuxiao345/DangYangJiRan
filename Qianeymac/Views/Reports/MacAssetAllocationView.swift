@@ -32,6 +32,7 @@ struct MacAssetAllocationView: View {
     @State private var drilled: DrillKey?
 
     @Environment(AppContainer.self) private var appContainer
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var currencyCode: String { appContainer.currentCurrencyCode }
 
@@ -264,6 +265,17 @@ struct MacAssetAllocationView: View {
         Dictionary(waterfallData.map { ($0.axisKey, $0.label) }, uniquingKeysWith: { first, _ in first })
     }
 
+    // MARK: - Animation
+
+    /// Wraps withAnimation to respect accessibilityReduceMotion.
+    private func withMotionAnimation(_ animation: Animation? = .default, _ body: @escaping () -> Void) {
+        if reduceMotion {
+            body()
+        } else {
+            withAnimation(animation, body)
+        }
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -286,7 +298,7 @@ struct MacAssetAllocationView: View {
     private func handleSelection(_ axisKey: String?) {
         guard drilled == nil, let axisKey else { return }
         if let node = aggregatedNodes().first(where: { $0.id == axisKey && $0.drillKey != nil }) {
-            withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+            withMotionAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
                 drilled = node.drillKey
             }
         }
@@ -444,7 +456,7 @@ struct MacAssetAllocationView: View {
     /// L2 面包屑：图表内玻璃按钮，点击返回类型聚合视图
     private func breadcrumbBar(_ key: DrillKey) -> some View {
         Button {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { drilled = nil }
+            withMotionAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { drilled = nil }
         } label: {
             HStack(spacing: 5) {
                 Image(systemName: "chevron.left")
@@ -610,7 +622,7 @@ struct MacAssetAllocationView: View {
             total: displayTotal,
             onSelect: { node in
                 if let key = node.drillKey, drilled == nil {
-                    withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                    withMotionAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
                         drilled = key
                     }
                 }
@@ -668,7 +680,7 @@ struct MacAssetAllocationView: View {
                 .position(x: cellX + cellW / 2, y: cellY + cellH / 2)
                 .onTapGesture {
                     if let key = item.drillKey {
-                        withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) { drilled = key }
+                        withMotionAnimation(.spring(response: 0.45, dampingFraction: 0.8)) { drilled = key }
                     }
                 }
                 .onHover { hovering in
@@ -726,7 +738,7 @@ struct MacAssetAllocationView: View {
             .frame(width: cellW, height: cellH)
             .position(x: cellX + cellW / 2, y: cellY + cellH / 2)
             .opacity(barProgress > 0 ? 1 : 0)
-            .animation(.spring(response: 0.6, dampingFraction: 0.65).delay(Double(treemapRects.firstIndex(where: { $0.id == rect.id }) ?? 0) * 0.05), value: barProgress)
+            .animation(reduceMotion ? nil : .spring(response: 0.6, dampingFraction: 0.65).delay(Double(treemapRects.firstIndex(where: { $0.id == rect.id }) ?? 0) * 0.05), value: barProgress)
             .allowsHitTesting(false)
         }
     }
@@ -739,13 +751,13 @@ struct MacAssetAllocationView: View {
         hoveredBar = nil
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+            withMotionAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
                 animTrigger = true
             }
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.65)) {
+            withMotionAnimation(.spring(response: 0.6, dampingFraction: 0.65)) {
                 barProgress = 1
             }
         }
