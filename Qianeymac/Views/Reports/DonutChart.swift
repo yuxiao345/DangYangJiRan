@@ -43,6 +43,8 @@ struct DonutChart: View {
     @Binding var explodedIndex: Int?
     @Binding var hoveredIndex: Int?
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private let explodeDistance: CGFloat = 14
 
     var body: some View {
@@ -75,8 +77,8 @@ struct DonutChart: View {
             .padding(.horizontal, 12)
             .padding(.bottom, 16)
         }
-        .animation(.spring(response: 0.45, dampingFraction: 0.65), value: explodedIndex)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: hoveredIndex)
+        .animation(reduceMotion ? .none : .spring(response: 0.45, dampingFraction: 0.65), value: explodedIndex)
+        .animation(reduceMotion ? .none : .spring(response: 0.3, dampingFraction: 0.7), value: hoveredIndex)
     }
 
     // MARK: - Top Bar
@@ -125,14 +127,14 @@ struct DonutChart: View {
             .shadow(color: isHighlighted ? .black.opacity(0.25) : .clear,
                     radius: isHighlighted ? 8 : 0,
                     y: isHighlighted ? 4 : 0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: hoveredIndex)
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: explodedIndex)
+            .animation(reduceMotion ? .none : .spring(response: 0.3, dampingFraction: 0.7), value: hoveredIndex)
+            .animation(reduceMotion ? .none : .spring(response: 0.3, dampingFraction: 0.7), value: explodedIndex)
             .frame(width: radius * 2, height: radius * 2)
             .position(center)
             .accessibilityLabel(Text("展开分类 \(index)"))
             .accessibilityAddTraits(.isButton)
             .onTapGesture {
-                withAnimation(.spring(response: 0.45, dampingFraction: 0.65)) {
+                withAnimation(reduceMotion ? .none : .spring(response: 0.45, dampingFraction: 0.65)) {
                     explodedIndex = (explodedIndex == index) ? nil : index
                 }
             }

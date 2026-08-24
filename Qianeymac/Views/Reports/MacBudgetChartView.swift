@@ -13,18 +13,20 @@ private final class CardHoverState {
 // MARK: - Reusable Hover Tilt Modifier
 
 private struct HoverTiltModifier: ViewModifier {
+    let reduceMotion: Bool
     @State private var hover = CardHoverState()
 
     func body(content: Content) -> some View {
         content
             .rotation3DEffect(
-                .degrees(hover.isHovering ? 3 : 0),
+                .degrees(reduceMotion ? 0 : (hover.isHovering ? 3 : 0)),
                 axis: (x: -hover.mouseOffset.y / 30, y: hover.mouseOffset.x / 30, z: 0)
             )
-            .offset(x: hover.isHovering ? hover.mouseOffset.x / 25 : 0,
-                    y: hover.isHovering ? hover.mouseOffset.y / 25 : 0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: hover.isHovering)
+            .offset(x: reduceMotion ? 0 : (hover.isHovering ? hover.mouseOffset.x / 25 : 0),
+                    y: reduceMotion ? 0 : (hover.isHovering ? hover.mouseOffset.y / 25 : 0))
+            .animation(reduceMotion ? .none : .spring(response: 0.3, dampingFraction: 0.7), value: hover.isHovering)
             .onContinuousHover { phase in
+                guard !reduceMotion else { return }
                 switch phase {
                 case .active(let location):
                     if !hover.isHovering { hover.isHovering = true }
@@ -38,8 +40,8 @@ private struct HoverTiltModifier: ViewModifier {
 }
 
 private extension View {
-    func hoverTilt() -> some View {
-        modifier(HoverTiltModifier())
+    func hoverTilt(reduceMotion: Bool) -> some View {
+        modifier(HoverTiltModifier(reduceMotion: reduceMotion))
     }
 }
 
@@ -85,7 +87,9 @@ struct MacBudgetChartView: View {
     @Binding var selectedBookID: UUID?
     @Binding var dimension: BudgetViewDimension
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var expandedCardIDs: Set<UUID> = []
+    @State private var burnRateTask: Task<Void, Never>?
     @State private var animTimeProgress: Double = 0
     @State private var animBudgetProgress: Double = 0
     @State private var burnRateRevealProgress: Double = 0
@@ -220,7 +224,7 @@ struct MacBudgetChartView: View {
         .padding(14)
         .frame(maxWidth: .infinity)
         .glassCard(cornerRadius: 14)
-        .hoverTilt()
+        .hoverTilt(reduceMotion: reduceMotion)
     }
 
     private var aheadCard: some View {
@@ -243,7 +247,7 @@ struct MacBudgetChartView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 87)
         .glassCard(cornerRadius: 14)
-        .hoverTilt()
+        .hoverTilt(reduceMotion: reduceMotion)
     }
 
     private var controlledCard: some View {
@@ -266,7 +270,7 @@ struct MacBudgetChartView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 87)
         .glassCard(cornerRadius: 14)
-        .hoverTilt()
+        .hoverTilt(reduceMotion: reduceMotion)
     }
 
     // MARK: - Burn Rate Card (📶 消耗速率，支持翻转)
@@ -281,11 +285,11 @@ struct MacBudgetChartView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .rotation3DEffect(.degrees(isBurnRateFlipped ? 180 : 0), axis: (x: 0, y: 1, z: 0))
-        .animation(.spring(response: 0.5, dampingFraction: 0.7), value: isBurnRateFlipped)
+        .rotation3DEffect(.degrees(reduceMotion ? 0 : (isBurnRateFlipped ? 180 : 0)), axis: (x: 0, y: 1, z: 0))
+        .animation(reduceMotion ? .none : .spring(response: 0.5, dampingFraction: 0.7), value: isBurnRateFlipped)
         .accessibilityLabel(Text("翻转查看消耗速率详情"))
         .accessibilityAddTraits(.isButton)
-        .onTapGesture { withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) { isBurnRateFlipped.toggle() } }
+        .onTapGesture { withAnimation(reduceMotion ? .none : .spring(response: 0.5, dampingFraction: 0.7)) { isBurnRateFlipped.toggle() } }
     }
 
     private var burnRateFront: some View {
@@ -308,15 +312,26 @@ struct MacBudgetChartView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .glassCard(cornerRadius: 14)
         .flipIndicator(showOnHover: true)
-        .task {
+        .onChange(of: burnRateData.map(\.id)) { _, _ in
+            burnRateTask?.cancel()
             burnRateRevealProgress = 0
-            DispatchQueue.main.async {
-                withAnimation(.easeOut(duration: 4.0)) { burnRateRevealProgress = 1 }
+            if reduceMotion {
+                burnRateRevealProgress = 1
+            } else {
+                burnRateTask = Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(50))
+                    guard !Task.isCancelled else { return }
+                    withAnimation(.easeOut(duration: 4.0)) { burnRateRevealProgress = 1 }
+                }
             }
         }
-        .onChange(of: burnRateData.map(\.id)) { _, _ in
+        .task {
             burnRateRevealProgress = 0
-            DispatchQueue.main.async {
+            if reduceMotion {
+                burnRateRevealProgress = 1
+            } else {
+                try? await Task.sleep(for: .milliseconds(50))
+                guard !Task.isCancelled else { return }
                 withAnimation(.easeOut(duration: 4.0)) { burnRateRevealProgress = 1 }
             }
         }
@@ -513,11 +528,13 @@ private struct BudgetCardView: View {
     let dimension: BudgetViewDimension
     let onTap: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isFlipped = false
     @State private var animTime: Double = 0
     @State private var animBudget: Double = 0
     @State private var trendLineProgress: CGFloat = 0
     @State private var trendAreaProgress: CGFloat = 0
+    @State private var trendTask: Task<Void, Never>?
 
     private let cardHeight: CGFloat = 172
 
@@ -531,11 +548,11 @@ private struct BudgetCardView: View {
             }
         }
         .frame(height: cardHeight)
-        .rotation3DEffect(.degrees(isFlipped ? 180 : 0), axis: (x: 0, y: 1, z: 0))
-        .animation(.spring(response: 0.5, dampingFraction: 0.7), value: isFlipped)
+        .rotation3DEffect(.degrees(reduceMotion ? 0 : (isFlipped ? 180 : 0)), axis: (x: 0, y: 1, z: 0))
+        .animation(reduceMotion ? .none : .spring(response: 0.5, dampingFraction: 0.7), value: isFlipped)
         .accessibilityLabel(Text("翻转查看预算执行详情"))
         .accessibilityAddTraits(.isButton)
-        .onTapGesture { withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) { isFlipped.toggle() } }
+        .onTapGesture { withAnimation(reduceMotion ? .none : .spring(response: 0.5, dampingFraction: 0.7)) { isFlipped.toggle() } }
         .onChange(of: isFlipped) { _, flipped in
             if flipped { startTrendAnimation() } else { animateIn() }
         }
@@ -547,19 +564,33 @@ private struct BudgetCardView: View {
     }
 
     private func animateIn() {
+        trendTask?.cancel()
         animTime = 0
         animBudget = 0
-        withAnimation(.spring(response: 0.7, dampingFraction: 0.65)) {
+        if reduceMotion {
             animTime = item.timeProgress
             animBudget = item.percentage
+        } else {
+            withAnimation(.spring(response: 0.7, dampingFraction: 0.65)) {
+                animTime = item.timeProgress
+                animBudget = item.percentage
+            }
         }
     }
 
     private func startTrendAnimation() {
+        trendTask?.cancel()
+        if reduceMotion {
+            trendLineProgress = 1
+            trendAreaProgress = 1
+            return
+        }
         trendLineProgress = 0
         trendAreaProgress = 0
         withAnimation(.easeOut(duration: 1.2)) { trendLineProgress = 1 }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+        trendTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(1200))
+            guard !Task.isCancelled else { return }
             withAnimation(.easeOut(duration: 0.6)) { trendAreaProgress = 1 }
         }
     }
@@ -609,7 +640,7 @@ private struct BudgetCardView: View {
         .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .glassCard(cornerRadius: 14)
-        .hoverTilt()
+        .hoverTilt(reduceMotion: reduceMotion)
         .flipIndicator(showOnHover: true)
     }
 

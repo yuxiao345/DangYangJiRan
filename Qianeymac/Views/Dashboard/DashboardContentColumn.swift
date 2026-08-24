@@ -5,6 +5,7 @@ import Charts
 struct DashboardContentColumn: View {
     @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var navigationPath: Binding<NavigationPath>
     @State private var viewModel = DashboardViewModel(
         accountService: AccountServiceImpl(), transactionService: TransactionServiceImpl()
@@ -63,9 +64,13 @@ struct DashboardContentColumn: View {
         .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in loadAll() }
         .onChange(of: appContainer.currentLedger?.id) { _, _ in loadAll() }
         .onChange(of: categoryPieTrigger) { _, _ in
-            Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(50))
-                withAnimation(.easeOut(duration: 0.9)) { categoryPieProgress = 1 }
+            if reduceMotion {
+                categoryPieProgress = 1
+            } else {
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(50))
+                    withAnimation(.easeOut(duration: 0.9)) { categoryPieProgress = 1 }
+                }
             }
         }
         .sheet(isPresented: $showBudgetDetail) {
@@ -99,13 +104,21 @@ struct DashboardContentColumn: View {
         viewModel.copyFrom(vm)
 
         let maxRef = max(abs(viewModel.monthlyIncome), abs(viewModel.monthlyExpense))
-        let anim = Animation.spring(response: 0.8, dampingFraction: 0.65)
-        withAnimation(anim) {
+        if reduceMotion {
             animIncomeFrac = maxRef > 0 ? Double(truncating: (abs(viewModel.monthlyIncome) / maxRef) as NSNumber) : 0
             animExpenseFrac = maxRef > 0 ? Double(truncating: (abs(viewModel.monthlyExpense) / maxRef) as NSNumber) : 0
             animBalanceFrac = maxRef > 0 ? Double(truncating: (abs(viewModel.monthlyIncome + viewModel.monthlyExpense) / maxRef) as NSNumber) : 0
             let limit = viewModel.budgetLimit
             animBudgetPercent = limit > 0 ? Double(truncating: (viewModel.budgetSpent / limit) as NSNumber) : 0
+        } else {
+            let anim = Animation.spring(response: 0.8, dampingFraction: 0.65)
+            withAnimation(anim) {
+                animIncomeFrac = maxRef > 0 ? Double(truncating: (abs(viewModel.monthlyIncome) / maxRef) as NSNumber) : 0
+                animExpenseFrac = maxRef > 0 ? Double(truncating: (abs(viewModel.monthlyExpense) / maxRef) as NSNumber) : 0
+                animBalanceFrac = maxRef > 0 ? Double(truncating: (abs(viewModel.monthlyIncome + viewModel.monthlyExpense) / maxRef) as NSNumber) : 0
+                let limit = viewModel.budgetLimit
+                animBudgetPercent = limit > 0 ? Double(truncating: (viewModel.budgetSpent / limit) as NSNumber) : 0
+            }
         }
 
         // Animate category pie
@@ -134,7 +147,7 @@ struct DashboardContentColumn: View {
                             .foregroundStyle(Color.designOnSurfaceVariant)
                             .tracking(0.4)
                         Button {
-                            withAnimation(.easeInOut(duration: 0.2)) { showNetWorth.toggle() }
+                            withAnimation(reduceMotion ? .none : .easeInOut(duration: 0.2)) { showNetWorth.toggle() }
                         } label: {
                             Image(systemName: showNetWorth ? "eye" : "eye.slash")
                                 .font(.system(size: 13, weight: .medium))
@@ -263,7 +276,7 @@ struct DashboardContentColumn: View {
         .glassCard(cornerRadius: 16)
         .contentShape(RoundedRectangle(cornerRadius: 16))
         .onHover { inside in
-            withAnimation(.easeOut(duration: 0.15)) { isBudgetHovered = inside }
+            withAnimation(reduceMotion ? .none : .easeOut(duration: 0.15)) { isBudgetHovered = inside }
             if inside { NSCursor.pointingHand.push() } else { NSCursor.pop() }
         }
         .accessibilityLabel(Text("查看预算详情"))
@@ -292,7 +305,7 @@ struct DashboardContentColumn: View {
         .glassCard(cornerRadius: 16)
         .contentShape(RoundedRectangle(cornerRadius: 16))
         .onHover { inside in
-            withAnimation(.easeOut(duration: 0.15)) { isBudgetHovered = inside }
+            withAnimation(reduceMotion ? .none : .easeOut(duration: 0.15)) { isBudgetHovered = inside }
             if inside { NSCursor.pointingHand.push() } else { NSCursor.pop() }
         }
         .accessibilityLabel(Text("查看预算详情"))
@@ -324,7 +337,7 @@ struct DashboardContentColumn: View {
                 if let key = allocationDrilled {
                     Spacer()
                     Button {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { allocationDrilled = nil }
+                        withAnimation(reduceMotion ? .none : .spring(response: 0.4, dampingFraction: 0.8)) { allocationDrilled = nil }
                     } label: {
                         HStack(spacing: 3) {
                             Image(systemName: "chevron.left")
@@ -611,6 +624,7 @@ struct ConnectorPoint: Identifiable {
 // MARK: - Privacy Placeholder Dot
 
 private struct CircleDot: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isHovered = false
 
     var body: some View {
@@ -618,7 +632,7 @@ private struct CircleDot: View {
             .fill(Color.designOnSurfaceVariant.opacity(isHovered ? 0.85 : 0.5))
             .frame(width: 12, height: 12)
             .offset(x: 3, y: -4)
-            .animation(.easeInOut(duration: 0.25), value: isHovered)
+            .animation(reduceMotion ? .none : .easeInOut(duration: 0.25), value: isHovered)
             .onHover { inside in
                 isHovered = inside
             }
