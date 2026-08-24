@@ -22,6 +22,7 @@ struct MacMerchantListView: View {
                     Image(systemName: "plus").fontWeight(.semibold)
                 }
                 .buttonStyle(.borderless)
+                .accessibilityLabel(Text("添加商家"))
             }
             .padding(.horizontal, 24)
             .padding(.top, 24)

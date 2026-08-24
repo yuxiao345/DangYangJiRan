@@ -2,7 +2,7 @@ import Foundation
 @preconcurrency import CoreData
 
 @objc(TransactionTemplate)
-final class TransactionTemplate: NSManagedObject,  Sendable {
+final class TransactionTemplate: NSManagedObject, @unchecked Sendable {
     @NSManaged var id: UUID
     @NSManaged var name: String
     @NSManaged var typeRaw: String

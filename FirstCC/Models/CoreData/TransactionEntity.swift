@@ -2,7 +2,7 @@ import Foundation
 @preconcurrency import CoreData
 
 @objc(Transaction)
-final class Transaction: NSManagedObject,  Sendable {
+final class Transaction: NSManagedObject, @unchecked Sendable {
     // MARK: - Core Data attributes
     @NSManaged var id: UUID
     @NSManaged var typeRaw: String

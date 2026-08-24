@@ -193,6 +193,8 @@ struct DashboardContentColumn: View {
         .onHover { inside in
             if inside { NSCursor.pointingHand.push() } else { NSCursor.pop() }
         }
+        .accessibilityLabel(Text("查看资产"))
+        .accessibilityAddTraits(.isButton)
         .onTapGesture { navigate(to: .assets) }
         .overlay(alignment: .topTrailing) {
             Circle()
@@ -264,6 +266,8 @@ struct DashboardContentColumn: View {
             withAnimation(.easeOut(duration: 0.15)) { isBudgetHovered = inside }
             if inside { NSCursor.pointingHand.push() } else { NSCursor.pop() }
         }
+        .accessibilityLabel(Text("查看预算详情"))
+        .accessibilityAddTraits(.isButton)
         .onTapGesture { showBudgetDetail = true }
     }
 
@@ -291,6 +295,8 @@ struct DashboardContentColumn: View {
             withAnimation(.easeOut(duration: 0.15)) { isBudgetHovered = inside }
             if inside { NSCursor.pointingHand.push() } else { NSCursor.pop() }
         }
+        .accessibilityLabel(Text("查看预算详情"))
+        .accessibilityAddTraits(.isButton)
         .onTapGesture { showBudgetDetail = true }
     }
 
@@ -306,6 +312,8 @@ struct DashboardContentColumn: View {
                         .font(.designBodyMedium.weight(.bold))
                         .foregroundStyle(Color.designOnSurface)
                         .contentShape(Rectangle())
+                        .accessibilityLabel(Text("查看资产配置"))
+                        .accessibilityAddTraits(.isButton)
                         .onTapGesture { navigate(to: .allocation) }
                 } else {
                     Text("资产配置")
@@ -442,6 +450,8 @@ struct DashboardContentColumn: View {
         .chartYAxis(.hidden)
         .frame(height: 100)
         .contentShape(Rectangle())
+        .accessibilityLabel(Text("返回资产配置概览"))
+        .accessibilityAddTraits(.isButton)
         .onTapGesture {
             // Mini 卡片没有坐标转换，简单方案：点图任意位置返回 L1
             if allocationDrilled != nil { allocationDrilled = nil }

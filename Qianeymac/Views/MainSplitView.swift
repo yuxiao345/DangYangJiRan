@@ -128,12 +128,14 @@ struct MainSplitView: View {
                 Image(systemName: "magnifyingglass")
             }
             .accessibilityIdentifier("toolbar-search-button")
+            .accessibilityLabel(Text("搜索"))
         }
         ToolbarItem(placement: .primaryAction) {
             Button { showAddSheet = true } label: {
                 Image(systemName: "plus")
             }
             .accessibilityIdentifier("toolbar-add-tx-button")
+            .accessibilityLabel(Text("新增账目"))
         }
     }
 
@@ -148,6 +150,8 @@ struct MainSplitView: View {
                             sidebarRow(icon: type.icon, label: type.rawValue,
                                        selected: selection == .reports && selectedReportType == type,
                                        isChild: true)
+                                .accessibilityLabel(Text("切换到报表 \(type.rawValue)"))
+                                .accessibilityAddTraits(.isButton)
                                 .onTapGesture {
                                     selection = .reports
                                     selectedReportType = type
@@ -160,6 +164,8 @@ struct MainSplitView: View {
                 } else {
                     sidebarRow(icon: item.icon, label: item.rawValue,
                                selected: selection == item)
+                        .accessibilityLabel(Text("切换到 \(item.rawValue)"))
+                        .accessibilityAddTraits(.isButton)
                         .onTapGesture {
                             if selection != item {
                                 navigationPath.removeLast(navigationPath.count)

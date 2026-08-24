@@ -21,6 +21,7 @@ struct MacRecurringListView: View {
                     Image(systemName: "plus").fontWeight(.semibold)
                 }
                 .buttonStyle(.borderless)
+                .accessibilityLabel(Text("添加周期账"))
             }
             .padding(.horizontal, 24)
             .padding(.top, 24)

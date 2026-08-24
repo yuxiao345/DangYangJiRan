@@ -79,6 +79,7 @@ struct CalendarStripView: View {
                     .foregroundStyle(Color.designOnSurfaceVariant)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(Text("上个月"))
 
             Button {
                 withAnimation(.easeInOut(duration: 0.25)) {
@@ -103,6 +104,7 @@ struct CalendarStripView: View {
                     .foregroundStyle(Color.designOnSurfaceVariant)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(Text("下个月"))
 
             Spacer()
 

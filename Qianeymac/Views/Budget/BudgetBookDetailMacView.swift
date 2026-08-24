@@ -56,6 +56,7 @@ struct BudgetBookDetailMacView: View {
     @State private var editingItem: BudgetItem?
     @State private var preselectedCategory: Category?
     @State private var deleteCandidate: BudgetItem?
+    @State private var showDeleteConfirm = false
     @State private var navCategory: Category?
 
     var body: some View {
@@ -105,7 +106,7 @@ struct BudgetBookDetailMacView: View {
         .sheet(item: $preselectedCategory, onDismiss: { loadData() }) { cat in
             AddEditBudgetItemView(book: book, preselectedCategory: cat)
         }
-        .confirmationDialog("确定删除此预算项？", isPresented: showDeleteConfirm) {
+        .confirmationDialog("确定删除此预算项？", isPresented: $showDeleteConfirm) {
             Button("删除", role: .destructive) {
                 if let item = deleteCandidate {
                     items = []
@@ -117,6 +118,7 @@ struct BudgetBookDetailMacView: View {
                     }
                 }
                 deleteCandidate = nil
+                showDeleteConfirm = false
             }
             Button("取消", role: .cancel) { deleteCandidate = nil }
         }
@@ -157,7 +159,8 @@ struct BudgetBookDetailMacView: View {
                         perSpent: period[item.id] ?? 0,
                         navCategory: $navCategory,
                         editingItem: $editingItem,
-                        deleteCandidate: $deleteCandidate
+                        deleteCandidate: $deleteCandidate,
+                        showDeleteConfirm: $showDeleteConfirm
                     )
                     .contextMenu {
                         Button { editingItem = item } label: {
@@ -240,9 +243,6 @@ struct BudgetBookDetailMacView: View {
         totalUnbudgeted = unbudgetedCategories.reduce(0) { $0 + $1.1 }
     }
 
-    private var showDeleteConfirm: Binding<Bool> {
-        Binding(get: { deleteCandidate != nil }, set: { if !$0 { deleteCandidate = nil } })
-    }
 }
 
 // MARK: - Budget Item Row (hover-aware)
@@ -255,6 +255,7 @@ private struct BudgetItemRowView: View {
     @Binding var navCategory: Category?
     @Binding var editingItem: BudgetItem?
     @Binding var deleteCandidate: BudgetItem?
+    @Binding var showDeleteConfirm: Bool
 
     @State private var isHovered = false
 
@@ -287,7 +288,7 @@ private struct BudgetItemRowView: View {
                         .buttonStyle(DesignGlassCircleButton())
                         .help("编辑")
 
-                        Button { deleteCandidate = item } label: {
+                        Button { deleteCandidate = item; showDeleteConfirm = true } label: {
                             Image(systemName: "trash")
                                 .font(.system(size: 11))
                         }

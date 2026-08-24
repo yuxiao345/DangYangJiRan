@@ -23,6 +23,8 @@ struct AddEditBudgetItemView: View {
     @State private var periodLocked = false
     @State private var lockedByCategory = ""
     @State private var amountWarning: String?
+    @State private var showErrorAlert = false
+    @State private var showAmountWarningAlert = false
 
     #if os(macOS)
     private let fieldLabel: Font = .custom("SpaceGrotesk-Regular", fixedSize: 13)
@@ -86,17 +88,18 @@ struct AddEditBudgetItemView: View {
             if let cat = newCat { checkPeriodLock(for: cat) }
             else { periodLocked = false; lockedByCategory = "" }
         }
-        .alert(Text("提示"), isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
+        .alert(Text("提示"), isPresented: $showErrorAlert) {
             // System default OK button auto-dismisses the alert.
         } message: {
             Text(errorMessage ?? "")
         }
-        .alert(Text("金额提示"), isPresented: Binding(get: { amountWarning != nil }, set: { if !$0 { amountWarning = nil } })) {
+        .alert(Text("金额提示"), isPresented: $showAmountWarningAlert) {
             Button("仍然保存") {
+                showAmountWarningAlert = false
                 amountWarning = nil
                 if let ledger = effectiveLedger { performSave(ledger: ledger) }
             }
-            Button("取消", role: .cancel) { amountWarning = nil }
+            Button("取消", role: .cancel) { showAmountWarningAlert = false }
         } message: {
             Text(amountWarning ?? "")
         }
@@ -460,12 +463,14 @@ struct AddEditBudgetItemView: View {
             let existing = (try? appContainer.budgetService.fetchItems(for: book, context: modelContext)) ?? []
             if let dup = existing.first(where: { $0.category?.id == cat.id && $0.id != editing?.id }) {
                 errorMessage = String(localized: "该分类已存在预算项，不能重复添加")
+                showErrorAlert = true
                 return
             }
         }
         // 检查金额约束（软约束，提示但允许保存）
         if let warning = checkAmountConstraint() {
             amountWarning = warning
+            showAmountWarningAlert = true
             return
         }
         performSave(ledger: ledger)

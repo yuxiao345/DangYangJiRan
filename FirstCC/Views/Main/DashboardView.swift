@@ -191,6 +191,8 @@ struct DashboardView: View {
         .padding(20)
         .glassCard(cornerRadius: 24)
         .contentShape(RoundedRectangle(cornerRadius: 24))
+        .accessibilityLabel(Text(showBreakdown ? "收起明细" : "展开明细"))
+        .accessibilityAddTraits(.isButton)
         .onTapGesture {
             withAnimation(reduceMotion ? .none : .easeInOut(duration: 0.25)) { showBreakdown.toggle() }
         }

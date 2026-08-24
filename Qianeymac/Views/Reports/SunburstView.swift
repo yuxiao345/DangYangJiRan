@@ -29,6 +29,11 @@ struct SunburstView: View {
                     drawSectors(in: ctx, center: center, radius: radius, side: side)
                 }
                 .contentShape(Rectangle())
+                .accessibilityLabel(Text("选择资产配置分区"))
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction {
+                    handleTap(at: CGPoint(x: geo.size.width / 2, y: geo.size.height / 2), center: center, radius: radius)
+                }
                 .onTapGesture { location in
                     handleTap(at: location, center: center, radius: radius)
                 }

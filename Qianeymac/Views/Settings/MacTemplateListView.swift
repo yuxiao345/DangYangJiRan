@@ -21,6 +21,7 @@ struct MacTemplateListView: View {
                     Image(systemName: "plus").fontWeight(.semibold)
                 }
                 .buttonStyle(.borderless)
+                .accessibilityLabel(Text("添加模板"))
             }
             .padding(.horizontal, 24)
             .padding(.top, 24)

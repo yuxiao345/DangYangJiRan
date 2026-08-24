@@ -2,7 +2,7 @@ import Foundation
 @preconcurrency import CoreData
 
 @objc(CreditCardStatement)
-final class CreditCardStatement: NSManagedObject,  Sendable {
+final class CreditCardStatement: NSManagedObject, @unchecked Sendable {
     @NSManaged var id: UUID
     @NSManaged var periodYear: Int64
     @NSManaged var periodMonth: Int64

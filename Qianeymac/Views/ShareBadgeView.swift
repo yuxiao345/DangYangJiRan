@@ -35,6 +35,7 @@ struct ShareBadgeView: View {
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(Text("共享管理"))
             .disabled(isCreatingShare)
             .overlay {
                 if isCreatingShare {

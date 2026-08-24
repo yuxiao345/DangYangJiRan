@@ -2,7 +2,7 @@ import Foundation
 @preconcurrency import CoreData
 
 @objc(BudgetItem)
-final class BudgetItem: NSManagedObject,  Sendable {
+final class BudgetItem: NSManagedObject, @unchecked Sendable {
     @NSManaged var id: UUID
     @NSManaged var amountInFen: Int64
     @NSManaged var periodRaw: String

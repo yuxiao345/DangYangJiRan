@@ -36,6 +36,7 @@ struct FullScreenPhotoView: View {
                     .foregroundStyle(.white)
                     .padding(16)
             }
+            .accessibilityLabel(Text("关闭"))
         }
         .statusBarHidden(true)
     }

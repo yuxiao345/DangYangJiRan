@@ -2,7 +2,7 @@ import Foundation
 @preconcurrency import CoreData
 
 @objc(ExchangeRate)
-final class ExchangeRate: NSManagedObject,  Sendable {
+final class ExchangeRate: NSManagedObject, @unchecked Sendable {
     @NSManaged var id: UUID
     @NSManaged var fromCurrencyCode: String
     @NSManaged var toCurrencyCode: String

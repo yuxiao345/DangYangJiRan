@@ -35,6 +35,7 @@ struct NumpadGrid: View {
                     Image(systemName: "delete.backward")
                         .font(.system(size: 20))
                 }
+                .accessibilityLabel(Text("删除"))
             }
         }
     }

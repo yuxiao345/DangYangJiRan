@@ -2,7 +2,7 @@ import Foundation
 @preconcurrency import CoreData
 
 @objc(SplitGroup)
-final class SplitGroup: NSManagedObject,  Sendable {
+final class SplitGroup: NSManagedObject, @unchecked Sendable {
     @NSManaged var id: UUID
     @NSManaged var totalAmountInFen: Int64
     @NSManaged var currencyCode: String

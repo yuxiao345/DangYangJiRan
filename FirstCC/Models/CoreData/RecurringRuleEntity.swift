@@ -2,7 +2,7 @@ import Foundation
 @preconcurrency import CoreData
 
 @objc(RecurringRule)
-final class RecurringRule: NSManagedObject,  Sendable {
+final class RecurringRule: NSManagedObject, @unchecked Sendable {
     @NSManaged var id: UUID
     @NSManaged var frequencyRaw: String
     @NSManaged var interval: Int64

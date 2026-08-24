@@ -56,6 +56,8 @@ struct SplitFormView: View {
                             }
                         }
                         .contentShape(Rectangle())
+                        .accessibilityLabel(Text(selectedMembers.contains(member.id) ? "取消选择成员 \(member.name)" : "选择成员 \(member.name)"))
+                        .accessibilityAddTraits(.isButton)
                         .onTapGesture {
                             if selectedMembers.contains(member.id) {
                                 selectedMembers.remove(member.id)

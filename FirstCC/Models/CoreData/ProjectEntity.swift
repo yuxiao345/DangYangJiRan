@@ -2,7 +2,7 @@ import Foundation
 @preconcurrency import CoreData
 
 @objc(Project)
-final class Project: NSManagedObject,  Sendable {
+final class Project: NSManagedObject, @unchecked Sendable {
     @NSManaged var id: UUID
     @NSManaged var name: String
     @NSManaged var desc: String?

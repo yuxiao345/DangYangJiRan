@@ -184,6 +184,7 @@ struct MacSearchView: View {
                                         .foregroundStyle(Color.designOnSurfaceVariant)
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityLabel(Text("清除搜索"))
                             }
                         }
                         .padding(.horizontal, 10)

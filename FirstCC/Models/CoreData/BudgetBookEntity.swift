@@ -2,7 +2,7 @@ import Foundation
 @preconcurrency import CoreData
 
 @objc(BudgetBook)
-final class BudgetBook: NSManagedObject,  Sendable {
+final class BudgetBook: NSManagedObject, @unchecked Sendable {
     @NSManaged var id: UUID
     @NSManaged var name: String
     @NSManaged var startDate: Date

@@ -21,6 +21,7 @@ struct BudgetBookDetailView: View {
     @State private var navCategory: Category?
     @State private var deleteCandidate: BudgetItem?
     @State private var showMonthPicker = false
+    @State private var showDeleteConfirm = false
 
     /// 是否在查看历史月份（当月及以前，不含未来）
     private var isCurrentMonth: Bool {
@@ -77,6 +78,7 @@ struct BudgetBookDetailView: View {
                         .swipeActions(edge: .trailing) {
                             Button(role: .destructive) {
                                 deleteCandidate = item
+                                showDeleteConfirm = true
                             } label: {
                                 Label("删除", systemImage: "trash")
                             }
@@ -99,6 +101,8 @@ struct BudgetBookDetailView: View {
                         }
                         .padding(.vertical, 2)
                         .contentShape(Rectangle())
+                        .accessibilityLabel(Text("选择分类 \(cat.name)"))
+                        .accessibilityAddTraits(.isButton)
                         .onTapGesture { preselectedCategory = cat }
                     }
                     HStack {
@@ -137,7 +141,7 @@ struct BudgetBookDetailView: View {
         .navigationDestination(item: $navCategory) { cat in
             TransactionListView(filterCategory: cat, options: [.hideTypeFilter, .hideAddButton])
         }
-        .confirmationDialog("确定删除此预算项？", isPresented: showDeleteConfirm) {
+        .confirmationDialog("确定删除此预算项？", isPresented: $showDeleteConfirm) {
             Button("删除", role: .destructive) {
                 if let item = deleteCandidate {
                     items = []
@@ -145,6 +149,7 @@ struct BudgetBookDetailView: View {
                     loadData()
                 }
                 deleteCandidate = nil
+                showDeleteConfirm = false
             }
             Button("取消", role: .cancel) { deleteCandidate = nil }
         }
@@ -193,6 +198,7 @@ struct BudgetBookDetailView: View {
             }
             .buttonStyle(.plain)
             .disabled(isCurrentMonth)
+            .accessibilityLabel(Text("下个月"))
         }
     }
 
@@ -330,9 +336,6 @@ struct BudgetBookDetailView: View {
     }
 
     private var currency: String { book.ledger?.defaultCurrencyCode ?? "CNY" }
-    private var showDeleteConfirm: Binding<Bool> {
-        Binding(get: { deleteCandidate != nil }, set: { if !$0 { deleteCandidate = nil } })
-    }
 
     // MARK: - Load Data
 

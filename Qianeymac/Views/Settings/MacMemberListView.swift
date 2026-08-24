@@ -20,6 +20,7 @@ struct MacMemberListView: View {
                         Image(systemName: "plus").fontWeight(.semibold)
                     }
                     .buttonStyle(.borderless)
+                    .accessibilityLabel(Text("添加联系人"))
                 }
 
                 ForEach(members) { member in
@@ -70,6 +71,7 @@ struct MacMemberListView: View {
                 Image(systemName: "trash").foregroundStyle(Color.designAccentRed)
             }
             .buttonStyle(.borderless)
+            .accessibilityLabel(Text("删除联系人"))
         }
         .padding(10)
         .background(Color.designGlassBg.opacity(0.5))

@@ -2,7 +2,7 @@ import Foundation
 @preconcurrency import CoreData
 
 @objc(Account)
-final class Account: NSManagedObject,  Sendable {
+final class Account: NSManagedObject, @unchecked Sendable {
     @NSManaged var id: UUID
     @NSManaged var name: String
     @NSManaged var currencyCode: String

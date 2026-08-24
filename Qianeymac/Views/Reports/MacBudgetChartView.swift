@@ -283,6 +283,8 @@ struct MacBudgetChartView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .rotation3DEffect(.degrees(isBurnRateFlipped ? 180 : 0), axis: (x: 0, y: 1, z: 0))
         .animation(.spring(response: 0.5, dampingFraction: 0.7), value: isBurnRateFlipped)
+        .accessibilityLabel(Text("翻转查看消耗速率详情"))
+        .accessibilityAddTraits(.isButton)
         .onTapGesture { withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) { isBurnRateFlipped.toggle() } }
     }
 
@@ -531,6 +533,8 @@ private struct BudgetCardView: View {
         .frame(height: cardHeight)
         .rotation3DEffect(.degrees(isFlipped ? 180 : 0), axis: (x: 0, y: 1, z: 0))
         .animation(.spring(response: 0.5, dampingFraction: 0.7), value: isFlipped)
+        .accessibilityLabel(Text("翻转查看预算执行详情"))
+        .accessibilityAddTraits(.isButton)
         .onTapGesture { withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) { isFlipped.toggle() } }
         .onChange(of: isFlipped) { _, flipped in
             if flipped { startTrendAnimation() } else { animateIn() }

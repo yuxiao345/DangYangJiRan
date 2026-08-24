@@ -129,6 +129,8 @@ struct DonutChart: View {
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: explodedIndex)
             .frame(width: radius * 2, height: radius * 2)
             .position(center)
+            .accessibilityLabel(Text("展开分类 \(index)"))
+            .accessibilityAddTraits(.isButton)
             .onTapGesture {
                 withAnimation(.spring(response: 0.45, dampingFraction: 0.65)) {
                     explodedIndex = (explodedIndex == index) ? nil : index
