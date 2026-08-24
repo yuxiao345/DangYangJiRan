@@ -177,7 +177,7 @@ struct DonutChart: View {
                         Text(String(localized: "占比"))
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(Color.designOnSurfaceVariant)
-                        Text(String(format: "%.1f%%", item.percentage * 100))
+                        Text(item.percentage, format: .percent.precision(.fractionLength(1)))
                             .font(.system(size: 20, weight: .bold, design: .monospaced))
                             .foregroundStyle(Color.designOnSurface)
                     }

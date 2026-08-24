@@ -17,7 +17,7 @@ struct ExportView: View {
 
     init() {
         let cal = Calendar.current
-        let now = Date()
+        let now = Date.now
         _startDate = State(initialValue: cal.date(byAdding: .month, value: -3, to: now.startOfMonth) ?? now)
         _endDate = State(initialValue: now)
     }

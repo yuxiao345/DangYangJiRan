@@ -61,7 +61,7 @@ struct MerchantListView: View {
                         do {
                             try appContainer.merchantService.deleteMerchant(merchant, context: modelContext)
                         } catch {
-                            NSLog(String(localized: "[MerchantList] 删除商家失败: \(error.localizedDescription)"))
+                            errorMessage = String(localized: "删除商家失败: \(error.localizedDescription)")
                         }
                         loadMerchants()
                     } label: { Label("删除", systemImage: "trash") }
@@ -106,7 +106,7 @@ struct MerchantListView: View {
             try appContainer.merchantService.createMerchant(merchant, ledger: ledger, context: modelContext)
             loadMerchants()
         } catch {
-            NSLog(String(localized: "[MerchantList] 添加商家失败: \(error.localizedDescription)"))
+            errorMessage = String(localized: "添加商家失败: \(error.localizedDescription)")
         }
     }
 
@@ -166,7 +166,7 @@ struct EditMerchantView: View {
             try appContainer.merchantService.updateMerchant(merchant, context: modelContext)
             dismiss()
         } catch {
-            NSLog(String(localized: "[MerchantList] 编辑商家失败: \(error.localizedDescription)"))
+            errorMessage = String(localized: "编辑商家失败: \(error.localizedDescription)")
         }
     }
 }

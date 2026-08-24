@@ -35,10 +35,10 @@ struct CalendarDayCell: View {
                 VStack(spacing: 2) {
                     Text("\(day)")
                         .font(.designBodySmall.weight(isToday || isSelected ? .bold : .regular))
-                        .foregroundColor(
+                        .foregroundStyle(
                             isCurrentMonth
-                                ? (isToday || isSelected ? .designPrimary : .designOnSurface)
-                                : .designOnSurfaceVariant.opacity(0.4)
+                                ? (isToday || isSelected ? Color.designPrimary : Color.designOnSurface)
+                                : Color.designOnSurfaceVariant.opacity(0.4)
                         )
                         .frame(height: 28)
 

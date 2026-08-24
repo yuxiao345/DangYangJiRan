@@ -89,14 +89,14 @@ struct SunburstView: View {
                 )
 
                 let displayName = node.name
-                let pctText = String(format: "%.1f%%", pct * 100)
+                let pctText = Text(pct, format: .percent.precision(.fractionLength(1)))
                 let nameFontSize = min(11, side / 30)
                 let pctFontSize = min(10, side / 35)
 
                 let nameText = Text(displayName)
                     .font(.system(size: nameFontSize, weight: .medium))
                     .foregroundStyle(.white.opacity(0.95))
-                let pctTextView = Text(pctText)
+                let pctTextView = pctText
                     .font(.system(size: pctFontSize, weight: .bold, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.7))
 

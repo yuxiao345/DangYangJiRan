@@ -68,7 +68,7 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
 
     func currentPeriodSpending(for item: BudgetItem, context: NSManagedObjectContext) -> Decimal {
         guard let book = item.book else { return 0 }
-        let now = Date()
+        let now = Date.now
         let range = clippedRange(currentPeriodRange(for: item, now: now), to: book)
         return spending(in: range, category: item.category, book: book, context: context)
     }
@@ -182,7 +182,7 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
         }
     }
 
-    private func currentMonthRange(now: Date = Date()) -> ClosedRange<Date> {
+    private func currentMonthRange(now: Date = Date.now) -> ClosedRange<Date> {
         let cal = Calendar.current
         let start = cal.date(from: cal.dateComponents([.year, .month], from: now)) ?? now
         let end = cal.date(byAdding: DateComponents(month: 1, day: -1), to: start) ?? now
@@ -319,7 +319,7 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
             byDay[day, default: 0] += t.netExpenseAmount
         }
         var current = cal.startOfDay(for: range.lowerBound)
-        let end = min(cal.startOfDay(for: range.upperBound), cal.startOfDay(for: Date()))
+        let end = min(cal.startOfDay(for: range.upperBound), cal.startOfDay(for: .now))
         var points: [DailySpendingPoint] = []
         while current <= end {
             points.append(DailySpendingPoint(date: current, amount: byDay[current] ?? 0))

@@ -35,9 +35,10 @@ struct MacBudgetBookListView: View {
             } else {
                 List {
                     ForEach(books) { book in
-                        bookRowContent(book)
-                            .contentShape(Rectangle())
-                            .onTapGesture { selectedBook = book }
+                        Button { selectedBook = book } label: {
+                            bookRowContent(book)
+                        }
+                        .buttonStyle(.plain)
                     }
                     .onMove { from, to in
                         var mutable = books
@@ -105,21 +106,26 @@ struct MacBudgetBookListView: View {
                 }
             }
             Spacer()
-            Image(systemName: "pencil")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-                .frame(width: 20, height: 20)
-                .contentShape(Rectangle())
-                .onTapGesture { editingBook = book }
-            Image(systemName: "trash")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-                .frame(width: 20, height: 20)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    bookToDelete = book
-                    showDeleteAlert = true
-                }
+            Button { editingBook = book } label: {
+                Image(systemName: "pencil")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(Text("编辑预算计划"))
+
+            Button {
+                bookToDelete = book
+                showDeleteAlert = true
+            } label: {
+                Image(systemName: "trash")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(Text("删除预算计划"))
         }
         .padding(.vertical, 4)
         .opacity(book.isActive ? 1.0 : 0.55)

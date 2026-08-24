@@ -42,8 +42,8 @@ final class SplitGroup: NSManagedObject,  Sendable {
     override func awakeFromInsert() {
         super.awakeFromInsert()
         id = UUID()
-        createdAt = Date()
-        date = Date()
+        createdAt = Date.now
+        date = Date.now
     }
 
     convenience init(
@@ -51,7 +51,7 @@ final class SplitGroup: NSManagedObject,  Sendable {
         currencyCode: String = "CNY",
         splitType: SplitType = .equal,
         note: String? = nil,
-        date: Date = Date(),
+        date: Date = Date.now,
         context: NSManagedObjectContext
     ) {
         self.init(context: context)

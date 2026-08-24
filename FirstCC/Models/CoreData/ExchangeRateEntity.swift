@@ -12,14 +12,14 @@ final class ExchangeRate: NSManagedObject,  Sendable {
     override func awakeFromInsert() {
         super.awakeFromInsert()
         id = UUID()
-        fetchedAt = Date()
+        fetchedAt = Date.now
     }
 
     convenience init(
         fromCurrencyCode: String,
         toCurrencyCode: String,
         rate: Double,
-        fetchedAt: Date = Date(),
+        fetchedAt: Date = Date.now,
         context: NSManagedObjectContext
     ) {
         self.init(context: context)

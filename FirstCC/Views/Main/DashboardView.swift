@@ -4,6 +4,7 @@ import SwiftUI
 struct DashboardView: View {
     @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var viewModel: DashboardViewModel
     @State private var showAddSheet = false
     @State private var editingTransaction: Transaction?
@@ -160,7 +161,7 @@ struct DashboardView: View {
                                 .frame(width: 78, alignment: .trailing)
                         }
                     }
-                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+                    .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .trailing)))
                 }
             }
 
@@ -191,7 +192,7 @@ struct DashboardView: View {
         .glassCard(cornerRadius: 24)
         .contentShape(RoundedRectangle(cornerRadius: 24))
         .onTapGesture {
-            withAnimation(.easeInOut(duration: 0.25)) { showBreakdown.toggle() }
+            withAnimation(reduceMotion ? .none : .easeInOut(duration: 0.25)) { showBreakdown.toggle() }
         }
         .overlay(alignment: .topTrailing) {
             Circle()
@@ -312,7 +313,7 @@ struct DashboardView: View {
                             .font(.designBodyMedium.weight(.bold))
                             .foregroundStyle(Color.designOnSurface)
                         Spacer()
-                        Text("已用 \(String(format: "%.0f%%", viewModel.budgetFraction * 100))")
+                        Text("已用 \(Text(viewModel.budgetFraction, format: .percent.precision(.fractionLength(0))))")
                             .font(.designMonoDataSmall)
                             .foregroundStyle(Color.designOnSurfaceVariant)
                         Image(systemName: "chevron.right")
@@ -410,6 +411,13 @@ struct DashboardView: View {
 
     /// 阶段1：圆点从右到左逐个消失
     private func startDotsDisappearing() {
+        if reduceMotion {
+            // 跳过动画，直接显示金额
+            dotsDisappearingIndex = 5
+            dotsPhase = .showingAmount
+            amountIsVisible = true
+            return
+        }
         dotAnimationTask?.cancel()
         dotsDisappearingIndex = 0
         dotsPhase = .dotsDisappearing
@@ -431,13 +439,24 @@ struct DashboardView: View {
         dotsPhase = .showingAmount
         // 先隐藏（触发消失动画的终点），下一帧再显示（触发动画起点）
         amountIsVisible = false
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+        if reduceMotion {
             amountIsVisible = true
+        } else {
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(10))
+                amountIsVisible = true
+            }
         }
     }
 
     /// 阶段3：金额动画消失
     private func startAmountDisappearing() {
+        if reduceMotion {
+            dotsPhase = .showingDots
+            dotsAppearingIndex = 5
+            amountIsVisible = false
+            return
+        }
         amountAnimationTask?.cancel()
         dotsPhase = .amountDisappearing
         amountIsVisible = false
@@ -450,6 +469,11 @@ struct DashboardView: View {
 
     /// 阶段4：圆点从左到右逐个出现
     private func startDotsAppearing() {
+        if reduceMotion {
+            dotsPhase = .showingDots
+            dotsAppearingIndex = 5
+            return
+        }
         dotAnimationTask?.cancel()
         dotsAppearingIndex = 0
         dotsPhase = .dotsAppearing
@@ -477,12 +501,10 @@ struct DashboardView: View {
         let bFrac = viewModel.budgetFraction
         let iFrac = maxRef > 0 ? Double(truncating: (abs(viewModel.monthlyIncome) / maxRef) as NSNumber) : 0
         let eFrac = maxRef > 0 ? Double(truncating: (abs(viewModel.monthlyExpense) / maxRef) as NSNumber) : 0
-        DispatchQueue.main.async {
-            withAnimation(.spring(response: 0.8, dampingFraction: 0.65)) {
-                self.displayBudgetFraction = bFrac
-                self.displayIncomeFrac = iFrac
-                self.displayExpenseFrac = eFrac
-            }
+        withAnimation(.spring(response: 0.8, dampingFraction: 0.65)) {
+            self.displayBudgetFraction = bFrac
+            self.displayIncomeFrac = iFrac
+            self.displayExpenseFrac = eFrac
         }
     }
 }

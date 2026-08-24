@@ -174,6 +174,7 @@ struct StatementTransactionsView: View {
                 Button { showEditSheet = true } label: {
                     Image(systemName: "pencil")
                 }
+                .accessibilityLabel(Text("编辑对账单"))
             }
         }
         .sheet(isPresented: $showEditSheet, onDismiss: {
@@ -253,7 +254,7 @@ struct AddEditStatementView: View {
     init(account: Account, editing: CreditCardStatement? = nil) {
         self.account = account
         self.editing = editing
-        let now = Date()
+        let now = Date.now
         let calendar = Calendar.current
         _selectedYear = State(initialValue: Int(editing?.periodYear ?? Int64(calendar.component(.year, from: now))))
         _selectedMonth = State(initialValue: Int(editing?.periodMonth ?? Int64(calendar.component(.month, from: now))))
@@ -706,7 +707,7 @@ struct AddEditStatementView: View {
         // Update statement to mark as reconciled
         if let stmt = editing {
             stmt.isReconciled = true
-            stmt.reconciledAt = Date()
+            stmt.reconciledAt = Date.now
             try? appContainer.creditCardStatementService.updateStatement(stmt, context: modelContext)
         }
 

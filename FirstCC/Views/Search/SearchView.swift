@@ -267,24 +267,22 @@ struct SearchView: View {
     // MARK: - Empty State
 
     private var emptyResult: some View {
-        VStack(spacing: 12) {
-            Spacer()
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 40))
-                .foregroundStyle(Color.designOnSurfaceVariant)
-            Text("未找到匹配的交易")
-                .font(.designHeadlineMedium)
-                .foregroundStyle(Color.designOnSurfaceVariant)
+        Group {
             if viewModel.hasManualFilters {
-                Text("试试清除筛选条件，或者放宽日期/金额范围")
-                    .font(.designBodyMedium)
-                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+                ContentUnavailableView(
+                    "未找到匹配的交易",
+                    systemImage: "magnifyingglass",
+                    description: Text("试试清除筛选条件，或者放宽日期/金额范围")
+                )
+            } else if !viewModel.searchText.isEmpty {
+                ContentUnavailableView.search(text: viewModel.searchText)
             } else {
-                Text("试试换个关键词，例如 餐饮 或 2026")
-                    .font(.designBodyMedium)
-                    .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
+                ContentUnavailableView(
+                    "无搜索结果",
+                    systemImage: "magnifyingglass",
+                    description: Text("试试换个关键词，例如 餐饮 或 2026")
+                )
             }
-            Spacer()
         }
     }
 }

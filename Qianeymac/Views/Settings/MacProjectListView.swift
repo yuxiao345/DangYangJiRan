@@ -99,21 +99,26 @@ struct MacProjectListView: View {
                 }
             }
             Spacer()
-            Image(systemName: "pencil")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-                .frame(width: 20, height: 20)
-                .contentShape(Rectangle())
-                .onTapGesture { editingProject = project }
-            Image(systemName: "trash")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-                .frame(width: 20, height: 20)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    projectToDelete = project
-                    showDeleteAlert = true
-                }
+            Button { editingProject = project } label: {
+                Image(systemName: "pencil")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(Text("编辑项目"))
+
+            Button {
+                projectToDelete = project
+                showDeleteAlert = true
+            } label: {
+                Image(systemName: "trash")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(Text("删除项目"))
         }
         .padding(.vertical, 4)
         .opacity(project.isActive ? 1.0 : 0.55)

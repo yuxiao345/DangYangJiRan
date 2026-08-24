@@ -409,7 +409,7 @@ struct MacAssetAllocationView: View {
                                 .fill(ratioColor)
                                 .frame(width: fillW, height: gaugeH)
                         }
-                        Text(String(format: "%.1f%%", ratio * 100))
+                        Text(ratio, format: .percent.precision(.fractionLength(1)))
                             .font(.system(size: 9, weight: .bold, design: .monospaced))
                             .foregroundStyle(ratioColor)
                     }

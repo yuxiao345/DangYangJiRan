@@ -61,11 +61,11 @@ struct ReportDetailContent: View {
     // Custom range: year + month state
     @State private var startYear = Calendar.current.component(.year, from: Self.defaultStartDate)
     @State private var startMonth = Calendar.current.component(.month, from: Self.defaultStartDate)
-    @State private var endYear = Calendar.current.component(.year, from: Date())
-    @State private var endMonth = Calendar.current.component(.month, from: Date())
+    @State private var endYear = Calendar.current.component(.year, from: .now)
+    @State private var endMonth = Calendar.current.component(.month, from: .now)
 
     private static var defaultStartDate: Date {
-        Calendar.current.date(byAdding: .month, value: -12, to: Date()) ?? Date()
+        Calendar.current.date(byAdding: .month, value: -12, to: .now) ?? Date()
     }
 
     var body: some View {
@@ -353,7 +353,7 @@ struct ReportDetailContent: View {
 
     private var customRangePopover: some View {
         let cal = Calendar.current
-        let thisYear = cal.component(.year, from: Date())
+        let thisYear = cal.component(.year, from: .now)
         let years = Array((thisYear - 5)...thisYear)
         let months = cal.monthSymbols
 

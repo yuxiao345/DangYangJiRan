@@ -36,7 +36,7 @@ struct AdvancedFilterPanel: View {
     // Date sheet state
     @State private var showDateSheet = false
     @State private var activeDateTarget: DateTarget?
-    @State private var dateSheetSelection = Date()
+    @State private var dateSheetSelection = Date.now
 
     private enum FilterSheetType: Identifiable {
         case category, member, merchant, project
@@ -242,7 +242,7 @@ struct AdvancedFilterPanel: View {
 
     private let datePresets: [(String, Range<Date>)] = {
         let cal = Calendar.current
-        let today = Date()
+        let today = Date.now
         let startOfToday = today.startOfDay
         let tomorrowStart = startOfToday.adding(.day, value: 1)
         return [

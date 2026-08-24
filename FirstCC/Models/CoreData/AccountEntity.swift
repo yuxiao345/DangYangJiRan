@@ -58,7 +58,7 @@ final class Account: NSManagedObject,  Sendable {
     override func awakeFromInsert() {
         super.awakeFromInsert()
         id = UUID()
-        createdAt = Date()
+        createdAt = Date.now
     }
 
     convenience init(

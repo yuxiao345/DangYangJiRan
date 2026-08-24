@@ -37,7 +37,7 @@ enum PreviewContainer {
         alipay.ledger = ledger
 
         // Sample transactions
-        let now = Date()
+        let now = Date.now
         let categories = (try? ctx.fetch(NSFetchRequest<Category>(entityName: "Category"))) ?? []
 
         let sampleTransactions: [(TransactionType, Decimal, Account, String)] = [

@@ -174,7 +174,7 @@ struct ExportServiceImpl: ExportServiceProtocol {
 
     private func writeToTempFile(data: Data, prefix: String, suffix: String) throws -> URL {
         let dir = FileManager.default.temporaryDirectory
-        let filename = "\(prefix)\(Date().timeIntervalSince1970)\(suffix)"
+        let filename = "\(prefix)\(Date.now.timeIntervalSince1970)\(suffix)"
         let url = dir.appendingPathComponent(filename)
         try data.write(to: url)
         return url

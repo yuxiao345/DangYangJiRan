@@ -62,7 +62,7 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
     }
 
     func processDueRecurring(context: NSManagedObjectContext) throws {
-        let now = Date()
+        let now = Date.now
         let request = NSFetchRequest<RecurringRule>(entityName: "RecurringRule")
         request.predicate = NSPredicate(format: "isActive == YES")
         let rules = try context.fetch(request)

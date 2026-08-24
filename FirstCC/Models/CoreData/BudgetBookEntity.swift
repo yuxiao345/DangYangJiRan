@@ -18,15 +18,15 @@ final class BudgetBook: NSManagedObject,  Sendable {
     override func awakeFromInsert() {
         super.awakeFromInsert()
         id = UUID()
-        createdAt = Date()
+        createdAt = Date.now
         matchBudgetItems = false
-        startDate = Date()
-        endDate = Calendar.current.date(byAdding: .year, value: 1, to: Date()) ?? Date()
+        startDate = Date.now
+        endDate = Calendar.current.date(byAdding: .year, value: 1, to: .now) ?? Date()
     }
 
     convenience init(
         name: String = "",
-        startDate: Date = Date(),
+        startDate: Date = Date.now,
         endDate: Date? = nil,
         isActive: Bool = true,
         matchBudgetItems: Bool = false,
@@ -35,7 +35,7 @@ final class BudgetBook: NSManagedObject,  Sendable {
         self.init(context: context)
         self.name = name
         self.startDate = startDate
-        self.endDate = endDate ?? (Calendar.current.date(byAdding: .year, value: 1, to: Date()) ?? Date())
+        self.endDate = endDate ?? (Calendar.current.date(byAdding: .year, value: 1, to: .now) ?? Date())
         self.isActive = isActive
         self.matchBudgetItems = matchBudgetItems
     }

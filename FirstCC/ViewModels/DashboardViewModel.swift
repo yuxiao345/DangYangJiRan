@@ -66,7 +66,7 @@ final class DashboardViewModel {
     func load(context: NSManagedObjectContext, budgetService: BudgetServiceProtocol) {
         guard let ledger else { return }
         let calendar = Calendar.current
-        let now = Date()
+        let now = Date.now
         guard let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now)),
               let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart) else { return }
 
@@ -145,7 +145,7 @@ final class DashboardViewModel {
 
         // Compute time progress
         let cal = Calendar.current
-        let now = Date()
+        let now = Date.now
         let start = cal.startOfDay(for: activeBook.startDate)
         let end = cal.startOfDay(for: activeBook.endDate)
         let total = max(1, (cal.dateComponents([.day], from: start, to: end).day ?? 0) + 1)
@@ -159,7 +159,7 @@ final class DashboardViewModel {
         guard let ledger, let book = activeBudgetBook else { return }
         let cal = Calendar.current
         let trendStart = cal.startOfDay(for: book.startDate)
-        let trendEnd = cal.startOfDay(for: Date())
+        let trendEnd = cal.startOfDay(for: .now)
 
         // Aggregate daily spending. When matchBudgetItems is false, count ALL categories
         // (consistent with the budget summary card); otherwise aggregate only budgeted categories.
@@ -220,7 +220,7 @@ final class DashboardViewModel {
         context: NSManagedObjectContext
     ) {
         let cal = Calendar.current
-        let now = Date()
+        let now = Date.now
         guard let monthStart = cal.date(from: cal.dateComponents([.year, .month], from: now)),
               let monthEnd = cal.date(byAdding: .month, value: 1, to: monthStart) else { return }
 

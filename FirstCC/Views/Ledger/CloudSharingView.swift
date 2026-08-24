@@ -37,8 +37,7 @@ struct CloudSharingView: UIViewControllerRepresentable {
         }
 
         func cloudSharingControllerDidStopSharing(_ csc: UICloudSharingController) {
-            DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
+            Task { @MainActor in
                 self.ledger.isShared = false
                 self.onStopSharing?()
             }

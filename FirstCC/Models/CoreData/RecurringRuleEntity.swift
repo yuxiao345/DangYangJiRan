@@ -22,13 +22,13 @@ final class RecurringRule: NSManagedObject,  Sendable {
     override func awakeFromInsert() {
         super.awakeFromInsert()
         id = UUID()
-        startDate = Date()
+        startDate = Date.now
     }
 
     convenience init(
         frequency: RecurringFrequency = .monthly,
         interval: Int = 1,
-        startDate: Date = Date(),
+        startDate: Date = Date.now,
         endDate: Date? = nil,
         isActive: Bool = true,
         context: NSManagedObjectContext

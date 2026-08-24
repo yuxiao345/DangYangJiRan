@@ -10,8 +10,8 @@ struct MacProjectEditSheet: View {
 
     @State private var name: String = ""
     @State private var desc: String = ""
-    @State private var startDate: Date = Date()
-    @State private var endDate: Date = Date().addingTimeInterval(86400 * 7)
+    @State private var startDate: Date = Date.now
+    @State private var endDate: Date = Date.now.addingTimeInterval(86400 * 7)
     @State private var budgetText: String = ""
     @State private var isActive: Bool = true
 

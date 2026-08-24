@@ -7,10 +7,24 @@ struct CurrencyText: View {
     var size: CGFloat = 17
     var foregroundColor: Color = .primary
     var fractionDigits: Int = 2
+    /// iOS: whether to scale with Dynamic Type. Mac ignores this.
+    #if os(iOS)
+    var autoSize: Bool = true
+    #endif
+
+    #if os(iOS)
+    @ScaledMetric(relativeTo: .body) private var scaledSize: CGFloat = 17
+
+    private var effectiveSize: CGFloat {
+        autoSize ? scaledSize : size
+    }
+    #else
+    private var effectiveSize: CGFloat { size }
+    #endif
 
     var body: some View {
         Text(formatted)
-            .font(.custom("JetBrainsMono-Medium", fixedSize: size))
+            .font(.custom("JetBrainsMono-Medium", size: effectiveSize, relativeTo: .body))
             .foregroundStyle(foregroundColor)
     }
 

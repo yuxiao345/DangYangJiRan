@@ -20,11 +20,15 @@ struct AccountsManagementView: View {
     var body: some View {
         List {
             if filteredAccounts.isEmpty {
-                ContentUnavailableView(
-                    searchText.isEmpty ? "暂无账户" : "无匹配结果",
-                    systemImage: "creditcard",
-                    description: Text("点击右上角 + 添加账户")
-                )
+                if searchText.isEmpty {
+                    ContentUnavailableView(
+                        "暂无账户",
+                        systemImage: "creditcard",
+                        description: Text("点击右上角 + 添加账户")
+                    )
+                } else {
+                    ContentUnavailableView.search(text: searchText)
+                }
             } else {
                 ForEach(accountGroups, id: \.type) { group in
                     Section(group.type.displayName) {
@@ -66,7 +70,7 @@ struct AccountsManagementView: View {
 
     private var filteredAccounts: [Account] {
         guard !searchText.isEmpty else { return accounts }
-        return accounts.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+        return accounts.filter { $0.name.localizedStandardContains(searchText) }
     }
 
     private var accountGroups: [(type: AccountType, accounts: [Account])] {

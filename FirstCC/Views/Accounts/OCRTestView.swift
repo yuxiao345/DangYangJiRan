@@ -58,7 +58,7 @@ struct OCRTestView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         .background(Color.blue)
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                     }
                     .disabled(isProcessing)

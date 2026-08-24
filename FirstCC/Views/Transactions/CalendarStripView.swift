@@ -23,7 +23,7 @@ struct CalendarStripView: View {
     /// 7 天的短星期标签，按当前 locale 的 firstWeekday 排序（zh-Hans: 一二三四五六日，en: Sun-Sat）
     private var weekLabels: [String] {
         let cal = Calendar.current
-        let ref = Date()
+        let ref = Date.now
         // 找本周第一天，然后向后取 7 天
         let weekday = cal.component(.weekday, from: ref)
         let firstWeekday = cal.firstWeekday
@@ -152,9 +152,9 @@ struct CalendarStripView: View {
         let cal = Calendar.current
         let selMonth = cal.component(.month, from: selectedMonth)
         let selYear = cal.component(.year, from: selectedMonth)
-        let today = cal.component(.day, from: Date())
-        let todayMonth = cal.component(.month, from: Date())
-        let todayYear = cal.component(.year, from: Date())
+        let today = cal.component(.day, from: .now)
+        let todayMonth = cal.component(.month, from: .now)
+        let todayYear = cal.component(.year, from: .now)
         let isSelCurrentMonth = (todayMonth == selMonth && todayYear == selYear)
 
         return HStack(spacing: 2) {
@@ -240,9 +240,9 @@ struct CalendarStripView: View {
 
     private var monthGrid: some View {
         let cal = Calendar.current
-        let today = cal.component(.day, from: Date())
-        let todayMonth = cal.component(.month, from: Date())
-        let todayYear = cal.component(.year, from: Date())
+        let today = cal.component(.day, from: .now)
+        let todayMonth = cal.component(.month, from: .now)
+        let todayYear = cal.component(.year, from: .now)
         let selMonth = cal.component(.month, from: selectedMonth)
         let selYear = cal.component(.year, from: selectedMonth)
         let isSelCurrentMonth = (todayMonth == selMonth && todayYear == selYear)
@@ -311,7 +311,7 @@ struct CalendarStripView: View {
             var dayComps = DateComponents(year: comps.year, month: comps.month, day: day)
             refDate = cal.date(from: dayComps) ?? Date()
         } else {
-            refDate = Date()
+            refDate = Date.now
         }
         // Force week to start on Monday, regardless of Calendar locale
         let weekday = cal.component(.weekday, from: refDate) // 1=Sun..7=Sat

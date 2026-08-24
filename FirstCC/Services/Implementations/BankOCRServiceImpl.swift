@@ -196,7 +196,7 @@ final class BankOCRServiceImpl: BankOCRServiceProtocol {
                       let d = Int(trimmed[dRange]),
                       (1...12).contains(m),
                       (1...31).contains(d) else { continue }
-                let currentYear = calendar.component(.year, from: Date())
+                let currentYear = calendar.component(.year, from: .now)
                 var comps = DateComponents(year: currentYear, month: m, day: d)
                 comps.hour = 12
                 return calendar.date(from: comps)
@@ -325,7 +325,7 @@ final class BankOCRServiceImpl: BankOCRServiceProtocol {
             desc.removeSubrange(range)
         }
 
-        desc = desc.replacingOccurrences(of: #"^\s*\d{1,3}\s+"#, with: "", options: .regularExpression)
+        desc = (desc as NSString).replacingOccurrences(of: #"^\s*\d{1,3}\s+"#, with: "", options: .regularExpression, range: NSRange(location: 0, length: (desc as NSString).length))
         desc = desc.replacing("¥", with: "")
         desc = desc.replacing("￥", with: "")
         desc = desc.trimmingCharacters(in: .whitespaces)

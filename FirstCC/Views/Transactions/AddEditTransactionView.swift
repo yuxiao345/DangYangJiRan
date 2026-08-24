@@ -44,7 +44,7 @@ struct AddEditTransactionView: View {
     @State private var editingDestAmount: Bool = false
     @State private var showTemplates: Bool = false
     @State private var note: String = ""
-    @State private var date: Date = Date()
+    @State private var date: Date = Date.now
     @State private var selectedAccount: Account?
     @State private var selectedToAccount: Account?
     @State private var selectedCategory: Category?
@@ -2449,7 +2449,7 @@ struct AddEditTransactionView: View {
             PhotoStorage.delete(paths: oldPaths)
         }
         t.photoURLs = photoDataList.isEmpty ? nil : PhotoStorage.save(photoDataList, transactionId: t.id)
-        t.modifiedAt = Date()
+        t.modifiedAt = Date.now
 
         // Update paired transfer record (transfers create two linked records)
         if t.type == .transfer, let gid = t.transferGroupId {
@@ -2465,7 +2465,7 @@ struct AddEditTransactionView: View {
                     PhotoStorage.delete(paths: oldPaths)
                 }
                 paired.photoURLs = photoDataList.isEmpty ? nil : PhotoStorage.save(photoDataList, transactionId: paired.id)
-                paired.modifiedAt = Date()
+                paired.modifiedAt = Date.now
                 if let destCurrency = selectedToAccount?.effectiveCurrencyCode {
                     paired.currencyCode = destCurrency
                 }

@@ -148,7 +148,7 @@ struct ReconciliationServiceImpl: ReconciliationServiceProtocol {
             existingStmt.statementAmount = bankAmount
             existingStmt.reconciledAppAmount = appTotal
             existingStmt.isReconciled = true
-            existingStmt.reconciledAt = Date()
+            existingStmt.reconciledAt = Date.now
             statement = existingStmt
         } else {
             statement = CreditCardStatement(
@@ -160,7 +160,7 @@ struct ReconciliationServiceImpl: ReconciliationServiceProtocol {
                 context: context
             )
             statement.isReconciled = true
-            statement.reconciledAt = Date()
+            statement.reconciledAt = Date.now
             statement.ledger = ledger
         }
 

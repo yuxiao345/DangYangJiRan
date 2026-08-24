@@ -55,9 +55,10 @@ struct BudgetBookListView: View {
                 Button { showAddSheet = true } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel(Text("添加预算本"))
             }
             #if os(iOS)
-            ToolbarItem(placement: .navigationBarLeading) {
+            ToolbarItem(placement: .topBarLeading) {
                 EditButton()
             }
             #endif

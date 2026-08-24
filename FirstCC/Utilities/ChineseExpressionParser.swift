@@ -54,7 +54,7 @@ enum ChineseExpressionParser {
 
     private static func extractDate(from input: String) -> DateMatch {
         let cal = Calendar.current
-        let today = Date()
+        let today = Date.now
         let startOfToday = today.startOfDay
         let tomorrowStart = startOfToday.adding(.day, value: 1)
 
@@ -306,7 +306,7 @@ enum ChineseExpressionParser {
         }
 
         if let b = best {
-            let newRemaining = input.replacingOccurrences(of: b.keyword, with: "", options: [], range: nil)
+            let newRemaining = input.replacing(b.keyword, with: "")
             return DateMatch(range: b.range, matched: b.keyword, remaining: newRemaining)
         }
 
@@ -514,7 +514,7 @@ enum ChineseExpressionParser {
         }
 
         if let b = best {
-            let remaining = input.replacingOccurrences(of: b.keyword, with: "", options: [], range: nil)
+            let remaining = input.replacing(b.keyword, with: "")
             return TypeMatch(type: b.type, matched: b.keyword, remaining: remaining)
         }
 

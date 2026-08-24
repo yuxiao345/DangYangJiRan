@@ -43,7 +43,7 @@ struct CreateLedgerSheet: View {
         ledger.type = type
         ledger.defaultCurrencyCode = currencyCode
         ledger.iconName = type.systemIcon
-        ledger.createdAt = Date()
+        ledger.createdAt = Date.now
         try? modelContext.save()
         onCreated(ledger)
         dismiss()

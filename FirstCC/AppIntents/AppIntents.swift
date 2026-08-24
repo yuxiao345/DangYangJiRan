@@ -468,7 +468,7 @@ struct QuerySpendingIntent: AppIntent {
     @MainActor
     private func resolveDateRange() -> (ClosedRange<Date>, String) {
         let calendar = Calendar.current
-        let now = Date()
+        let now = Date.now
 
         if let start = startDate, let end = endDate {
             let formatter = DateFormatter()

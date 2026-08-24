@@ -4,6 +4,7 @@ import Charts
 // MARK: - Budget Card Hover State
 
 @Observable
+@MainActor
 private final class CardHoverState {
     var mouseOffset: CGPoint = .zero
     var isHovering = false
@@ -421,7 +422,7 @@ struct MacBudgetChartView: View {
                     .font(.designBodyCaption)
                     .foregroundStyle(Color.designOnSurfaceVariant)
                 Spacer()
-                Text(String(format: "%.1f%%", s.timeProgress * 100))
+                Text(s.timeProgress, format: .percent.precision(.fractionLength(1)))
                     .font(.system(size: 10, design: .monospaced))
                     .foregroundStyle(Color.designPrimaryFixedDim)
             }
@@ -441,7 +442,7 @@ struct MacBudgetChartView: View {
                     .font(.designBodyCaption)
                     .foregroundStyle(Color.designOnSurfaceVariant)
                 Spacer()
-                Text(String(format: "%.1f%%", s.budgetProgress * 100))
+                Text(s.budgetProgress, format: .percent.precision(.fractionLength(1)))
                     .font(.system(size: 10, design: .monospaced))
                     .foregroundStyle(s.isOnTrack ? Color.blue : Color.designAccentRed)
             }
@@ -592,7 +593,7 @@ private struct BudgetCardView: View {
                 CurrencyText(amount: item.budgetAmount, currencyCode: "", size: 10,
                     foregroundColor: Color.designOnSurfaceVariant.opacity(0.7), fractionDigits: 0)
                 Spacer(minLength: 4)
-                Text(String(format: "%.0f%%", item.percentage * 100))
+                Text(item.percentage, format: .percent.precision(.fractionLength(0)))
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundStyle(item.isOverBudget ? Color.designAccentRed : Color.designOnSurfaceVariant)
             }
@@ -681,7 +682,7 @@ private struct BudgetCardView: View {
             HStack {
                 Text(String(localized: "时间")).font(.system(size: 9)).foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
                 Spacer()
-                Text(String(format: "%.0f%%", item.timeProgress * 100))
+                Text(item.timeProgress, format: .percent.precision(.fractionLength(0)))
                     .font(.system(size: 9, design: .monospaced)).foregroundStyle(Color.designPrimaryFixedDim.opacity(0.6))
             }
             PixelProgressBar(progress: min(animTime, 1.0), tint: Color.designPrimaryFixedDim.opacity(0.4), totalBlocks: 12)

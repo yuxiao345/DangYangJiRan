@@ -299,6 +299,11 @@ struct AddEditBudgetItemView: View {
                     }
                     Slider(value: $alertThreshold, in: 0.5...1.0, step: 0.05)
                 }
+                #if os(iOS)
+                LabeledContent("预警阈值") {
+                    Slider(value: $alertThreshold, in: 0.5...1.0, step: 0.05)
+                }
+                #endif
                 Toggle(isOn: $isActive) {
                     Text("启用").font(fieldLabel).foregroundStyle(Color.designOnSurfaceVariant)
                 }
@@ -321,9 +326,7 @@ struct AddEditBudgetItemView: View {
                     Text("周期已锁定，与「\(lockedByCategory)」的预算周期保持一致")
                         .font(.caption).foregroundStyle(.orange)
                 }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("预警阈值: \(Int(alertThreshold * 100))%")
-                        .font(.footnote)
+                LabeledContent("预警阈值") {
                     Slider(value: $alertThreshold, in: 0.5...1.0, step: 0.05)
                 }
                 Toggle("启用", isOn: $isActive)

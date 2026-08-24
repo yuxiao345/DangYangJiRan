@@ -27,7 +27,7 @@ final class CoreDataStack {
 
     /// Timestamp of the most recent successful CloudKit import event.
     /// Used by `waitForImportSettled` to detect when initial sync is complete.
-    private(set) var lastImportEventTime: Date = Date()
+    private(set) var lastImportEventTime: Date = Date.now
 
     let cloudKitAvailable: Bool
 
@@ -158,7 +158,7 @@ final class CoreDataStack {
             }
             // Track successful import events to detect when initial sync settles
             if event.type.rawValue == 1 && event.succeeded {
-                self.lastImportEventTime = Date()
+                self.lastImportEventTime = Date.now
             }
         }
 
@@ -240,11 +240,11 @@ final class CoreDataStack {
     /// This method polls `lastImportEventTime` until no successful import has occurred
     /// for `quietPeriod` seconds, signalling the initial sync wave is complete.
     func waitForImportSettled(quietPeriod: TimeInterval = 5.0, maxWait: TimeInterval = 60.0) async {
-        let start = Date()
+        let start = Date.now
         DiagnosticLog.log("CoreDataStack: waiting for import to settle (quietPeriod=\(quietPeriod)s, maxWait=\(maxWait)s)")
         while true {
-            let elapsed = Date().timeIntervalSince(start)
-            let sinceLastImport = Date().timeIntervalSince(lastImportEventTime)
+            let elapsed = Date.now.timeIntervalSince(start)
+            let sinceLastImport = Date.now.timeIntervalSince(lastImportEventTime)
             if sinceLastImport >= quietPeriod {
                 DiagnosticLog.log("CoreDataStack: import settled after \(String(format: "%.1f", elapsed))s")
                 return
@@ -265,7 +265,7 @@ final class CoreDataStack {
     /// events can only fire after stores are loaded, so any import newer than
     /// that counts, even one that completed before this method was called.
     func waitForInitialImport(since baseline: Date, maxWait: TimeInterval = 30.0) async {
-        let start = Date()
+        let start = Date.now
         DiagnosticLog.log("CoreDataStack: waiting for initial import (maxWait=\(maxWait)s)")
         while Date().timeIntervalSince(start) < maxWait {
             if lastImportEventTime > baseline {

@@ -285,7 +285,7 @@ struct CategoryPieChartView: View {
                     VStack(alignment: .trailing, spacing: 2) {
                         CurrencyText(amount: item.amount, currencyCode: "", size: 15, foregroundColor: Color.designOnSurface)
                             .fontWeight(.medium)
-                        Text(String(format: "%.1f%%", item.percentage * 100))
+                        Text(item.percentage, format: .percent.precision(.fractionLength(1)))
                             .font(.designMonoDataSmall)
                             .foregroundStyle(Color.designOnSurfaceVariant)
                     }
@@ -315,7 +315,7 @@ struct CategoryPieChartView: View {
                                         .foregroundStyle(Color.designOnSurfaceVariant)
                                     Spacer()
                                     CurrencyText(amount: split.amount, currencyCode: "", size: 12, foregroundColor: Color.designOnSurfaceVariant)
-                                    Text(String(format: "%.1f%%", split.percentage * 100))
+                                    Text(split.percentage, format: .percent.precision(.fractionLength(1)))
                                         .font(.designMonoDataSmall)
                                         .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
                                 }

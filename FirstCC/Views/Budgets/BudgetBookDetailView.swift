@@ -6,7 +6,7 @@ struct BudgetBookDetailView: View {
     @Environment(AppContainer.self) private var appContainer
     let book: BudgetBook
 
-    @State private var selectedMonth: Date = Date()
+    @State private var selectedMonth: Date = Date.now
     @State private var items: [BudgetItem] = []
     @State private var showAddSheet = false
     @State private var editingItem: BudgetItem?
@@ -24,7 +24,7 @@ struct BudgetBookDetailView: View {
 
     /// 是否在查看历史月份（当月及以前，不含未来）
     private var isCurrentMonth: Bool {
-        Calendar.current.isDate(selectedMonth, equalTo: Date(), toGranularity: .month)
+        Calendar.current.isDate(selectedMonth, equalTo: .now, toGranularity: .month)
     }
 
     /// 所选月份的自然月范围，与账本起始日取交集
@@ -403,7 +403,7 @@ struct MonthYearPicker: View {
 
     private var months: [String] {
         let cal = Calendar.current
-        let year = cal.component(.year, from: Date())
+        let year = cal.component(.year, from: .now)
         return (1...12).compactMap { month -> String? in
             guard let date = cal.date(from: DateComponents(year: year, month: month, day: 1)) else { return nil }
             return date.formatted(.dateTime.month(.wide))

@@ -11,7 +11,7 @@ struct RefundSheetView: View {
 
     @State private var amount: Decimal = 0
     @State private var amountString: String = ""
-    @State private var date: Date = Date()
+    @State private var date: Date = Date.now
     @State private var note: String = ""
     @State private var showNumpad: Bool = false
     @State private var errorMessage: String?

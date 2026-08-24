@@ -36,6 +36,7 @@ struct AccountDetailView: View {
                 Button { showEditSheet = true } label: {
                     Image(systemName: "pencil")
                 }
+                .accessibilityLabel(Text("编辑账户"))
                 .accessibilityIdentifier("account-edit-button")
             }
         }

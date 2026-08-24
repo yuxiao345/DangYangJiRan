@@ -260,7 +260,7 @@ struct MacTreemapView: View {
                                 .foregroundStyle(.white)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.5)
-                            Text(String(format: "%.1f%%", percentage * 100))
+                            Text(percentage, format: .percent.precision(.fractionLength(1)))
                                 .font(.system(size: min(9, frame.width * 0.06), weight: .medium, design: .monospaced))
                                 .foregroundStyle(.white.opacity(0.7))
                                 .lineLimit(1)

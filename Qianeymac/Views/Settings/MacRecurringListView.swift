@@ -132,23 +132,33 @@ struct MacRecurringListView: View {
                         .foregroundStyle(Color.designOnSurfaceVariant)
                 }
             }
-            Image(systemName: rule.isActive ? "pause.circle" : "play.circle")
-                .font(.system(size: 16))
-                .foregroundStyle(rule.isActive ? .orange : .green)
-                .frame(width: 24, height: 24)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    try? appContainer.recurringService.toggleActive(for: rule, context: modelContext)
-                    refreshTrigger.toggle()
-                }
-            Image(systemName: "pencil")
-                .font(.caption).foregroundStyle(.tertiary)
-                .frame(width: 20, height: 20).contentShape(Rectangle())
-                .onTapGesture { editingRule = rule }
-            Image(systemName: "trash")
-                .font(.caption).foregroundStyle(.tertiary)
-                .frame(width: 20, height: 20).contentShape(Rectangle())
-                .onTapGesture { ruleToDelete = rule; showDeleteAlert = true }
+            Button {
+                try? appContainer.recurringService.toggleActive(for: rule, context: modelContext)
+                refreshTrigger.toggle()
+            } label: {
+                Image(systemName: rule.isActive ? "pause.circle" : "play.circle")
+                    .font(.body)
+                    .foregroundStyle(rule.isActive ? .orange : .green)
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(Text(rule.isActive ? "暂停周期账" : "启用周期账"))
+
+            Button { editingRule = rule } label: {
+                Image(systemName: "pencil")
+                    .font(.caption).foregroundStyle(.tertiary)
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(Text("编辑周期账"))
+
+            Button { ruleToDelete = rule; showDeleteAlert = true } label: {
+                Image(systemName: "trash")
+                    .font(.caption).foregroundStyle(.tertiary)
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(Text("删除周期账"))
         }
         .padding(.vertical, 4)
         .opacity(rule.isActive ? 1.0 : 0.55)

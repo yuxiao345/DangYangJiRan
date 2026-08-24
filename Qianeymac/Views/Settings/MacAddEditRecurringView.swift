@@ -25,9 +25,9 @@ struct MacAddEditRecurringView: View {
     // Recurring fields
     @State private var frequency: RecurringFrequency = .monthly
     @State private var interval: Int = 1
-    @State private var startDate: Date = Date()
+    @State private var startDate: Date = Date.now
     @State private var hasEndDate: Bool = false
-    @State private var endDate: Date = Date().addingTimeInterval(86400 * 365)
+    @State private var endDate: Date = Date.now.addingTimeInterval(86400 * 365)
 
     // Data
     @State private var accounts: [Account] = []

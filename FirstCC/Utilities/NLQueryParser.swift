@@ -8,7 +8,7 @@ enum NLQueryParser {
     private static let systemPrompt = """
     You are a financial search query parser. Extract search parameters from Chinese natural language and return ONLY a JSON object. No explanation.
 
-    Current date: \(Date().formatted(date: .complete, time: .omitted)), day of week: \(Calendar.current.component(.weekday, from: Date())-1) (1=Monday)
+    Current date: \(Date.now.formatted(date: .complete, time: .omitted)), day of week: \(Calendar.current.component(.weekday, from: .now)-1) (1=Monday)
 
     Return format:
     {"date":"YYYY-MM-DD to YYYY-MM-DD or relative keyword","keyword":"search term","type":"income/expense/transfer/lending or null","amount":"min-max or exact number or null"}
@@ -110,7 +110,7 @@ enum NLQueryParser {
 
     private static func parseDateExpression(_ expr: String) -> Range<Date>? {
         let cal = Calendar.current
-        let today = Date().startOfDay
+        let today = Date.now.startOfDay
         let lower = expr.lowercased()
 
         // "2025" → whole year

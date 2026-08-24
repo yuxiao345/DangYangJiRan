@@ -119,7 +119,7 @@ struct MemberPieChartView: View {
                             CurrencyText(amount: member.amount, currencyCode: "", size: 15, foregroundColor: Color.designOnSurface)
                                 .fontWeight(.medium)
                             HStack(spacing: 4) {
-                                Text(String(format: "%.1f%%", member.percentage * 100))
+                                Text(member.percentage, format: .percent.precision(.fractionLength(1)))
                                     .font(.designMonoDataSmall)
                                     .foregroundStyle(Color.designOnSurfaceVariant)
                                 Text("·")

@@ -472,7 +472,7 @@ private enum DummyDataSeeder {
     /// 生成 3 年模拟交易数据（支出为负数，含每月收入）
     static func seed(context: NSManagedObjectContext, ledger: Ledger) {
         let cal = Calendar.current
-        let today = cal.startOfDay(for: Date())
+        let today = cal.startOfDay(for: .now)
         guard let threeYearsAgo = cal.date(byAdding: .year, value: -3, to: today) else { return }
 
         let accounts = fetchAccounts(ledger: ledger, context: context)

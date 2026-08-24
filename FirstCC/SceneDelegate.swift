@@ -26,7 +26,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     ) {
         let count = UserDefaults.standard.integer(forKey: "diag_sceneDelegateFired") + 1
         UserDefaults.standard.set(count, forKey: "diag_sceneDelegateFired")
-        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "diag_sceneDelegateLastTime")
+        UserDefaults.standard.set(Date.now.timeIntervalSince1970, forKey: "diag_sceneDelegateLastTime")
 
         DiagnosticLog.log("SceneDelegate: userDidAcceptCloudKitShareWith fired #\(count)")
         Logger.info("SceneDelegate: userDidAcceptCloudKitShareWith fired #\(count)")

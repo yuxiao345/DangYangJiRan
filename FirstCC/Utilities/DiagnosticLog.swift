@@ -17,7 +17,7 @@ enum DiagnosticLog {
 #endif
 
     static func log(_ message: String) {
-        let timestamp = formatter.string(from: Date())
+        let timestamp = formatter.string(from: .now)
         print("[Diag] \(timestamp) \(message)")
 #if DEBUG
         let line = "[\(timestamp)] \(message)\n"

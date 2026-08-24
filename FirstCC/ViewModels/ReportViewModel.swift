@@ -30,7 +30,7 @@ enum ReportPeriod: Hashable {
 
     var dateRange: Range<Date>? {
         let cal = Calendar.current
-        let now = Date()
+        let now = Date.now
         let todayEnd = cal.date(byAdding: .day, value: 1, to: now) ?? now
         switch self {
         case .thisMonth:
@@ -336,7 +336,7 @@ enum BudgetViewDimension: CaseIterable {
     /// 当前维度的时间窗口（用于计算支出）
     func dateRange(bookStart: Date) -> ClosedRange<Date> {
         let cal = Calendar.current
-        let today = Date()
+        let today = Date.now
         let start: Date
         switch self {
         case .overall:
@@ -358,7 +358,7 @@ enum BudgetViewDimension: CaseIterable {
     /// 计算本维度的时间进度（所有预算项共享）
     func timeProgress(bookStart: Date, bookEnd: Date) -> (progress: Double, elapsed: Int, total: Int) {
         let cal = Calendar.current
-        let today = cal.startOfDay(for: Date())
+        let today = cal.startOfDay(for: .now)
         let start: Date
         let end: Date
         switch self {
@@ -391,7 +391,7 @@ enum BudgetViewDimension: CaseIterable {
     /// 消耗速率图的时间轴起点：取预算开始日期与维度周期起点的较晚者
     func burnRateStart(bookStart: Date) -> Date {
         let cal = Calendar.current
-        let today = Date()
+        let today = Date.now
         let dimStart: Date
         switch self {
         case .overall:
@@ -941,7 +941,7 @@ final class ReportViewModel {
 
         let dim = budgetViewDimension
         let cal = Calendar.current
-        let today = cal.startOfDay(for: Date())
+        let today = cal.startOfDay(for: .now)
         let start = cal.startOfDay(for: dim.burnRateStart(bookStart: book.startDate))
 
         // 计算维度的结束日期

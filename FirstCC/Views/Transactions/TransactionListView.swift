@@ -16,7 +16,7 @@ struct TransactionListView: View {
     @State private var transactions: [Transaction] = []
     @State private var showAddSheet = false
     @State private var filterType: TransactionType?
-    @State private var selectedMonth: Date = Date().startOfMonth
+    @State private var selectedMonth: Date = Date.now.startOfMonth
     @State private var selectedDay: Int?
     @State private var isCalendarExpanded = false
     @State private var dailyExpense: [Int: Decimal] = [:]
@@ -100,7 +100,7 @@ struct TransactionListView: View {
                 }
             }
             if !options.contains(.hideTypeFilter) {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .topBarLeading) {
                     Picker("类型筛选", selection: $filterType) {
                         Text("全部").tag(Optional<TransactionType>.none)
                         Text(TransactionType.expense.displayName).tag(Optional<TransactionType>.some(.expense))

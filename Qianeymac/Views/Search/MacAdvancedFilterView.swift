@@ -225,7 +225,7 @@ struct MacAdvancedFilterView: View {
 
     private let datePresets: [(String, Range<Date>)] = {
         let cal = Calendar.current
-        let today = Date()
+        let today = Date.now
         let startOfToday = today.startOfDay
         let tomorrowStart = startOfToday.adding(.day, value: 1)
         return [

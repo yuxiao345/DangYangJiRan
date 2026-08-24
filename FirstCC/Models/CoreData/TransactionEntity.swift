@@ -141,9 +141,9 @@ final class Transaction: NSManagedObject,  Sendable {
     override func awakeFromInsert() {
         super.awakeFromInsert()
         id = UUID()
-        createdAt = Date()
-        modifiedAt = Date()
-        date = Date()
+        createdAt = Date.now
+        modifiedAt = Date.now
+        date = Date.now
     }
 
     convenience init(
@@ -153,7 +153,7 @@ final class Transaction: NSManagedObject,  Sendable {
         exchangeRate: Double? = nil,
         convertedAmount: Decimal? = nil,
         note: String? = nil,
-        date: Date = Date(),
+        date: Date = Date.now,
         isReconciled: Bool = false,
         transferGroupId: UUID? = nil,
         refundGroupId: UUID? = nil,

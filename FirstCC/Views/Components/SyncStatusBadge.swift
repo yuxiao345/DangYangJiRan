@@ -99,7 +99,7 @@ struct SyncStatusBadge: View {
         if !acceptError.isEmpty { udDiag += "accept错误: \(acceptError)\n" }
         udDiag += "导入账本数: \(importCount)\n"
         if acceptStartTime > 0 {
-            let elapsed = Int(Date().timeIntervalSince1970 - acceptStartTime)
+            let elapsed = Int(Date.now.timeIntervalSince1970 - acceptStartTime)
             udDiag += "距接受开始: \(elapsed)秒\n"
         }
 

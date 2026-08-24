@@ -21,7 +21,7 @@ final class User: NSManagedObject {
     override func awakeFromInsert() {
         super.awakeFromInsert()
         id = UUID()
-        joinedAt = Date()
+        joinedAt = Date.now
     }
 
     convenience init(

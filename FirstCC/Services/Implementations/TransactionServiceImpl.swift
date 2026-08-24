@@ -144,29 +144,29 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
                 guard tokens.allSatisfy({ token in
                     if lcNote?.contains(token) == true { return true }
                     if lcTags.contains(where: { $0.contains(token) }) { return true }
-                    if let name = t.merchant?.name, name.lowercased().contains(token) { return true }
-                    if let name = t.category?.name, name.lowercased().contains(token) { return true }
-                    if let name = t.account?.name, name.lowercased().contains(token) { return true }
-                    if let name = t.toAccount?.name, name.lowercased().contains(token) { return true }
-                    if let name = t.member?.name, name.lowercased().contains(token) { return true }
-                    if let name = t.project?.name, name.lowercased().contains(token) { return true }
+                    if let name = t.merchant?.name, name.localizedStandardContains(token) { return true }
+                    if let name = t.category?.name, name.localizedStandardContains(token) { return true }
+                    if let name = t.account?.name, name.localizedStandardContains(token) { return true }
+                    if let name = t.toAccount?.name, name.localizedStandardContains(token) { return true }
+                    if let name = t.member?.name, name.localizedStandardContains(token) { return true }
+                    if let name = t.project?.name, name.localizedStandardContains(token) { return true }
                     // Amount: match formatted absolute value (e.g. "6199" in "￥6,199.00")
                     if String(format: "%.0f", Double(truncating: abs(t.amount) as NSNumber)).contains(token) { return true }
                     if String(format: "%.2f", Double(truncating: abs(t.amount) as NSNumber)).contains(token) { return true }
                     // Split entries: member name
                     if let entries = t.splitGroup?.entries {
                         for entry in entries {
-                            if let mn = entry.member?.name, mn.lowercased().contains(token) { return true }
+                            if let mn = entry.member?.name, mn.localizedStandardContains(token) { return true }
                         }
                     }
                     // Split children: their own notes/categories/members/projects/accounts
                     if let children = t.splitChildren {
                         for child in children {
-                            if let cn = child.note, cn.lowercased().contains(token) { return true }
-                            if let ccat = child.category?.name, ccat.lowercased().contains(token) { return true }
-                            if let cmem = child.member?.name, cmem.lowercased().contains(token) { return true }
-                            if let cproj = child.project?.name, cproj.lowercased().contains(token) { return true }
-                            if let cacc = child.account?.name, cacc.lowercased().contains(token) { return true }
+                            if let cn = child.note, cn.localizedStandardContains(token) { return true }
+                            if let ccat = child.category?.name, ccat.localizedStandardContains(token) { return true }
+                            if let cmem = child.member?.name, cmem.localizedStandardContains(token) { return true }
+                            if let cproj = child.project?.name, cproj.localizedStandardContains(token) { return true }
+                            if let cacc = child.account?.name, cacc.localizedStandardContains(token) { return true }
                         }
                     }
                     return false
@@ -177,7 +177,7 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
     }
 
     func updateTransaction(_ transaction: Transaction, context: NSManagedObjectContext) throws {
-        transaction.modifiedAt = Date()
+        transaction.modifiedAt = Date.now
         try context.save()
         NotificationCenter.default.post(name: .transactionDidChange, object: nil)
     }

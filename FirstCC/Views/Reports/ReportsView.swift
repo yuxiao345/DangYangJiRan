@@ -38,8 +38,8 @@ struct ReportsView: View {
     @State private var selectedReport: ReportType = .category
     @State private var selectedTransaction: Transaction?
     @State private var isUsingCustomRange = false
-    @State private var customStartDate = Date().startOfMonth
-    @State private var customEndDate = Date()
+    @State private var customStartDate = Date.now.startOfMonth
+    @State private var customEndDate = Date.now
     @State private var selectedDimension: DimensionType = .merchant
 
     var body: some View {
@@ -166,8 +166,8 @@ struct ReportsView: View {
                         if case .customRange = viewModel.selectedPeriod {
                             // reuse existing dates
                         } else {
-                            customStartDate = Date().startOfMonth
-                            customEndDate = Date()
+                            customStartDate = Date.now.startOfMonth
+                            customEndDate = Date.now
                         }
                         viewModel.selectedPeriod = .customRange(start: customStartDate, end: customEndDate)
                     }

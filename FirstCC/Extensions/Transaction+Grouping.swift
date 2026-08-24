@@ -3,7 +3,7 @@ import Foundation
 extension Array where Element == Transaction {
     func groupedByRelativeDate(locale: Locale? = nil) -> [(key: String, value: [Transaction])] {
         let cal = Calendar.current
-        let today = cal.startOfDay(for: Date())
+        let today = cal.startOfDay(for: .now)
         let yesterday = cal.date(byAdding: .day, value: -1, to: today) ?? today
 
         var todayTx: [Transaction] = []

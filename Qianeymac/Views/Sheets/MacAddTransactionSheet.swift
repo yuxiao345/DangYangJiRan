@@ -85,7 +85,7 @@ struct MacAddTransactionSheet: View {
             initEditing = nil; initDisplayMode = false
             initType = t.type; initAmount = abs(t.amount)
             initAmountString = String(describing: abs(t.amount))
-            initNote = "退款: \(t.note ?? "")"; initDate = Date()
+            initNote = "退款: \(t.note ?? "")"; initDate = Date.now
             initAccount = t.account; initToAccount = nil
             initCategory = t.category; initMember = nil
             initMerchant = nil; initProject = nil
@@ -1278,7 +1278,7 @@ struct MacAddTransactionSheet: View {
             t.type = type; t.amount = signingAmount(); t.note = note.isEmpty ? nil : note
             t.date = date; t.account = selectedAccount; t.toAccount = selectedToAccount
             t.category = selectedCategory; t.member = selectedMember; t.merchant = selectedMerchant
-            t.project = selectedProject; t.modifiedAt = Date()
+            t.project = selectedProject; t.modifiedAt = Date.now
 
             appContainer.transactionService.applyCurrency(to: t, currencyCode: activeCurrency, exchangeRate: exchangeRate, ledgerCurrencyCode: ledgerCurrencyCode)
 

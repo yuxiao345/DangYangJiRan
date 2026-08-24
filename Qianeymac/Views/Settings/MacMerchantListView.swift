@@ -11,6 +11,7 @@ struct MacMerchantListView: View {
     @State private var showDeleteAlert = false
     @State private var merchantToDelete: Merchant?
     @State private var refreshTrigger = false
+    @State private var errorMessage: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -56,6 +57,7 @@ struct MacMerchantListView: View {
                 Text("确定要删除商家「\(m.name)」吗？此操作不可撤销。")
             }
         }
+        .errorAlert("操作失败", message: $errorMessage)
         .sheet(isPresented: $showAddSheet, onDismiss: { refreshTrigger.toggle() }) {
             MacMerchantEditSheet(ledger: effectiveLedger)
         }
@@ -84,21 +86,26 @@ struct MacMerchantListView: View {
                     .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
             }
             Spacer()
-            Image(systemName: "pencil")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-                .frame(width: 20, height: 20)
-                .contentShape(Rectangle())
-                .onTapGesture { editingMerchant = merchant }
-            Image(systemName: "trash")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-                .frame(width: 20, height: 20)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    merchantToDelete = merchant
-                    showDeleteAlert = true
-                }
+            Button { editingMerchant = merchant } label: {
+                Image(systemName: "pencil")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(Text("编辑商家"))
+
+            Button {
+                merchantToDelete = merchant
+                showDeleteAlert = true
+            } label: {
+                Image(systemName: "trash")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(Text("删除商家"))
         }
         .padding(.vertical, 4)
     }
@@ -113,7 +120,7 @@ struct MacMerchantListView: View {
         do {
             try appContainer.merchantService.deleteMerchant(merchant, context: modelContext)
         } catch {
-            NSLog("[MacMerchantList] 删除商家失败: \(error.localizedDescription)")
+            errorMessage = String(localized: "删除商家失败: \(error.localizedDescription)")
         }
         merchantToDelete = nil
         load()

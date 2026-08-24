@@ -90,14 +90,21 @@ struct MacTemplateListView: View {
                         .foregroundStyle(Color.designOnSurfaceVariant)
                 }
             }
-            Image(systemName: "pencil")
-                .font(.caption).foregroundStyle(.tertiary)
-                .frame(width: 20, height: 20).contentShape(Rectangle())
-                .onTapGesture { editingTemplate = t }
-            Image(systemName: "trash")
-                .font(.caption).foregroundStyle(.tertiary)
-                .frame(width: 20, height: 20).contentShape(Rectangle())
-                .onTapGesture { templateToDelete = t; showDeleteAlert = true }
+            Button { editingTemplate = t } label: {
+                Image(systemName: "pencil")
+                    .font(.caption).foregroundStyle(.tertiary)
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(Text("编辑模板"))
+
+            Button { templateToDelete = t; showDeleteAlert = true } label: {
+                Image(systemName: "trash")
+                    .font(.caption).foregroundStyle(.tertiary)
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(Text("删除模板"))
         }
         .padding(.vertical, 4)
     }

@@ -123,7 +123,7 @@ final class AppContainer {
         // Baseline for detecting the first CloudKit import — captured right
         // after stores load so imports that finish during the identity fetch
         // below still count.
-        let storesLoadedAt = Date()
+        let storesLoadedAt = Date.now
 
         // One-time repair: backfill missing member/merchant/project on historical refunds.
         // Must run after stores are loaded so data is available.
@@ -177,7 +177,7 @@ final class AppContainer {
 
     private func shouldProcessShareURL(_ url: URL) -> Bool {
         let key = url.absoluteString
-        let now = Date()
+        let now = Date.now
         if let last = recentShareURLHashes[key], now.timeIntervalSince(last) < 5 {
             DiagnosticLog.log("handleShareURL: skip duplicate within 5s")
             return false
@@ -198,7 +198,7 @@ final class AppContainer {
         guard shouldProcessShareURL(url) else { return }
         let count = UserDefaults.standard.integer(forKey: "diag_onOpenURLFired") + 1
         UserDefaults.standard.set(count, forKey: "diag_onOpenURLFired")
-        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "diag_onOpenURLLastTime")
+        UserDefaults.standard.set(Date.now.timeIntervalSince1970, forKey: "diag_onOpenURLLastTime")
 
         DiagnosticLog.log("handleShareURL #\(count): \(url)")
 
@@ -259,7 +259,7 @@ final class AppContainer {
     func handleAcceptedShareMetadata(_ metadata: CKShare.Metadata) async {
         DiagnosticLog.startSession("share accept \(Date())")
         DiagnosticLog.log("handleAcceptedShareMetadata: called")
-        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "diag_acceptFlowStartTime")
+        UserDefaults.standard.set(Date.now.timeIntervalSince1970, forKey: "diag_acceptFlowStartTime")
         syncStatus = .error(String(localized: "接收开始"))
 
         do {

@@ -13,7 +13,7 @@ struct TransactionListContent: View {
     @Environment(\.managedObjectContext) private var modelContext
     @State private var transactions: [Transaction] = []
     @State private var filterType: TransactionType?
-    @State private var selectedMonth: Date = Date().startOfMonth
+    @State private var selectedMonth: Date = Date.now.startOfMonth
     @Binding var selectedDate: Date?
     @State private var transactionDays: Set<Int> = []
     @State private var dailyExpense: [Int: Decimal] = [:]

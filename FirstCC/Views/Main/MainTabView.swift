@@ -1,9 +1,13 @@
 import SwiftUI
 @preconcurrency import CoreData
 
+private enum AppTab: Hashable {
+    case dashboard, accounts, transactions, reports, settings
+}
+
 struct MainTabView: View {
     @Environment(\.managedObjectContext) private var modelContext
-    @State private var selectedTab = 0
+    @State private var selectedTab: AppTab = .dashboard
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -11,7 +15,7 @@ struct MainTabView: View {
                 .tabItem {
                     Label("总览", systemImage: "rectangle.grid.1x2")
                 }
-                .tag(0)
+                .tag(AppTab.dashboard)
                 .accessibilityIdentifier("tab-dashboard")
 
             NavigationStack {
@@ -20,7 +24,7 @@ struct MainTabView: View {
                 .tabItem {
                     Label("账户", systemImage: "creditcard")
                 }
-                .tag(1)
+                .tag(AppTab.accounts)
                 .accessibilityIdentifier("tab-accounts")
 
             NavigationStack {
@@ -34,21 +38,21 @@ struct MainTabView: View {
                 .tabItem {
                     Label("流水", systemImage: "list.bullet")
                 }
-                .tag(2)
+                .tag(AppTab.transactions)
                 .accessibilityIdentifier("tab-transactions")
 
             ReportsView()
                 .tabItem {
                     Label("报表", systemImage: "chart.bar")
                 }
-                .tag(3)
+                .tag(AppTab.reports)
                 .accessibilityIdentifier("tab-reports")
 
             SettingsView()
                 .tabItem {
                     Label("设置", systemImage: "gearshape")
                 }
-                .tag(4)
+                .tag(AppTab.settings)
                 .accessibilityIdentifier("tab-settings")
         }
         .tint(Color.designAccentGreen)

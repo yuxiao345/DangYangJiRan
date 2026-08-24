@@ -95,7 +95,7 @@ struct SplitDetailView: View {
             entry.paidDate = nil
         } else {
             entry.isPaid = true
-            entry.paidDate = Date()
+            entry.paidDate = Date.now
         }
         try? modelContext.save()
         loadEntries()

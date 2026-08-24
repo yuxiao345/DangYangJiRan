@@ -52,7 +52,7 @@ struct SplitServiceImpl: SplitServiceProtocol {
 
     func markEntryPaid(_ entry: SplitEntry, context: NSManagedObjectContext) throws {
         entry.isPaid = true
-        entry.paidDate = Date()
+        entry.paidDate = Date.now
         try saveAndNotify(context: context)
     }
 
@@ -60,7 +60,7 @@ struct SplitServiceImpl: SplitServiceProtocol {
         for entry in splitGroup.entries ?? [] {
             if !entry.isPaid {
                 entry.isPaid = true
-                entry.paidDate = Date()
+                entry.paidDate = Date.now
             }
         }
         try saveAndNotify(context: context)

@@ -99,22 +99,27 @@ struct MacCategoryListView: View {
                 Text("已隐藏").font(.designBodyCaption).foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
             }
             Spacer()
-            Image(systemName: "pencil")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-                .frame(width: 20, height: 20)
-                .contentShape(Rectangle())
-                .onTapGesture { editingCategory = cat }
-            Image(systemName: cat.isHidden ? "eye.slash" : "eye")
-                .font(.system(size: 14))
-                .foregroundStyle(cat.isHidden ? Color.designOnSurfaceVariant.opacity(0.4) : Color.designPrimaryFixedDim)
-                .frame(width: 24, height: 24)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    cat.isHidden = !cat.isHidden
-                    try? modelContext.save()
-                    toggleRefresh.toggle()
-                }
+            Button { editingCategory = cat } label: {
+                Image(systemName: "pencil")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(Text("编辑分类"))
+
+            Button {
+                cat.isHidden = !cat.isHidden
+                try? modelContext.save()
+                toggleRefresh.toggle()
+            } label: {
+                Image(systemName: cat.isHidden ? "eye.slash" : "eye")
+                    .font(.body)
+                    .foregroundStyle(cat.isHidden ? Color.designOnSurfaceVariant.opacity(0.4) : Color.designPrimaryFixedDim)
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(Text(cat.isHidden ? "显示分类" : "隐藏分类"))
         }
         .padding(.leading, cat.parent != nil ? 20 : 0)
     }

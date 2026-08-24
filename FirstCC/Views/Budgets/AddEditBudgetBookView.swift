@@ -11,8 +11,8 @@ struct AddEditBudgetBookView: View {
     private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }
 
     @State private var name: String = ""
-    @State private var startDate: Date = Date()
-    @State private var endDate: Date = Calendar.current.date(byAdding: .year, value: 1, to: Date()) ?? Date()
+    @State private var startDate: Date = Date.now
+    @State private var endDate: Date = Calendar.current.date(byAdding: .year, value: 1, to: .now) ?? Date()
     @State private var isActive: Bool = true
     @State private var matchBudgetItems: Bool = false
     @State private var errorMessage: String?
