@@ -272,14 +272,14 @@ final class SyncServiceImpl: SyncServiceProtocol {
             do {
                 let records = try await ckContainer.sharedCloudDatabase.records(for: [recordID])
                 if let share = records[recordID] as? CKShare { return share }
-            } catch {}
+            } catch { DiagnosticLog.log("SyncServiceImpl: share lookup FAILED — \(error.localizedDescription)") }
         }
 
         // 方式2：通过 Core Data fetchShares
         do {
             let shares = try coreDataStack.container.fetchShares(matching: [ledger.objectID])
             if let share = shares[ledger.objectID] { return share }
-        } catch {}
+        } catch { DiagnosticLog.log("SyncServiceImpl: share lookup FAILED — \(error.localizedDescription)") }
 
         // 方式3：直接查询 shared database 中的 CKShare 记录
         do {
@@ -289,7 +289,7 @@ final class SyncServiceImpl: SyncServiceProtocol {
             for (_, result) in results.matchResults {
                 if let share = try? result.get() as? CKShare { return share }
             }
-        } catch {}
+        } catch { DiagnosticLog.log("SyncServiceImpl: share lookup FAILED — \(error.localizedDescription)") }
 
         return nil
     }

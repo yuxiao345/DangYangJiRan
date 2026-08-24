@@ -429,7 +429,7 @@ private struct LedgerSettingsContent: View {
                     shareDetected = true
                     return
                 }
-            } catch {}
+            } catch { DiagnosticLog.log("SettingsWindow: share detection FAILED — \(error.localizedDescription)") }
         }
 
         do {
@@ -440,7 +440,7 @@ private struct LedgerSettingsContent: View {
                 shareDetected = true
                 return
             }
-        } catch {}
+        } catch { DiagnosticLog.log("SettingsWindow: share detection FAILED — \(error.localizedDescription)") }
 
         shareDetected = false
     }

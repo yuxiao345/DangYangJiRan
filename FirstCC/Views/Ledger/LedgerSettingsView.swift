@@ -302,7 +302,7 @@ struct LedgerSettingsView: View {
                 shareDetected = true
                 return
             }
-        } catch {}
+        } catch { DiagnosticLog.log("LedgerSettingsView: share detection FAILED — \(error.localizedDescription)") }
 
         // 方式3：直接查询 shared database 中的 CKShare 记录
         do {
@@ -319,7 +319,7 @@ struct LedgerSettingsView: View {
                     return
                 }
             }
-        } catch {}
+        } catch { DiagnosticLog.log("LedgerSettingsView: share detection FAILED — \(error.localizedDescription)") }
 
         shareDetected = false
     }

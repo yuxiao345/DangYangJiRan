@@ -35,6 +35,7 @@ struct MacAddTransactionSheet: View {
     @State private var merchants: [Merchant]
     @State private var projects: [Project]
     @State private var errorMessage: String?
+    @State private var showErrorAlert = false
     @State private var lendingDirection: LendingDirection
     @State private var pendingLendingTransactions: [Transaction]
     @State private var selectedLendingIDs: Set<UUID>
@@ -193,7 +194,7 @@ struct MacAddTransactionSheet: View {
             .sheet(isPresented: $showRefundSheet) {
                 if let t = editing { MacAddTransactionSheet(refunding: t) }
             }
-            .alert(errorMessage ?? "保存失败", isPresented: .constant(errorMessage != nil)) {
+            .alert(errorMessage ?? "保存失败", isPresented: $showErrorAlert) {
                 // System default OK button auto-dismisses the alert.
             } message: { Text(errorMessage ?? "") }
     }
@@ -1165,7 +1166,7 @@ struct MacAddTransactionSheet: View {
     private func deleteTx(_ t: Transaction) {
         if let paths = t.photoURLs, !paths.isEmpty { PhotoStorage.delete(paths: paths) }
         do { try appContainer.transactionService.deleteTransaction(t, context: modelContext); dismiss() }
-        catch { errorMessage = error.localizedDescription }
+        catch { errorMessage = error.localizedDescription; showErrorAlert = true }
     }
 
     // MARK: - Data
@@ -1256,14 +1257,16 @@ struct MacAddTransactionSheet: View {
 
     private func save() {
         guard let ledger = appContainer.currentLedger, amount != 0 else { return }
-        if isSplit { guard splitTotal == amount else { errorMessage = "拆分合计与总额不一致"; return } }
+        if isSplit { guard splitTotal == amount else { errorMessage = "拆分合计与总额不一致"; showErrorAlert = true; return } }
         if type == .lending {
             if selectedAccount == nil {
                 errorMessage = String(localized: "请选择账户")
+                showErrorAlert = true
                 return
             }
             if !AccountType.isValidLendingPair(selectedAccount?.type, selectedToAccount?.type) {
                 errorMessage = String(localized: "借贷交易必须有且仅有一个借贷账户参与")
+                showErrorAlert = true
                 return
             }
         }
@@ -1272,7 +1275,7 @@ struct MacAddTransactionSheet: View {
             let req = NSFetchRequest<Transaction>(entityName: "Transaction")
             req.predicate = NSPredicate(format: "id == %@", existing.id as CVarArg)
             req.fetchLimit = 1
-            guard let t = (try? modelContext.fetch(req))?.first else { errorMessage = String(localized: "交易未找到"); return }
+            guard let t = (try? modelContext.fetch(req))?.first else { errorMessage = String(localized: "交易未找到"); showErrorAlert = true; return }
 
             // Basic fields
             t.type = type; t.amount = signingAmount(); t.note = note.isEmpty ? nil : note
@@ -1335,13 +1338,13 @@ struct MacAddTransactionSheet: View {
             t.photoURLs = photoDataList.isEmpty ? nil : PhotoStorage.save(photoDataList, transactionId: t.id)
 
             do { try modelContext.save(); isEditing = false; NotificationCenter.default.post(name: .transactionDidChange, object: nil) }
-            catch { errorMessage = error.localizedDescription }
+            catch { errorMessage = error.localizedDescription; showErrorAlert = true }
         } else if let refundOriginal = refundingOriginal {
             // Refund: use the dedicated service method
             do {
                 _ = try appContainer.transactionService.createRefund(for: refundOriginal, amount: amount, date: date, context: modelContext)
                 dismiss()
-            } catch { errorMessage = error.localizedDescription }
+            } catch { errorMessage = error.localizedDescription; showErrorAlert = true }
         } else {
             let signed = signingAmount()
             if isSplit {
@@ -1367,7 +1370,7 @@ struct MacAddTransactionSheet: View {
                         date: date, note: note.isEmpty ? nil : note, ledger: ledger, context: modelContext
                     )
                     dismiss()
-                } catch { errorMessage = error.localizedDescription }
+                } catch { errorMessage = error.localizedDescription; showErrorAlert = true }
             } else {
                 let tx = Transaction(type: type, amount: signed, currencyCode: activeCurrency, note: note.isEmpty ? nil : note,
                     date: date, account: selectedAccount, toAccount: selectedToAccount,
@@ -1381,7 +1384,7 @@ struct MacAddTransactionSheet: View {
                     if type == .lending && (lendingDirection == .collect || lendingDirection == .repay) && !selectedLendingIDs.isEmpty { try linkSettled(txID: tx.id) }
                     if type == .income && !selectedExpenseIDs.isEmpty { try linkReimbursed(txID: tx.id) }
                     dismiss()
-                } catch { errorMessage = error.localizedDescription }
+                } catch { errorMessage = error.localizedDescription; showErrorAlert = true }
             }
         }
     }
@@ -1441,6 +1444,16 @@ extension View {
 // MARK: - macOS 27 兼容桥接
 
 struct DeleteConfirmationModifier: ViewModifier {
+    @Binding var deleteTarget: Transaction?
+    let onDelete: (Transaction) -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .modifier(DeleteConfirmationAlertModifier(deleteTarget: $deleteTarget, onDelete: onDelete))
+    }
+}
+
+private struct DeleteConfirmationAlertModifier: ViewModifier {
     @Binding var deleteTarget: Transaction?
     let onDelete: (Transaction) -> Void
 
