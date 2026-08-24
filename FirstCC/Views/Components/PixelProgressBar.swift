@@ -5,16 +5,19 @@ struct PixelProgressBar: View, Animatable {
     var progress: Double  // 0...1
     let totalBlocks: Int
     let tint: Color
+    /// VoiceOver 标签，描述进度状态（如"超支"或"可控"），避免仅靠颜色传达信息
+    var accessibilityLabel: String?
 
     var animatableData: Double {
         get { progress }
         set { progress = newValue }
     }
 
-    init(progress: Double, tint: Color, totalBlocks: Int = 20) {
+    init(progress: Double, tint: Color, totalBlocks: Int = 20, accessibilityLabel: String? = nil) {
         self.progress = max(0, min(1, progress))
         self.tint = tint
         self.totalBlocks = totalBlocks
+        self.accessibilityLabel = accessibilityLabel
     }
 
     var body: some View {
@@ -38,6 +41,7 @@ struct PixelProgressBar: View, Animatable {
                         .stroke(Color.designGlassBorderHighlight, lineWidth: 1)
                 }
         }
+        .accessibilityLabel(Text(accessibilityLabel ?? ""))
     }
 
     private var blockGap: CGFloat { 1.5 }

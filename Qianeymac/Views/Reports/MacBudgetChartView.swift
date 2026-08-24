@@ -465,8 +465,13 @@ struct MacBudgetChartView: View {
                 Text(s.budgetProgress, format: .percent.precision(.fractionLength(1)))
                     .font(.designLabelSmall)
                     .foregroundStyle(s.isOnTrack ? Color.blue : Color.designAccentRed)
+                    .accessibilityLabel(Text(s.isOnTrack ? String(localized: "在预算内") : String(localized: "超出预算")))
             }
-            PixelProgressBar(progress: min(animBudgetProgress, 1.0), tint: s.isOnTrack ? .blue : Color.designAccentRed)
+            PixelProgressBar(
+                progress: min(animBudgetProgress, 1.0),
+                tint: s.isOnTrack ? .blue : Color.designAccentRed,
+                accessibilityLabel: s.isOnTrack ? String(localized: "预算进度可控") : String(localized: "预算进度超支")
+            )
             Text("\(spentStr) / \(budgetStr)")
                 .font(.designMicroLabel)
                 .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.5))
@@ -635,6 +640,7 @@ private struct BudgetCardView: View {
                 Text(item.percentage, format: .percent.precision(.fractionLength(0)))
                     .font(.designMonoDataCompact)
                     .foregroundStyle(item.isOverBudget ? Color.designAccentRed : Color.designOnSurfaceVariant)
+                    .accessibilityLabel(Text(item.isOverBudget ? String(localized: "超支") : String(localized: "在预算内")))
             }
 
             cardTimeBar
@@ -740,8 +746,11 @@ private struct BudgetCardView: View {
                 Text("\(spentStr) / \(budgetStr)")
                     .font(.designMicroLabel).foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
             }
-            PixelProgressBar(progress: min(animBudget, 1.0),
-                tint: item.isOverBudget ? Color.designAccentRed : (Color(hex: item.colorHex) ?? .gray))
+            PixelProgressBar(
+                progress: min(animBudget, 1.0),
+                tint: item.isOverBudget ? Color.designAccentRed : (Color(hex: item.colorHex) ?? .gray),
+                accessibilityLabel: item.isOverBudget ? String(localized: "超支") : String(localized: "预算内")
+            )
         }
     }
 
@@ -755,6 +764,7 @@ private struct BudgetCardView: View {
             Image(systemName: iconName)
                 .font(.system(size: 9))
                 .foregroundStyle(isOnTrack ? Color.blue : Color.designAccentRed)
+                .accessibilityLabel(Text(isOnTrack ? String(localized: "节奏可控") : String(localized: "节奏超前")))
             Text(item.paceLabel)
                 .font(.designMicroLabel)
                 .foregroundStyle(isOnTrack ? Color.blue : Color.designAccentRed)
