@@ -66,7 +66,7 @@ struct DashboardView: View {
                     } else {
                         LazyVStack(spacing: 12) {
                             ForEach(viewModel.recentTransactions, id: \.objectID) { transaction in
-                                NavigationLink(value: transaction.objectID) {
+                                NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
                                     TransactionRowView(transaction: transaction)
                                 }
                                 .buttonStyle(.plain)

@@ -241,14 +241,11 @@ struct SearchView: View {
             ForEach(groupedResults, id: \.key) { group in
                 Section(group.key) {
                     ForEach(group.value, id: \.objectID) { transaction in
-                        TransactionRowView(transaction: transaction)
-                            .background {
-                                NavigationLink(value: transaction.objectID) {
-                                    EmptyView()
-                                }
-                                .opacity(0)
-                            }
-                            .accessibilityIdentifier("search-result-cell")
+                        NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
+                            TransactionRowView(transaction: transaction)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("search-result-cell")
                     }
                 }
             }
