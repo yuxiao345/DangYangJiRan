@@ -158,17 +158,15 @@ final class QianyiUITests: XCTestCase {
 
         // 流水列表第一个 cell
         let firstCell = app.buttons["tx-list-cell"].firstMatch
-        if firstCell.waitForExistence(timeout: 10) {
-            firstCell.tap()
+        XCTAssertTrue(firstCell.waitForExistence(timeout: 10),
+                      "测试需要有交易数据才能验证 NavigationLink 导航功能，请先确保种子数据已配置")
 
-            // 详情页删除按钮应可见
-            let deleteButton = app.buttons["tx-detail-delete-button"]
-            XCTAssertTrue(deleteButton.waitForExistence(timeout: 10),
-                          "详情页删除按钮应可见")
-        } else {
-            // 无交易：删除按钮不应存在
-            XCTAssertFalse(app.buttons["tx-detail-delete-button"].exists,
-                           "无交易时不应有详情删除按钮")
-        }
+        // tap 触发 NavigationLink 导航到详情页
+        firstCell.tap()
+
+        // 验证导航真的发生了（详情页删除按钮出现）
+        let deleteButton = app.buttons["tx-detail-delete-button"]
+        XCTAssertTrue(deleteButton.waitForExistence(timeout: 10),
+                      "NavigationLink tap 后应导航到详情页，删除按钮应可见")
     }
 }

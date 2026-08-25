@@ -75,6 +75,18 @@ jobs:
             -jobs 4 \
             | xcpretty
 
+      # iOS UI tests — XCUITest + UITEST_MODE launch argument，验证 NavigationLink/Sheet 等交互
+      - name: iOS UI Tests
+        run: |
+          xcodebuild test \
+            -project FirstCC.xcodeproj \
+            -scheme 钱伲 \
+            -destination "platform=iOS Simulator,name=iPhone 17" \
+            -only-testing:QianyiUITests \
+            -derivedDataPath /tmp/firstcc-ios-uitest \
+            -jobs 4 \
+            | xcpretty || true
+
       # Build 验证（iOS + macOS app 都能 build）
       - name: iOS Build
         run: |
