@@ -12,10 +12,15 @@ struct CalendarStripView: View {
     @Binding var monthlyIncome: Decimal
     @Binding var monthlyExpense: Decimal
 
-    /// weekdayOffset: how many empty cells before day 1, assuming columns start from Monday.
-    /// Calendar.weekday: 1=Sun 2=Mon … 7=Sat. Column 0 = Mon, so offset = (weekday-2+7)%7.
+    /// weekdayOffset: how many empty cells before day 1, with column 0 = firstWeekday.
+    /// Calendar.weekday: 1=Sun 2=Mon … 7=Sat.
     var daysInMonth: Int { selectedMonth.daysInMonth }
-    var weekdayOffset: Int { (selectedMonth.firstWeekdayOfMonth - 2 + 7) % 7 }
+    var weekdayOffset: Int {
+        let cal = Calendar.current
+        let firstWeekday = cal.firstWeekday  // 1=Sun, 2=Mon
+        let monthFirstWeekday = cal.component(.weekday, from: selectedMonth.startOfMonth)
+        return (monthFirstWeekday - firstWeekday + 7) % 7
+    }
     var monthTitle: String { selectedMonth.monthDisplay }
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 2), count: 7)
@@ -316,10 +321,11 @@ struct CalendarStripView: View {
         } else {
             refDate = Date.now
         }
-        // Force week to start on Monday, regardless of Calendar locale
+        // Use firstWeekday so week dates align with weekLabels header
         let weekday = cal.component(.weekday, from: refDate) // 1=Sun..7=Sat
-        let daysFromMonday = (weekday + 5) % 7
-        let monday = cal.date(byAdding: .day, value: -daysFromMonday, to: cal.startOfDay(for: refDate)) ?? refDate
-        return (0..<7).compactMap { cal.date(byAdding: .day, value: $0, to: monday) }
+        let firstWeekday = cal.firstWeekday  // 1=Sun, 2=Mon
+        let offset = (weekday - firstWeekday + 7) % 7
+        let weekStart = cal.date(byAdding: .day, value: -offset, to: cal.startOfDay(for: refDate)) ?? refDate
+        return (0..<7).compactMap { cal.date(byAdding: .day, value: $0, to: weekStart) }
     }
 }
