@@ -60,7 +60,7 @@ struct TransactionListView: View {
                         ForEach(groupedByDate, id: \.key) { group in
                             dateSectionHeader(dateKey: group.key, transactions: group.value, fullMonthSettlementIDs: fullSettlementIDs)
                             ForEach(group.value, id: \.objectID) { transaction in
-                                NavigationLink(value: transaction.objectID) {
+                                NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
                                     TransactionRowView(transaction: transaction)
                                 }
                                 .buttonStyle(.plain)
