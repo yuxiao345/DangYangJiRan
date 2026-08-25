@@ -27,10 +27,11 @@ struct CalendarStripView: View {
         // 找本周第一天，然后向后取 7 天
         let weekday = cal.component(.weekday, from: ref)
         let firstWeekday = cal.firstWeekday
-        let offset = (firstWeekday - weekday + 7) % 7
+        // 回退到本周 firstWeekday 那天的天数
+        let offset = (weekday - firstWeekday + 7) % 7
         guard let weekStart = cal.date(byAdding: .day, value: -offset, to: ref) else { return [] }
-        return (0..<7).map { offset in
-            let date = cal.date(byAdding: .day, value: offset, to: weekStart)!
+        return (0..<7).map { step in
+            let date = cal.date(byAdding: .day, value: step, to: weekStart)!
             return date.formatted(.dateTime.weekday(.short))
         }
     }

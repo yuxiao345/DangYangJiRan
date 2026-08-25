@@ -16,6 +16,7 @@ struct MacAddEditBudgetBookView: View {
     @State private var isActive: Bool = true
     @State private var matchBudgetItems: Bool = false
     @State private var errorMessage: String?
+    @State private var showErrorAlert: Bool = false
 
     private var isEditing: Bool { editing != nil }
 
@@ -63,8 +64,7 @@ struct MacAddEditBudgetBookView: View {
                 Button("保存") { save() }.disabled(name.isEmpty).glassTextButton()
             }
         }
-        .alert("保存失败", isPresented: .constant(errorMessage != nil)) {
-            // System default OK button auto-dismisses the alert.
+        .alert("保存失败", isPresented: $showErrorAlert) {
         } message: { Text(errorMessage ?? "") }
         .onAppear {
             if let b = editing {
@@ -83,8 +83,7 @@ struct MacAddEditBudgetBookView: View {
 
         if let dup = try? appContainer.budgetService.findBookByName(name, ledger: l, context: modelContext),
            dup.id != editing?.id {
-            errorMessage = String(localized: "同名预算计划「\(name)」已存在")
-            return
+            errorMessage = String(localized: "同名预算计划「\(name)」已存在"); showErrorAlert = true; return
         }
 
         if let b = editing {

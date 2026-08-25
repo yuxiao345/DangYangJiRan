@@ -36,6 +36,7 @@ struct MacAddEditRecurringView: View {
     @State private var merchants: [Merchant] = []
     @State private var projects: [Project] = []
     @State private var errorMessage: String?
+    @State private var showErrorAlert: Bool = false
 
     private var isEditing: Bool { editing != nil }
 
@@ -197,8 +198,7 @@ struct MacAddEditRecurringView: View {
                 Button("保存") { save() }.disabled(name.isEmpty)
             }
         }
-        .alert("保存失败", isPresented: .constant(errorMessage != nil)) {
-            // System default OK button auto-dismisses the alert.
+        .alert("保存失败", isPresented: $showErrorAlert) {
         } message: { Text(errorMessage ?? "") }
         .onAppear { loadData(); prefillEditing() }
     }
@@ -250,8 +250,7 @@ struct MacAddEditRecurringView: View {
 
         if let dup = try? appContainer.templateService.findByName(name, ledger: l, context: modelContext),
            dup.id != editing?.template?.id {
-            errorMessage = String(localized: "同名周期账「\(name)」已存在")
-            return
+            errorMessage = String(localized: "同名周期账「\(name)」已存在"); showErrorAlert = true; return
         }
 
         let end = hasEndDate ? endDate : nil

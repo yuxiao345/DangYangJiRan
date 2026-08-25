@@ -26,6 +26,7 @@ struct MacAddEditTemplateView: View {
     @State private var merchants: [Merchant] = []
     @State private var projects: [Project] = []
     @State private var errorMessage: String?
+    @State private var showErrorAlert: Bool = false
 
     private var isEditing: Bool { editing != nil }
 
@@ -147,8 +148,7 @@ struct MacAddEditTemplateView: View {
                 Button("保存") { save() }.disabled(name.isEmpty)
             }
         }
-        .alert("保存失败", isPresented: .constant(errorMessage != nil)) {
-            // System default OK button auto-dismisses the alert.
+        .alert("保存失败", isPresented: $showErrorAlert) {
         } message: { Text(errorMessage ?? "") }
         .onAppear { loadData(); prefillEditing() }
     }
@@ -188,8 +188,7 @@ struct MacAddEditTemplateView: View {
 
         if let dup = try? appContainer.templateService.findByName(name, ledger: l, context: modelContext),
            dup.id != editing?.id {
-            errorMessage = String(localized: "同名模板「\(name)」已存在")
-            return
+            errorMessage = String(localized: "同名模板「\(name)」已存在"); showErrorAlert = true; return
         }
 
         if let t = editing {

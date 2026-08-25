@@ -9,6 +9,7 @@ struct CreateLedgerMacSheet: View {
     @State private var name = ""
     @State private var currencyCode = "CNY"
     @State private var errorMessage: String?
+    @State private var showErrorAlert: Bool = false
 
     private let currencies = ["CNY", "USD", "EUR", "JPY", "GBP", "HKD"]
 
@@ -33,8 +34,7 @@ struct CreateLedgerMacSheet: View {
                         .accessibilityIdentifier("create-ledger-mac-save-button")
                 }
             }
-            .alert("创建失败", isPresented: .constant(errorMessage != nil)) {
-                // System default OK button auto-dismisses the alert.
+            .alert("创建失败", isPresented: $showErrorAlert) {
             } message: { Text(errorMessage ?? "") }
         }
         .frame(width: 400, height: 280)
@@ -49,7 +49,7 @@ struct CreateLedgerMacSheet: View {
             onDone()
             dismiss()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.localizedDescription; showErrorAlert = true
         }
     }
 }

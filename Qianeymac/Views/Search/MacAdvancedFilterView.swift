@@ -31,6 +31,7 @@ struct MacAdvancedFilterView: View {
     @State private var numpadText = ""
     @State private var activeAmountField: AmountFieldTarget?
     @State private var amountError: String?
+    @State private var showErrorAlert: Bool = false
 
     // Multi-select popover state — separate bool per type to avoid timing issues
     @State private var showCategoryPicker = false
@@ -75,8 +76,7 @@ struct MacAdvancedFilterView: View {
         }
         .onAppear { loadData() }
         .onChange(of: appContainer.currentLedger?.id) { _, _ in loadData() }
-        .alert(amountError ?? "", isPresented: .constant(amountError != nil)) {
-            // System default OK button auto-dismisses the alert.
+        .alert(amountError ?? "", isPresented: $showErrorAlert) {
         } message: {
             Text(amountError ?? "")
         }
@@ -339,14 +339,12 @@ struct MacAdvancedFilterView: View {
                         switch activeAmountField {
                         case .min:
                             if let max = amountMax, parsed > max {
-                                amountError = String(localized: "最低金额不能高于最高金额")
-                                return
+                                amountError = String(localized: "最低金额不能高于最高金额"); showErrorAlert = true; return
                             }
                             amountMin = parsed
                         case .max:
                             if let min = amountMin, parsed < min {
-                                amountError = String(localized: "最高金额不能低于最低金额")
-                                return
+                                amountError = String(localized: "最高金额不能低于最低金额"); showErrorAlert = true; return
                             }
                             amountMax = parsed
                         case .none: break

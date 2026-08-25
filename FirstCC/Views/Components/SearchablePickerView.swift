@@ -151,6 +151,15 @@ struct SearchablePickerView<Item: Identifiable & Hashable>: View {
         }
         .padding(.leading, CGFloat(level) * 24)
         .contentShape(Rectangle())
+        .onTapGesture {
+            if isSelected {
+                selection = nil
+            } else {
+                selection = item
+                saveRecent(item)
+            }
+            dismiss()
+        }
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
         .accessibilityAction {

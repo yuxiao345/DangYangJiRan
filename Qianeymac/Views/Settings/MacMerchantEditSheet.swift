@@ -12,6 +12,7 @@ struct MacMerchantEditSheet: View {
     @State private var category: String = ""
     @State private var isActive: Bool = true
     @State private var errorMessage: String?
+    @State private var showErrorAlert: Bool = false
 
     private var isEditing: Bool { editing != nil }
 
@@ -49,8 +50,7 @@ struct MacMerchantEditSheet: View {
                 Button("保存") { save() }.disabled(name.isEmpty)
             }
         }
-        .alert("保存失败", isPresented: .constant(errorMessage != nil)) {
-            // System default OK button auto-dismisses the alert.
+        .alert("保存失败", isPresented: $showErrorAlert) {
         } message: { Text(errorMessage ?? "") }
         .onAppear {
             if let m = editing {
@@ -63,14 +63,13 @@ struct MacMerchantEditSheet: View {
 
     private func save() {
         guard !name.trimmingCharacters(in: .whitespaces).isEmpty else {
-            errorMessage = String(localized: "请输入商家名称"); return
+            errorMessage = String(localized: "请输入商家名称"); showErrorAlert = true; return
         }
         guard let l = ledger ?? editing?.ledger ?? appContainer.currentLedger else { return }
 
         if let dup = try? appContainer.merchantService.findByName(name, ledger: l, context: modelContext),
            dup.id != editing?.id {
-            errorMessage = String(localized: "同名商家「\(name)」已存在")
-            return
+            errorMessage = String(localized: "同名商家「\(name)」已存在"); showErrorAlert = true; return
         }
 
         if let existing = editing {

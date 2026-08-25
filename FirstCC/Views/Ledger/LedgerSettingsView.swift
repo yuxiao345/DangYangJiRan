@@ -289,7 +289,7 @@ struct LedgerSettingsView: View {
                     return
                 }
             } catch {
-                // recordName 方式失败，继续 fallback
+                DiagnosticLog.log("LedgerSettingsView: share detection (recordName) FAILED — \(error.localizedDescription)")
             }
         }
 

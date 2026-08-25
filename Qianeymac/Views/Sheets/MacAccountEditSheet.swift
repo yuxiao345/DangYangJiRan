@@ -28,6 +28,7 @@ struct MacAccountEditSheet: View {
     @State private var customTypeName: String
     @State private var existingCustomTypes: [String] = []
     @State private var errorMessage: String?
+    @State private var showErrorAlert: Bool = false
 
     private var effectiveLedger: Ledger { ledger }
 
@@ -88,8 +89,7 @@ struct MacAccountEditSheet: View {
         }
         .onAppear { loadExistingCustomTypes() }
         .onChange(of: accountType) { _, _ in loadExistingCustomTypes() }
-        .alert("保存失败", isPresented: .constant(errorMessage != nil)) {
-            // System default OK button auto-dismisses the alert.
+        .alert("保存失败", isPresented: $showErrorAlert) {
         } message: { Text(errorMessage ?? "") }
     }
 
@@ -238,7 +238,7 @@ struct MacAccountEditSheet: View {
 
     private func save() {
         guard !name.trimmingCharacters(in: .whitespaces).isEmpty else {
-            errorMessage = "请输入账户名称"; return
+            errorMessage = "请输入账户名称"; showErrorAlert = true; return
         }
         do {
             if let account = editing {
@@ -267,7 +267,7 @@ struct MacAccountEditSheet: View {
             NotificationCenter.default.post(name: .transactionDidChange, object: nil)
             dismiss()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.localizedDescription; showErrorAlert = true
         }
     }
 }

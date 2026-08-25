@@ -167,7 +167,7 @@ struct BudgetBookDetailMacView: View {
                             Label("编辑", systemImage: "pencil")
                         }
                         Button(role: .destructive) {
-                            deleteCandidate = item
+                            deleteCandidate = item; showDeleteConfirm = true
                         } label: {
                             Label("删除", systemImage: "trash")
                         }
