@@ -462,7 +462,6 @@
 		8AEEA720C57BCDC5B0AB899D /* MemberServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberServiceImpl.swift; sourceTree = "<group>"; };
 		8C11EDFBC7413BA6F31DD4A4 /* TransactionRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionRowView.swift; sourceTree = "<group>"; };
 		8C8B386C22A054949810A8DE /* TemplateListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateListView.swift; sourceTree = "<group>"; };
-		8CC6E09AD3B24EBCBD83A7DA /* FirstCC.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FirstCC.entitlements; sourceTree = "<group>"; };
 		8D4DE32FE90B9445693B54FA /* BankTransactionItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankTransactionItem.swift; sourceTree = "<group>"; };
 		8D8132C4EDFBAEEC7935A871 /* LedgerSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedgerSettingsView.swift; sourceTree = "<group>"; };
 		8DA72651BC0D4CF79893B5F9 /* SplitGroupEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitGroupEntity.swift; sourceTree = "<group>"; };
@@ -857,7 +856,6 @@
 		88932FD6DD0EDC80FBF1C921 = {
 			isa = PBXGroup;
 			children = (
-				8CC6E09AD3B24EBCBD83A7DA /* FirstCC.entitlements */,
 				1034C7815287DAE7BF2D7474 /* FirstCC */,
 				9AB5F8B12FCD51C400F5044E /* Qianeymac */,
 				9AB5F8C42FCD51C700F5044E /* QianeymacTests */,
