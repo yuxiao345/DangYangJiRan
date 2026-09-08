@@ -25,7 +25,7 @@ struct BudgetBookListView: View {
                     .foregroundStyle(.secondary)
             }
             ForEach(books) { book in
-                NavigationLink(destination: BudgetBookDetailView(book: book)) {
+                NavigationLink(destination: budgetDetailDestination(for: book)) {
                     bookRow(book)
                 }
                 .swipeActions(edge: .leading) {

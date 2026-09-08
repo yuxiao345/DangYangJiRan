@@ -105,10 +105,12 @@ struct MacCategoryChartView: View {
         .onAppear { triggerAnimations() }
         .onChange(of: categories.map(\.id)) { _, _ in
             explodedIndex = nil
+            hoveredIndex = nil
             triggerAnimations()
         }
         .onChange(of: memberSplitActive) { _, _ in
             explodedIndex = nil
+            hoveredIndex = nil
             triggerAnimations()
         }
     }

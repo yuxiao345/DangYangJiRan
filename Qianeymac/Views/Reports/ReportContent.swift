@@ -74,7 +74,7 @@ struct ReportDetailContent: View {
         if reduceMotion {
             body()
         } else {
-            animating {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                 body()
             }
         }
