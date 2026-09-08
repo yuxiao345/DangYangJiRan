@@ -218,6 +218,43 @@ final class TransactionServiceTests: CoreDataTestCase {
         XCTAssertLessThanOrEqual(refund.date, after)
     }
 
+    /// 累计退款：等于原交易金额允许
+    func test_createRefund_cumulativeEqualsOriginal_succeeds() throws {
+        let ledger = context.makeLedger()
+        let account = context.makeAccount("现金", ledger: ledger)
+        let original = context.makeTransaction(amount: -500, account: account, ledger: ledger)
+
+        _ = try service.createRefund(for: original, amount: 200, date: Date(), context: context)
+        _ = try service.createRefund(for: original, amount: 200, date: Date(), context: context)
+        let lastRefund = try service.createRefund(for: original, amount: 100, date: Date(), context: context)
+
+        XCTAssertEqual(lastRefund.amount, 100)
+    }
+
+    /// 累计退款：超过原交易金额抛错
+    func test_createRefund_cumulativeExceedsOriginal_throws() throws {
+        let ledger = context.makeLedger()
+        let account = context.makeAccount("现金", ledger: ledger)
+        let original = context.makeTransaction(amount: -500, account: account, ledger: ledger)
+
+        _ = try service.createRefund(for: original, amount: 300, date: Date(), context: context)
+
+        XCTAssertThrowsError(try service.createRefund(for: original, amount: 250, date: Date(), context: context)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("剩余可退金额"))
+        }
+    }
+
+    /// 累计退款：剩余为 0 时再退抛错
+    func test_createRefund_fullyRefunded_throws() throws {
+        let ledger = context.makeLedger()
+        let account = context.makeAccount("现金", ledger: ledger)
+        let original = context.makeTransaction(amount: -500, account: account, ledger: ledger)
+
+        _ = try service.createRefund(for: original, amount: 500, date: Date(), context: context)
+
+        XCTAssertThrowsError(try service.createRefund(for: original, amount: 1, date: Date(), context: context))
+    }
+
     // MARK: - fetchTransactions
 
     /// 默认查询：返回 ledger 全部交易

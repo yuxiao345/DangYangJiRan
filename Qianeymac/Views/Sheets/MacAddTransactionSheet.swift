@@ -146,7 +146,6 @@ struct MacAddTransactionSheet: View {
     @State private var showDestNumpad: Bool = false
     @State private var destNumpadText: String = ""
     @State private var splitNumpadText: String = ""
-
     init(editing: Transaction? = nil, displayMode: Bool = false, refunding: Transaction? = nil, prefillDate: Date? = nil) {
         let initEditing: Transaction?
         let initDisplayMode: Bool
@@ -170,6 +169,7 @@ struct MacAddTransactionSheet: View {
 
         if let t = refunding {
             initEditing = nil; initDisplayMode = false
+            // 累计退款超额由 service 层 createRefund 抛错拦截（UI 不预取剩余金额，避免 init 中读环境/静态成员）
             initType = t.type; initAmount = abs(t.amount)
             initAmountString = String(describing: abs(t.amount))
             initNote = "退款: \(t.note ?? "")"; initDate = Date.now

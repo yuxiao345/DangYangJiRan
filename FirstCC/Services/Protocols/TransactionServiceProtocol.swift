@@ -19,6 +19,10 @@ protocol TransactionServiceProtocol {
         date: Date?,
         context: NSManagedObjectContext
     ) throws -> Transaction
+    /// 原交易累计已退总额（refundAmount 字段优先，缺失则用 abs(amount)）
+    func existingRefundTotal(for original: Transaction, context: NSManagedObjectContext) -> Decimal
+    /// 剩余可退金额 = max(0, abs(原交易金额) - 累计已退)。累计退款校验的唯一真相来源。
+    func remainingRefundable(for original: Transaction, context: NSManagedObjectContext) -> Decimal
     func fetchTransactions(
         for ledger: Ledger,
         context: NSManagedObjectContext,

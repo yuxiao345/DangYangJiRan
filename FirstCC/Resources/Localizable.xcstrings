@@ -2022,6 +2022,23 @@
         }
       }
     },
+    "最大可退金额 %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Max refund %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最大可退金额 %@"
+          }
+        }
+      }
+    },
     "最近交易" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4864,6 +4881,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已退款"
+          }
+        }
+      }
+    },
+    "已退 %@ / 剩余可退 %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refunded %@ / Remaining %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已退 %@ / 剩余可退 %@"
           }
         }
       }
@@ -11645,6 +11679,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "退款金额超过原交易金额"
+          }
+        }
+      }
+    },
+    "退款金额超过剩余可退金额" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refund amount exceeds the remaining refundable amount"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退款金额超过剩余可退金额"
+          }
+        }
+      }
+    },
+    "退款金额超过剩余可退金额 %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refund amount exceeds the remaining refundable amount %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退款金额超过剩余可退金额 %@"
           }
         }
       }

@@ -62,6 +62,12 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
         context: NSManagedObjectContext
     ) throws -> Transaction {
         let absAmount = abs(amount)
+        // 累计退款校验：本次 + 已退总额 ≤ 原交易 abs(金额)
+        // 防止多笔退款累计超过原交易（导致余额异常、净支出变负）
+        let remaining = remainingRefundable(for: original, context: context)
+        guard absAmount <= remaining else {
+            throw TransactionError.refundExceedsRemaining(remaining: remaining, currencyCode: original.currencyCode)
+        }
         let signedAmount: Decimal = original.type == .expense ? absAmount : -absAmount
         let refundDate = date ?? Date()
         let refund = Transaction(
@@ -85,6 +91,20 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
         try context.save()
         NotificationCenter.default.post(name: .transactionDidChange, object: nil)
         return refund
+    }
+
+    /// 累加原交易已有退款总额（refundAmount 字段优先，缺失则用 abs(amount)）
+    /// 用于 createRefund 累计校验和 UI 显示"剩余可退"
+    func existingRefundTotal(for original: Transaction, context: NSManagedObjectContext) -> Decimal {
+        let request = NSFetchRequest<Transaction>(entityName: "Transaction")
+        request.predicate = NSPredicate(format: "refundGroupId == %@", original.id as CVarArg)
+        let refunds = (try? context.fetch(request)) ?? []
+        return refunds.reduce(Decimal(0)) { $0 + ($1.refundAmount ?? abs($1.amount)) }
+    }
+
+    /// 剩余可退金额 = max(0, 原交易 abs(金额) - 已退累计)。累计退款校验的唯一真相来源。
+    func remainingRefundable(for original: Transaction, context: NSManagedObjectContext) -> Decimal {
+        max(0, abs(original.amount) - existingRefundTotal(for: original, context: context))
     }
 
     func fetchTransactions(
@@ -296,6 +316,17 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
         } else {
             t.exchangeRate = 0
             t.convertedAmountInFen = 0
+        }
+    }
+}
+
+enum TransactionError: LocalizedError {
+    case refundExceedsRemaining(remaining: Decimal, currencyCode: String)
+
+    var errorDescription: String? {
+        switch self {
+        case .refundExceedsRemaining(let remaining, let currencyCode):
+            return String(localized: "退款金额超过剩余可退金额 \(remaining.formatted(.currency(code: currencyCode)))")
         }
     }
 }

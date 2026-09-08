@@ -15,6 +15,8 @@ struct RefundSheetView: View {
     @State private var note: String = ""
     @State private var showNumpad: Bool = false
     @State private var errorMessage: String?
+    @State private var existingRefundsTotal: Decimal = 0
+    @State private var remainingRefund: Decimal = 0
 
     private var maxRefund: Decimal { abs(original.amount) }
     private var refundFraction: Double {
@@ -30,7 +32,7 @@ struct RefundSheetView: View {
                         originalSummaryCard
                         refundInputCard
 
-                        if amount > maxRefund {
+                        if amount > remainingRefund {
                             overflowWarning
                         }
 
@@ -58,11 +60,13 @@ struct RefundSheetView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("确认退款") { save() }
                         .bold()
-                        .disabled(amount <= 0 || amountString.isEmpty || amount > maxRefund)
+                        .disabled(amount <= 0 || amountString.isEmpty || amount > remainingRefund)
                 }
             }
             .onAppear {
-                amount = maxRefund
+                existingRefundsTotal = appContainer.transactionService.existingRefundTotal(for: original, context: modelContext)
+                remainingRefund = appContainer.transactionService.remainingRefundable(for: original, context: modelContext)
+                amount = remainingRefund
                 date = original.date
                 syncAmountString()
             }
@@ -159,7 +163,7 @@ struct RefundSheetView: View {
                     }
 
                     HStack {
-                        Text("最大可退金额 \(CurrencyFormatter.currencySymbol(for: original.currencyCode))\(maxRefund.formatted(.number.precision(.fractionLength(2))))")
+                        Text(refundHintText)
                             .font(.designBodySmall)
                             .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.7))
                         Spacer()
@@ -213,13 +217,25 @@ struct RefundSheetView: View {
         }
     }
 
+    // MARK: - Hint Text
+
+    /// 退款金额提示：首次退显示"最大可退"，后续退显示"剩余可退"
+    private var refundHintText: String {
+        let remaining = CurrencyFormatter.formatDecimal(amount: remainingRefund, currencyCode: original.currencyCode)
+        if existingRefundsTotal > 0 {
+            let existing = CurrencyFormatter.formatDecimal(amount: existingRefundsTotal, currencyCode: original.currencyCode)
+            return String(localized: "已退 \(existing) / 剩余可退 \(remaining)")
+        }
+        return String(localized: "最大可退金额 \(remaining)")
+    }
+
     // MARK: - Overflow Warning
 
     private var overflowWarning: some View {
         HStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 14))
-            Text("退款金额超过原交易金额")
+            Text("退款金额超过剩余可退金额")
                 .font(.designBodySmall)
         }
         .foregroundStyle(Color.designAccentRed)
