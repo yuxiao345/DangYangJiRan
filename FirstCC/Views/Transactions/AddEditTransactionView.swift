@@ -164,7 +164,16 @@ struct AddEditTransactionView: View {
         baseContent
             .designScreen()
             .animation(.easeInOut(duration: 0.25), value: showNumpad)
-            .task { loadData(); prefillEditing(); syncAmountString(); loadDisplayData() }
+            .task {
+                loadData()
+                prefillEditing()
+                if editing == nil {
+                    prefillRecentSelections()
+                    showNumpad = true
+                }
+                syncAmountString()
+                loadDisplayData()
+            }
             .onChange(of: pickerSheet) { _, newValue in
                 if newValue != nil { loadData() }
             }
@@ -2119,6 +2128,25 @@ struct AddEditTransactionView: View {
         syncAmountString()
     }
 
+    /// 新增记账时，自动填充最近一次选择的账户、分类、成员
+    private func prefillRecentSelections() {
+        // 获取最近使用的账户
+        if let recentAccountID = UserDefaults.standard.stringArray(forKey: "recent_account")?.first,
+           let account = accounts.first(where: { "\($0.id)" == recentAccountID }) {
+            selectedAccount = account
+        }
+        // 获取最近使用的分类
+        if let recentCategoryID = UserDefaults.standard.stringArray(forKey: "recent_category")?.first,
+           let category = categories.first(where: { "\($0.id)" == recentCategoryID }) {
+            selectedCategory = category
+        }
+        // 获取最近使用的成员
+        if let recentMemberID = UserDefaults.standard.stringArray(forKey: "recent_member")?.first,
+           let member = members.first(where: { "\($0.id)" == recentMemberID }) {
+            selectedMember = member
+        }
+    }
+
     private func applyTemplate(_ template: TransactionTemplate) {
         type = template.type
         amount = template.amount
@@ -2320,8 +2348,8 @@ struct AddEditTransactionView: View {
         }
     }
 
-    private func signingAmount() -> Decimal {
-        signedAmount(amount: amount, type: type, direction: type == .lending ? lendingDirection : nil)
+    private func signingAmount(isRefund: Bool = false) -> Decimal {
+        signedAmount(amount: amount, type: type, direction: type == .lending ? lendingDirection : nil, isRefund: isRefund)
     }
 
     private func loadPendingLendingTransactions() {
@@ -2390,7 +2418,8 @@ struct AddEditTransactionView: View {
         }
 
         t.type = type
-        t.amount = signingAmount()
+        // 退款 amount 符号约定与普通交易相反，传 isRefund 让 signedAmount 跳过符号翻转
+        t.amount = signingAmount(isRefund: t.refundGroupId != nil)
         t.note = note.isEmpty ? nil : note
         t.date = date
         t.account = selectedAccount

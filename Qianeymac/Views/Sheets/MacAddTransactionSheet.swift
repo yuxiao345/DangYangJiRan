@@ -2,6 +2,92 @@ import SwiftUI
 @preconcurrency import CoreData
 import PhotosUI
 
+// MARK: - Confirm Capsule Button
+
+/// 胶囊形状确认按钮，支持整个区域可点击 + 按压反馈
+struct ConfirmCapsuleButton: View {
+    let isDisabled: Bool
+    let label: String
+    let action: () -> Void
+
+    @State private var isPressed = false
+
+    init(isDisabled: Bool = false, label: String = "保存账单", action: @escaping () -> Void) {
+        self.isDisabled = isDisabled
+        self.label = label
+        self.action = action
+    }
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark")
+                Text(label)
+            }
+            .font(.designBodyMedium.weight(.semibold))
+            .foregroundStyle(Color.designOnPrimaryContainer)
+        }
+        .buttonStyle(ConfirmCapsuleButtonStyle())
+        .disabled(isDisabled)
+    }
+}
+
+/// 自定义 ButtonStyle：整个胶囊可点击 + 按压反馈
+struct ConfirmCapsuleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.designBodyMedium.weight(.semibold))
+            .foregroundStyle(Color.designOnPrimaryContainer)
+            .frame(width: 160, height: 36)
+            .background(
+                Capsule()
+                    .fill(Color.designPrimaryContainer.opacity(configuration.isPressed ? 0.7 : 0.85))
+            )
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .shadow(
+                color: Color.designPrimaryFixedDim.opacity(configuration.isPressed ? 0.15 : 0.35),
+                radius: configuration.isPressed ? 4 : 8
+            )
+            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+// MARK: - Numpad Confirm Button
+
+struct NumpadConfirmButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text("确认")
+                .font(.designBodyMedium.weight(.semibold))
+                .foregroundStyle(Color.designOnPrimaryContainer)
+        }
+        .buttonStyle(NumpadConfirmButtonStyle())
+    }
+}
+
+struct NumpadConfirmButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.designBodyMedium.weight(.semibold))
+            .foregroundStyle(Color.designOnPrimaryContainer)
+            .frame(width: 220, height: 40)
+            .background(
+                Capsule()
+                    .fill(Color.designPrimaryContainer.opacity(configuration.isPressed ? 0.7 : 0.85))
+            )
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .shadow(
+                color: Color.designPrimaryFixedDim.opacity(configuration.isPressed ? 0.15 : 0.35),
+                radius: configuration.isPressed ? 4 : 8
+            )
+            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+// MARK: - Split Item Draft
+
 struct SplitItemDraft: Identifiable {
     var id = UUID(); var amount: Decimal = 0; var category: Category?
     var note: String = ""; var member: Member?; var merchant: Merchant?; var project: Project?
@@ -183,7 +269,13 @@ struct MacAddTransactionSheet: View {
             }
             .macSheetFrame()
             .toolbar { toolbarContent }
-            .task { loadData() }
+            .task {
+                loadData()
+                if editing == nil {
+                    prefillRecentSelections()
+                    showNumpad = true
+                }
+            }
             .onChange(of: type) { _, _ in onTypeChange() }
             .onChange(of: lendingDirection) { _, _ in loadPendingLendingTx() }
             .onChange(of: selectedAccount) { _, _ in onAccountChange() }
@@ -1037,16 +1129,8 @@ struct MacAddTransactionSheet: View {
         let canSave = amount != 0 && selectedAccount != nil
         let needsToAcct = (type == .transfer || type == .lending)
         let reallyCanSave = canSave && (!needsToAcct || selectedToAccount != nil)
-        return Button { save() } label: {
-            Label(editing != nil ? "更新" : "保存账单", systemImage: "checkmark")
-                .font(.designBodyMedium.weight(.semibold))
-                .frame(width: 160, height: 36)
-                .background(Capsule().fill(Color.designPrimaryContainer.opacity(0.85)))
-                .foregroundStyle(Color.designOnPrimaryContainer)
-        }
-        .buttonStyle(.plain)
-        .disabled(!reallyCanSave)
-        .frame(maxWidth: .infinity, alignment: .trailing)
+        let label = editing != nil ? "更新" : "保存账单"
+        return ConfirmCapsuleButton(isDisabled: !reallyCanSave, label: label, action: save)
     }
 
     // MARK: - Template Apply
@@ -1146,19 +1230,13 @@ struct MacAddTransactionSheet: View {
             )
             .frame(width: 220)
 
-            Button("确认") {
+            NumpadConfirmButton {
                 if let d = Decimal(string: text.wrappedValue), d != 0 {
                     amount.wrappedValue = d
                     amountString.wrappedValue = CurrencyFormatter.formatDecimal(amount: d, fractionDigits: 2)
                 }
                 withAnimation(.easeInOut(duration: 0.2)) { show.wrappedValue = false }
             }
-            .font(.designBodyMedium.weight(.semibold))
-            .frame(width: 220, height: 40)
-            .background(Capsule().fill(Color.designPrimaryContainer.opacity(0.85)))
-            .foregroundStyle(Color.designOnPrimaryContainer)
-            .buttonStyle(.plain)
-            .frame(maxWidth: .infinity)
         }
         .padding(.top, 8)
     }
@@ -1220,6 +1298,22 @@ struct MacAddTransactionSheet: View {
         categories = (try? appContainer.categoryService.fetchCategories(for: ledger, type: type, context: modelContext)) ?? []
     }
 
+    /// 新增记账时，自动填充最近一次选择的账户、分类、成员
+    private func prefillRecentSelections() {
+        if let recentAccountID = UserDefaults.standard.stringArray(forKey: "recent_account")?.first,
+           let account = accounts.first(where: { "\($0.id)" == recentAccountID }) {
+            selectedAccount = account
+        }
+        if let recentCategoryID = UserDefaults.standard.stringArray(forKey: "recent_category")?.first,
+           let category = categories.first(where: { "\($0.id)" == recentCategoryID }) {
+            selectedCategory = category
+        }
+        if let recentMemberID = UserDefaults.standard.stringArray(forKey: "recent_member")?.first,
+           let member = members.first(where: { "\($0.id)" == recentMemberID }) {
+            selectedMember = member
+        }
+    }
+
     private func loadPendingReimbursement() {
         guard type == .income, let ledger = appContainer.currentLedger else { pendingExpenses = []; return }
         let all = (try? appContainer.transactionService.fetchTransactions(for: ledger, context: modelContext, filters: nil)) ?? []
@@ -1253,7 +1347,7 @@ struct MacAddTransactionSheet: View {
 
     // MARK: - Save
 
-    private func signingAmount() -> Decimal { signedAmount(amount: amount, type: type, direction: type == .lending ? lendingDirection : nil) }
+    private func signingAmount(isRefund: Bool = false) -> Decimal { signedAmount(amount: amount, type: type, direction: type == .lending ? lendingDirection : nil, isRefund: isRefund) }
 
     private func save() {
         guard let ledger = appContainer.currentLedger, amount != 0 else { return }
@@ -1278,7 +1372,10 @@ struct MacAddTransactionSheet: View {
             guard let t = (try? modelContext.fetch(req))?.first else { errorMessage = String(localized: "交易未找到"); showErrorAlert = true; return }
 
             // Basic fields
-            t.type = type; t.amount = signingAmount(); t.note = note.isEmpty ? nil : note
+            t.type = type
+            // 退款 amount 符号约定与普通交易相反，传 isRefund 让 signedAmount 跳过符号翻转
+            t.amount = signingAmount(isRefund: t.refundGroupId != nil)
+            t.note = note.isEmpty ? nil : note
             t.date = date; t.account = selectedAccount; t.toAccount = selectedToAccount
             t.category = selectedCategory; t.member = selectedMember; t.merchant = selectedMerchant
             t.project = selectedProject; t.modifiedAt = Date.now

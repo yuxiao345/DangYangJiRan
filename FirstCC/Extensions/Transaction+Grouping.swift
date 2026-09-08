@@ -59,8 +59,13 @@ extension Array where Element == Transaction {
     }
 }
 
-/// 根据交易类型和借贷方向计算签名金额
-func signedAmount(amount: Decimal, type: TransactionType, direction: LendingDirection? = nil) -> Decimal {
+/// 根据交易类型和借贷方向计算签名金额。
+/// - isRefund=true 时按 type 决定符号：原 expense 退款 → +abs（原支出变退款收入），原 income 退款 → -abs。
+///   这与 createRefund 写入约定保持一致（TransactionServiceImpl.createRefund: original.type == .expense ? absAmount : -absAmount）。
+func signedAmount(amount: Decimal, type: TransactionType, direction: LendingDirection? = nil, isRefund: Bool = false) -> Decimal {
+    if isRefund {
+        return type == .income ? -abs(amount) : abs(amount)
+    }
     switch type {
     case .expense: return -abs(amount)
     case .income: return abs(amount)
