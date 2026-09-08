@@ -498,8 +498,6 @@ struct DashboardView: View {
 
     private func refresh() {
         guard let ledger = appContainer.currentLedger else { return }
-        // Rebuild recent-transaction rows after data reload. Same objectIDs +
-        // non-@ObservedObject rows mean the previous array snapshot would persist.
         recentRefreshVersion &+= 1
         viewModel.load(ledger: ledger, context: modelContext, budgetService: appContainer.budgetService)
         viewModel.loadBudget(context: modelContext, budgetService: appContainer.budgetService)
