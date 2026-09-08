@@ -19,6 +19,11 @@ struct DashboardView: View {
     @State private var displayBudgetFraction: Double = 0
     @State private var displayIncomeFrac: Double = 0
     @State private var displayExpenseFrac: Double = 0
+    // Bump to force recent-transaction rows to rebuild. NSManagedObject isn't
+    // @ObservedObject, so re-fetching into recentTransactions (same objectIDs)
+    // doesn't re-run TransactionRowView body after in-place edits. Mirror the
+    // TransactionListView.refreshVersion approach.
+    @State private var recentRefreshVersion = 0
 
     init() {
         _viewModel = State(initialValue: DashboardViewModel(
@@ -72,6 +77,7 @@ struct DashboardView: View {
                                 .buttonStyle(.plain)
                             }
                         }
+                        .id(recentRefreshVersion)
                         .padding(.horizontal, 16)
                         .padding(.bottom, 16)
                     }
@@ -492,6 +498,9 @@ struct DashboardView: View {
 
     private func refresh() {
         guard let ledger = appContainer.currentLedger else { return }
+        // Rebuild recent-transaction rows after data reload. Same objectIDs +
+        // non-@ObservedObject rows mean the previous array snapshot would persist.
+        recentRefreshVersion &+= 1
         viewModel.load(ledger: ledger, context: modelContext, budgetService: appContainer.budgetService)
         viewModel.loadBudget(context: modelContext, budgetService: appContainer.budgetService)
         // 先重置到 0，等一帧再用 spring 驱动 Animatable progress 从左到右填充
