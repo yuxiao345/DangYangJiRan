@@ -152,6 +152,7 @@ struct TransactionListContent: View {
             guard old != new else { return }
             load()
         }
+        .onChange(of: filterDateRange) { _, _ in load() }
         .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in load() }
     }
 

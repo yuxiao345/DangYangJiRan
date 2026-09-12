@@ -152,6 +152,10 @@ struct TransactionListView: View {
             applyFilters()
         }
         .onChange(of: selectedDay) { _, _ in applyFilters() }
+        .onChange(of: filterDateRange) { _, _ in
+            loadCalendarData()
+            applyFilters()
+        }
         .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in
             loadCalendarData()
             applyFilters()
