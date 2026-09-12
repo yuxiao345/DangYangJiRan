@@ -99,6 +99,8 @@
 		87B96E58240A2C4D75801B2D /* LedgerServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19738FF36D10106B947C6A7A /* LedgerServiceProtocol.swift */; };
 		8B282EAA80EC5654937F59B6 /* BankLogoPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F11A80E181707BCA833B204 /* BankLogoPickerView.swift */; };
 		90CC01F2DAC7455D7D6EC0DD /* BudgetPeriod.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BE7B99FB94F739CEE01D408 /* BudgetPeriod.swift */; };
+		F11122233344455566778899 /* BudgetItemNavEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 457964044777446797AB5DE2 /* BudgetItemNavEntry.swift */; };
+		B83757B2B685470C83D9EA31 /* BudgetScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86ED35EF02754C528ABCF097 /* BudgetScope.swift */; };
 		94184FBC111B603A6D7FA21F /* CategoryServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BCF1A0598A529F57FA92893 /* CategoryServiceImpl.swift */; };
 		945B502C362ED0FCACF5E6F8 /* PhotoStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D09B8E37F1973C7B325B97 /* PhotoStorage.swift */; };
 		96A9BBF3F09D559493202F3F /* RecurringServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACF33BE7C1C33F5B95307988 /* RecurringServiceImpl.swift */; };
@@ -190,6 +192,9 @@
 		9A8E08002FCD577F004FCB60 /* AppContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C86792480592B324CE5C56AF /* AppContainer.swift */; };
 		9A8E08022FCD59E1004FCB60 /* LedgerType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A57B5AE1DBDD1A82ACF6EDB4 /* LedgerType.swift */; };
 		9A8E08032FCD59E1004FCB60 /* BudgetPeriod.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BE7B99FB94F739CEE01D408 /* BudgetPeriod.swift */; };
+		81A6AB43953A4872B66EAD5D /* BudgetScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86ED35EF02754C528ABCF097 /* BudgetScope.swift */; };
+		078DAE65B4094499B85D1E28 /* BudgetItemNavEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 457964044777446797AB5DE2 /* BudgetItemNavEntry.swift */; };
+		92856FDA88CF488CBE80A9B8 /* BudgetItemTransactionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 161D7B583E2B432C984D86F1 /* BudgetItemTransactionListView.swift */; };
 		9A8E08042FCD59E1004FCB60 /* LendingStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E626A3E9AA323C5C1461333 /* LendingStatus.swift */; };
 		9A8E08052FCD59E1004FCB60 /* SettlementStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F0D546EEE7347FFA48B9EDD /* SettlementStatus.swift */; };
 		9A8E08062FCD59E1004FCB60 /* LedgerRole.swift in Sources */ = {isa = PBXBuildFile; fileRef = 123B9066865398E03B8DD922 /* LedgerRole.swift */; };
@@ -411,6 +416,9 @@
 		4B83C5649C3586BDE0BC4BB0 /* AccountType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountType.swift; sourceTree = "<group>"; };
 		4BCF1A0598A529F57FA92893 /* CategoryServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryServiceImpl.swift; sourceTree = "<group>"; };
 		4BE7B99FB94F739CEE01D408 /* BudgetPeriod.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetPeriod.swift; sourceTree = "<group>"; };
+		457964044777446797AB5DE2 /* BudgetItemNavEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetItemNavEntry.swift; sourceTree = "<group>"; };
+		161D7B583E2B432C984D86F1 /* BudgetItemTransactionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetItemTransactionListView.swift; sourceTree = "<group>"; };
+		86ED35EF02754C528ABCF097 /* BudgetScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetScope.swift; sourceTree = "<group>"; };
 		4C0EF7C2B13D25979F6369DB /* FirstCCApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstCCApp.swift; sourceTree = "<group>"; };
 		4C66C0A248C949A08F849676 /* DonutChartContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DonutChartContent.swift; sourceTree = "<group>"; };
 		4E27A05422424BA38456B730 /* MemberCategoryCrossView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberCategoryCrossView.swift; sourceTree = "<group>"; };
@@ -891,6 +899,8 @@
 				4B83C5649C3586BDE0BC4BB0 /* AccountType.swift */,
 				8AA4347743E8B06C8DF84744 /* BankMatchStatus.swift */,
 				4BE7B99FB94F739CEE01D408 /* BudgetPeriod.swift */,
+				457964044777446797AB5DE2 /* BudgetItemNavEntry.swift */,
+				86ED35EF02754C528ABCF097 /* BudgetScope.swift */,
 				123B9066865398E03B8DD922 /* LedgerRole.swift */,
 				A57B5AE1DBDD1A82ACF6EDB4 /* LedgerType.swift */,
 				DCF7315C5F7EA42BB4EFA1E5 /* LendingDirection.swift */,
@@ -911,6 +921,7 @@
 				4044625EB81FA02ADFB6DB0E /* AddEditBudgetItemView.swift */,
 				BFCAE20D6A42424A1CE75C26 /* BudgetBookDetailView.swift */,
 				DB4CB2772D5535E494A8980A /* BudgetBookListView.swift */,
+				161D7B583E2B432C984D86F1 /* BudgetItemTransactionListView.swift */,
 			);
 			path = Budgets;
 			sourceTree = "<group>";
@@ -1309,6 +1320,8 @@
 				D3457CA23D2D3DD4E32DEB26 /* AccountType.swift in Sources */,
 				84E3651E1012F35AC2419287 /* BankMatchStatus.swift in Sources */,
 				90CC01F2DAC7455D7D6EC0DD /* BudgetPeriod.swift in Sources */,
+				B83757B2B685470C83D9EA31 /* BudgetScope.swift in Sources */,
+				F11122233344455566778899 /* BudgetItemNavEntry.swift in Sources */,
 				FD2C9721768BC0DECAFBD9EA /* LedgerRole.swift in Sources */,
 				E729F46244D4AF2C14CD1E18 /* LedgerType.swift in Sources */,
 				5C7E572BBFA5B81D2F1C0A5F /* LendingDirection.swift in Sources */,
@@ -1368,6 +1381,7 @@
 				1E637A1FB0875E26562CC069 /* AddEditBudgetItemView.swift in Sources */,
 				F69DE52BAAA7B7AE7E2BA8B0 /* BudgetBookListView.swift in Sources */,
 				D423415670DCBD9635C53BDB /* BudgetBookDetailView.swift in Sources */,
+				92856FDA88CF488CBE80A9B8 /* BudgetItemTransactionListView.swift in Sources */,
 				0484BE1BB3DC3558FA2CCC52 /* AddEditRecurringView.swift in Sources */,
 				A1D107127733190AA6AD0456 /* AddEditTemplateView.swift in Sources */,
 				973206DC22C7E422FC588F40 /* RecurringListView.swift in Sources */,
@@ -1547,6 +1561,9 @@
 				9A8E07CB2FCD55AB004FCB60 /* TemplateServiceImpl.swift in Sources */,
 				9A8E08022FCD59E1004FCB60 /* LedgerType.swift in Sources */,
 				9A8E08032FCD59E1004FCB60 /* BudgetPeriod.swift in Sources */,
+				078DAE65B4094499B85D1E28 /* BudgetItemNavEntry.swift in Sources */,
+
+				81A6AB43953A4872B66EAD5D /* BudgetScope.swift in Sources */,
 				9A8E08042FCD59E1004FCB60 /* LendingStatus.swift in Sources */,
 				9A8E08052FCD59E1004FCB60 /* SettlementStatus.swift in Sources */,
 				9A8E08062FCD59E1004FCB60 /* LedgerRole.swift in Sources */,

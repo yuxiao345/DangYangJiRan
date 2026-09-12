@@ -81,6 +81,21 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
         return spending(in: start...end, category: item.category, book: book, context: context)
     }
 
+    func currentPeriodRange(for item: BudgetItem, now: Date, context: NSManagedObjectContext) -> ClosedRange<Date> {
+        currentPeriodRange(for: item, now: now)
+    }
+
+    func cumulativeRange(for item: BudgetItem, context: NSManagedObjectContext) -> ClosedRange<Date> {
+        guard let book = item.book else {
+            let now = Date.now
+            return now...now
+        }
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: book.startDate)
+        let end = max(start, Date.now)
+        return start...end
+    }
+
     func totalBudget(for book: BudgetBook) -> Decimal {
         return rootBudgetItems(for: book).reduce(into: Decimal(0)) { $0 += $1.totalBudget }
     }

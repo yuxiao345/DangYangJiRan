@@ -8,6 +8,7 @@ private struct BudgetSpendingLine: View {
     let spent: Decimal
     let budget: Decimal
     let currency: String
+    var onTap: (() -> Void)? = nil
 
     @State private var animRatio: Double = 0
 
@@ -26,6 +27,11 @@ private struct BudgetSpendingLine: View {
             if budget > 0 {
                 PixelProgressBar(progress: min(animRatio, 1.0), tint: Color.progressTint(for: ratio))
             }
+        }
+        .frame(minHeight: 28)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onTap?()
         }
         .task {
             withAnimation(.spring(response: 0.7, dampingFraction: 0.65)) {
@@ -58,6 +64,7 @@ struct BudgetBookDetailMacView: View {
     @State private var deleteCandidate: BudgetItem?
     @State private var showDeleteConfirm = false
     @State private var navCategory: Category?
+    @State private var navBudgetEntry: BudgetItemNavEntry?
 
     var body: some View {
         let currency = book.ledger?.defaultCurrencyCode ?? "CNY"
@@ -83,6 +90,9 @@ struct BudgetBookDetailMacView: View {
             .navigationTitle(book.name)
             .navigationDestination(item: $navCategory) { cat in
                 TransactionListContent(selectedDate: .constant(nil), filterCategory: cat, options: [.hideCalendar, .hideTypeFilter, .hideAddButton])
+            }
+            .navigationDestination(item: $navBudgetEntry) { entry in
+                BudgetItemTransactionListMacView(item: entry.item, initialScope: entry.scope)
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -158,6 +168,7 @@ struct BudgetBookDetailMacView: View {
                         cumSpent: cumulative[item.id] ?? 0,
                         perSpent: period[item.id] ?? 0,
                         navCategory: $navCategory,
+                        navBudgetEntry: $navBudgetEntry,
                         editingItem: $editingItem,
                         deleteCandidate: $deleteCandidate,
                         showDeleteConfirm: $showDeleteConfirm
@@ -253,6 +264,7 @@ private struct BudgetItemRowView: View {
     let cumSpent: Decimal
     let perSpent: Decimal
     @Binding var navCategory: Category?
+    @Binding var navBudgetEntry: BudgetItemNavEntry?
     @Binding var editingItem: BudgetItem?
     @Binding var deleteCandidate: BudgetItem?
     @Binding var showDeleteConfirm: Bool
@@ -302,8 +314,12 @@ private struct BudgetItemRowView: View {
                 }
             }
 
-            BudgetSpendingLine(label: "本期", spent: perSpent, budget: item.periodBudget, currency: currency)
-            BudgetSpendingLine(label: "累计", spent: cumSpent, budget: item.totalBudget, currency: currency)
+            BudgetSpendingLine(label: "本期", spent: perSpent, budget: item.periodBudget, currency: currency) {
+                navBudgetEntry = BudgetItemNavEntry(item: item, scope: .currentPeriod)
+            }
+            BudgetSpendingLine(label: "累计", spent: cumSpent, budget: item.totalBudget, currency: currency) {
+                navBudgetEntry = BudgetItemNavEntry(item: item, scope: .cumulative)
+            }
         }
         .padding(.vertical, 2)
         .contentShape(Rectangle())

@@ -598,6 +598,94 @@ final class BudgetServiceTests: XCTestCase {
         XCTAssertEqual(spending, 622)
     }
 
+    // MARK: - 9. 当前周期范围
+
+    /// 周预算：给定 now 落在周三，返回该自然周（周一~周日）的范围
+    func testCurrentPeriodRange_weekly() {
+        let ledger = makeLedger()
+        let cat = makeCategory("餐饮", ledger)
+        let book = makeBook("2026", start: date(2026, 1, 1), end: date(2026, 12, 31), ledger)
+        let item = makeItem(amount: 500, period: .weekly, category: cat, book: book)
+
+        // 2026-09-09 是星期三
+        let now = date(2026, 9, 9)
+        let range = service.currentPeriodRange(for: item, now: now, context: context)
+
+        let cal = Calendar.current
+        let expectedStart = cal.startOfDay(for: cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now))!)
+        let expectedEnd = cal.endOfDay(for: cal.date(byAdding: .day, value: 6, to: expectedStart)!)
+        XCTAssertEqual(range.lowerBound, expectedStart)
+        XCTAssertEqual(range.upperBound, expectedEnd)
+    }
+
+    /// 月预算：now 落在月中，返回整月（1 日 ~ 月末）范围
+    func testCurrentPeriodRange_monthly() {
+        let ledger = makeLedger()
+        let cat = makeCategory("餐饮", ledger)
+        let book = makeBook("2026", start: date(2026, 1, 1), end: date(2026, 12, 31), ledger)
+        let item = makeItem(amount: 3000, period: .monthly, category: cat, book: book)
+
+        let now = date(2026, 7, 15)
+        let range = service.currentPeriodRange(for: item, now: now, context: context)
+
+        let cal = Calendar.current
+        let expectedStart = cal.startOfDay(for: date(2026, 7, 1))
+        let expectedEnd = cal.endOfDay(for: date(2026, 7, 31))
+        XCTAssertEqual(range.lowerBound, expectedStart)
+        XCTAssertEqual(range.upperBound, expectedEnd)
+    }
+
+    /// 季度预算：now 落在 8 月，返回 Q3（7-9 月）范围
+    func testCurrentPeriodRange_quarterly() {
+        let ledger = makeLedger()
+        let cat = makeCategory("餐饮", ledger)
+        let book = makeBook("2026", start: date(2026, 1, 1), end: date(2026, 12, 31), ledger)
+        let item = makeItem(amount: 3000, period: .quarterly, category: cat, book: book)
+
+        let now = date(2026, 8, 15)
+        let range = service.currentPeriodRange(for: item, now: now, context: context)
+
+        let cal = Calendar.current
+        let expectedStart = cal.startOfDay(for: date(2026, 7, 1))
+        let expectedEnd = cal.endOfDay(for: date(2026, 9, 30))
+        XCTAssertEqual(range.lowerBound, expectedStart)
+        XCTAssertEqual(range.upperBound, expectedEnd)
+    }
+
+    /// 年度预算：now 落在年中，返回整年范围
+    func testCurrentPeriodRange_yearly() {
+        let ledger = makeLedger()
+        let cat = makeCategory("餐饮", ledger)
+        let book = makeBook("跨年预算", start: date(2025, 7, 1), end: date(2026, 6, 30), ledger)
+        let item = makeItem(amount: 50000, period: .yearly, category: cat, book: book)
+
+        let now = date(2026, 3, 15)
+        let range = service.currentPeriodRange(for: item, now: now, context: context)
+
+        let cal = Calendar.current
+        let expectedStart = cal.startOfDay(for: date(2026, 1, 1))
+        let expectedEnd = cal.endOfDay(for: date(2026, 12, 31))
+        XCTAssertEqual(range.lowerBound, expectedStart)
+        XCTAssertEqual(range.upperBound, expectedEnd)
+    }
+
+    // MARK: - 10. 累计区间
+
+    /// 累计区间：账本起始日 → 今天
+    func testCumulativeRange_bookStartToToday() {
+        let ledger = makeLedger()
+        let cat = makeCategory("餐饮", ledger)
+        let book = makeBook("2026", start: date(2026, 3, 1), end: date(2026, 12, 31), ledger)
+        let item = makeItem(amount: 3000, period: .monthly, category: cat, book: book)
+
+        let range = service.cumulativeRange(for: item, context: context)
+
+        let cal = Calendar.current
+        XCTAssertEqual(range.lowerBound, cal.startOfDay(for: date(2026, 3, 1)))
+        // 上界是今天（endOfDay）
+        XCTAssertGreaterThanOrEqual(range.upperBound, cal.startOfDay(for: Date()))
+    }
+
     /// 多币种退款：汇率波动导致净支出非零
     func testMultiCurrency_refundWithExchangeRateChange() {
         let ledger = makeLedger()

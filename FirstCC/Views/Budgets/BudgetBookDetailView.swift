@@ -19,6 +19,7 @@ struct BudgetBookDetailView: View {
     @State private var animTotalCumulative: Decimal = 0
     @State private var animTotalPeriod: Decimal = 0
     @State private var navCategory: Category?
+    @State private var navBudgetEntry: BudgetItemNavEntry?
     @State private var deleteCandidate: BudgetItem?
     @State private var showMonthPicker = false
     @State private var showDeleteConfirm = false
@@ -90,20 +91,7 @@ struct BudgetBookDetailView: View {
             if !unbudgetedCategories.isEmpty {
                 Section("非预算项") {
                     ForEach(unbudgetedCategories, id: \.0.id) { cat, spent in
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                Image(systemName: cat.iconName)
-                                    .foregroundStyle(Color(hex: cat.colorHex))
-                                Text(LocalizedStringKey(cat.name))
-                                Spacer()
-                            }
-                            budgetSpendingLine(label: "本期", spent: spent, budget: totalUnbudgeted, currency: currency)
-                        }
-                        .padding(.vertical, 2)
-                        .contentShape(Rectangle())
-                        .accessibilityLabel(Text("选择分类 \(cat.name)"))
-                        .accessibilityAddTraits(.isButton)
-                        .onTapGesture { preselectedCategory = cat }
+                        unbudgetedRow(cat: cat, spent: spent, currency: currency, totalUnbudgeted: totalUnbudgeted, onTap: { preselectedCategory = cat })
                     }
                     HStack {
                         Text("合计")
@@ -140,6 +128,9 @@ struct BudgetBookDetailView: View {
         .onAppear(perform: loadData)
         .navigationDestination(item: $navCategory) { cat in
             TransactionListView(filterCategory: cat, options: [.hideTypeFilter, .hideAddButton])
+        }
+        .navigationDestination(item: $navBudgetEntry) { entry in
+            BudgetItemTransactionListView(item: entry.item, initialScope: entry.scope)
         }
         .confirmationDialog("确定删除此预算项？", isPresented: $showDeleteConfirm) {
             Button("删除", role: .destructive) {
@@ -283,8 +274,12 @@ struct BudgetBookDetailView: View {
                     .font(.designBodySmall)
                     .foregroundStyle(.secondary)
             }
-            budgetSpendingLine(label: "本期", spent: perSpent, budget: periodBgt, currency: currency)
-            budgetSpendingLine(label: "累计", spent: cumSpent, budget: totalBgt, currency: currency)
+            budgetSpendingLine(label: "本期", spent: perSpent, budget: periodBgt, currency: currency) {
+                navBudgetEntry = BudgetItemNavEntry(item: item, scope: .currentPeriod)
+            }
+            budgetSpendingLine(label: "累计", spent: cumSpent, budget: totalBgt, currency: currency) {
+                navBudgetEntry = BudgetItemNavEntry(item: item, scope: .cumulative)
+            }
         }
         .padding(.vertical, 2)
         .contentShape(Rectangle())
@@ -304,12 +299,12 @@ struct BudgetBookDetailView: View {
         }
     }
 
-    private func budgetSpendingLine(label: LocalizedStringKey, spent: Decimal, budget: Decimal, currency: String) -> some View {
+    private func budgetSpendingLine(label: LocalizedStringKey, spent: Decimal, budget: Decimal, currency: String, onTap: (() -> Void)? = nil) -> some View {
         let ratio = budget > 0 ? NSDecimalNumber(decimal: spent / budget).doubleValue : 0
         let pct = ratio * 100
         let progress = min(ratio, 1.0)
 
-        return VStack(spacing: 2) {
+        let content = VStack(spacing: 2) {
             HStack(alignment: .firstTextBaseline) {
                 Text(label)
                     .font(.designBodySmall)
@@ -329,6 +324,32 @@ struct BudgetBookDetailView: View {
                 PixelProgressBar(progress: progress, tint: progressColor(ratio))
             }
         }
+        return content
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                onTap?()
+            }
+    }
+
+    /// 非预算项分类行（独立 view 函数，缓解 type-check 超时）
+    @ViewBuilder
+    private func unbudgetedRow(cat: Category, spent: Decimal, currency: String, totalUnbudgeted: Decimal, onTap: @escaping () -> Void) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Image(systemName: cat.iconName)
+                    .foregroundStyle(Color(hex: cat.colorHex))
+                Text(LocalizedStringKey(cat.name))
+                Spacer()
+            }
+            budgetSpendingLine(label: "本期", spent: spent, budget: totalUnbudgeted, currency: currency, onTap: onTap)
+        }
+        .padding(.vertical, 2)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onTap)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("选择分类 \(cat.name)"))
+        .accessibilityAddTraits(.isButton)
     }
 
     private func progressColor(_ progress: Double) -> Color {

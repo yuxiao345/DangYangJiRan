@@ -320,3 +320,7 @@ Mac 报表位于 `Qianeymac/Views/Reports/`，使用独立组件拼装（非复�
 ### 现有条目数
 
 约 11750 行 String Catalog（条目数随项目自然增长）。
+
+## 外部知识库
+
+- **iPhone Duo / iOS 27 折叠屏适配知识库**：`~/Developer-Notes/apple-ios27-foldable/`（纯本地，不 Git）。当用户提到 iPhone Duo / 折叠屏 / iOS 27 / Xcode 27 适配时，**先 Read 该目录的 README.md** 再回答。该知识库涵盖 HIG 设计原则、iOS 27/27.1 新 API（ReservedRegion / ArrangementView / 工具栏垂直化）、SwiftUI 代码示例、SDK 行为差异、对钱伲项目的具体适配方建议。Apple 官方 HIG 正文页面 WebFetch 抓不到，需要时建议用户自己浏览器打开 `https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo`。

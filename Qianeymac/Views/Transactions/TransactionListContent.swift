@@ -29,14 +29,41 @@ struct TransactionListContent: View {
 
     var filterCategory: Category?
     var options: TransactionListOptions = []
+    /// 锁定日期范围：非 nil 时整个明细页用这个范围，并自动隐藏日历。
+    var filterDateRange: ClosedRange<Date>? = nil
 
     private let cal = Calendar.current
     private let weekdaySymbols = ["一", "二", "三", "四", "五", "六", "日"]
 
+    init(
+        selectedDate: Binding<Date?>,
+        filterCategory: Category? = nil,
+        options: TransactionListOptions = [],
+        filterDateRange: ClosedRange<Date>? = nil
+    ) {
+        self._selectedDate = selectedDate
+        self.filterCategory = filterCategory
+        self.options = options
+        self.filterDateRange = filterDateRange
+        let cal = Calendar.current
+        let initialMonth: Date
+        if let range = filterDateRange {
+            initialMonth = cal.date(from: cal.dateComponents([.year, .month], from: range.lowerBound)) ?? range.lowerBound
+        } else {
+            initialMonth = cal.date(from: cal.dateComponents([.year, .month], from: Date.now)) ?? Date.now
+        }
+        self._selectedMonth = State(initialValue: initialMonth)
+    }
+
+    /// 是否隐藏日历：调用方主动隐藏，或被 filterDateRange 锁定范围时自动隐藏
+    private var calendarHidden: Bool {
+        options.contains(.hideCalendar) || filterDateRange != nil
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // Header + Calendar in glass card
-            if !options.contains(.hideCalendar) {
+            if !calendarHidden {
                 VStack(spacing: 0) {
                     HStack(spacing: 12) {
                         HStack(spacing: 4) {
@@ -78,8 +105,8 @@ struct TransactionListContent: View {
                 .padding(.top, 12)
             }
 
-            // 合计栏：选中日期 → 当日收支，未选中 → 当月收支
-            if !options.contains(.hideCalendar) {
+            // 合计栏：日历模式才显示（月度/日期汇总）；chip 模式由 chip 自带范围语义
+            if !calendarHidden {
                 summaryBar
                     .padding(.horizontal, 24)
                     .padding(.top, 8)
@@ -342,13 +369,27 @@ struct TransactionListContent: View {
 
     private func load() {
         guard let ledger = appContainer.currentLedger else { return }
-        let start = selectedMonth
-        guard let end = cal.date(byAdding: .month, value: 1, to: start) else { return }
         var filters = TransactionFilters()
-        filters.dateRange = start..<end
+        if let range = filterDateRange {
+            // 闭区间转半开：取上界的 startOfDay + 1day，确保整个 endOfDay 当天全部包含
+            let endExclusive = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: range.upperBound)) ?? range.upperBound
+            filters.dateRange = range.lowerBound..<endExclusive
+        } else {
+            let start = selectedMonth
+            guard let end = cal.date(byAdding: .month, value: 1, to: start) else { return }
+            filters.dateRange = start..<end
+        }
         let all = (try? appContainer.transactionService.fetchTransactions(for: ledger, context: modelContext, filters: filters)) ?? []
         var result = all.deduplicatingTransfers()
         if let type = filterType { result = result.filter { $0.type == type } }
+
+        // 锁定范围时不显示日历，跳过热力图累加节省 N 次循环
+        if calendarHidden {
+            if let cat = filterCategory { result = result.filter { $0.category?.id == cat.id } }
+            transactions = result
+            return
+        }
+
         transactionDays = Set(result.filter { $0.type != .transfer }.map { cal.component(.day, from: $0.date) })
 
         // 每日热力图数据（排除转账、可报销支出、报销结算收入）

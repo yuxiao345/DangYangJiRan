@@ -13,6 +13,8 @@ struct TransactionListView: View {
     @Environment(\.managedObjectContext) private var modelContext
     var filterCategory: Category? = nil
     var options: TransactionListOptions = []
+    /// 锁定日期范围：非 nil 时整个明细页用这个范围，并自动隐藏日历。
+    var filterDateRange: ClosedRange<Date>? = nil
     @State private var transactions: [Transaction] = []
     @State private var showAddSheet = false
     @State private var filterType: TransactionType?
@@ -28,10 +30,33 @@ struct TransactionListView: View {
     @State private var monthlyExpense: Decimal = 0
     @State private var monthTransactions: [Transaction] = []
 
+    init(
+        filterCategory: Category? = nil,
+        options: TransactionListOptions = [],
+        filterDateRange: ClosedRange<Date>? = nil
+    ) {
+        self.filterCategory = filterCategory
+        self.options = options
+        self.filterDateRange = filterDateRange
+        let cal = Calendar.current
+        let initialMonth: Date
+        if let range = filterDateRange {
+            initialMonth = cal.date(from: cal.dateComponents([.year, .month], from: range.lowerBound)) ?? range.lowerBound
+        } else {
+            initialMonth = cal.date(from: cal.dateComponents([.year, .month], from: Date.now)) ?? Date.now
+        }
+        self._selectedMonth = State(initialValue: initialMonth)
+    }
+
+    /// 是否隐藏日历：调用方主动隐藏，或被 filterDateRange 锁定范围时自动隐藏
+    private var calendarHidden: Bool {
+        options.contains(.hideCalendar) || filterDateRange != nil
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                if !options.contains(.hideCalendar) {
+                if !calendarHidden {
                     CalendarStripView(
                         selectedMonth: $selectedMonth,
                         selectedDay: $selectedDay,
@@ -195,15 +220,27 @@ struct TransactionListView: View {
     private func loadCalendarData() {
         guard let ledger = appContainer.currentLedger else { return }
         let cal = Calendar.current
-        let start = selectedMonth
-        guard let end = cal.date(byAdding: .month, value: 1, to: start) else { return }
 
         var filters = TransactionFilters()
-        filters.dateRange = start..<end
+        if let range = filterDateRange {
+            // 闭区间转半开：取上界的 startOfDay + 1day，确保整个 endOfDay 当天全部包含
+            let endExclusive = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: range.upperBound)) ?? range.upperBound
+            filters.dateRange = range.lowerBound..<endExclusive
+        } else {
+            let start = selectedMonth
+            guard let end = cal.date(byAdding: .month, value: 1, to: start) else { return }
+            filters.dateRange = start..<end
+        }
         let all = (try? appContainer.transactionService.fetchTransactions(for: ledger, context: modelContext, filters: filters)) ?? []
 
         let normal = all
             .excludingReimbursementTransactions()
+
+        // 锁定范围时不显示日历，跳过热力图累加节省 N 次循环
+        if calendarHidden {
+            monthTransactions = all.deduplicatingTransfers()
+            return
+        }
 
         let calData = filterCategory.map { cat in normal.filter { $0.category?.id == cat.id } } ?? normal
 
