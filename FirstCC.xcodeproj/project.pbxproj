@@ -207,6 +207,7 @@
 		9A8E080D2FCD59E1004FCB60 /* LendingDirection.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCF7315C5F7EA42BB4EFA1E5 /* LendingDirection.swift */; };
 		9A8E080E2FCD5B8B004FCB60 /* Color+Design.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EB8D17FE42944A3A42FB518 /* Color+Design.swift */; };
 		9A8E08362FCD6121004FCB60 /* GlassModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7460A1C78E4A85AB33785E /* GlassModifiers.swift */; };
+		D52881198B8F615D995DE63E /* DesignSegmentedBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DC8AE314803BA04AA0AE9F8 /* DesignSegmentedBar.swift */; };
 		9A8E08372FCD6147004FCB60 /* TransactionRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C11EDFBC7413BA6F31DD4A4 /* TransactionRowView.swift */; };
 		9A8E08382FCD6170004FCB60 /* Font+Design.swift in Sources */ = {isa = PBXBuildFile; fileRef = 017F172F8DFF42798BFA46D6 /* Font+Design.swift */; };
 		9A8E08392FCD617E004FCB60 /* CurrencyText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50A8DC88431F6E95C688521D /* CurrencyText.swift */; };
@@ -518,6 +519,7 @@
 		D8AD404B99214C1B879EF145 /* MerchantEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MerchantEntity.swift; sourceTree = "<group>"; };
 		D8E979140E64CD5A924B3FB5 /* CSVStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVStorage.swift; sourceTree = "<group>"; };
 		DA7460A1C78E4A85AB33785E /* GlassModifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassModifiers.swift; sourceTree = "<group>"; };
+		5DC8AE314803BA04AA0AE9F8 /* DesignSegmentedBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSegmentedBar.swift; sourceTree = "<group>"; };
 		DB4CB2772D5535E494A8980A /* BudgetBookListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetBookListView.swift; sourceTree = "<group>"; };
 		DCF7315C5F7EA42BB4EFA1E5 /* LendingDirection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LendingDirection.swift; sourceTree = "<group>"; };
 		DD1D998232FDB38B5BD81C15 /* ProjectServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectServiceProtocol.swift; sourceTree = "<group>"; };
@@ -800,6 +802,7 @@
 				5EB8D17FE42944A3A42FB518 /* Color+Design.swift */,
 				DA7460A1C78E4A85AB33785E /* GlassModifiers.swift */,
 				017F172F8DFF42798BFA46D6 /* Font+Design.swift */,
+				5DC8AE314803BA04AA0AE9F8 /* DesignSegmentedBar.swift */,
 			);
 			path = DesignSystem;
 			sourceTree = "<group>";
@@ -1365,11 +1368,8 @@
 				ADB53C1D3DACDF4D57030627 /* SearchablePickerView.swift in Sources */,
 				732D10ABF6FA48D4B106FD0B /* SearchableList.swift in Sources */,
 				17469B250263A15F7E5A9CA7 /* TransactionRowView.swift in Sources */,
-				31517376DF4F45270BBF9C9F /* AddEditTransactionView.swift in Sources */,
 				AF85B9267B379FF7D263C82A /* PendingReimbursementView.swift in Sources */,
 				C2FB5D6D038756A445E6BC68 /* RefundSheetView.swift in Sources */,
-				5E71CD41BDB011262314E89E /* TransactionDetailView.swift in Sources */,
-				0C632EDC5C511E7EFA7938C3 /* TransactionListView.swift in Sources */,
 				FFD3CC4FA09133AB7E0CFC53 /* AccountDetailView.swift in Sources */,
 				50A74DAF679E7C864CE131E6 /* AccountListView.swift in Sources */,
 				DE689EACC4E2CE4783DA0BCE /* AccountRowView.swift in Sources */,
@@ -1442,7 +1442,6 @@
 				56025E3F889643DE9F32DCC7 /* ReportViewModel.swift in Sources */,
 				A44361F54D4542FE908424FE /* CategoryPieChartView.swift in Sources */,
 				9B863D6EE456400A886BF4FE /* DonutChartContent.swift in Sources */,
-				DE7AC17290274739B1858192 /* CalendarStripView.swift in Sources */,
 				85DD12DBCBCD4B9AAD4EA49D /* CalendarDayCell.swift in Sources */,
 				2760B2289D5E47E78D2DA298 /* Color+Expense.swift in Sources */,
 				D73A02FE5CF844B68F520A93 /* ChineseExpressionParser.swift in Sources */,
@@ -1460,6 +1459,7 @@
 				BDE2DDF9CBABDBC0EAA80CCF /* ExchangeRateServiceImpl.swift in Sources */,
 				261BEF666A3141FFBC1E399A /* Color+Design.swift in Sources */,
 				F6D356DFD6374A3DBDF4CB1B /* GlassModifiers.swift in Sources */,
+				D52881198B8F615D995DE63E /* DesignSegmentedBar.swift in Sources */,
 				1FB0F56F196C4AC6AED0C63D /* Font+Design.swift in Sources */,
 				C6253E631CFE8A4A4D0230DD /* BankLogoPresets.swift in Sources */,
 				8B282EAA80EC5654937F59B6 /* BankLogoPickerView.swift in Sources */,

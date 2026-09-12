@@ -22,17 +22,19 @@ struct BudgetItemTransactionListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            // 与报表页同一个控件（DesignSegmentedBar）
+            DesignSegmentedBar(options: BudgetScope.allCases, selection: $currentScope) { scope in
+                scope.displayName
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+
             if let transactions {
                 TransactionListView(
                     filterCategory: item.category,
                     options: [.hideTypeFilter, .hideAddButton],
                     presetTransactions: transactions
                 )
-            }
-        }
-        .safeAreaInset(edge: .top, spacing: 0) {
-            BudgetScopeChipsBar(currentScope: currentScope) { newScope in
-                currentScope = newScope
             }
         }
         .task(id: currentScope) { reload() }
@@ -49,44 +51,5 @@ struct BudgetItemTransactionListView: View {
             in: entry.dateRange(for: currentScope),
             context: modelContext
         )
-    }
-}
-
-// MARK: - Chips
-
-private struct BudgetScopeChipsBar: View {
-    let currentScope: BudgetScope
-    let onSelect: (BudgetScope) -> Void
-
-    var body: some View {
-        HStack(spacing: 8) {
-            ForEach(BudgetScope.allCases, id: \.self) { scope in
-                chip(scope)
-            }
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .background(.bar)
-    }
-
-    private func chip(_ scope: BudgetScope) -> some View {
-        let isSelected = currentScope == scope
-        return Button {
-            onSelect(scope)
-        } label: {
-            Text(LocalizedStringKey(scope.displayName))
-                .font(.designBodySmall)
-                .foregroundStyle(isSelected ? .white : Color.designOnSurface)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 6)
-                .background(
-                    Capsule()
-                        .fill(isSelected ? Color.designPrimaryContainer : Color.designOnSurfaceVariant.opacity(0.15))
-                )
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
-        .accessibilityLabel(scope.displayName)
     }
 }

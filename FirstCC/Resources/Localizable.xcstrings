@@ -2242,7 +2242,21 @@
 
     },
     "分类占比" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Category Share"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分类占比"
+          }
+        }
+      }
     },
     "分类管理" : {
       "extractionState" : "manual",
@@ -6431,7 +6445,21 @@
       }
     },
     "收支趋势" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Income/Expense Trend"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收支趋势"
+          }
+        }
+      }
     },
     "收款" : {
       "extractionState" : "manual",

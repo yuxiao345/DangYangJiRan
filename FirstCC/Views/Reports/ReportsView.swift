@@ -46,32 +46,9 @@ struct ReportsView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 0) {
-                    HStack(spacing: 0) {
-                        ForEach(ReportType.allCases, id: \.self) { type in
-                            Button {
-                                selectedReport = type
-                            } label: {
-                                Text(type.label)
-                                    .font(.designLabel)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 10)
-                                    .background(
-                                        selectedReport == type
-                                            ? Color.designPrimaryContainer.opacity(0.25)
-                                            : Color.clear
-                                    )
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                            }
-                            .foregroundStyle(
-                                selectedReport == type
-                                    ? Color.designOnSurface
-                                    : Color.designOnSurfaceVariant
-                            )
-                            .buttonStyle(.plain)
-                        }
+                    DesignSegmentedBar(options: ReportType.allCases, selection: $selectedReport) { type in
+                        type.label
                     }
-                    .padding(4)
-                    .glassCard(cornerRadius: 14)
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
 
