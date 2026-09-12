@@ -3,6 +3,17 @@ import Testing
 @preconcurrency import CoreData
 @testable import Qianeymac
 
+// MARK: - Helpers
+
+extension NSManagedObjectContext {
+    /// 尝试 save，失败返回 Error，成功返回 nil（代替 try!）
+    func saveAsError() -> Error? {
+        guard hasChanges else { return nil }
+        do { try save(); return nil }
+        catch { return error }
+    }
+}
+
 @Suite(.serialized) struct BudgetServiceTests {
 
     // MARK: - Per-test state
@@ -17,27 +28,22 @@ import Testing
 
     // MARK: - Infrastructure
 
-    /// 缓存的 NSManagedObjectModel（不可变，线程安全），带重试应对并行测试启动竞态
-    private static let cachedModel: NSManagedObjectModel = {
-        for _ in 0..<20 {
-            if let model = NSManagedObjectModel.mergedModel(from: nil) {
-                return model
-            }
-            Thread.sleep(forTimeInterval: 0.05)
+    /// 从 app bundle 加载 FirstCC.momd。
+    /// 每次调用返回一份独立的 copy，确保测试之间零共享状态。
+    private static func loadModel() -> NSManagedObjectModel {
+        let bundle = Bundle(for: BudgetBook.self)
+        guard let url = bundle.url(forResource: "FirstCC", withExtension: "momd"),
+              let model = NSManagedObjectModel(contentsOf: url) else {
+            fatalError("Cannot load FirstCC.momd from \(bundle.bundlePath)")
         }
-        if let model = NSManagedObjectModel.mergedModel(from: Bundle.allBundles) {
-            return model
-        }
-        if let url = Bundle(for: BudgetBook.self).url(forResource: "FirstCC", withExtension: "momd"),
-           let model = NSManagedObjectModel(contentsOf: url) {
-            return model
-        }
-        fatalError("Cannot find CoreData model 'FirstCC.momd' in any bundle")
-    }()
+        // copy() 返回深拷贝，实体描述完全独立，彻底杜绝跨测试状态污染
+        return model.copy() as! NSManagedObjectModel
+    }
 
     /// 每次调用创建独立的 in-memory CoreData stack（每个 test 拥有隔离的数据空间）
     static func makeContext() -> NSManagedObjectContext {
-        let coordinator = NSPersistentStoreCoordinator(managedObjectModel: cachedModel)
+        let model = loadModel()
+        let coordinator = NSPersistentStoreCoordinator(managedObjectModel: model)
         try! coordinator.addPersistentStore(ofType: NSInMemoryStoreType, configurationName: nil, at: nil)
         let ctx = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
         ctx.persistentStoreCoordinator = coordinator
@@ -54,7 +60,7 @@ import Testing
     private func makeLedger(_ name: String = "测试账本") -> Ledger {
         let l = Ledger(name: name, context: context)
         l.defaultCurrencyCode = "CNY"
-        try! context.save()
+        if let err = context.saveAsError() { fatalError("makeLedger save failed: \(err)") }
         return l
     }
 
@@ -62,7 +68,7 @@ import Testing
     private func makeAccount(_ name: String = "测试账户", _ ledger: Ledger) -> Account {
         let a = Account(name: name, context: context)
         a.ledger = ledger
-        try! context.save()
+        if let err = context.saveAsError() { fatalError("makeAccount save failed: \(err)") }
         return a
     }
 
@@ -70,7 +76,7 @@ import Testing
     private func makeCategory(_ name: String, _ ledger: Ledger, type: TransactionType = .expense, parent: Qianeymac.Category? = nil) -> Qianeymac.Category {
         let c = Qianeymac.Category(name: name, type: type, parent: parent, context: context)
         c.ledger = ledger
-        try! context.save()
+        if let err = context.saveAsError() { fatalError("makeCategory save failed: \(err)") }
         return c
     }
 
@@ -78,7 +84,7 @@ import Testing
     private func makeBook(_ name: String, start: Date, end: Date, _ ledger: Ledger) -> BudgetBook {
         let b = BudgetBook(name: name, startDate: start, endDate: end, context: context)
         b.ledger = ledger
-        try! context.save()
+        if let err = context.saveAsError() { fatalError("makeBook save failed: \(err)") }
         return b
     }
 
@@ -86,7 +92,7 @@ import Testing
     private func makeItem(amount: Decimal, period: BudgetPeriod = .monthly, category: Qianeymac.Category, book: BudgetBook) -> BudgetItem {
         let i = BudgetItem(amount: amount, period: period, category: category, context: context)
         i.book = book
-        try! context.save()
+        if let err = context.saveAsError() { fatalError("makeItem save failed: \(err)") }
         return i
     }
 
@@ -120,7 +126,7 @@ import Testing
             context: context
         )
         t.ledger = ledger
-        try! context.save()
+        if let err = context.saveAsError() { fatalError("makeTx save failed: \(err)") }
         return t
     }
 
