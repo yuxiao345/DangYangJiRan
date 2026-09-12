@@ -104,7 +104,9 @@ struct BudgetBookDetailMacView: View {
             .designScreen()
             .navigationTitle(book.name)
             .navigationDestination(item: $navBudgetEntry) { navEntry in
-                BudgetItemTransactionListMacView(entry: navEntry)
+                BudgetItemTransactionListMacView(entry: navEntry) {
+                    navBudgetEntry = nil
+                }
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

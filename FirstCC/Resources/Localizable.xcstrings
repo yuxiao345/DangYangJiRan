@@ -221,6 +221,23 @@
         }
       }
     },
+    "%@ · 支出明细" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · Expenses"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · 支出明细"
+          }
+        }
+      }
+    },
     "%@ (%@)" : {
       "localizations" : {
         "zh-Hans" : {
@@ -11397,7 +11414,20 @@
       }
     },
     "返回" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "返回"
+          }
+        }
+      }
     },
     "返回资产配置概览" : {
 

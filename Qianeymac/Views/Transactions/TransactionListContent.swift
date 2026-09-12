@@ -6,6 +6,9 @@ struct TransactionListOptions: OptionSet {
     static let hideCalendar   = TransactionListOptions(rawValue: 1 << 0)
     static let hideTypeFilter = TransactionListOptions(rawValue: 1 << 1)
     static let hideAddButton  = TransactionListOptions(rawValue: 1 << 2)
+    /// 不画自身屏幕背景。窗口根节点已经画过一次液体背景时用：
+    /// 两层背景各自按自己的 frame 偏移画光斑，交界处会出现断层。
+    static let hideScreenBackground = TransactionListOptions(rawValue: 1 << 3)
 }
 
 struct TransactionListContent: View {
@@ -128,7 +131,7 @@ struct TransactionListContent: View {
                 .padding(12)
             }
         }
-        .designScreen()
+        .modifier(ScreenBackgroundModifier(enabled: !options.contains(.hideScreenBackground)))
         .sheet(item: $selectedTransaction) { t in
             MacAddTransactionSheet(editing: t, displayMode: true)
         }
@@ -406,6 +409,23 @@ struct TransactionListContent: View {
         monthSlideDirection = delta > 0 ? .trailing : .leading
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             selectedMonth = cal.date(byAdding: .month, value: delta, to: selectedMonth)?.startOfMonth ?? selectedMonth
+        }
+    }
+}
+
+// MARK: - Optional Screen Background
+
+/// 按需套用 `.designScreen()`。预算明细页由窗口根节点统一画背景，
+/// 列表内部不能再画一层，否则两层液体背景的光斑会在交界处断层。
+private struct ScreenBackgroundModifier: ViewModifier {
+    let enabled: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if enabled {
+            content.designScreen()
+        } else {
+            content
         }
     }
 }

@@ -8,11 +8,14 @@ struct GlassPillToggle<Option: Hashable>: View {
     /// 返回已本地化的标题（调用方负责 String(localized:) / NSLocalizedString）
     let label: (Option) -> String
 
+    /// 激活项滑块在选项间复用同一个 id，切换时做几何过渡而不是硬切
+    @Namespace private var indicator
+
     var body: some View {
         HStack(spacing: 0) {
             ForEach(options, id: \.self) { option in
                 Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                         selection = option
                     }
                 } label: {
@@ -26,7 +29,12 @@ struct GlassPillToggle<Option: Hashable>: View {
                         .padding(.horizontal, 12)
                         .padding(.vertical, 5)
                         .contentShape(Rectangle())
-                        .background(activePillBackground(active: selection == option))
+                        .background {
+                            if selection == option {
+                                activePill
+                                    .matchedGeometryEffect(id: "glassPillIndicator", in: indicator)
+                            }
+                        }
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(selection == option ? [.isButton, .isSelected] : .isButton)
@@ -40,14 +48,12 @@ struct GlassPillToggle<Option: Hashable>: View {
         .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
     }
 
-    @ViewBuilder
-    private func activePillBackground(active: Bool) -> some View {
-        if active {
-            Capsule()
-                .fill(Color.white.opacity(0.06))
-                .background(.regularMaterial, in: Capsule())
-                .overlay { Capsule().stroke(Color.white.opacity(0.15), lineWidth: 1) }
-                .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
-        }
+    /// 激活项：微白色浮雕卡片 + 极细描边 + 极浅投影
+    private var activePill: some View {
+        Capsule()
+            .fill(Color.white.opacity(0.06))
+            .background(.regularMaterial, in: Capsule())
+            .overlay { Capsule().stroke(Color.white.opacity(0.15), lineWidth: 1) }
+            .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
     }
 }
