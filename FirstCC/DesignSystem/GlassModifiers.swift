@@ -58,6 +58,9 @@ struct LiquidBackgroundModifier: ViewModifier {
                         .scaleEffect(1.2)
                     #endif
                 }
+                // 纯装饰层，绝不能吃触摸：`.ignoresSafeArea()` 会把它撑到整屏，
+                // 压在同级控件之上接管手势，表现为「上方控件看得见但点不动」
+                .allowsHitTesting(false)
                 #if os(iOS)
                 .ignoresSafeArea()
                 #endif

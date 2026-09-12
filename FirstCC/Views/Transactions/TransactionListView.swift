@@ -6,6 +6,10 @@ struct TransactionListOptions: OptionSet {
     static let hideCalendar   = TransactionListOptions(rawValue: 1 << 0)
     static let hideTypeFilter = TransactionListOptions(rawValue: 1 << 1)
     static let hideAddButton  = TransactionListOptions(rawValue: 1 << 2)
+    /// 不画自身屏幕背景。列表上面还有同类控件（预算明细页的「本期/累计」分段条）时用：
+    /// `.designScreen()` 的背景会 `.ignoresSafeArea()` 撑到整屏，压在兄弟节点上方接管触摸，
+    /// 上方的分段条会变得看得见但点不动，卡片阴影也会被这层盖掉。
+    static let hideScreenBackground = TransactionListOptions(rawValue: 1 << 3)
 }
 
 struct TransactionListView: View {
@@ -94,7 +98,7 @@ struct TransactionListView: View {
         }
         .id(refreshVersion)
         .modifier(ScrollCollapseModifier(isCalendarExpanded: $isCalendarExpanded))
-        .designScreen()
+        .if(!options.contains(.hideScreenBackground)) { $0.designScreen() }
         .navigationTitle(filterCategory.map { LocalizedStringKey($0.name) } ?? "流水")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {

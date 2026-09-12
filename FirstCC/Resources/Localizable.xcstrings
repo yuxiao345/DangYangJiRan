@@ -1168,9 +1168,6 @@
     "余额：" : {
 
     },
-    "你正在参与此共享账本，仅拥有者可管理成员" : {
-
-    },
     "使用%@解锁" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2022,23 +2019,6 @@
     "最低金额不能高于最高金额" : {
 
     },
-    "最大可退金额 %@%@" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Max refund %@%@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "最大可退金额 %@%@"
-          }
-        }
-      }
-    },
     "最大可退金额 %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2052,6 +2032,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "最大可退金额 %@"
+          }
+        }
+      }
+    },
+    "最大可退金额 %@%@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Max refund %@%@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最大可退金额 %@%@"
           }
         }
       }
@@ -4899,23 +4896,6 @@
         }
       }
     },
-    "已退款" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Refunded"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已退款"
-          }
-        }
-      }
-    },
     "已退 %@ / 剩余可退 %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4929,6 +4909,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已退 %@ / 剩余可退 %@"
+          }
+        }
+      }
+    },
+    "已退款" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refunded"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已退款"
           }
         }
       }
@@ -8463,9 +8460,6 @@
         }
       }
     },
-    "此账本已开启共享，其他用户可加入协作记账" : {
-
-    },
     "每%@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -11724,23 +11718,6 @@
         }
       }
     },
-    "退款金额超过原交易金额" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Refund amount exceeds original"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "退款金额超过原交易金额"
-          }
-        }
-      }
-    },
     "退款金额超过剩余可退金额" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -11771,6 +11748,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "退款金额超过剩余可退金额 %@"
+          }
+        }
+      }
+    },
+    "退款金额超过原交易金额" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refund amount exceeds original"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退款金额超过原交易金额"
           }
         }
       }

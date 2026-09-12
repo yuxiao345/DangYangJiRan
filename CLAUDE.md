@@ -275,6 +275,7 @@ Mac 报表位于 `Qianeymac/Views/Reports/`，使用独立组件拼装（非复�
 - **分类缩进**: 层次化分类菜单使用 `NSMenuItem.indentationLevel`。禁止使用 padding/Spacer/attributedTitle——这些全都会失败。
 - **CalendarDay ID**: 绝不要对日历日期标识符使用 `UUID()`——配合 `.onHover` 会导致无限重渲染循环。使用稳定的基于日期的 ID。
 - **@State 字典变更**: 不要直接变更 `@State` 字典下标。SwiftUI 不会检测到变更。应创建新的字典副本。
+- **`designScreen()` 不能和兄弟控件并列**: `LiquidBackgroundModifier` 的背景带 `.ignoresSafeArea()`，是撑到整屏的一层不透明 `Color`。把它作为 `VStack` 里某个子节点的背景、而上面还有同类控件（分段条、胶囊）时，那层背景会压住上方控件，盖掉上方卡片的下方阴影（并曾导致「看得见但点不动」，现由背景上的 `.allowsHitTesting(false)` 兜住，但别指望它——每层背景也有各画各的光斑、交界断层的问题）。正确做法：页面根节点统一画背景，列表用 `TransactionListOptions.hideScreenBackground`（iOS）/ `.hideScreenBackground`（Mac）关掉自己那层。
 
 ## i18n / 多语言规范
 
