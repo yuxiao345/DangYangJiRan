@@ -97,7 +97,12 @@ struct DonutChart: View {
                     .foregroundStyle(Color.designOnSurface)
                     .padding(.leading, 8)
             } else {
-                GlassPillToggle(selection: $categoryType)
+                GlassPillToggle(
+                    options: [TransactionType.expense, TransactionType.income],
+                    selection: $categoryType
+                ) { type in
+                    type == .expense ? String(localized: "支出") : String(localized: "收入")
+                }
             }
             Spacer()
         }
@@ -218,53 +223,5 @@ struct DonutChart: View {
             sum += item.percentage
         }
         return result
-    }
-}
-
-// MARK: - Glass Pill Toggle
-
-struct GlassPillToggle: View {
-    @Binding var selection: TransactionType
-
-    var body: some View {
-        HStack(spacing: 0) {
-            ForEach([TransactionType.expense, TransactionType.income], id: \.self) { type in
-                Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        selection = type
-                    }
-                } label: {
-                    Text(type == .expense ? String(localized: "支出") : String(localized: "收入"))
-                        .font(.designBodyMedium)
-                        .foregroundStyle(
-                            selection == type
-                                ? Color.designOnSurface
-                                : Color.designOnSurfaceVariant.opacity(0.7)
-                        )
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 5)
-                        .contentShape(Rectangle())
-                        .background(activePillBackground(active: selection == type))
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(4)
-        .background { Capsule().fill(Color.designGlassBg) }
-        .background(.regularMaterial, in: Capsule())
-        .overlay { Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1) }
-        .overlay { Capsule().stroke(Color.white.opacity(0.04), lineWidth: 1).padding(1) }
-        .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
-    }
-
-    @ViewBuilder
-    private func activePillBackground(active: Bool) -> some View {
-        if active {
-            Capsule()
-                .fill(Color.white.opacity(0.06))
-                .background(.regularMaterial, in: Capsule())
-                .overlay { Capsule().stroke(Color.white.opacity(0.15), lineWidth: 1) }
-                .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
-        }
     }
 }

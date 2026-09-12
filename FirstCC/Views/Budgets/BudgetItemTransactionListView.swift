@@ -1,30 +1,32 @@
 import SwiftUI
 @preconcurrency import CoreData
 
-/// 预算项明细页：在通用 TransactionListView 之上套一层 scope chip。
-/// scope 切换时重算闭区间并下传 filterDateRange；TransactionListView 自身不需要知道 BudgetScope。
+/// 预算项明细页：在通用 TransactionListView 之上套一层 scope 切换器。
+/// 交易集合由 BudgetService 用与金额统计完全相同的规则与日期区间算好后直接下传，
+/// TransactionListView 既不需要知道 BudgetScope，也不会再自行过滤一遍。
 struct BudgetItemTransactionListView: View {
     @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
-    let item: BudgetItem
-    let initialScope: BudgetScope
+    let entry: BudgetItemNavEntry
 
     @State private var currentScope: BudgetScope
-    @State private var currentRange: ClosedRange<Date>?
+    @State private var transactions: [Transaction]?
 
-    init(item: BudgetItem, initialScope: BudgetScope) {
-        self.item = item
-        self.initialScope = initialScope
-        self._currentScope = State(initialValue: initialScope)
+    init(entry: BudgetItemNavEntry) {
+        self.entry = entry
+        // entry.scope 只用于决定初始选中项，之后由 currentScope 独立持有
+        self._currentScope = State(initialValue: entry.scope)
     }
+
+    private var item: BudgetItem { entry.item }
 
     var body: some View {
         VStack(spacing: 0) {
-            if let range = currentRange {
+            if let transactions {
                 TransactionListView(
                     filterCategory: item.category,
                     options: [.hideTypeFilter, .hideAddButton],
-                    filterDateRange: range
+                    presetTransactions: transactions
                 )
             }
         }
@@ -33,19 +35,20 @@ struct BudgetItemTransactionListView: View {
                 currentScope = newScope
             }
         }
-        .task(id: currentScope) {
-            currentRange = scopeRange(currentScope)
-        }
-        .onChange(of: currentScope) { _, new in
-            currentRange = scopeRange(new)
-        }
+        .task(id: currentScope) { reload() }
+        // entry 变化也要重载：id 只含 item+scope，换月份后同一 id 的 entry 区间不同，
+        // 若 SwiftUI 复用了 destination 视图，只有 currentScope 变化才刷新会显示上一个月的明细
+        .onChange(of: entry) { _, _ in reload() }
+        .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in reload() }
     }
 
-    private func scopeRange(_ scope: BudgetScope) -> ClosedRange<Date> {
-        let service = appContainer.budgetService
-        return scope == .currentPeriod
-            ? service.currentPeriodRange(for: item, context: modelContext)
-            : service.cumulativeRange(for: item, context: modelContext)
+    private func reload() {
+        transactions = appContainer.budgetService.expenseTransactions(
+            for: item,
+            scope: currentScope,
+            in: entry.dateRange(for: currentScope),
+            context: modelContext
+        )
     }
 }
 

@@ -27,37 +27,28 @@ struct TransactionListContent: View {
     @State private var selectedTransaction: Transaction?
     @Namespace private var calendarNamespace
 
-    var filterCategory: Category?
     var options: TransactionListOptions = []
-    /// 锁定日期范围：非 nil 时整个明细页用这个范围，并自动隐藏日历。
-    var filterDateRange: ClosedRange<Date>? = nil
+    /// 预过滤明细：非 nil 时直接渲染这批交易，跳过自身查询。
+    /// 由调用方保证这批交易就是目标集合（预算项明细需要与金额统计共用同一套过滤规则）。
+    var presetTransactions: [Transaction]? = nil
 
     private let cal = Calendar.current
     private let weekdaySymbols = ["一", "二", "三", "四", "五", "六", "日"]
 
     init(
         selectedDate: Binding<Date?>,
-        filterCategory: Category? = nil,
         options: TransactionListOptions = [],
-        filterDateRange: ClosedRange<Date>? = nil
+        presetTransactions: [Transaction]? = nil
     ) {
         self._selectedDate = selectedDate
-        self.filterCategory = filterCategory
         self.options = options
-        self.filterDateRange = filterDateRange
-        let cal = Calendar.current
-        let initialMonth: Date
-        if let range = filterDateRange {
-            initialMonth = cal.date(from: cal.dateComponents([.year, .month], from: range.lowerBound)) ?? range.lowerBound
-        } else {
-            initialMonth = cal.date(from: cal.dateComponents([.year, .month], from: Date.now)) ?? Date.now
-        }
-        self._selectedMonth = State(initialValue: initialMonth)
+        self.presetTransactions = presetTransactions
     }
 
-    /// 是否隐藏日历：调用方主动隐藏，或被 filterDateRange 锁定范围时自动隐藏
+    /// 是否隐藏日历。预过滤模式下 `load` 直接 early-return，
+    /// 热力图数据从未计算，所以有 preset 就必须隐藏，不能依赖调用方记得传 `.hideCalendar`
     private var calendarHidden: Bool {
-        options.contains(.hideCalendar) || filterDateRange != nil
+        options.contains(.hideCalendar) || presetTransactions != nil
     }
 
     var body: some View {
@@ -152,7 +143,7 @@ struct TransactionListContent: View {
             guard old != new else { return }
             load()
         }
-        .onChange(of: filterDateRange) { _, _ in load() }
+        .onChange(of: presetTransactions) { _, _ in load() }
         .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in load() }
     }
 
@@ -369,27 +360,20 @@ struct TransactionListContent: View {
     }
 
     private func load() {
-        guard let ledger = appContainer.currentLedger else { return }
-        var filters = TransactionFilters()
-        if let range = filterDateRange {
-            // 闭区间转半开：取上界的 startOfDay + 1day，确保整个 endOfDay 当天全部包含
-            let endExclusive = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: range.upperBound)) ?? range.upperBound
-            filters.dateRange = range.lowerBound..<endExclusive
-        } else {
-            let start = selectedMonth
-            guard let end = cal.date(byAdding: .month, value: 1, to: start) else { return }
-            filters.dateRange = start..<end
+        // 预过滤模式：调用方（预算项明细）已按金额口径过滤，直接渲染，避免两套过滤规则产生差异
+        if let preset = presetTransactions {
+            transactions = preset
+            return
         }
+
+        guard let ledger = appContainer.currentLedger else { return }
+        let start = selectedMonth
+        guard let end = cal.date(byAdding: .month, value: 1, to: start) else { return }
+        var filters = TransactionFilters()
+        filters.dateRange = start..<end
         let all = (try? appContainer.transactionService.fetchTransactions(for: ledger, context: modelContext, filters: filters)) ?? []
         var result = all.deduplicatingTransfers()
         if let type = filterType { result = result.filter { $0.type == type } }
-
-        // 锁定范围时不显示日历，跳过热力图累加节省 N 次循环
-        if calendarHidden {
-            if let cat = filterCategory { result = result.filter { $0.category?.id == cat.id } }
-            transactions = result
-            return
-        }
 
         transactionDays = Set(result.filter { $0.type != .transfer }.map { cal.component(.day, from: $0.date) })
 
@@ -415,7 +399,6 @@ struct TransactionListContent: View {
         monthlyExpense = expenseSum.values.reduce(0, +)
         monthlyIncome = incomeSum.values.reduce(0, +)
         if let date = selectedDate { result = result.filter { cal.isDate($0.date, inSameDayAs: date) } }
-        if let cat = filterCategory { result = result.filter { $0.category?.id == cat.id } }
         transactions = result
     }
 

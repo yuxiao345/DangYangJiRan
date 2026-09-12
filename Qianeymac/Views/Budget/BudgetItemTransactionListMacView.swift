@@ -1,109 +1,63 @@
 import SwiftUI
 @preconcurrency import CoreData
 
-/// 预算项明细页（Mac）：在 TransactionListContent 之上套一层 scope chip。
-/// scope 切换时重算闭区间并下传 filterDateRange；TransactionListContent 自身不需要知道 BudgetScope。
+/// 预算项明细页（Mac）：在 TransactionListContent 之上套一层 scope 切换器。
+/// 交易集合由 BudgetService 用与金额统计完全相同的规则与日期区间算好后直接下传，
+/// TransactionListContent 既不需要知道 BudgetScope，也不会再自行过滤一遍。
 struct BudgetItemTransactionListMacView: View {
     @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
-    let item: BudgetItem
-    let initialScope: BudgetScope
+    let entry: BudgetItemNavEntry
 
     @State private var currentScope: BudgetScope
-    @State private var currentRange: ClosedRange<Date>?
+    @State private var transactions: [Transaction]?
 
-    init(item: BudgetItem, initialScope: BudgetScope) {
-        self.item = item
-        self.initialScope = initialScope
-        self._currentScope = State(initialValue: initialScope)
+    init(entry: BudgetItemNavEntry) {
+        self.entry = entry
+        // entry.scope 只用于决定初始选中项，之后由 currentScope 独立持有
+        self._currentScope = State(initialValue: entry.scope)
     }
+
+    private var item: BudgetItem { entry.item }
 
     var body: some View {
         VStack(spacing: 0) {
-            BudgetScopeChipsBar(currentScope: currentScope) { newScope in
-                currentScope = newScope
-            }
-            if let range = currentRange {
+            scopeToggle
+            if let transactions {
+                // 只下传 preset：分类与日期口径已由 service 按金额同一条路径算好，列表不再自行过滤
                 TransactionListContent(
                     selectedDate: .constant(nil),
-                    filterCategory: item.category,
                     options: [.hideTypeFilter, .hideAddButton],
-                    filterDateRange: range
+                    presetTransactions: transactions
                 )
             }
         }
-        .task(id: currentScope) {
-            currentRange = scopeRange(currentScope)
-        }
-        .onChange(of: currentScope) { _, new in
-            currentRange = scopeRange(new)
-        }
+        .task(id: currentScope) { reload() }
+        // entry 变化也要重载：id 只含 item+scope，若 SwiftUI 复用了 destination 视图，
+        // 只盯 currentScope 会漏掉区间不同的新 entry
+        .onChange(of: entry) { _, _ in reload() }
+        .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in reload() }
     }
 
-    private func scopeRange(_ scope: BudgetScope) -> ClosedRange<Date> {
-        let service = appContainer.budgetService
-        return scope == .currentPeriod
-            ? service.currentPeriodRange(for: item, context: modelContext)
-            : service.cumulativeRange(for: item, context: modelContext)
-    }
-}
-
-// MARK: - Chips (glass style)
-
-private struct BudgetScopeChipsBar: View {
-    let currentScope: BudgetScope
-    let onSelect: (BudgetScope) -> Void
-
-    var body: some View {
-        HStack(spacing: 6) {
-            ForEach(BudgetScope.allCases, id: \.self) { scope in
-                chip(scope)
+    /// 与报表页维度切换器同款（GlassPillToggle），置于内容顶部左对齐
+    private var scopeToggle: some View {
+        HStack {
+            GlassPillToggle(options: BudgetScope.allCases, selection: $currentScope) { scope in
+                scope.displayName
             }
             Spacer()
         }
-        .padding(4)
-        .background {
-            Capsule()
-                .fill(Color.designGlassBg)
-        }
-        .background(.regularMaterial, in: Capsule())
-        .overlay {
-            Capsule()
-                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-        }
-        .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
-        .padding(.horizontal, 16)
-        .padding(.top, 8)
+        .padding(.horizontal, 20)
+        .padding(.top, 17)
+        .padding(.bottom, 4)
     }
 
-    private func chip(_ scope: BudgetScope) -> some View {
-        let isSelected = currentScope == scope
-        return Button {
-            onSelect(scope)
-        } label: {
-            Text(LocalizedStringKey(scope.displayName))
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(
-                    isSelected ? Color.designOnSurface : Color.designOnSurfaceVariant.opacity(0.7)
-                )
-                .padding(.horizontal, 12)
-                .padding(.vertical, 5)
-                .contentShape(Rectangle())
-                .background {
-                    if isSelected {
-                        Capsule()
-                            .fill(Color.white.opacity(0.06))
-                            .background(.regularMaterial, in: Capsule())
-                            .overlay {
-                                Capsule()
-                                    .stroke(Color.white.opacity(0.15), lineWidth: 1)
-                            }
-                            .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
-                    }
-                }
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
-        .accessibilityLabel(scope.displayName)
+    private func reload() {
+        transactions = appContainer.budgetService.expenseTransactions(
+            for: item,
+            scope: currentScope,
+            in: entry.dateRange(for: currentScope),
+            context: modelContext
+        )
     }
 }

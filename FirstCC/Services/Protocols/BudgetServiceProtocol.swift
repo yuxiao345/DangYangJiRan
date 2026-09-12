@@ -20,11 +20,12 @@ protocol BudgetServiceProtocol {
     func currentPeriodSpending(for item: BudgetItem, context: NSManagedObjectContext) -> Decimal
     func cumulativeSpending(for item: BudgetItem, context: NSManagedObjectContext) -> Decimal
 
-    /// 当前周期范围（按 item.period 算周/月/季/年的真实当期）。用于"本期明细"链接。
-    func currentPeriodRange(for item: BudgetItem, now: Date, context: NSManagedObjectContext) -> ClosedRange<Date>
+    /// 构成预算项支出的明细交易。与 currentPeriodSpending / cumulativeSpending 共用同一套
+    /// 日期范围裁剪与过滤规则（展开子分类、排除可报销、只取支出），
+    /// 明细页直接渲染它，保证列出的交易与进度线金额完全对应。
+    /// explicitRange：调用方页面进度线所用的日期区间；nil 表示按 scope 推导
+    func expenseTransactions(for item: BudgetItem, scope: BudgetScope, in explicitRange: ClosedRange<Date>?, context: NSManagedObjectContext) -> [Transaction]
 
-    /// 累计区间：账本起始日（自然日）→ 今天（endOfDay）。用于"累计明细"链接。
-    func cumulativeRange(for item: BudgetItem, context: NSManagedObjectContext) -> ClosedRange<Date>
     func totalBudget(for book: BudgetBook) -> Decimal
     func totalCumulativeSpending(for book: BudgetBook, context: NSManagedObjectContext) -> Decimal
     func totalCumulativeSpending(in range: ClosedRange<Date>, for book: BudgetBook, context: NSManagedObjectContext) -> Decimal
@@ -45,10 +46,5 @@ protocol BudgetServiceProtocol {
 extension BudgetServiceProtocol {
     func dailySpending(in range: ClosedRange<Date>, categoryID: UUID?, ledgerID: UUID, context: NSManagedObjectContext) -> [DailySpendingPoint] {
         dailySpending(in: range, categoryID: categoryID, excludeCategoryIDs: [], ledgerID: ledgerID, context: context)
-    }
-
-    /// prod 便捷方法：默认使用当前时间作为 now
-    func currentPeriodRange(for item: BudgetItem, context: NSManagedObjectContext) -> ClosedRange<Date> {
-        currentPeriodRange(for: item, now: Date.now, context: context)
     }
 }

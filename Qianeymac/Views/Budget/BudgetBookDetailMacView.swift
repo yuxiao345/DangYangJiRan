@@ -4,13 +4,14 @@ import SwiftUI
 // MARK: - Shared Helpers
 
 private struct BudgetSpendingLine: View {
-    let label: String
+    let label: LocalizedStringKey
     let spent: Decimal
     let budget: Decimal
     let currency: String
     var onTap: (() -> Void)? = nil
 
     @State private var animRatio: Double = 0
+    @State private var isHovered = false
 
     var body: some View {
         let ratio = budget > 0 ? NSDecimalNumber(decimal: spent / budget).doubleValue : 0
@@ -29,9 +30,24 @@ private struct BudgetSpendingLine: View {
             }
         }
         .frame(minHeight: 28)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color.designAccentGreen.opacity(isHovered ? 0.07 : 0))
+        )
         .contentShape(Rectangle())
         .onTapGesture {
             onTap?()
+        }
+        .onHover { inside in
+            // 仅可点击的进度线给出悬停反馈（非预算项行无 onTap）
+            guard onTap != nil else { return }
+            withAnimation(.easeOut(duration: 0.12)) { isHovered = inside }
+            // 用 set 而非 push/pop：行被移出层级时不会有未配对的 pop 把光标卡住
+            if inside { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
+        }
+        .onDisappear {
+            // 悬停中行被移除（切 scope / 删除）时 onHover(false) 不会触发，光标会卡在 pointingHand
+            if onTap != nil { NSCursor.arrow.set() }
         }
         .task {
             withAnimation(.spring(response: 0.7, dampingFraction: 0.65)) {
@@ -63,7 +79,6 @@ struct BudgetBookDetailMacView: View {
     @State private var preselectedCategory: Category?
     @State private var deleteCandidate: BudgetItem?
     @State private var showDeleteConfirm = false
-    @State private var navCategory: Category?
     @State private var navBudgetEntry: BudgetItemNavEntry?
 
     var body: some View {
@@ -88,11 +103,8 @@ struct BudgetBookDetailMacView: View {
             }
             .designScreen()
             .navigationTitle(book.name)
-            .navigationDestination(item: $navCategory) { cat in
-                TransactionListContent(selectedDate: .constant(nil), filterCategory: cat, options: [.hideCalendar, .hideTypeFilter, .hideAddButton])
-            }
-            .navigationDestination(item: $navBudgetEntry) { entry in
-                BudgetItemTransactionListMacView(item: entry.item, initialScope: entry.scope)
+            .navigationDestination(item: $navBudgetEntry) { navEntry in
+                BudgetItemTransactionListMacView(entry: navEntry)
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -167,7 +179,6 @@ struct BudgetBookDetailMacView: View {
                         currency: currency,
                         cumSpent: cumulative[item.id] ?? 0,
                         perSpent: period[item.id] ?? 0,
-                        navCategory: $navCategory,
                         navBudgetEntry: $navBudgetEntry,
                         editingItem: $editingItem,
                         deleteCandidate: $deleteCandidate,
@@ -220,7 +231,7 @@ struct BudgetBookDetailMacView: View {
 
     // MARK: - Helpers
 
-    private func budgetLine(label: String, spent: Decimal, budget: Decimal, currency: String) -> some View {
+    private func budgetLine(label: LocalizedStringKey, spent: Decimal, budget: Decimal, currency: String) -> some View {
         BudgetSpendingLine(label: label, spent: spent, budget: budget, currency: currency)
     }
 
@@ -263,7 +274,6 @@ private struct BudgetItemRowView: View {
     let currency: String
     let cumSpent: Decimal
     let perSpent: Decimal
-    @Binding var navCategory: Category?
     @Binding var navBudgetEntry: BudgetItemNavEntry?
     @Binding var editingItem: BudgetItem?
     @Binding var deleteCandidate: BudgetItem?
@@ -272,6 +282,8 @@ private struct BudgetItemRowView: View {
     @State private var isHovered = false
 
     var body: some View {
+        let periodEntry = BudgetItemNavEntry(item: item, scope: .currentPeriod)
+        let cumulativeEntry = BudgetItemNavEntry(item: item, scope: .cumulative)
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 if let cat = item.category {
@@ -279,11 +291,7 @@ private struct BudgetItemRowView: View {
                         .foregroundStyle(Color(hex: cat.colorHex))
                     Text(LocalizedStringKey(cat.name))
                         .font(.designBodySmall)
-                        .foregroundStyle(isHovered ? Color.designAccentGreen : Color.designOnSurface)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(Color.designOnSurfaceVariant.opacity(isHovered ? 0.6 : 0))
-                        .offset(x: isHovered ? 2 : -4)
+                        .foregroundStyle(Color.designOnSurface)
                 } else {
                     Image(systemName: "chart.pie")
                         .foregroundStyle(Color.designPrimaryContainer)
@@ -315,25 +323,25 @@ private struct BudgetItemRowView: View {
             }
 
             BudgetSpendingLine(label: "本期", spent: perSpent, budget: item.periodBudget, currency: currency) {
-                navBudgetEntry = BudgetItemNavEntry(item: item, scope: .currentPeriod)
+                navBudgetEntry = periodEntry
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { navBudgetEntry = periodEntry }
+
             BudgetSpendingLine(label: "累计", spent: cumSpent, budget: item.totalBudget, currency: currency) {
-                navBudgetEntry = BudgetItemNavEntry(item: item, scope: .cumulative)
+                navBudgetEntry = cumulativeEntry
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { navBudgetEntry = cumulativeEntry }
         }
         .padding(.vertical, 2)
+        // 保持整行热区：onHover 与手势一样按 content shape 命中，
+        // 否则两行进度线之间的间隙会让编辑/删除按钮中途消失
         .contentShape(Rectangle())
         .onHover { inside in
             withAnimation(.easeOut(duration: 0.15)) { isHovered = inside }
-            if inside, item.category != nil {
-                NSCursor.pointingHand.push()
-            } else if !inside {
-                NSCursor.pop()
-            }
-        }
-        .onTapGesture {
-            if let cat = item.category { navCategory = cat }
-            else { editingItem = item }
         }
     }
 }

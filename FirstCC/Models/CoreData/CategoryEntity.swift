@@ -83,4 +83,17 @@ extension Category {
         }
         return ids
     }
+
+    /// 自身 + 全部后代 ID。父分类的预算/筛选要覆盖其子分类交易，这是统一口径。
+    /// 递归遍历分类树，批量过滤前先算好一次，不要在闭包里每笔交易算一遍。
+    var selfAndDescendantIDs: Set<UUID> {
+        allDescendantIDs.union([id])
+    }
+}
+
+extension Transaction {
+    /// 交易分类是否命中给定 ID 集合。集合请用 `Category.selfAndDescendantIDs` 预先算好。
+    func belongs(toCategoryIDs ids: Set<UUID>) -> Bool {
+        category.map { ids.contains($0.id) } ?? false
+    }
 }

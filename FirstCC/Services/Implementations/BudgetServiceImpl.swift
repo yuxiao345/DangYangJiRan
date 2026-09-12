@@ -66,34 +66,58 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
 
     // MARK: - Calculations
 
+    /// 本期区间：按预算项周期算出当期，再与账本起止日取交集。
+    /// 金额与明细列表都从这里取，保证两者永远是同一个区间。
+    private func clippedCurrentPeriodRange(for item: BudgetItem, book: BudgetBook, now: Date) -> ClosedRange<Date> {
+        clippedRange(currentPeriodRange(for: item, now: now), to: book)
+    }
+
+    /// 累计区间：账本起始日 → 今天。金额与明细列表共用一个来源。
+    private func cumulativeRange(for book: BudgetBook, now: Date) -> ClosedRange<Date> {
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: book.startDate)
+        return start...max(start, now)
+    }
+
+    /// 预算项在给定区间下的区间（本期 / 累计）
+    private func range(for item: BudgetItem, scope: BudgetScope, book: BudgetBook, now: Date) -> ClosedRange<Date> {
+        switch scope {
+        case .currentPeriod: clippedCurrentPeriodRange(for: item, book: book, now: now)
+        case .cumulative:    cumulativeRange(for: book, now: now)
+        }
+    }
+
     func currentPeriodSpending(for item: BudgetItem, context: NSManagedObjectContext) -> Decimal {
         guard let book = item.book else { return 0 }
-        let now = Date.now
-        let range = clippedRange(currentPeriodRange(for: item, now: now), to: book)
+        let range = clippedCurrentPeriodRange(for: item, book: book, now: .now)
         return spending(in: range, category: item.category, book: book, context: context)
     }
 
     func cumulativeSpending(for item: BudgetItem, context: NSManagedObjectContext) -> Decimal {
         guard let book = item.book else { return 0 }
-        let cal = Calendar.current
-        let start = cal.startOfDay(for: book.startDate)
-        let end = max(start, Date())
-        return spending(in: start...end, category: item.category, book: book, context: context)
+        return spending(in: cumulativeRange(for: book, now: .now), category: item.category, book: book, context: context)
     }
 
-    func currentPeriodRange(for item: BudgetItem, now: Date, context: NSManagedObjectContext) -> ClosedRange<Date> {
-        currentPeriodRange(for: item, now: now)
-    }
-
-    func cumulativeRange(for item: BudgetItem, context: NSManagedObjectContext) -> ClosedRange<Date> {
-        guard let book = item.book else {
-            let now = Date.now
-            return now...now
-        }
-        let cal = Calendar.current
-        let start = cal.startOfDay(for: book.startDate)
-        let end = max(start, Date.now)
-        return start...end
+    /// 预算项在指定维度下的明细交易。范围裁剪与分类过滤完全走 spending 的同一条路径，
+    /// 保证明细页列出的交易就是构成进度线金额的那些交易。
+    ///
+    /// - Parameter explicitRange: 调用方页面上那条进度线所用的区间。带月份导航的页面必须传，
+    ///   否则这里推导出的是「预算项真实当期」，与页面显示的金额不是同一区间。
+    ///   无论显式还是推导，都会再裁剪到账本起始日之后，与金额统计用同一条裁剪规则。
+    /// - Note: 净额为负（退款大于支出）时 `spending` 会夹到 0，而这里返回原始交易，
+    ///   所以「明细求和 == 进度线金额」只在净额非负时成立。
+    func expenseTransactions(for item: BudgetItem, scope: BudgetScope, in explicitRange: ClosedRange<Date>? = nil, context: NSManagedObjectContext) -> [Transaction] {
+        guard let book = item.book else { return [] }
+        let dateRange = clippedRange(
+            explicitRange ?? range(for: item, scope: scope, book: book, now: .now),
+            to: book
+        )
+        return filteredExpenseTransactions(
+            in: dateRange,
+            category: item.category,
+            book: book,
+            context: context
+        )
     }
 
     func totalBudget(for book: BudgetBook) -> Decimal {
@@ -101,10 +125,7 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
     }
 
     func totalCumulativeSpending(for book: BudgetBook, context: NSManagedObjectContext) -> Decimal {
-        let cal = Calendar.current
-        let start = cal.startOfDay(for: book.startDate)
-        let end = max(start, Date())
-        return spending(in: start...end, category: nil, book: book, context: context)
+        return spending(in: cumulativeRange(for: book, now: .now), category: nil, book: book, context: context)
     }
 
     func totalCurrentPeriodSpending(for book: BudgetBook, context: NSManagedObjectContext) -> Decimal {
@@ -175,7 +196,8 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
 
     // MARK: - Private helpers
 
-    private func currentPeriodRange(for item: BudgetItem, now: Date) -> ClosedRange<Date> {
+    /// 不做 private：单元测试需要注入固定的 now 来验证周/月/季/年的周期边界
+    func currentPeriodRange(for item: BudgetItem, now: Date) -> ClosedRange<Date> {
         let cal = Calendar.current
         switch item.period {
         case .weekly:
@@ -244,24 +266,26 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
     }
 
     private func spending(in range: ClosedRange<Date>, category: Category?, book: BudgetBook, context: NSManagedObjectContext) -> Decimal {
-        guard let ledgerID = book.ledger?.id else { return 0 }
+        let net = filteredExpenseTransactions(in: range, category: category, book: book, context: context)
+            .reduce(Decimal(0)) { $0 + $1.netExpenseAmount }
+        return max(0, net)
+    }
+
+    /// 支出交易的单一过滤入口：日期范围 + 分类（展开后代）+ 匹配模式。
+    /// `fetchExpenseTransactions` 已保证只取支出类型、排除拆分父交易、排除可报销支出。
+    /// 金额统计与明细列表都走这里，避免两条路径产生口径差异。
+    private func filteredExpenseTransactions(in range: ClosedRange<Date>, category: Category?, book: BudgetBook, context: NSManagedObjectContext) -> [Transaction] {
+        guard let ledgerID = book.ledger?.id else { return [] }
         var txs = fetchExpenseTransactions(in: range, ledgerID: ledgerID, context: context)
         if let cat = category {
-            let matchIDs = cat.allDescendantIDs.union([cat.id])
-            txs = txs.filter { t in
-                guard let cid = t.category?.id else { return false }
-                return matchIDs.contains(cid)
-            }
+            let ids = cat.selfAndDescendantIDs
+            txs = txs.filter { $0.belongs(toCategoryIDs: ids) }
         } else if book.matchBudgetItems {
             let ids = budgetedCategoryIDs(for: book)
-            guard !ids.isEmpty else { return 0 }
-            txs = txs.filter { t in
-                guard let cid = t.category?.id else { return false }
-                return ids.contains(cid)
-            }
+            guard !ids.isEmpty else { return [] }
+            txs = txs.filter { $0.belongs(toCategoryIDs: ids) }
         }
-        let net = txs.reduce(Decimal(0)) { $0 + $1.netExpenseAmount }
-        return max(0, net)
+        return txs
     }
 
     /// 顶层预算项：category 没有预算祖先的项。子预算是子限额，不应与父预算累加。
@@ -311,17 +335,14 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
             let catByID = Dictionary(uniqueKeysWithValues: fetchedCats.map { ($0.id, $0) })
 
             if let cat = catByID[cid] {
-                var matchIDs = cat.allDescendantIDs.union([cat.id])
+                var matchIDs = cat.selfAndDescendantIDs
                 // 排除指定子分类及其后代，让父分类只统计其独占的交易
                 for eid in excludeCategoryIDs {
                     if let exCat = catByID[eid] {
-                        matchIDs.subtract(exCat.allDescendantIDs.union([exCat.id]))
+                        matchIDs.subtract(exCat.selfAndDescendantIDs)
                     }
                 }
-                filtered = txs.filter { t in
-                    guard let tcID = t.category?.id else { return false }
-                    return matchIDs.contains(tcID)
-                }
+                filtered = txs.filter { $0.belongs(toCategoryIDs: matchIDs) }
             } else {
                 filtered = txs.filter { $0.category?.id == cid }
             }

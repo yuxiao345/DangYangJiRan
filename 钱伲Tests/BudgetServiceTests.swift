@@ -609,7 +609,7 @@ final class BudgetServiceTests: XCTestCase {
 
         // 2026-09-09 是星期三
         let now = date(2026, 9, 9)
-        let range = service.currentPeriodRange(for: item, now: now, context: context)
+        let range = service.currentPeriodRange(for: item, now: now)
 
         let cal = Calendar.current
         let expectedStart = cal.startOfDay(for: cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now))!)
@@ -626,7 +626,7 @@ final class BudgetServiceTests: XCTestCase {
         let item = makeItem(amount: 3000, period: .monthly, category: cat, book: book)
 
         let now = date(2026, 7, 15)
-        let range = service.currentPeriodRange(for: item, now: now, context: context)
+        let range = service.currentPeriodRange(for: item, now: now)
 
         let cal = Calendar.current
         let expectedStart = cal.startOfDay(for: date(2026, 7, 1))
@@ -643,7 +643,7 @@ final class BudgetServiceTests: XCTestCase {
         let item = makeItem(amount: 3000, period: .quarterly, category: cat, book: book)
 
         let now = date(2026, 8, 15)
-        let range = service.currentPeriodRange(for: item, now: now, context: context)
+        let range = service.currentPeriodRange(for: item, now: now)
 
         let cal = Calendar.current
         let expectedStart = cal.startOfDay(for: date(2026, 7, 1))
@@ -660,7 +660,7 @@ final class BudgetServiceTests: XCTestCase {
         let item = makeItem(amount: 50000, period: .yearly, category: cat, book: book)
 
         let now = date(2026, 3, 15)
-        let range = service.currentPeriodRange(for: item, now: now, context: context)
+        let range = service.currentPeriodRange(for: item, now: now)
 
         let cal = Calendar.current
         let expectedStart = cal.startOfDay(for: date(2026, 1, 1))
@@ -669,21 +669,150 @@ final class BudgetServiceTests: XCTestCase {
         XCTAssertEqual(range.upperBound, expectedEnd)
     }
 
-    // MARK: - 10. 累计区间
+    // MARK: - 10. 明细交易与金额口径一致（不变量）
 
-    /// 累计区间：账本起始日 → 今天
-    func testCumulativeRange_bookStartToToday() {
+    /// 不变量：明细交易的净额合计 == 进度线金额（分类展开到子分类）
+    func testExpenseTransactions_sumEqualsSpending_expandsDescendants() {
         let ledger = makeLedger()
+        let account = makeAccount("现金", ledger)
+        let parent = makeCategory("餐饮", ledger)
+        let child = makeCategory("午餐", ledger, parent: parent)
+        let book = makeBook("2026", start: date(2026, 1, 1), end: date(2026, 12, 31), ledger)
+        let item = makeItem(amount: 3000, period: .monthly, category: parent, book: book)
+
+        let now = Date()
+        makeTx(amount: -100, date: now, category: parent, account: account, ledger: ledger)
+        makeTx(amount: -200, date: now, category: child, account: account, ledger: ledger)
+
+        let txs = service.expenseTransactions(for: item, scope: .currentPeriod, context: context)
+        XCTAssertEqual(txs.count, 2, "父分类预算必须覆盖子分类交易")
+        XCTAssertEqual(txs.reduce(Decimal(0)) { $0 + $1.netExpenseAmount },
+                       service.currentPeriodSpending(for: item, context: context))
+        XCTAssertEqual(service.currentPeriodSpending(for: item, context: context), 300)
+    }
+
+    /// 明细只含真正计入预算的支出：排除可报销、拆分父交易、收入
+    func testExpenseTransactions_excludesReimbursableSplitParentAndIncome() {
+        let ledger = makeLedger()
+        let account = makeAccount("现金", ledger)
         let cat = makeCategory("餐饮", ledger)
-        let book = makeBook("2026", start: date(2026, 3, 1), end: date(2026, 12, 31), ledger)
+        let book = makeBook("2026", start: date(2026, 1, 1), end: date(2026, 12, 31), ledger)
         let item = makeItem(amount: 3000, period: .monthly, category: cat, book: book)
 
-        let range = service.cumulativeRange(for: item, context: context)
+        let now = Date()
+        makeTx(amount: -100, date: now, category: cat, account: account, ledger: ledger)
+        makeTx(amount: -999, date: now, category: cat, account: account, ledger: ledger, reimbursement: .pending)
+        makeTx(amount: -888, date: now, category: cat, account: account, ledger: ledger, isSplitParent: true)
+        // 收入同分类也不能进支出明细（同名测试必须真的覆盖这一项）
+        makeTx(amount: 777, date: now, category: cat, account: account, ledger: ledger, type: .income)
 
+        let txs = service.expenseTransactions(for: item, scope: .currentPeriod, context: context)
+        XCTAssertEqual(txs.count, 1)
+        XCTAssertEqual(service.currentPeriodSpending(for: item, context: context), 100)
+    }
+
+    /// 月预算：本期只含当月，累计从账本起始日起——两者必须不同
+    func testExpenseTransactions_currentPeriodDiffersFromCumulative() {
+        let ledger = makeLedger()
+        let account = makeAccount("现金", ledger)
+        let cat = makeCategory("餐饮", ledger)
         let cal = Calendar.current
-        XCTAssertEqual(range.lowerBound, cal.startOfDay(for: date(2026, 3, 1)))
-        // 上界是今天（endOfDay）
-        XCTAssertGreaterThanOrEqual(range.upperBound, cal.startOfDay(for: Date()))
+        let twoMonthsAgo = cal.date(byAdding: .month, value: -2, to: Date())!
+        let book = makeBook("跨月", start: twoMonthsAgo, end: date(2026, 12, 31), ledger)
+        let item = makeItem(amount: 3000, period: .monthly, category: cat, book: book)
+
+        makeTx(amount: -100, date: Date(), category: cat, account: account, ledger: ledger)
+        makeTx(amount: -70, date: cal.date(byAdding: .month, value: -1, to: Date())!,
+               category: cat, account: account, ledger: ledger)
+
+        let periodTx = service.expenseTransactions(for: item, scope: .currentPeriod, context: context)
+        let cumulativeTx = service.expenseTransactions(for: item, scope: .cumulative, context: context)
+
+        XCTAssertEqual(periodTx.count, 1, "本期只含当月交易")
+        XCTAssertEqual(cumulativeTx.count, 2, "累计含账本起始日以来的全部交易")
+    }
+
+    /// 累计口径的起点是账本起始日：早于起始日的交易不计入
+    func testExpenseTransactions_cumulativeStartsAtBookStart() {
+        let ledger = makeLedger()
+        let account = makeAccount("现金", ledger)
+        let cat = makeCategory("餐饮", ledger)
+        let cal = Calendar.current
+        let twoMonthsAgo = cal.date(byAdding: .month, value: -2, to: Date())!
+        let book = makeBook("跨月", start: twoMonthsAgo, end: date(2026, 12, 31), ledger)
+        let item = makeItem(amount: 3000, period: .monthly, category: cat, book: book)
+
+        makeTx(amount: -100, date: Date(), category: cat, account: account, ledger: ledger)
+        makeTx(amount: -30, date: cal.date(byAdding: .month, value: -3, to: Date())!,
+               category: cat, account: account, ledger: ledger)
+
+        let txs = service.expenseTransactions(for: item, scope: .cumulative, context: context)
+        XCTAssertEqual(txs.count, 1)
+        XCTAssertEqual(service.cumulativeSpending(for: item, context: context), 100)
+    }
+
+    /// 显式区间优先于 scope 推导：带月份导航的页面（iOS）翻到历史月份后，
+    /// 明细必须列出那个月的交易，而不是预算项真实当期的交易
+    func testExpenseTransactions_explicitRange_overridesScopeDerivedRange() {
+        let ledger = makeLedger()
+        let account = makeAccount("现金", ledger)
+        let cat = makeCategory("餐饮", ledger)
+        let cal = Calendar.current
+        let twoMonthsAgo = cal.date(byAdding: .month, value: -2, to: Date())!
+        let book = makeBook("跨月", start: twoMonthsAgo, end: date(2026, 12, 31), ledger)
+        let item = makeItem(amount: 3000, period: .monthly, category: cat, book: book)
+
+        makeTx(amount: -100, date: Date(), category: cat, account: account, ledger: ledger)
+        makeTx(amount: -70, date: cal.date(byAdding: .month, value: -1, to: Date())!,
+               category: cat, account: account, ledger: ledger)
+
+        // 不传区间：按预算项当期 → 只有本月那笔
+        XCTAssertEqual(service.expenseTransactions(for: item, scope: .currentPeriod, context: context).count, 1)
+
+        // 传上个月的完整自然月区间（严格不跨入本月，否则测不出边界）
+        let lastMonthAnchor = cal.date(byAdding: .month, value: -1, to: Date())!
+        let lastMonthStart = cal.startOfDay(
+            for: cal.date(from: cal.dateComponents([.year, .month], from: lastMonthAnchor))!
+        )
+        let nextMonthStart = cal.date(byAdding: .month, value: 1, to: lastMonthStart)!
+        let lastMonthEnd = cal.endOfDay(for: cal.date(byAdding: .day, value: -1, to: nextMonthStart)!)
+        let lastMonthTx = service.expenseTransactions(
+            for: item, scope: .currentPeriod, in: lastMonthStart...lastMonthEnd, context: context
+        )
+        XCTAssertEqual(lastMonthTx.count, 1)
+        XCTAssertEqual(lastMonthTx.first?.amount, -70)
+    }
+
+    /// 不变量（页面口径）：进度线金额 == 明细列表的净额合计。
+    /// 页面金额走 categorySpending 的分组+祖先展开，明细走 expenseTransactions 的分类后代过滤，
+    /// 两条路径必须对同一个分类子树给出同一个结果。
+    func testInvariant_rowAmountEqualsDetailListSum() {
+        let ledger = makeLedger()
+        let account = makeAccount("现金", ledger)
+        let parent = makeCategory("餐饮", ledger)
+        let child = makeCategory("午餐", ledger, parent: parent)
+        let unrelated = makeCategory("购物", ledger)
+        let cal = Calendar.current
+        let thisMonthStart = cal.startOfDay(
+            for: cal.date(from: cal.dateComponents([.year, .month], from: Date()))!
+        )
+        let book = makeBook("本月", start: thisMonthStart, end: date(2026, 12, 31), ledger)
+        let item = makeItem(amount: 3000, period: .monthly, category: parent, book: book)
+
+        let now = Date()
+        makeTx(amount: -100, date: now, category: parent, account: account, ledger: ledger)
+        makeTx(amount: -200, date: now, category: child, account: account, ledger: ledger)
+        makeTx(amount: -500, date: now, category: unrelated, account: account, ledger: ledger)
+        makeTx(amount: -999, date: now, category: parent, account: account, ledger: ledger, reimbursement: .pending)
+        makeTx(amount: -888, date: now, category: parent, account: account, ledger: ledger, isSplitParent: true)
+
+        let range = thisMonthStart...cal.endOfDay(for: now)
+        let rowAmount = service.categorySpending(in: range, for: book, context: context)[parent.id] ?? 0
+        let detail = service.expenseTransactions(for: item, scope: .currentPeriod, in: range, context: context)
+
+        XCTAssertEqual(rowAmount, 300, "行金额含子分类、排除可报销与拆分父交易、排除无关分类")
+        XCTAssertEqual(detail.reduce(Decimal(0)) { $0 + $1.netExpenseAmount }, rowAmount)
+        XCTAssertEqual(detail.count, 2)
     }
 
     /// 多币种退款：汇率波动导致净支出非零

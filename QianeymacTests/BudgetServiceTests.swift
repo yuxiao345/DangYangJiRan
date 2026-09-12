@@ -481,8 +481,11 @@ import Testing
         let book = makeBook("2026预算", start: date(2026, 1, 1), end: date(2026, 12, 31), ledger)
         let item = makeItem(amount: 3000, period: .monthly, category: cat, book: book)
 
-        makeTx(amount: -900, date: date(2026, 6, 20), category: cat, account: account, ledger: ledger)
-        makeTx(amount: -400, date: date(2026, 7, 10), category: cat, account: account, ledger: ledger)
+        // 上个月的交易
+        let lastMonth = Calendar.current.date(byAdding: .month, value: -1, to: Date())!
+        makeTx(amount: -900, date: lastMonth, category: cat, account: account, ledger: ledger)
+        // 本月的交易
+        makeTx(amount: -400, date: Date(), category: cat, account: account, ledger: ledger)
 
         let thisMonthSpending = service.currentPeriodSpending(for: item, context: context)
         #expect(thisMonthSpending == 400)
@@ -564,5 +567,68 @@ import Testing
 
         let spending = service.cumulativeSpending(for: item, context: context)
         #expect(spending == 10)
+    }
+
+    /// 显式区间优先于 scope 推导（与 iOS 同名用例对称）：明细必须落在调用方给的区间内
+    @Test func expenseTransactions_explicitRange_overridesScopeDerivedRange() {
+        let ledger = makeLedger()
+        let account = makeAccount("现金", ledger)
+        let cat = makeCategory("餐饮", ledger)
+        let cal = Calendar.current
+        let twoMonthsAgo = cal.date(byAdding: .month, value: -2, to: Date())!
+        let book = makeBook("跨月", start: twoMonthsAgo, end: date(2026, 12, 31), ledger)
+        let item = makeItem(amount: 3000, period: .monthly, category: cat, book: book)
+
+        makeTx(amount: -100, date: Date(), category: cat, account: account, ledger: ledger)
+        makeTx(amount: -70, date: cal.date(byAdding: .month, value: -1, to: Date())!,
+               category: cat, account: account, ledger: ledger)
+
+        // 不传区间：按预算项当期 → 只有本月那笔
+        #expect(service.expenseTransactions(for: item, scope: .currentPeriod, context: context).count == 1)
+
+        // 传上个月的完整自然月区间（严格不跨入本月，否则测不出边界）
+        let lastMonthAnchor = cal.date(byAdding: .month, value: -1, to: Date())!
+        let lastMonthStart = cal.startOfDay(
+            for: cal.date(from: cal.dateComponents([.year, .month], from: lastMonthAnchor))!
+        )
+        let nextMonthStart = cal.date(byAdding: .month, value: 1, to: lastMonthStart)!
+        let lastMonthEnd = cal.endOfDay(for: cal.date(byAdding: .day, value: -1, to: nextMonthStart)!)
+        let lastMonthTx = service.expenseTransactions(
+            for: item, scope: .currentPeriod, in: lastMonthStart...lastMonthEnd, context: context
+        )
+        #expect(lastMonthTx.count == 1)
+        #expect(lastMonthTx.first?.amount == -70)
+    }
+
+    /// 不变量（页面口径）：进度线金额 == 明细列表的净额合计。
+    /// 页面金额走 categorySpending 的分组+祖先展开，明细走 expenseTransactions 的分类后代过滤，
+    /// 两条路径必须对同一个分类子树给出同一个结果。
+    @Test func invariant_rowAmountEqualsDetailListSum() {
+        let ledger = makeLedger()
+        let account = makeAccount("现金", ledger)
+        let parent = makeCategory("餐饮", ledger)
+        let child = makeCategory("午餐", ledger, parent: parent)
+        let unrelated = makeCategory("购物", ledger)
+        let cal = Calendar.current
+        let thisMonthStart = cal.startOfDay(
+            for: cal.date(from: cal.dateComponents([.year, .month], from: Date()))!
+        )
+        let book = makeBook("本月", start: thisMonthStart, end: date(2026, 12, 31), ledger)
+        let item = makeItem(amount: 3000, period: .monthly, category: parent, book: book)
+
+        let now = Date()
+        makeTx(amount: -100, date: now, category: parent, account: account, ledger: ledger)
+        makeTx(amount: -200, date: now, category: child, account: account, ledger: ledger)
+        makeTx(amount: -500, date: now, category: unrelated, account: account, ledger: ledger)
+        makeTx(amount: -999, date: now, category: parent, account: account, ledger: ledger, reimbursement: .pending)
+        makeTx(amount: -888, date: now, category: parent, account: account, ledger: ledger, isSplitParent: true)
+
+        let range = thisMonthStart...cal.endOfDay(for: now)
+        let rowAmount = service.categorySpending(in: range, for: book, context: context)[parent.id] ?? 0
+        let detail = service.expenseTransactions(for: item, scope: .currentPeriod, in: range, context: context)
+
+        #expect(rowAmount == 300)   // 含子分类、排除可报销与拆分父交易、排除无关分类
+        #expect(detail.reduce(Decimal(0)) { $0 + $1.netExpenseAmount } == rowAmount)
+        #expect(detail.count == 2)
     }
 }

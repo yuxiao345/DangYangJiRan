@@ -13,8 +13,9 @@ struct TransactionListView: View {
     @Environment(\.managedObjectContext) private var modelContext
     var filterCategory: Category? = nil
     var options: TransactionListOptions = []
-    /// 锁定日期范围：非 nil 时整个明细页用这个范围，并自动隐藏日历。
-    var filterDateRange: ClosedRange<Date>? = nil
+    /// 预过滤明细：非 nil 时直接渲染这批交易，跳过自身查询。
+    /// 由调用方保证这批交易就是目标集合（预算项明细需要与金额统计共用同一套过滤规则）。
+    var presetTransactions: [Transaction]? = nil
     @State private var transactions: [Transaction] = []
     @State private var showAddSheet = false
     @State private var filterType: TransactionType?
@@ -33,24 +34,17 @@ struct TransactionListView: View {
     init(
         filterCategory: Category? = nil,
         options: TransactionListOptions = [],
-        filterDateRange: ClosedRange<Date>? = nil
+        presetTransactions: [Transaction]? = nil
     ) {
         self.filterCategory = filterCategory
         self.options = options
-        self.filterDateRange = filterDateRange
-        let cal = Calendar.current
-        let initialMonth: Date
-        if let range = filterDateRange {
-            initialMonth = cal.date(from: cal.dateComponents([.year, .month], from: range.lowerBound)) ?? range.lowerBound
-        } else {
-            initialMonth = cal.date(from: cal.dateComponents([.year, .month], from: Date.now)) ?? Date.now
-        }
-        self._selectedMonth = State(initialValue: initialMonth)
+        self.presetTransactions = presetTransactions
     }
 
-    /// 是否隐藏日历：调用方主动隐藏，或被 filterDateRange 锁定范围时自动隐藏
+    /// 是否隐藏日历。预过滤模式下 `loadCalendarData` 直接 early-return，
+    /// 热力图数据从未计算，所以有 preset 就必须隐藏，不能依赖调用方记得传 `.hideCalendar`
     private var calendarHidden: Bool {
-        options.contains(.hideCalendar) || filterDateRange != nil
+        options.contains(.hideCalendar) || presetTransactions != nil
     }
 
     var body: some View {
@@ -152,7 +146,7 @@ struct TransactionListView: View {
             applyFilters()
         }
         .onChange(of: selectedDay) { _, _ in applyFilters() }
-        .onChange(of: filterDateRange) { _, _ in
+        .onChange(of: presetTransactions) { _, _ in
             loadCalendarData()
             applyFilters()
         }
@@ -225,28 +219,25 @@ struct TransactionListView: View {
         guard let ledger = appContainer.currentLedger else { return }
         let cal = Calendar.current
 
-        var filters = TransactionFilters()
-        if let range = filterDateRange {
-            // 闭区间转半开：取上界的 startOfDay + 1day，确保整个 endOfDay 当天全部包含
-            let endExclusive = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: range.upperBound)) ?? range.upperBound
-            filters.dateRange = range.lowerBound..<endExclusive
-        } else {
-            let start = selectedMonth
-            guard let end = cal.date(byAdding: .month, value: 1, to: start) else { return }
-            filters.dateRange = start..<end
+        // 预过滤模式：调用方（预算项明细）已按金额口径过滤，直接渲染，避免两套过滤规则产生差异
+        if let preset = presetTransactions {
+            monthTransactions = preset
+            return
         }
+
+        let start = selectedMonth
+        guard let end = cal.date(byAdding: .month, value: 1, to: start) else { return }
+        var filters = TransactionFilters()
+        filters.dateRange = start..<end
         let all = (try? appContainer.transactionService.fetchTransactions(for: ledger, context: modelContext, filters: filters)) ?? []
 
         let normal = all
             .excludingReimbursementTransactions()
 
-        // 锁定范围时不显示日历，跳过热力图累加节省 N 次循环
-        if calendarHidden {
-            monthTransactions = all.deduplicatingTransfers()
-            return
-        }
-
-        let calData = filterCategory.map { cat in normal.filter { $0.category?.id == cat.id } } ?? normal
+        let calData = filterCategory.map { cat in
+            let ids = cat.selfAndDescendantIDs
+            return normal.filter { $0.belongs(toCategoryIDs: ids) }
+        } ?? normal
 
         var expenseByDay: [Int: Decimal] = [:]
         var incomeByDay: [Int: Decimal] = [:]
@@ -287,8 +278,10 @@ struct TransactionListView: View {
         if let type = filterType {
             result = result.filter { $0.type == type }
         }
-        if let cat = filterCategory {
-            result = result.filter { $0.category?.id == cat.id }
+        // 预过滤模式下调用方已按分类口径过滤，这里不再重复过滤——两套规则会漂移
+        if presetTransactions == nil, let cat = filterCategory {
+            let ids = cat.selfAndDescendantIDs
+            result = result.filter { $0.belongs(toCategoryIDs: ids) }
         }
         transactions = result
     }

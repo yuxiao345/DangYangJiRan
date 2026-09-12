@@ -18,7 +18,6 @@ struct BudgetBookDetailView: View {
     // Animated progress values for summary card
     @State private var animTotalCumulative: Decimal = 0
     @State private var animTotalPeriod: Decimal = 0
-    @State private var navCategory: Category?
     @State private var navBudgetEntry: BudgetItemNavEntry?
     @State private var deleteCandidate: BudgetItem?
     @State private var showMonthPicker = false
@@ -126,11 +125,8 @@ struct BudgetBookDetailView: View {
             AddEditBudgetItemView(book: book, preselectedCategory: cat)
         }
         .onAppear(perform: loadData)
-        .navigationDestination(item: $navCategory) { cat in
-            TransactionListView(filterCategory: cat, options: [.hideTypeFilter, .hideAddButton])
-        }
-        .navigationDestination(item: $navBudgetEntry) { entry in
-            BudgetItemTransactionListView(item: entry.item, initialScope: entry.scope)
+        .navigationDestination(item: $navBudgetEntry) { navEntry in
+            BudgetItemTransactionListView(entry: navEntry)
         }
         .confirmationDialog("确定删除此预算项？", isPresented: $showDeleteConfirm) {
             Button("删除", role: .destructive) {
@@ -257,8 +253,14 @@ struct BudgetBookDetailView: View {
         let perSpent = periodSpent[item.id] ?? 0
         let totalBgt = item.totalBudget
         let periodBgt = item.periodBudget
+        // 带上本页进度线所用的日期区间——本页「本期」是所选自然月（可翻月），
+        // 明细页必须用同一区间，否则列出的交易与行上金额对不上
+        let ranges = BudgetItemNavEntry.ResolvedRanges(currentPeriod: monthRange, cumulative: cumulativeRange)
+        let periodEntry = BudgetItemNavEntry(item: item, scope: .currentPeriod, ranges: ranges)
+        let cumulativeEntry = BudgetItemNavEntry(item: item, scope: .cumulative, ranges: ranges)
 
-        let rowContent = VStack(alignment: .leading, spacing: 4) {
+        // 明细跳转只由「本期/累计」进度线承担；编辑、删除走 swipeActions
+        return VStack(alignment: .leading, spacing: 4) {
             HStack {
                 if let cat = item.category {
                     Image(systemName: cat.iconName)
@@ -275,28 +277,20 @@ struct BudgetBookDetailView: View {
                     .foregroundStyle(.secondary)
             }
             budgetSpendingLine(label: "本期", spent: perSpent, budget: periodBgt, currency: currency) {
-                navBudgetEntry = BudgetItemNavEntry(item: item, scope: .currentPeriod)
+                navBudgetEntry = periodEntry
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { navBudgetEntry = periodEntry }
+
             budgetSpendingLine(label: "累计", spent: cumSpent, budget: totalBgt, currency: currency) {
-                navBudgetEntry = BudgetItemNavEntry(item: item, scope: .cumulative)
+                navBudgetEntry = cumulativeEntry
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { navBudgetEntry = cumulativeEntry }
         }
         .padding(.vertical, 2)
-        .contentShape(Rectangle())
-
-        return Group {
-            if let cat = item.category {
-                rowContent
-                    .onTapGesture { navCategory = cat }
-                    .accessibilityAddTraits(.isButton)
-                    .accessibilityAction { navCategory = cat }
-            } else {
-                rowContent
-                    .onTapGesture { editingItem = item }
-                    .accessibilityAddTraits(.isButton)
-                    .accessibilityAction { editingItem = item }
-            }
-        }
     }
 
     private func budgetSpendingLine(label: LocalizedStringKey, spent: Decimal, budget: Decimal, currency: String, onTap: (() -> Void)? = nil) -> some View {
