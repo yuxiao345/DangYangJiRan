@@ -44,6 +44,10 @@ struct AddEditTransactionView: View {
     @State private var editingDestAmount: Bool = false
     @State private var showTemplates: Bool = false
     @State private var note: String = ""
+    /// 备注输入框的焦点。本页有两个「备注」（主交易 / 拆分条目），
+    /// 拿到焦点说明用户去操作别处了，数字键盘要自动收起
+    @FocusState private var focusedNoteField: NoteField?
+    private enum NoteField: Hashable { case main, splitItem }
     @State private var date: Date = Date.now
     @State private var selectedAccount: Account?
     @State private var selectedToAccount: Account?
@@ -197,6 +201,10 @@ struct AddEditTransactionView: View {
                 guard !selectedExpenseIDs.isEmpty, editing == nil else { return }
                 amount = selectedReimbursementTotal
                 syncAmountString()
+            }
+            .onChange(of: focusedNoteField) { _, newValue in
+                // 点进备注框 = 去操作别处了。不收起的话系统键盘和数字键盘会同时挂在屏幕上
+                if newValue != nil { collapseNumpad() }
             }
             .alert("确认删除", isPresented: $showDeleteAlert) {
                 Button("取消", role: .cancel) {}
@@ -416,7 +424,7 @@ struct AddEditTransactionView: View {
                             }
                             .buttonStyle(.plain)
                             Button {
-                                withAnimation { dismissNumpad() }
+                                collapseNumpad()
                             } label: {
                                 Text("确认")
                                     .font(.designLabel)
@@ -832,6 +840,7 @@ struct AddEditTransactionView: View {
         HStack(spacing: 4) {
             ForEach([TransactionType.expense, .income, .transfer, .lending], id: \.self) { t in
                 Button {
+                    collapseNumpad()
                     type = t
                 } label: {
                     Label(t.displayName, systemImage: t.systemIcon)
@@ -871,9 +880,12 @@ struct AddEditTransactionView: View {
                 .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.7))
                 .tracking(1.0)
             Button {
-                withAnimation {
-                    if showNumpad { dismissNumpad() }
-                    else { showNumpad = true }
+                if showNumpad {
+                    collapseNumpad()
+                } else {
+                    // 重新打开键盘前清掉备注框焦点，否则系统键盘会和数字键盘同屏
+                    focusedNoteField = nil
+                    withAnimation { showNumpad = true }
                 }
             } label: {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -952,9 +964,12 @@ struct AddEditTransactionView: View {
                 .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.7))
                 .tracking(1.0)
             Button {
-                withAnimation {
-                    if showNumpad && editingDestAmount { dismissNumpad() }
-                    else {
+                if showNumpad && editingDestAmount {
+                    withAnimation { dismissNumpad() }
+                } else {
+                    // 切到转出金额前清掉备注框焦点，否则系统键盘会和数字键盘同屏
+                    focusedNoteField = nil
+                    withAnimation {
                         editingDestAmount = true
                         if destAmount != 0 {
                             destAmountString = CurrencyFormatter.decimalFormatter.string(from: destAmount as NSDecimalNumber) ?? "\(destAmount)"
@@ -997,6 +1012,7 @@ struct AddEditTransactionView: View {
 
     private func toggleButton(label: LocalizedStringKey, isOn: Binding<Bool>) -> some View {
         Button {
+            collapseNumpad()
             isOn.wrappedValue.toggle()
         } label: {
             VStack(spacing: 4) {
@@ -1140,6 +1156,7 @@ struct AddEditTransactionView: View {
             HStack(spacing: 8) {
                 ForEach(topRecentItems(items: items, recentKey: recentKey, selected: selectedItem)) { item in
                     Button {
+                        collapseNumpad()
                         let isSel = selectedItem?.id == item.id as? AnyHashable
                         if !isSel {
                             saveRecentID("\(item.id)", forKey: recentKey)
@@ -1234,6 +1251,7 @@ struct AddEditTransactionView: View {
                     .foregroundStyle(Color.designPrimary.opacity(0.8))
                 Spacer()
                 Button {
+                    collapseNumpad()
                     let remaining = amount - splitTotal
                     splitItems.append(SplitItemDraft(amount: remaining > 0 ? remaining : 0))
                 } label: {
@@ -1260,6 +1278,7 @@ struct AddEditTransactionView: View {
                         .buttonStyle(.plain)
                         Spacer()
                         Button {
+                            collapseNumpad()
                             if selectedSplitItemID == item.id {
                                 selectedSplitItemID = nil
                                 splitAmountString = ""
@@ -1272,6 +1291,7 @@ struct AddEditTransactionView: View {
                     }
                     HStack(spacing: 8) {
                         Button {
+                            collapseNumpad()
                             activeSplitPicker = ActiveSplitPicker(splitItemID: item.id, field: .category)
                         } label: {
                             HStack(spacing: 4) {
@@ -1294,6 +1314,7 @@ struct AddEditTransactionView: View {
                             Text("含子分类").font(.system(size: 9)).foregroundStyle(.orange)
                         }
                         Button {
+                            collapseNumpad()
                             activeSplitPicker = ActiveSplitPicker(splitItemID: item.id, field: .member)
                         } label: {
                             HStack(spacing: 4) {
@@ -1313,6 +1334,7 @@ struct AddEditTransactionView: View {
                         }
                         .buttonStyle(.plain)
                         Button {
+                            collapseNumpad()
                             activeSplitPicker = ActiveSplitPicker(splitItemID: item.id, field: .merchant)
                         } label: {
                             HStack(spacing: 4) {
@@ -1332,6 +1354,7 @@ struct AddEditTransactionView: View {
                         }
                         .buttonStyle(.plain)
                         Button {
+                            collapseNumpad()
                             activeSplitPicker = ActiveSplitPicker(splitItemID: item.id, field: .project)
                         } label: {
                             HStack(spacing: 4) {
@@ -1357,6 +1380,7 @@ struct AddEditTransactionView: View {
                     ))
                     .font(.designBodySmall)
                     .textFieldStyle(.plain)
+                    .focused($focusedNoteField, equals: .splitItem)
                 }
                 .padding(12)
                 .glassCard(cornerRadius: 12)
@@ -1471,6 +1495,7 @@ struct AddEditTransactionView: View {
             HStack(spacing: 4) {
                 ForEach(LendingDirection.allCases, id: \.self) { d in
                     Button {
+                        collapseNumpad()
                         lendingDirection = d
                         loadPendingLendingTransactions()
                     } label: {
@@ -1525,7 +1550,7 @@ struct AddEditTransactionView: View {
                             .font(.custom("JetBrainsMono-Medium", fixedSize: 13))
                             .foregroundStyle(Color.designOnSurfaceVariant)
                     } else {
-                        Button("获取汇率") { fetchExchangeRate() }
+                        Button("获取汇率") { collapseNumpad(); fetchExchangeRate() }
                             .font(.designLabel)
                             .foregroundStyle(Color.designAccentGreen)
                     }
@@ -1643,6 +1668,7 @@ struct AddEditTransactionView: View {
 
                 if hiddenCount > 0 {
                     Button {
+                        collapseNumpad()
                         withAnimation(.easeInOut(duration: 0.2)) { showAllPendingExpenses.toggle() }
                     } label: {
                         HStack {
@@ -1689,10 +1715,12 @@ struct AddEditTransactionView: View {
                     .padding(12)
                     .background(Color.designSurfaceContainer)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .focused($focusedNoteField, equals: .main)
 
                 // Date + Photo
                 HStack(spacing: 12) {
                     Button {
+                        collapseNumpad()
                         showDatePicker = true
                     } label: {
                         HStack(spacing: 6) {
@@ -1749,6 +1777,7 @@ struct AddEditTransactionView: View {
 
     private var deleteButton: some View {
         Button(role: .destructive) {
+            collapseNumpad()
             showDeleteAlert = true
         } label: {
             Label("删除此交易", systemImage: "trash")
@@ -1857,6 +1886,16 @@ struct AddEditTransactionView: View {
         splitAmountString = ""
     }
 
+    /// 收起数字键盘 —— 与「确认」按钮完全同一条路径。
+    /// 金额在每次按键时就已写回 `amount`（`syncAmountFromString()`），所以收起不丢金额。
+    /// 表单里点任何其他控件都应先走这里，否则键盘会赖着不收挡住下半屏。
+    private func collapseNumpad() {
+        guard showNumpad else { return }
+        withAnimation { dismissNumpad() }
+        // dismissNumpad 不回写显示串，输入 "12." 后直接收起会留个尾点
+        syncAmountString()
+    }
+
     private func syncAmountFromString() {
         amount = Decimal(string: amountString.replacing(",", with: "")) ?? 0
     }
@@ -1880,6 +1919,8 @@ struct AddEditTransactionView: View {
         else {
             splitAmountString = CurrencyFormatter.decimalFormatter.string(from: amt as NSDecimalNumber) ?? "\(amt)"
         }
+        // 切到子项金额前清掉备注框焦点，否则系统键盘会和数字键盘同屏
+        focusedNoteField = nil
         if !showNumpad { withAnimation { showNumpad = true } }
     }
 
@@ -2072,6 +2113,7 @@ struct AddEditTransactionView: View {
     }
 
     private func openPicker(_ sheet: PickerSheetType) {
+        collapseNumpad()
         loadData()
         pickerSheet = sheet
     }
@@ -2148,6 +2190,7 @@ struct AddEditTransactionView: View {
     }
 
     private func applyTemplate(_ template: TransactionTemplate) {
+        collapseNumpad()
         type = template.type
         amount = template.amount
         note = template.note ?? ""
@@ -2382,6 +2425,7 @@ struct AddEditTransactionView: View {
     }
 
     private func toggleLending(_ id: UUID) {
+        collapseNumpad()
         if selectedLendingIDs.contains(id) {
             selectedLendingIDs.remove(id)
         } else {
@@ -2506,6 +2550,7 @@ struct AddEditTransactionView: View {
     }
 
     private func toggleExpense(_ id: UUID) {
+        collapseNumpad()
         if selectedExpenseIDs.contains(id) {
             selectedExpenseIDs.remove(id)
         } else {
