@@ -10,33 +10,39 @@ struct AccountListView: View {
     @State private var lendingInfos: [UUID: AccountRowView.LendingAccountInfo] = [:]
 
     var body: some View {
-        ScrollView {
-            LazyVStack(spacing: 24) {
-                totalAssetsCard
-                    .accessibilityIdentifier("account-list-total-assets-card")
-                accountGroupsView
-            }
-            .padding(16)
-        }
-        .accessibilityIdentifier("account-list")
-        .scrollClipDisabled()
-        .designScreen()
-        .navigationTitle("账户")
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button { showAddSheet = true } label: {
-                    Image(systemName: "plus")
+        NavigationStack {
+            ZStack(alignment: .bottomTrailing) {
+                ScrollView {
+                    LazyVStack(spacing: 24) {
+                        totalAssetsCard
+                            .accessibilityIdentifier("account-list-total-assets-card")
+                        accountGroupsView
+                    }
+                    .padding(16)
+                    .padding(.bottom, 80)
                 }
+                .accessibilityIdentifier("account-list")
+                .scrollClipDisabled()
+                .designScreen()
+
+                Button { showAddSheet = true } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 56))
+                        .foregroundStyle(.white)
+                        .background(Circle().fill(Color.designPrimary).frame(width: 56, height: 56))
+                }
+                .padding(20)
                 .accessibilityLabel(Text("添加账户"))
                 .accessibilityIdentifier("account-add-button")
             }
-        }
-        .sheet(isPresented: $showAddSheet, onDismiss: { loadAccounts() }) {
-            AddEditAccountView()
-        }
-        .onAppear(perform: loadAccounts)
-        .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in
-            loadAccounts()
+            .navigationTitle("账户")
+            .sheet(isPresented: $showAddSheet, onDismiss: { loadAccounts() }) {
+                AddEditAccountView()
+            }
+            .onAppear(perform: loadAccounts)
+            .onReceive(NotificationCenter.default.publisher(for: .transactionDidChange)) { _ in
+                loadAccounts()
+            }
         }
     }
 

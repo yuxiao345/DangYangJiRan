@@ -52,53 +52,68 @@ struct TransactionListView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                if !calendarHidden {
-                    CalendarStripView(
-                        selectedMonth: $selectedMonth,
-                        selectedDay: $selectedDay,
-                        isExpanded: $isCalendarExpanded,
-                        dailyExpense: $dailyExpense,
-                        dailyIncome: $dailyIncome,
-                        maxDailyExpense: $maxDailyExpense,
-                        maxDailyIncome: $maxDailyIncome,
-                        monthlyIncome: $monthlyIncome,
-                        monthlyExpense: $monthlyExpense
-                    )
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-                }
-
-                LazyVStack(spacing: 12) {
-                    if transactions.isEmpty {
-                        ContentUnavailableView(
-                            selectedDay != nil ? "当天没有交易记录" : "暂无交易记录",
-                            systemImage: "tray",
-                            description: Text("点击右上角 + 开始记一笔")
+        ZStack(alignment: .bottomTrailing) {
+            ScrollView {
+                VStack(spacing: 0) {
+                    if !calendarHidden {
+                        CalendarStripView(
+                            selectedMonth: $selectedMonth,
+                            selectedDay: $selectedDay,
+                            isExpanded: $isCalendarExpanded,
+                            dailyExpense: $dailyExpense,
+                            dailyIncome: $dailyIncome,
+                            maxDailyExpense: $maxDailyExpense,
+                            maxDailyIncome: $maxDailyIncome,
+                            monthlyIncome: $monthlyIncome,
+                            monthlyExpense: $monthlyExpense
                         )
-                        .padding(.top, 40)
-                    } else {
-                        let fullSettlementIDs = Set(transactions.compactMap(\.reimbursedById))
-                        ForEach(groupedByDate, id: \.key) { group in
-                            dateSectionHeader(dateKey: group.key, transactions: group.value, fullMonthSettlementIDs: fullSettlementIDs)
-                            ForEach(group.value, id: \.objectID) { transaction in
-                                NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
-                                    TransactionRowView(transaction: transaction)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                    }
+
+                    LazyVStack(spacing: 12) {
+                        if transactions.isEmpty {
+                            ContentUnavailableView(
+                                selectedDay != nil ? "当天没有交易记录" : "暂无交易记录",
+                                systemImage: "tray",
+                                description: Text("点击下方 + 开始记一笔")
+                            )
+                            .padding(.top, 40)
+                        } else {
+                            let fullSettlementIDs = Set(transactions.compactMap(\.reimbursedById))
+                            ForEach(groupedByDate, id: \.key) { group in
+                                dateSectionHeader(dateKey: group.key, transactions: group.value, fullMonthSettlementIDs: fullSettlementIDs)
+                                ForEach(group.value, id: \.objectID) { transaction in
+                                    NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
+                                        TransactionRowView(transaction: transaction)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityIdentifier("tx-list-cell")
                                 }
-                                .buttonStyle(.plain)
-                                .accessibilityIdentifier("tx-list-cell")
                             }
                         }
                     }
+                    .padding(16)
+                    .padding(.bottom, 80)
+                    .accessibilityIdentifier("tx-list")
                 }
-                .padding(16)
-                .accessibilityIdentifier("tx-list")
+            }
+            .id(refreshVersion)
+            .modifier(ScrollCollapseModifier(isCalendarExpanded: $isCalendarExpanded))
+            .if(!options.contains(.hideScreenBackground)) { $0.designScreen() }
+
+            if !options.contains(.hideAddButton) {
+                Button { showAddSheet = true } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 56))
+                        .foregroundStyle(.white)
+                        .background(Circle().fill(Color.designPrimary).frame(width: 56, height: 56))
+                }
+                .padding(20)
+                .accessibilityLabel(Text("记一笔"))
+                .accessibilityIdentifier("tx-add-button")
             }
         }
-        .id(refreshVersion)
-        .modifier(ScrollCollapseModifier(isCalendarExpanded: $isCalendarExpanded))
-        .if(!options.contains(.hideScreenBackground)) { $0.designScreen() }
         .navigationTitle(filterCategory.map { LocalizedStringKey($0.name) } ?? "流水")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -111,15 +126,6 @@ struct TransactionListView: View {
                     } label: {
                         Image(systemName: "magnifyingglass")
                     }
-                }
-            }
-            if !options.contains(.hideAddButton) {
-                ToolbarItem(placement: .primaryAction) {
-                    Button { showAddSheet = true } label: {
-                        Image(systemName: "plus")
-                    }
-                    .accessibilityLabel(Text("记一笔"))
-                    .accessibilityIdentifier("tx-add-button")
                 }
             }
             if !options.contains(.hideTypeFilter) {
