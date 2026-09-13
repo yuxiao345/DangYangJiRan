@@ -226,6 +226,7 @@
 		9AC8FB292FE3BBA000679EC7 /* JetBrainsMono-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F00100000000000000000007 /* JetBrainsMono-Medium.ttf */; };
 		9AC8FB2A2FE3BBA000679EC7 /* JetBrainsMono-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F00100000000000000000008 /* JetBrainsMono-Bold.ttf */; };
 		9AC8FB6B2FE3BC1A00679EC7 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 9AC8FB6A2FE3BC1A00679EC7 /* Localizable.xcstrings */; };
+		PRIVACY0002XXXXXXXXXXXX /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = PRIVACY0003XXXXXXXXXXXX /* PrivacyInfo.xcprivacy */; };
 		9AC8FB6C2FE3BC1A00679EC7 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 9AC8FB6A2FE3BC1A00679EC7 /* Localizable.xcstrings */; };
 		9B863D6EE456400A886BF4FE /* DonutChartContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C66C0A248C949A08F849676 /* DonutChartContent.swift */; };
 		9DDFB9E1B80A2E556EDF6639 /* LedgerSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D8132C4EDFBAEEC7935A871 /* LedgerSettingsView.swift */; };
@@ -486,6 +487,8 @@
 		9AB5F8C12FCD51C700F5044E /* QianeymacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QianeymacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9AB5F8CB2FCD51C700F5044E /* QianeymacUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QianeymacUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9AC8FB6A2FE3BC1A00679EC7 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		PRIVACY0001XXXXXXXXXXXX /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = file; path = "FirstCC/Resources/PrivacyInfo.xcprivacy"; sourceTree = "<group>"; };
+		PRIVACY0003XXXXXXXXXXXX /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = file; path = "FirstCC/Resources/PrivacyInfo.xcprivacy"; sourceTree = "<group>"; };
 		9C21B584CD4840E630796829 /* CreditCardReconciliationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditCardReconciliationView.swift; sourceTree = "<group>"; };
 		9C5F7DB65DAA4F58BF386458 /* 钱伲Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "钱伲Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		9CCBBC471DD34C89B04A236A /* LedgerDeepCopyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedgerDeepCopyService.swift; sourceTree = "<group>"; };
@@ -754,6 +757,7 @@
 			isa = PBXGroup;
 			children = (
 				9AC8FB6A2FE3BC1A00679EC7 /* Localizable.xcstrings */,
+				PRIVACY0001XXXXXXXXXXXX /* PrivacyInfo.xcprivacy */,
 				B7179DD40F926BA5C3E05A8B /* Assets.xcassets */,
 				7DB63CE4205FA78E2BE83CF3 /* Assets.xcassets */,
 				F00300000000000000000001 /* Fonts */,
@@ -1254,6 +1258,7 @@
 				9AC8FB262FE3BBA000679EC7 /* SpaceGrotesk-SemiBold.ttf in Resources */,
 				9AC8FB272FE3BBA000679EC7 /* SpaceGrotesk-Bold.ttf in Resources */,
 				9AC8FB6C2FE3BC1A00679EC7 /* Localizable.xcstrings in Resources */,
+				PRIVACY0002XXXXXXXXXXXX /* PrivacyInfo.xcprivacy in Resources */,
 				9AC8FB282FE3BBA000679EC7 /* JetBrainsMono-Regular.ttf in Resources */,
 				9AC8FB292FE3BBA000679EC7 /* JetBrainsMono-Medium.ttf in Resources */,
 				9AC8FB2A2FE3BBA000679EC7 /* JetBrainsMono-Bold.ttf in Resources */,
@@ -1281,6 +1286,7 @@
 				4C123E5116650484726DA9F7 /* Assets.xcassets in Resources */,
 				F00200000000000000000001 /* SpaceGrotesk-Light.ttf in Resources */,
 				9AC8FB6B2FE3BC1A00679EC7 /* Localizable.xcstrings in Resources */,
+				PRIVACY0002XXXXXXXXXXXX /* PrivacyInfo.xcprivacy in Resources */,
 				F00200000000000000000002 /* SpaceGrotesk-Regular.ttf in Resources */,
 				F00200000000000000000003 /* SpaceGrotesk-Medium.ttf in Resources */,
 				F00200000000000000000004 /* SpaceGrotesk-SemiBold.ttf in Resources */,
