@@ -90,7 +90,7 @@ struct DashboardView: View {
 
                 Button { showAddSheet = true } label: {
                     Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 28))
+                        .font(.system(size: 56))
                 }
                 .padding(20)
                 .accessibilityLabel(Text("记一笔"))
