@@ -104,10 +104,11 @@ struct TransactionListView: View {
 
             if !options.contains(.hideAddButton) {
                 Button { showAddSheet = true } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 56))
+                    Image(systemName: "plus")
+                        .font(.system(size: 28, weight: .bold))
                         .foregroundStyle(.white)
-                        .background(Circle().fill(Color.designPrimary).frame(width: 56, height: 56))
+                        .frame(width: 56, height: 56)
+                        .background(Circle().fill(Color.designPrimary))
                 }
                 .padding(20)
                 .accessibilityLabel(Text("记一笔"))
