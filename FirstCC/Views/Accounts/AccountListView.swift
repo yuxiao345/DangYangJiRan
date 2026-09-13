@@ -28,6 +28,8 @@ struct AccountListView: View {
                 Button { showAddSheet = true } label: {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 56))
+                        .foregroundStyle(.white)
+                        .background(Circle().fill(Color.designPrimary).frame(width: 56, height: 56))
                 }
                 .padding(20)
                 .accessibilityLabel(Text("添加账户"))
