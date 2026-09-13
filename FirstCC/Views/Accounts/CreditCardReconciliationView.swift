@@ -294,7 +294,7 @@ struct AddEditStatementView: View {
     private var monthSection: some View {
         Section("账单月份") {
             Picker("年份", selection: $selectedYear) {
-                ForEach(2020...2030, id: \.self) { y in
+                ForEach(2020...2099, id: \.self) { y in
                     Text("\(String(y))年").tag(y)
                 }
             }

@@ -13,6 +13,14 @@ struct CreateLedgerView: View {
     @State private var currencyCode = "CNY"
     @State private var errorMessage: String?
 
+    private let currencies = ["CNY", "USD", "EUR", "JPY", "GBP", "HKD", "AUD", "CAD", "KRW", "TWD", "SGD", "CHF", "NZD", "THB", "MYR", "INR"]
+
+    private func currencyName(_ code: String) -> String {
+        let locale = Locale.current
+        let name = locale.localizedString(forCurrencyCode: code) ?? code
+        return "\(name) (\(code))"
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -27,10 +35,9 @@ struct CreateLedgerView: View {
                     }
                     .accessibilityIdentifier("create-ledger-type-picker")
                     Picker("默认货币", selection: $currencyCode) {
-                        Text("人民币 (CNY)").tag("CNY")
-                        Text("美元 (USD)").tag("USD")
-                        Text("欧元 (EUR)").tag("EUR")
-                        Text("日元 (JPY)").tag("JPY")
+                        ForEach(currencies, id: \.self) { code in
+                            Text(currencyName(code)).tag(code)
+                        }
                     }
                     .accessibilityIdentifier("create-ledger-currency-picker")
                 }

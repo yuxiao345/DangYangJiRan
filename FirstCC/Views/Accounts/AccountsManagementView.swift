@@ -1,6 +1,15 @@
 import SwiftUI
 @preconcurrency import CoreData
 
+/// 文件级货币列表，供 EditAccountView 等子结构体使用
+fileprivate let accountCurrencies: [String] = ["CNY", "USD", "EUR", "JPY", "GBP", "HKD", "AUD", "CAD", "KRW", "TWD", "SGD", "CHF", "NZD", "THB", "MYR", "INR"]
+
+fileprivate func accountCurrencyName(_ code: String) -> String {
+    let locale = Locale.current
+    let name = locale.localizedString(forCurrencyCode: code) ?? code
+    return "\(name) (\(code))"
+}
+
 struct AccountsManagementView: View {
     @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
@@ -11,6 +20,7 @@ struct AccountsManagementView: View {
     @State private var searchText = ""
 
     let ledger: Ledger?
+
     private var effectiveLedger: Ledger? { ledger ?? appContainer.currentLedger }
 
     init(ledger: Ledger? = nil) {
@@ -184,12 +194,9 @@ struct EditAccountView: View {
                             .foregroundStyle(.secondary)
                     }
                     Picker("币种", selection: $currencyCode) {
-                        Text("CNY (人民币)").tag("CNY")
-                        Text("USD (美元)").tag("USD")
-                        Text("EUR (欧元)").tag("EUR")
-                        Text("JPY (日元)").tag("JPY")
-                        Text("GBP (英镑)").tag("GBP")
-                        Text("HKD (港币)").tag("HKD")
+                        ForEach(accountCurrencies, id: \.self) { code in
+                            Text(accountCurrencyName(code)).tag(code)
+                        }
                     }
                 }
 
