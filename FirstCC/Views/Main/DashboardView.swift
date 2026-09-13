@@ -89,13 +89,8 @@ struct DashboardView: View {
                 .designScreen()
 
                 Button { showAddSheet = true } label: {
-                    ZStack {
-                        Circle().fill(Color.designPrimary)
-                        Image(systemName: "plus")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundStyle(.white)
-                    }
-                    .frame(width: 56, height: 56)
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 28))
                 }
                 .padding(20)
                 .accessibilityLabel(Text("记一笔"))
