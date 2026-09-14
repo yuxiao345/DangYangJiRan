@@ -33,70 +33,62 @@ struct DashboardView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .bottomTrailing) {
-                ScrollView {
-                    VStack(spacing: 0) {
-                        VStack(spacing: 16) {
-                            heroBalanceCard
-                                .accessibilityIdentifier("dashboard-hero-balance-card")
-                            incomeExpenseGrid
-                                .accessibilityIdentifier("dashboard-income-expense-grid")
-                            budgetCard
-                                .accessibilityIdentifier("dashboard-budget-card")
-                        }
-                        .padding(16)
+            ScrollView {
+                VStack(spacing: 0) {
+                    VStack(spacing: 16) {
+                        heroBalanceCard
+                            .accessibilityIdentifier("dashboard-hero-balance-card")
+                        incomeExpenseGrid
+                            .accessibilityIdentifier("dashboard-income-expense-grid")
+                        budgetCard
+                            .accessibilityIdentifier("dashboard-budget-card")
+                    }
+                    .padding(16)
 
-                        HStack {
-                            Text("最近交易")
-                                .font(.designBodyMedium.weight(.bold))
-                                .foregroundStyle(Color.designOnSurface)
-                            Spacer()
-                            NavigationLink("全部") {
-                                TransactionListView()
-                            }
-                            .font(.designBodyCaption)
-                            .foregroundStyle(Color.designAccentGreen)
-                            .accessibilityIdentifier("dashboard-recent-tx-all-link")
+                    HStack {
+                        Text("最近交易")
+                            .font(.designBodyMedium.weight(.bold))
+                            .foregroundStyle(Color.designOnSurface)
+                        Spacer()
+                        NavigationLink("全部") {
+                            TransactionListView()
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 16)
-                        .padding(.bottom, 12)
+                        .font(.designBodyCaption)
+                        .foregroundStyle(Color.designAccentGreen)
+                        .accessibilityIdentifier("dashboard-recent-tx-all-link")
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                    .padding(.bottom, 12)
 
-                        if viewModel.recentTransactions.isEmpty {
-                            ContentUnavailableView(
-                                "本月暂无交易记录",
-                                systemImage: "tray",
-                                description: Text("点击下方 + 开始记一笔")
-                            )
-                            .padding(.top, 40)
-                        } else {
-                            LazyVStack(spacing: 12) {
-                                ForEach(viewModel.recentTransactions, id: \.objectID) { transaction in
-                                    NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
-                                        TransactionRowView(transaction: transaction)
-                                    }
-                                    .buttonStyle(.plain)
+                    if viewModel.recentTransactions.isEmpty {
+                        ContentUnavailableView(
+                            "本月暂无交易记录",
+                            systemImage: "tray",
+                            description: Text("点击下方 + 开始记一笔")
+                        )
+                        .padding(.top, 40)
+                    } else {
+                        LazyVStack(spacing: 12) {
+                            ForEach(viewModel.recentTransactions, id: \.objectID) { transaction in
+                                NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
+                                    TransactionRowView(transaction: transaction)
                                 }
+                                .buttonStyle(.plain)
                             }
-                            .id(recentRefreshVersion)
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 16)
-                            .padding(.bottom, 80)
                         }
+                        .id(recentRefreshVersion)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 16)
                     }
                 }
-                .scrollClipDisabled()
-                .designScreen()
-
-                Button { showAddSheet = true } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 56))
-                        .foregroundStyle(.white)
-                        .background(Circle().fill(Color.designPrimary).frame(width: 56, height: 56))
+            }
+            .scrollClipDisabled()
+            .designScreen()
+            .safeAreaInset(edge: .bottom) {
+                AddFloatingButton(title: "记一笔", identifier: "dashboard-add-tx-button") {
+                    showAddSheet = true
                 }
-                .padding(20)
-                .accessibilityLabel(Text("记一笔"))
-                .accessibilityIdentifier("dashboard-add-tx-button")
             }
             .navigationTitle(appContainer.currentLedger?.name ?? "小金库")
             .onAppear { refresh() }

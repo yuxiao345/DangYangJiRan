@@ -95,6 +95,7 @@
 		803DB65AEFD59F91515684DC /* TransactionServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C9129B1EACD775E7DEFFE6F /* TransactionServiceImpl.swift */; };
 		81A6AB43953A4872B66EAD5D /* BudgetScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86ED35EF02754C528ABCF097 /* BudgetScope.swift */; };
 		82E34F6926D5EA39AACE8C57 /* CategorySeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = E63522FC24F70BAA3ED09CB9 /* CategorySeeder.swift */; };
+		C3A7F19E5B2D4E8A9F013D77 /* AddFloatingButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4B8A20F6C3E5F9BA1024E88 /* AddFloatingButton.swift */; };
 		8345512F45BA0E7F55334110 /* CurrencyText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50A8DC88431F6E95C688521D /* CurrencyText.swift */; };
 		84E3651E1012F35AC2419287 /* BankMatchStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AA4347743E8B06C8DF84744 /* BankMatchStatus.swift */; };
 		85DD12DBCBCD4B9AAD4EA49D /* CalendarDayCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 411149EDDF514343B9073596 /* CalendarDayCell.swift */; };
@@ -424,6 +425,7 @@
 		4C66C0A248C949A08F849676 /* DonutChartContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DonutChartContent.swift; sourceTree = "<group>"; };
 		4E27A05422424BA38456B730 /* MemberCategoryCrossView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberCategoryCrossView.swift; sourceTree = "<group>"; };
 		4E626A3E9AA323C5C1461333 /* LendingStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LendingStatus.swift; sourceTree = "<group>"; };
+		D4B8A20F6C3E5F9BA1024E88 /* AddFloatingButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddFloatingButton.swift; sourceTree = "<group>"; };
 		50A8DC88431F6E95C688521D /* CurrencyText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyText.swift; sourceTree = "<group>"; };
 		558D0E183039581300D331CA /* 钱伲UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "钱伲UITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5640103E5835D55C3875566E /* TransactionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionDetailView.swift; sourceTree = "<group>"; };
@@ -627,6 +629,7 @@
 				5EF154BCA29F4CD1B0BE230E /* DatePickerButton.swift */,
 				47717F8E4ED84F5B8853794A /* MultiSelectChipRow.swift */,
 				4A5CCFB4EBF3467B8F45A096 /* MultiSelectPickerView.swift */,
+				D4B8A20F6C3E5F9BA1024E88 /* AddFloatingButton.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -1493,6 +1496,7 @@
 				BB68CE3B72D34743B18CDD78 /* MemberPieChartView.swift in Sources */,
 				780D8A99731A415BBE2EAA59 /* MemberCategoryCrossView.swift in Sources */,
 				96FEB08C2A4F41A287F0B3B1 /* MemberSplitDonutContent.swift in Sources */,
+				C3A7F19E5B2D4E8A9F013D77 /* AddFloatingButton.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

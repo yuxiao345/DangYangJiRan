@@ -11,29 +11,21 @@ struct AccountListView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .bottomTrailing) {
-                ScrollView {
-                    LazyVStack(spacing: 24) {
-                        totalAssetsCard
-                            .accessibilityIdentifier("account-list-total-assets-card")
-                        accountGroupsView
-                    }
-                    .padding(16)
-                    .padding(.bottom, 80)
+            ScrollView {
+                LazyVStack(spacing: 24) {
+                    totalAssetsCard
+                        .accessibilityIdentifier("account-list-total-assets-card")
+                    accountGroupsView
                 }
-                .accessibilityIdentifier("account-list")
-                .scrollClipDisabled()
-                .designScreen()
-
-                Button { showAddSheet = true } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 56))
-                        .foregroundStyle(.white)
-                        .background(Circle().fill(Color.designPrimary).frame(width: 56, height: 56))
+                .padding(16)
+            }
+            .accessibilityIdentifier("account-list")
+            .scrollClipDisabled()
+            .designScreen()
+            .safeAreaInset(edge: .bottom) {
+                AddFloatingButton(title: "添加账户", identifier: "account-add-button") {
+                    showAddSheet = true
                 }
-                .padding(20)
-                .accessibilityLabel(Text("添加账户"))
-                .accessibilityIdentifier("account-add-button")
             }
             .navigationTitle("账户")
             .sheet(isPresented: $showAddSheet, onDismiss: { loadAccounts() }) {
