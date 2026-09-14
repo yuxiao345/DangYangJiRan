@@ -269,7 +269,25 @@ Mac 报表位于 `Qianeymac/Views/Reports/`，使用独立组件拼装（非复�
 
 ## macOS/iOS 踩坑记录
 
+### 诊断方法（比具体坑更重要）
+
+以下四条来自「记一笔按钮仅移动位置却颜色/大小/材质全变」这次排查——**昨天花了大半天没找到原因，今天换了个问法才破案。**
+
+- **小改动引发大范围差异 → 是结构问题的信号，不要再逐个 patch 症状。**
+  需求只有「把按钮从右上移到右下，大小配色都不变」，结果颜色、尺寸、材质全变了。这本身就说明：按钮的外观原本由 toolbar 环境提供、不是自己写的——只改位置不可能只影响位置。看到「我只改了 X，为什么 Y 也坏了」，第一反应必须是**「X 和 Y 之间还有一条我没看见的依赖」**，回头去查这条依赖，而不是把 Y 当成新 bug 一个个修。
+- **对照法：拿出问题的控件和一个「本该一致」的已知良好参照物并排比。**
+  破案的那一步是用户提出的要求——「分别对比深浅两种模式下，记一笔和查找图标是否一致」。查找图标在工具栏里、渲染正确，它就是参照物；一比就发现差异不在参数而在**渲染路径**。怀疑某个控件样式不对时，先找一个同功能、确定正确的控件，逐项（颜色/尺寸/位置）对比，不要盯着坏的那个空想。
+- **实测像素，不靠肉眼和推测。**
+  颜色用截图采样十六进制值，尺寸/位置用边界框量圆心和直径。本次三个关键数字（`.glass` 多 14pt、圆外约 5pt 不可见边距、三页圆心落在同一点）全部来自像素测量。此前靠肉眼调参试了 5 次都没收敛（`25183f2` / `0ae568b` / `e36916f` / `75aabd9` / `2f458af`）。
+- **用户问「为什么变化这么大」时，是在要根因，不是要你再修一次。**
+  此时正确动作是停下来查 git 历史、查系统行为，把「为什么」讲清楚再动手；不是换个写法再试一遍。参见本文件开头「返工两次即查」和 [[feedback_problem_solving]]。
+
 ### UI 血泪教训
+
+- **把控件搬出 toolbar = 外观从「系统继承」变成「自己实现」。** `ToolbarItem` 里的 `Image(systemName: "plus")` 是裸的——尺寸、着色、圆形玻璃底**全部由 toolbar 环境提供**（`.tint()` 也从那里继承）。搬到自定义浮层后这些一律消失，必须自己写，极易出错：当时把 `designPrimary`（**前景色** token，深色下是近白的 `#f0ffed`）当成大圆填充色，整个按钮泛白。**迁移控件位置前先问一句：它的外观是继承来的还是自己写的？**
+- **iOS 26 + TabView 下 `ToolbarItem(placement: .bottomBar)` 不可用。** 运行时 fault：`Adding 'UIKitToolbar' as a subview of UIHostingController.view is not supported and may result in a broken view hierarchy.` 按钮会渲染成一条退化的零高度色块。底部悬浮按钮一律用 `.safeAreaInset(edge: .bottom)`。
+- **`.buttonStyle(.glass)` 的尺寸要反过来算。** 实测「可见圆直径 = label 边长 + 14」（每边长 7pt 内边距）；且玻璃按钮在可见圆之外还留约 5pt **不可见**的布局边距，写 `padding(.trailing, 20)` 会得到约 25pt 的视觉间隙。
+- **底部悬浮按钮统一用 `AddFloatingButton`**（`FirstCC/Views/Components/AddFloatingButton.swift`），三个页面共用同一份实现和同一组边距，保证圆心落在同一屏幕坐标（pt (353.7, 742.7)，直径 56pt）。**不要各页手绘**——这正是本次出问题的形式。它同时取代了此前三个页面各自 `.padding(.bottom, 80)` 遮挡内容的 hack。
 
 - **macOS Swift Charts 崩溃**: macOS 上的 Swift Charts 在 `drawingGroup()`、`chartOverlay` 和 `SectorMark.cornerRadius` 上存在已知的 SIGTRAP/EXC_BREAKPOINT 崩溃。Mac 端图表优先使用原生 SwiftUI 渲染（`RoundedRectangle` 柱状图）。
 - **分类缩进**: 层次化分类菜单使用 `NSMenuItem.indentationLevel`。禁止使用 padding/Spacer/attributedTitle——这些全都会失败。
