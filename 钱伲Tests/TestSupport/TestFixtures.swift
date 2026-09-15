@@ -112,6 +112,52 @@ extension NSManagedObjectContext {
         return t
     }
 
+    /// 拆分记账：一个父交易（`isSplitParent`）+ 若干子交易（`parentTransaction` 指回父）。
+    ///
+    /// 子项各自携带 category/member/merchant/project，**父交易这些字段全部为 nil**；
+    /// 父交易金额 = 子项金额之和（子项一律记负数的绝对值）。
+    ///
+    /// 与 `AddEditTransactionView.createSplitChildren` 一致，唯一省略的是 `applyCurrency`
+    /// ——测试账本均为单一基准币种，不涉及折算。
+    @discardableResult
+    func makeSplitTransaction(
+        _ items: [SplitItemFixture],
+        date: Date = Date(),
+        account: Account,
+        ledger: Ledger
+    ) -> Transaction {
+        let total = items.reduce(Decimal.zero) { $0 + abs($1.amount) }
+        let parent = Transaction(
+            type: .expense,
+            amount: -total,
+            date: date,
+            account: account,
+            isSplitParent: true,
+            context: self
+        )
+        parent.ledger = ledger
+
+        for item in items {
+            let child = Transaction(
+                type: .expense,
+                amount: -abs(item.amount),
+                note: item.note,
+                date: date,
+                account: account,
+                category: item.category,
+                member: item.member,
+                merchant: item.merchant,
+                project: item.project,
+                parentTransaction: parent,
+                context: self
+            )
+            child.ledger = ledger
+        }
+
+        try! save()
+        return parent
+    }
+
     @discardableResult
     func makeBudgetBook(_ name: String = "测试预算", ledger: Ledger) -> BudgetBook {
         let b = BudgetBook(name: name, context: self)
@@ -137,6 +183,16 @@ extension NSManagedObjectContext {
         try! save()
         return item
     }
+}
+
+/// 拆分子项的描述（供 `makeSplitTransaction` 使用）
+struct SplitItemFixture {
+    var amount: Decimal
+    var category: 钱伲.Category?
+    var member: Member?
+    var merchant: Merchant?
+    var project: Project?
+    var note: String?
 }
 
 /// 共享日期助手

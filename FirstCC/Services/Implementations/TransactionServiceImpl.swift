@@ -134,16 +134,16 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
             for cat in categories {
                 expandedIDs.formUnion(cat.allDescendantIDs)
             }
-            preds.append(NSPredicate(format: "category.id IN %@", Array(expandedIDs) as NSArray))
+            preds.append(Self.selfOrSplitChildPredicate(keyPath: "category.id", ids: expandedIDs))
         }
         if let ids = filters?.memberIDs, !ids.isEmpty {
-            preds.append(NSPredicate(format: "member.id IN %@", Array(ids) as NSArray))
+            preds.append(Self.selfOrSplitChildPredicate(keyPath: "member.id", ids: ids))
         }
         if let ids = filters?.projectIDs, !ids.isEmpty {
-            preds.append(NSPredicate(format: "project.id IN %@", Array(ids) as NSArray))
+            preds.append(Self.selfOrSplitChildPredicate(keyPath: "project.id", ids: ids))
         }
         if let ids = filters?.merchantIDs, !ids.isEmpty {
-            preds.append(NSPredicate(format: "merchant.id IN %@", Array(ids) as NSArray))
+            preds.append(Self.selfOrSplitChildPredicate(keyPath: "merchant.id", ids: ids))
         }
         request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: preds)
         request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
@@ -179,21 +179,41 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
                             if let mn = entry.member?.name, mn.localizedStandardContains(token) { return true }
                         }
                     }
-                    // Split children: their own notes/categories/members/projects/accounts
-                    if let children = t.splitChildren {
-                        for child in children {
-                            if let cn = child.note, cn.localizedStandardContains(token) { return true }
-                            if let ccat = child.category?.name, ccat.localizedStandardContains(token) { return true }
-                            if let cmem = child.member?.name, cmem.localizedStandardContains(token) { return true }
-                            if let cproj = child.project?.name, cproj.localizedStandardContains(token) { return true }
-                            if let cacc = child.account?.name, cacc.localizedStandardContains(token) { return true }
-                        }
+                    // 拆分子项：字段挂在子交易上，需逐个匹配
+                    if let children = t.splitChildren,
+                       children.contains(where: { Self.splitChildMatchesToken($0, token: token) }) {
+                        return true
                     }
                     return false
                 }) else { return false }
             }
             return true
         }
+    }
+
+    /// 关联字段筛选条件：交易自身命中，或任一拆分子项命中。
+    ///
+    /// 拆分记账（`isSplitParent` + `splitChildren`）的 category/member/project/merchant
+    /// 全部挂在子交易上，父交易这些字段为 nil，直接按 `字段 IN %@` 匹配会漏掉整笔拆分。
+    /// 子项命中时返回的是**父交易**——结果集保持「一行 = 一笔账」，
+    /// 父交易金额已等于子项之和，故合计不会重复计算。
+    private static func selfOrSplitChildPredicate(keyPath: String, ids: Set<UUID>) -> NSPredicate {
+        let idList = Array(ids) as NSArray
+        return NSPredicate(
+            format: "%K IN %@ OR SUBQUERY(splitChildren, $c, $c.%K IN %@).@count > 0",
+            keyPath, idList, keyPath, idList
+        )
+    }
+
+    /// 拆分子项自身携带的搜索字段（父交易对应字段为 nil，见 `selfOrSplitChildPredicate`）。
+    private static func splitChildMatchesToken(_ child: Transaction, token: String) -> Bool {
+        if let n = child.note, n.localizedStandardContains(token) { return true }
+        if let n = child.category?.name, n.localizedStandardContains(token) { return true }
+        if let n = child.member?.name, n.localizedStandardContains(token) { return true }
+        if let n = child.merchant?.name, n.localizedStandardContains(token) { return true }
+        if let n = child.project?.name, n.localizedStandardContains(token) { return true }
+        if let n = child.account?.name, n.localizedStandardContains(token) { return true }
+        return false
     }
 
     func updateTransaction(_ transaction: Transaction, context: NSManagedObjectContext) throws {

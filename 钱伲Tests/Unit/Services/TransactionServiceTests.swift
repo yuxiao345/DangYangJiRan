@@ -357,6 +357,181 @@ final class TransactionServiceTests: CoreDataTestCase {
         XCTAssertEqual(results.first?.ledger, ledgerA)
     }
 
+    // MARK: - fetchTransactions（拆分记账）
+
+    /// 构造「一笔 200 元支出拆成 4 个子项、每个子项各有商家」的场景，返回父交易
+    private func makeFourWaySplit(
+        ledger: Ledger,
+        account: Account
+    ) -> (parent: Transaction, merchants: [Merchant]) {
+        let names = ["永辉超市", "星巴克", "滴滴出行", "美团外卖"]
+        let merchants = names.map { context.makeMerchant($0, ledger: ledger) }
+        let parent = context.makeSplitTransaction(
+            merchants.map { SplitItemFixture(amount: 50, merchant: $0) },
+            account: account,
+            ledger: ledger
+        )
+        return (parent, merchants)
+    }
+
+    /// 断言：`filters` 只命中 `expected` 这一行（拆分场景下即父交易，子项不单独成行）
+    private func assertSingleResult(
+        _ filters: TransactionFilters,
+        expected: Transaction,
+        ledger: Ledger,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        let results = try service.fetchTransactions(for: ledger, context: context, filters: filters)
+        XCTAssertEqual(results.count, 1, file: file, line: line)
+        XCTAssertEqual(results.first?.objectID, expected.objectID, file: file, line: line)
+    }
+
+    /// 拆分记账：按子项商家筛选，应返回父交易（而非空结果）
+    func test_fetchTransactions_filterByMerchant_matchesSplitChild() throws {
+        let ledger = context.makeLedger()
+        let account = context.makeAccount("现金", ledger: ledger)
+        let (parent, merchants) = makeFourWaySplit(ledger: ledger, account: account)
+
+        try assertSingleResult(
+            TransactionFilters(merchantIDs: [merchants[2].id]), expected: parent, ledger: ledger
+        )
+    }
+
+    /// 拆分记账：返回的是父交易，金额为子项之和，不与子项重复计算
+    func test_fetchTransactions_splitMatchReturnsParentWithoutDoubleCounting() throws {
+        let ledger = context.makeLedger()
+        let account = context.makeAccount("现金", ledger: ledger)
+        let (parent, merchants) = makeFourWaySplit(ledger: ledger, account: account)
+
+        let filters = TransactionFilters(merchantIDs: Set(merchants.map(\.id)))
+        let results = try service.fetchTransactions(for: ledger, context: context, filters: filters)
+
+        XCTAssertEqual(results.count, 1, "4 个子项命中同一父交易，只返回一行")
+        XCTAssertEqual(results.first?.objectID, parent.objectID)
+        XCTAssertEqual(abs(results.first!.amount), 200, "合计按父交易金额计，不翻倍")
+        XCTAssertEqual(results.reduce(Decimal.zero) { $0 + abs($1.amount) }, 200)
+    }
+
+    /// 拆分记账：按子项分类筛选
+    func test_fetchTransactions_filterByCategory_matchesSplitChild() throws {
+        let ledger = context.makeLedger()
+        let account = context.makeAccount("现金", ledger: ledger)
+        let food = context.makeCategory("餐饮", ledger: ledger)
+        let transport = context.makeCategory("交通", ledger: ledger)
+        let parent = context.makeSplitTransaction(
+            [SplitItemFixture(amount: 30, category: food),
+             SplitItemFixture(amount: 70, category: transport)],
+            account: account, ledger: ledger
+        )
+
+        try assertSingleResult(
+            TransactionFilters(categoryIDs: [transport.id]), expected: parent, ledger: ledger
+        )
+    }
+
+    /// 拆分记账：按子项成员筛选
+    func test_fetchTransactions_filterByMember_matchesSplitChild() throws {
+        let ledger = context.makeLedger()
+        let account = context.makeAccount("现金", ledger: ledger)
+        let alice = context.makeMember("小明", ledger: ledger)
+        let bob = context.makeMember("小红", ledger: ledger)
+        let parent = context.makeSplitTransaction(
+            [SplitItemFixture(amount: 30, member: alice),
+             SplitItemFixture(amount: 70, member: bob)],
+            account: account, ledger: ledger
+        )
+
+        try assertSingleResult(
+            TransactionFilters(memberIDs: [bob.id]), expected: parent, ledger: ledger
+        )
+    }
+
+    /// 拆分记账：按子项项目筛选
+    func test_fetchTransactions_filterByProject_matchesSplitChild() throws {
+        let ledger = context.makeLedger()
+        let account = context.makeAccount("现金", ledger: ledger)
+        let trip = context.makeProject("出差", ledger: ledger)
+        let parent = context.makeSplitTransaction(
+            [SplitItemFixture(amount: 100, project: trip)],
+            account: account, ledger: ledger
+        )
+
+        try assertSingleResult(
+            TransactionFilters(projectIDs: [trip.id]), expected: parent, ledger: ledger
+        )
+    }
+
+    /// 拆分记账：筛选未命中任何子项的商家时，不应返回该拆分
+    func test_fetchTransactions_filterByMerchant_unrelatedMerchantExcluded() throws {
+        let ledger = context.makeLedger()
+        let account = context.makeAccount("现金", ledger: ledger)
+        _ = makeFourWaySplit(ledger: ledger, account: account)
+        let unrelated = context.makeMerchant("苹果商店", ledger: ledger)
+
+        let filters = TransactionFilters(merchantIDs: [unrelated.id])
+        let results = try service.fetchTransactions(for: ledger, context: context, filters: filters)
+
+        XCTAssertTrue(results.isEmpty)
+    }
+
+    /// 普通交易（属性挂在自身）按商家筛选仍能命中——钉住「自身命中」那半条谓词。
+    /// 若 `%K IN %@` 被误删，只有本用例会失败。
+    func test_fetchTransactions_filterByMerchant_matchesOrdinaryTransaction() throws {
+        let ledger = context.makeLedger()
+        let account = context.makeAccount("现金", ledger: ledger)
+        let market = context.makeMerchant("永辉超市", ledger: ledger)
+        let ordinary = context.makeTransaction(amount: -88, account: account, ledger: ledger)
+        ordinary.merchant = market
+        try context.save()
+
+        try assertSingleResult(
+            TransactionFilters(merchantIDs: [market.id]), expected: ordinary, ledger: ledger
+        )
+    }
+
+    /// 普通交易与拆分交易可被同一筛选同时命中，且各自只占一行
+    func test_fetchTransactions_filterByMerchant_matchesOrdinaryAndSplitTogether() throws {
+        let ledger = context.makeLedger()
+        let account = context.makeAccount("现金", ledger: ledger)
+        let (splitParent, merchants) = makeFourWaySplit(ledger: ledger, account: account)
+        let ordinary = context.makeTransaction(amount: -88, account: account, ledger: ledger)
+        ordinary.merchant = merchants[0]
+        try context.save()
+
+        let filters = TransactionFilters(merchantIDs: [merchants[0].id])
+        let results = try service.fetchTransactions(for: ledger, context: context, filters: filters)
+
+        XCTAssertEqual(results.count, 2)
+        XCTAssertEqual(Set(results.map(\.objectID)), Set([splitParent.objectID, ordinary.objectID]))
+    }
+
+    /// 拆分记账：关键字搜索子项商家名，应返回父交易
+    func test_fetchTransactions_filterByKeyword_matchesSplitChildMerchant() throws {
+        let ledger = context.makeLedger()
+        let account = context.makeAccount("现金", ledger: ledger)
+        let (parent, _) = makeFourWaySplit(ledger: ledger, account: account)
+
+        let filters = TransactionFilters(keyword: "星巴克")
+        let results = try service.fetchTransactions(for: ledger, context: context, filters: filters)
+
+        XCTAssertEqual(results.count, 1)
+        XCTAssertEqual(results.first?.objectID, parent.objectID)
+    }
+
+    /// 拆分记账：子项本身不作为独立结果返回（父交易已代表整笔金额）
+    func test_fetchTransactions_splitChildrenAreNotReturnedAsRows() throws {
+        let ledger = context.makeLedger()
+        let account = context.makeAccount("现金", ledger: ledger)
+        let (parent, _) = makeFourWaySplit(ledger: ledger, account: account)
+
+        let results = try service.fetchTransactions(for: ledger, context: context)
+
+        XCTAssertEqual(results.count, 1, "4 个子项不应各自成行")
+        XCTAssertEqual(results.first?.objectID, parent.objectID)
+        XCTAssertEqual(results.first?.splitChildren?.count, 4)
+    }
+
     // MARK: - updateTransaction
 
     /// update 修改 modifiedAt 并 save
