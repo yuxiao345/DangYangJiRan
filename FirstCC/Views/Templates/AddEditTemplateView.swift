@@ -229,6 +229,9 @@ struct AddEditTemplateView: View {
         selectedProject = t.project
     }
 
+    /// 转账模板不使用 分类/成员/商家/项目（见 `TransactionType.allowsTagFields`）。
+    /// 模板表单在转账类型下不渲染这四个选择器，但切换类型之前可能已经选过值 —— 落库
+    /// 时以类型为准过滤，避免模板本身就带着残留值，再由周期账/模板生成脏交易。
     private func save() {
         guard let ledger = effectiveLedger else { return }
         if let dup = try? appContainer.templateService.findByName(name, ledger: ledger, context: modelContext),
@@ -243,10 +246,10 @@ struct AddEditTemplateView: View {
             t.note = note.isEmpty ? nil : note
             t.account = selectedAccount
             t.toAccount = selectedToAccount
-            t.category = selectedCategory
-            t.member = selectedMember
-            t.merchant = selectedMerchant
-            t.project = selectedProject
+            t.category = type.allowsTagFields ? selectedCategory : nil
+            t.member = type.allowsTagFields ? selectedMember : nil
+            t.merchant = type.allowsTagFields ? selectedMerchant : nil
+            t.project = type.allowsTagFields ? selectedProject : nil
             try? appContainer.templateService.updateTemplate(t, context: modelContext)
         } else {
             let template = TransactionTemplate(
@@ -256,10 +259,10 @@ struct AddEditTemplateView: View {
                 note: note.isEmpty ? nil : note,
                 account: selectedAccount,
                 toAccount: selectedToAccount,
-                category: selectedCategory,
-                member: selectedMember,
-                merchant: selectedMerchant,
-                project: selectedProject,
+                category: type.allowsTagFields ? selectedCategory : nil,
+                member: type.allowsTagFields ? selectedMember : nil,
+                merchant: type.allowsTagFields ? selectedMerchant : nil,
+                project: type.allowsTagFields ? selectedProject : nil,
                 context: modelContext
             )
             try? appContainer.templateService.createTemplate(template, ledger: ledger, context: modelContext)

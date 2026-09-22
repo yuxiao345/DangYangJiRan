@@ -238,6 +238,50 @@ final class RecurringServiceTests: CoreDataTestCase {
         XCTAssertGreaterThan(txs.count, 0, "至少应生成一笔周期交易")
     }
 
+    // MARK: - processDueRecurring 字段过滤
+
+    /// 转账周期模板带脏字段 → 生成的交易不继承 分类/成员/商家/项目。
+    /// 与 `TemplateServiceTests.test_createTransactionFromTemplate_transferDropsLeakedTagFields`
+    /// 是同一场景的两条生成路径（见 `TransactionType.allowsTagFields`）。
+    func test_processDueRecurring_transferTemplateDropsLeakedTagFields() throws {
+        let ledger = context.makeLedger("L")
+        let fromAccount = context.makeAccount("现金", ledger: ledger)
+        let toAccount = context.makeAccount("银行卡", ledger: ledger)
+        // 模拟「先在支出类型下选好字段、再切到转账保存」留下的脏模板
+        let category = context.makeCategory("停车车位", ledger: ledger)
+        let member = context.makeMember("喻爸妈", ledger: ledger)
+        let merchant = context.makeMerchant("某商户", ledger: ledger)
+        let project = context.makeProject("某项目", ledger: ledger)
+
+        let template = makeTemplate("带脏字段的转账周期账", ledger: ledger)
+        template.type = .transfer
+        template.account = fromAccount
+        template.toAccount = toAccount
+        template.category = category
+        template.member = member
+        template.merchant = merchant
+        template.project = project
+        try context.save()
+
+        _ = try service.setRecurring(
+            template: template, frequency: .monthly, interval: 1,
+            startDate: Date().addingTimeInterval(-86400 * 30),
+            endDate: nil, context: context
+        )
+
+        try service.processDueRecurring(context: context)
+
+        let req = NSFetchRequest<Transaction>(entityName: "Transaction")
+        req.predicate = NSPredicate(format: "template == %@", template)
+        let generated = try XCTUnwrap(try context.fetch(req).first, "周期账应生成一笔交易")
+        XCTAssertEqual(generated.type, .transfer)
+        XCTAssertEqual(generated.toAccount, toAccount)
+        XCTAssertNil(generated.category)
+        XCTAssertNil(generated.member)
+        XCTAssertNil(generated.merchant)
+        XCTAssertNil(generated.project)
+    }
+
     // MARK: - Helpers
 
     @discardableResult

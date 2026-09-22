@@ -105,12 +105,14 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
                 }
 
                 let signedAmt = signedAmount(amount: template.amount, type: template.type, direction: nil)
+                // 转账模板不使用 分类/成员/商家/项目（见 TransactionType.allowsTagFields）
+                let allowsTagFields = template.type.allowsTagFields
                 let transaction = Transaction(
                     type: template.type, amount: signedAmt,
                     currencyCode: template.currencyCode, note: template.note, date: nextDate,
                     tags: template.tags, account: template.account, toAccount: template.toAccount,
-                    category: template.category, member: template.member,
-                    merchant: template.merchant, project: template.project, context: context
+                    category: allowsTagFields ? template.category : nil, member: allowsTagFields ? template.member : nil,
+                    merchant: allowsTagFields ? template.merchant : nil, project: allowsTagFields ? template.project : nil, context: context
                 )
                 transaction.ledger = template.ledger
                 transaction.template = template

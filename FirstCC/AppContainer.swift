@@ -131,6 +131,7 @@ final class AppContainer {
 
         guard coreDataStack.cloudKitAvailable else {
             configureDefaultLedger()
+            repairInvalidTypeFields()
             return
         }
 
@@ -160,6 +161,10 @@ final class AppContainer {
 
         configureDefaultLedger()
         validateCurrentLedgerShare()
+
+        // 必须在首次 CloudKit 导入之后跑：新设备/卸载重装时本地库是空的，导入完成前
+        // 跑会清 0 条，之后再拉回来的历史脏记录就再也修不到了。
+        repairInvalidTypeFields()
     }
 
     private func fetchCurrentUserIdentity() async {
@@ -520,6 +525,24 @@ final class AppContainer {
             DiagnosticLog.log("AppContainer: refund metadata repair completed")
         } catch {
             DiagnosticLog.log("AppContainer: refund metadata repair FAILED: \(error.localizedDescription)")
+        }
+    }
+
+    /// 清除 借贷/转账 上不应存在的 分类/成员/商家/项目。这两类不渲染也不接受这四个
+    /// 字段（见 `TransactionType.allowsTagFields`），上面的任何值都来自支出表单的
+    /// 状态跨类型切换残留。
+    ///
+    /// 刻意不加「只跑一次」的 UserDefaults 开关（`repairRefundMetadataIfNeeded` 那种）：
+    /// 那条路是回填、较贵，这里谓词自限且幂等，重跑只花一次带上限的 fetch。加了开关反而
+    /// 留洞 —— 首次 CloudKit 导入未完成时会清 0 条却把开关置位，之后拉回来的历史脏记录、
+    /// 以及从旧版本设备同步过来的脏记录，就永远修不到了。每次启动跑一遍即可覆盖。
+    private func repairInvalidTypeFields() {
+        do {
+            let count = try transactionService.repairInvalidTypeFields(context: viewContext)
+            guard count > 0 else { return }
+            DiagnosticLog.log("AppContainer: invalid type-field repair cleared \(count) transaction(s)")
+        } catch {
+            DiagnosticLog.log("AppContainer: invalid type-field repair FAILED: \(error.localizedDescription)")
         }
     }
 

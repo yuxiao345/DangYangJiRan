@@ -2208,6 +2208,11 @@ struct AddEditTransactionView: View {
         AccountType.isValidLendingPair(fromType, toType)
     }
 
+    /// 借贷/转账不使用 分类/成员/商家/项目（见 `TransactionType.allowsTagFields`），
+    /// 但表单预填或切换类型之前，这四个 selectedXxx 可能已经有值。写库时以类型为准
+    /// 过滤，而不是在 `.onChange(of: type)` 里清空状态：`applyTemplate` 在同一个函数里
+    /// 先写 type 再写这四个字段，而 onChange 要等视图更新才触发，届时读到的已经是
+    /// 模板的值，会把模板的分类一并清掉。
     private func save() {
         guard let ledger = appContainer.currentLedger else { return }
 
@@ -2255,8 +2260,10 @@ struct AddEditTransactionView: View {
                 let transaction = Transaction(
                     type: type, amount: signedAmount, note: note.isEmpty ? nil : note,
                     date: date, account: selectedAccount, toAccount: selectedToAccount,
-                    category: selectedCategory, member: selectedMember,
-                    merchant: selectedMerchant, project: selectedProject,
+                    category: type.allowsTagFields ? selectedCategory : nil,
+                    member: type.allowsTagFields ? selectedMember : nil,
+                    merchant: type.allowsTagFields ? selectedMerchant : nil,
+                    project: type.allowsTagFields ? selectedProject : nil,
                     context: modelContext
                 )
                 if type == .expense, isReimbursable {
@@ -2468,10 +2475,10 @@ struct AddEditTransactionView: View {
         t.date = date
         t.account = selectedAccount
         t.toAccount = selectedToAccount
-        t.category = selectedCategory
-        t.member = selectedMember
-        t.merchant = selectedMerchant
-        t.project = selectedProject
+        t.category = type.allowsTagFields ? selectedCategory : nil
+        t.member = type.allowsTagFields ? selectedMember : nil
+        t.merchant = type.allowsTagFields ? selectedMerchant : nil
+        t.project = type.allowsTagFields ? selectedProject : nil
 
         applyCurrency(to: t)
 

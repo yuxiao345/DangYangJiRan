@@ -325,6 +325,41 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
         }
     }
 
+    @discardableResult
+    func repairInvalidTypeFields(context: NSManagedObjectContext) throws -> Int {
+        // 借贷/转账不渲染 分类/成员/商家/项目，也不接受这四个字段：转账走
+        // createTransfer（参数里没有它们），借贷走通用创建路径。历史版本在切换
+        // 类型时没清空表单状态，把支出侧的残留值写了进来 —— 这类值在 UI 上不可见，
+        // 用户也无法自行删除，只能在这里清掉。谓词自限、写入幂等，每次启动重跑无副作用。
+        let request = NSFetchRequest<Transaction>(entityName: "Transaction")
+        // 类型名单从 allowsTagFields 反推，不另行硬编码 —— 否则以后加类型时这里不会跟着变。
+        let invalidTypeRaws = TransactionType.allCases.filter { !$0.allowsTagFields }.map(\.rawValue)
+        request.predicate = NSPredicate(
+            format: "typeRaw IN %@ AND (category != nil OR member != nil OR merchant != nil OR project != nil)",
+            invalidTypeRaws
+        )
+        let transactions = try context.fetch(request)
+        guard !transactions.isEmpty else { return 0 }
+
+        for transaction in transactions {
+            var cleared: [String] = []
+            if transaction.category != nil { transaction.category = nil; cleared.append("category") }
+            if transaction.member != nil { transaction.member = nil; cleared.append("member") }
+            if transaction.merchant != nil { transaction.merchant = nil; cleared.append("merchant") }
+            if transaction.project != nil { transaction.project = nil; cleared.append("project") }
+            DiagnosticLog.log(
+                "[数据修复] 清除 \(transaction.type.rawValue) 的多余字段 | id=\(transaction.id.uuidString) "
+                + "date=\(transaction.date.formatted(date: .numeric, time: .omitted)) "
+                + "清除:\(cleared.joined(separator: ","))"
+            )
+        }
+
+        if context.hasChanges {
+            try context.save()
+        }
+        return transactions.count
+    }
+
     func applyCurrency(to t: Transaction, currencyCode: String, exchangeRate: Decimal?, ledgerCurrencyCode: String) {
         t.currencyCode = currencyCode
         if currencyCode != ledgerCurrencyCode, let rate = exchangeRate {

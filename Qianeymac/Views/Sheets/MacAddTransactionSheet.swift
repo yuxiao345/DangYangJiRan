@@ -1349,6 +1349,10 @@ struct MacAddTransactionSheet: View {
 
     private func signingAmount(isRefund: Bool = false) -> Decimal { signedAmount(amount: amount, type: type, direction: type == .lending ? lendingDirection : nil, isRefund: isRefund) }
 
+    /// 借贷/转账不使用 分类/成员/商家/项目（见 `TransactionType.allowsTagFields`），
+    /// 但表单预填或切换类型之前，这四个 selectedXxx 可能已经有值。写库时以类型为准
+    /// 过滤，而不是在 `onTypeChange()` 里清空状态：`applyTemplate` 在同一个函数里先写
+    /// type 再写这四个字段，而 `.onChange` 要等视图更新才触发，届时读到的已经是模板的值。
     private func save() {
         guard let ledger = appContainer.currentLedger, amount != 0 else { return }
         if isSplit { guard splitTotal == amount else { errorMessage = "拆分合计与总额不一致"; showErrorAlert = true; return } }
@@ -1377,8 +1381,11 @@ struct MacAddTransactionSheet: View {
             t.amount = signingAmount(isRefund: t.refundGroupId != nil)
             t.note = note.isEmpty ? nil : note
             t.date = date; t.account = selectedAccount; t.toAccount = selectedToAccount
-            t.category = selectedCategory; t.member = selectedMember; t.merchant = selectedMerchant
-            t.project = selectedProject; t.modifiedAt = Date.now
+            t.category = type.allowsTagFields ? selectedCategory : nil
+            t.member = type.allowsTagFields ? selectedMember : nil
+            t.merchant = type.allowsTagFields ? selectedMerchant : nil
+            t.project = type.allowsTagFields ? selectedProject : nil
+            t.modifiedAt = Date.now
 
             appContainer.transactionService.applyCurrency(to: t, currencyCode: activeCurrency, exchangeRate: exchangeRate, ledgerCurrencyCode: ledgerCurrencyCode)
 
@@ -1471,7 +1478,9 @@ struct MacAddTransactionSheet: View {
             } else {
                 let tx = Transaction(type: type, amount: signed, currencyCode: activeCurrency, note: note.isEmpty ? nil : note,
                     date: date, account: selectedAccount, toAccount: selectedToAccount,
-                    category: selectedCategory, member: selectedMember, merchant: selectedMerchant, project: selectedProject, context: modelContext)
+                    category: type.allowsTagFields ? selectedCategory : nil, member: type.allowsTagFields ? selectedMember : nil,
+                    merchant: type.allowsTagFields ? selectedMerchant : nil, project: type.allowsTagFields ? selectedProject : nil,
+                    context: modelContext)
                 appContainer.transactionService.applyCurrency(to: tx, currencyCode: activeCurrency, exchangeRate: exchangeRate, ledgerCurrencyCode: ledgerCurrencyCode)
                 if type == .expense && isReimbursable { tx.reimbursementStatus = .pending }
                 if type == .lending { tx.lendingDirection = lendingDirection; if lendingDirection == .lendOut || lendingDirection == .borrowIn { tx.lendingStatus = .pending } }

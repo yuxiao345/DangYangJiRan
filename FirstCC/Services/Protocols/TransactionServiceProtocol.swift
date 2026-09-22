@@ -35,6 +35,12 @@ protocol TransactionServiceProtocol {
 
     /// 修复历史退款交易缺失的 member/merchant/project（从原交易回填），幂等
     func repairRefundMetadata(context: NSManagedObjectContext) throws
+
+    /// 清除借贷/转账交易上不应存在的 分类/成员/商家/项目，返回修复条数。幂等。
+    /// 这两类的表单不渲染这四个字段（转账走 createTransfer，压根没有这些参数），
+    /// 历史版本切换类型时未清空表单状态，把支出侧的残留值写了进来。
+    @discardableResult
+    func repairInvalidTypeFields(context: NSManagedObjectContext) throws -> Int
 }
 
 struct TransactionFilters {

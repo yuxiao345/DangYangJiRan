@@ -759,4 +759,76 @@ final class TransactionServiceTests: CoreDataTestCase {
         XCTAssertEqual(refund.member, member)
         XCTAssertEqual(refund.refundGroupId, original.id)
     }
+
+    // MARK: - repairInvalidTypeFields
+
+    /// 借贷交易上的 分类/成员/商家/项目 全部清除，返回修复条数
+    func test_repairInvalidTypeFields_clearsLendingTagFields() throws {
+        let ledger = context.makeLedger()
+        let account = context.makeAccount("现金", ledger: ledger)
+        let category = context.makeCategory("停车车位", ledger: ledger)
+        let member = context.makeMember("喻爸妈", ledger: ledger)
+        let merchant = context.makeMerchant("某商户", ledger: ledger)
+        let project = context.makeProject("某项目", ledger: ledger)
+
+        // 模拟「先按支出填好字段、再切到借贷保存」产生的脏数据
+        let lending = Transaction(
+            type: .lending,
+            amount: -2000,
+            date: Date(),
+            account: account,
+            category: category,
+            member: member,
+            merchant: merchant,
+            project: project,
+            context: context
+        )
+        lending.ledger = ledger
+        try context.save()
+
+        let repaired = try service.repairInvalidTypeFields(context: context)
+
+        XCTAssertEqual(repaired, 1)
+        XCTAssertNil(lending.category)
+        XCTAssertNil(lending.member)
+        XCTAssertNil(lending.merchant)
+        XCTAssertNil(lending.project)
+    }
+
+    /// 支出交易上的同名字段不受影响
+    func test_repairInvalidTypeFields_keepsExpenseFields() throws {
+        let ledger = context.makeLedger()
+        let account = context.makeAccount("现金", ledger: ledger)
+        let category = context.makeCategory("停车车位", ledger: ledger)
+        let member = context.makeMember("喻爸妈", ledger: ledger)
+
+        let expense = context.makeTransaction(amount: -20, account: account, ledger: ledger)
+        expense.category = category
+        expense.member = member
+        try context.save()
+
+        let repaired = try service.repairInvalidTypeFields(context: context)
+
+        XCTAssertEqual(repaired, 0)
+        XCTAssertEqual(expense.category, category)
+        XCTAssertEqual(expense.member, member)
+    }
+
+    /// 已清理的记录再跑一次不产生变化（幂等）
+    func test_repairInvalidTypeFields_idempotent() throws {
+        let ledger = context.makeLedger()
+        let account = context.makeAccount("现金", ledger: ledger)
+        let member = context.makeMember("喻爸妈", ledger: ledger)
+
+        let lending = Transaction(
+            type: .lending, amount: -2000, date: Date(),
+            account: account, member: member, context: context
+        )
+        lending.ledger = ledger
+        try context.save()
+
+        XCTAssertEqual(try service.repairInvalidTypeFields(context: context), 1)
+        XCTAssertEqual(try service.repairInvalidTypeFields(context: context), 0)
+        XCTAssertNil(lending.member)
+    }
 }

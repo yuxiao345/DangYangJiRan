@@ -244,6 +244,10 @@ struct MacAddEditRecurringView: View {
         }
     }
 
+    /// 转账周期账不使用 分类/成员/商家/项目（见 `TransactionType.allowsTagFields`）。
+    /// 表单在转账类型下不渲染这四个选择器，但切换类型之前可能已经选过值 —— 落库时以类型
+    /// 为准过滤，否则模板会带着分类图标出现在模板列表里，而模板表单对转账不渲染它们，
+    /// 用户无从改掉。
     private func save() {
         guard !name.trimmingCharacters(in: .whitespaces).isEmpty else { return }
         guard let l = ledger ?? editing?.template?.ledger ?? appContainer.currentLedger else { return }
@@ -262,10 +266,10 @@ struct MacAddEditRecurringView: View {
             t.note = note.isEmpty ? nil : note
             t.account = selectedAccount
             t.toAccount = selectedToAccount
-            t.category = selectedCategory
-            t.member = selectedMember
-            t.merchant = selectedMerchant
-            t.project = selectedProject
+            t.category = type.allowsTagFields ? selectedCategory : nil
+            t.member = type.allowsTagFields ? selectedMember : nil
+            t.merchant = type.allowsTagFields ? selectedMerchant : nil
+            t.project = type.allowsTagFields ? selectedProject : nil
             try? appContainer.templateService.updateTemplate(t, context: modelContext)
             try? appContainer.recurringService.setRecurring(
                 template: t, frequency: frequency, interval: interval,
@@ -278,8 +282,10 @@ struct MacAddEditRecurringView: View {
                 currencyCode: l.defaultCurrencyCode,
                 note: note.isEmpty ? nil : note, sortOrder: 0,
                 account: selectedAccount, toAccount: selectedToAccount,
-                category: selectedCategory, member: selectedMember,
-                merchant: selectedMerchant, project: selectedProject,
+                category: type.allowsTagFields ? selectedCategory : nil,
+                member: type.allowsTagFields ? selectedMember : nil,
+                merchant: type.allowsTagFields ? selectedMerchant : nil,
+                project: type.allowsTagFields ? selectedProject : nil,
                 context: modelContext
             )
             try? appContainer.templateService.createTemplate(template, ledger: l, context: modelContext)

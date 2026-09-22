@@ -227,6 +227,43 @@ final class TemplateServiceTests: CoreDataTestCase {
         XCTAssertEqual(transaction.toAccount, toAccount)
     }
 
+    /// createTransaction 转账模板：模板上残留的 分类/成员/商家/项目 不写进交易
+    /// 转账不使用这四个字段（见 `TransactionType.allowsTagFields`），模板表单在转账
+    /// 类型下也不渲染它们，但切换类型前可能已经选过值。
+    func test_createTransactionFromTemplate_transferDropsLeakedTagFields() throws {
+        let ledger = context.makeLedger()
+        let fromAccount = context.makeAccount("现金", ledger: ledger)
+        let toAccount = context.makeAccount("银行卡", ledger: ledger)
+        // 模拟「先在支出类型下选好字段、再切到转账保存」留下的脏模板
+        let category = context.makeCategory("停车车位", ledger: ledger)
+        let member = context.makeMember("喻爸妈", ledger: ledger)
+        let merchant = context.makeMerchant("某商户", ledger: ledger)
+        let project = context.makeProject("某项目", ledger: ledger)
+
+        let template = TransactionTemplate(
+            name: "带脏字段的转账模板",
+            type: .transfer,
+            amount: 1000,
+            account: fromAccount,
+            toAccount: toAccount,
+            category: category,
+            member: member,
+            merchant: merchant,
+            project: project,
+            context: context
+        )
+        try service.createTemplate(template, ledger: ledger, context: context)
+
+        let transaction = try service.createTransaction(from: template, date: Date(), context: context)
+
+        XCTAssertEqual(transaction.type, .transfer)
+        XCTAssertEqual(transaction.toAccount, toAccount)
+        XCTAssertNil(transaction.category)
+        XCTAssertNil(transaction.member)
+        XCTAssertNil(transaction.merchant)
+        XCTAssertNil(transaction.project)
+    }
+
     // MARK: - Helpers
 
     /// TestFixtures 没有 makeTransactionTemplate，用这个内联 helper

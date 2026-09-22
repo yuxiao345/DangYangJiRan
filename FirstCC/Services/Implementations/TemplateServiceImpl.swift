@@ -32,6 +32,8 @@ struct TemplateServiceImpl: TemplateServiceProtocol {
     }
 
     func createTransaction(from template: TransactionTemplate, date: Date, context: NSManagedObjectContext) throws -> Transaction {
+        // 转账模板不使用 分类/成员/商家/项目（见 TransactionType.allowsTagFields）
+        let allowsTagFields = template.type.allowsTagFields
         let transaction = Transaction(
             type: template.type,
             amount: template.amount,
@@ -41,10 +43,10 @@ struct TemplateServiceImpl: TemplateServiceProtocol {
             tags: template.tags,
             account: template.account,
             toAccount: template.toAccount,
-            category: template.category,
-            member: template.member,
-            merchant: template.merchant,
-            project: template.project,
+            category: allowsTagFields ? template.category : nil,
+            member: allowsTagFields ? template.member : nil,
+            merchant: allowsTagFields ? template.merchant : nil,
+            project: allowsTagFields ? template.project : nil,
             context: context
         )
         transaction.ledger = template.ledger
