@@ -1355,7 +1355,10 @@ struct MacAddTransactionSheet: View {
     /// type 再写这四个字段，而 `.onChange` 要等视图更新才触发，届时读到的已经是模板的值。
     private func save() {
         guard let ledger = appContainer.currentLedger, amount != 0 else { return }
-        if isSplit { guard splitTotal == amount else { errorMessage = "拆分合计与总额不一致"; showErrorAlert = true; return } }
+        // 拆分只对支出成立，而 `isSplit` 不随类型切换重置（Toggle 在非支出下隐藏，见
+        // `toggleAndSplitRows`）。判定必须带上 `type == .expense`，与 iOS `isFormValid`
+        // 一致 —— 否则切到收入后保存会被这条校验拦住，报一个界面上根本不存在的错误。
+        if isSplit && type == .expense { guard splitTotal == amount else { errorMessage = "拆分合计与总额不一致"; showErrorAlert = true; return } }
         if type == .lending {
             if selectedAccount == nil {
                 errorMessage = String(localized: "请选择账户")
@@ -1451,7 +1454,10 @@ struct MacAddTransactionSheet: View {
             } catch { errorMessage = error.localizedDescription; showErrorAlert = true }
         } else {
             let signed = signingAmount()
-            if isSplit {
+            // 同上：`isSplit` 可能是在支出下打开、之后切到别的类型残留下来的。缺这个判定
+            // 会在 UI 显示收入/借贷的情况下生成一笔 `type: .expense` 的拆分父交易。
+            // 判定与 iOS `save()` 的 `isSplit && !splitItems.isEmpty && type == .expense` 对齐。
+            if isSplit && !splitItems.isEmpty && type == .expense {
                 let parent = Transaction(type: .expense, amount: signed, note: note.isEmpty ? nil : note,
                     date: date, account: selectedAccount, isSplitParent: true, context: modelContext)
                 if isReimbursable { parent.reimbursementStatus = .pending }; parent.ledger = ledger
