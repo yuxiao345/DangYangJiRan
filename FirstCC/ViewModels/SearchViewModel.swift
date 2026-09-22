@@ -345,15 +345,26 @@ final class SearchViewModel {
         var filters = TransactionFilters()
 
         // Merge NLP date + manual date (narrowest wins)
+        //
+        // dateFrom / dateTo 统一是「起始日 / 结束日（都含整天）」口径，两个写入方都遵守：
+        // 日期选择器写选中时刻（初值 Date.now，带时分秒），搜索面板的预设直接写日界。
+        // 「日」精度意味着用前必须归零到日界 —— 不归零会让「6月1日–6月2日」实际变成
+        // [6月1日 14:30, 6月2日 14:30)，把当天早些时候的交易挡在区间外。
+        // 结束日再 +1 天换成排他上界（TransactionServiceImpl 的谓词是 date < upper），
+        // 与 ExportView 口径一致。写入方切不可反过来塞排他上界，否则会再被 +1 天。
         let manualDate: Range<Date>? = {
-            if let from = dateFrom, let to = dateTo {
-                return min(from, to)..<max(from, to)
-            } else if let from = dateFrom {
-                return from..<Date.distantFuture
-            } else if let to = dateTo {
-                return Date.distantPast..<to
+            switch (dateFrom, dateTo) {
+            case (let from?, let to?):
+                let lower = min(from, to).startOfDay
+                let upper = max(from, to).startOfDay.adding(.day, value: 1)
+                return lower..<upper
+            case (let from?, nil):
+                return from.startOfDay..<Date.distantFuture
+            case (nil, let to?):
+                return Date.distantPast..<to.startOfDay.adding(.day, value: 1)
+            case (nil, nil):
+                return nil
             }
-            return nil
         }()
         filters.dateRange = intersectRanges(query.dateRange, manualDate)
 

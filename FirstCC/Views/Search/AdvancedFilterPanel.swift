@@ -240,16 +240,22 @@ struct AdvancedFilterPanel: View {
 
     // MARK: - Date Section
 
-    private let datePresets: [(String, Range<Date>)] = {
-        let cal = Calendar.current
+    /// 预设写成「起始日 + 结束日（含末日）」两个日期，而不是 `Range` 的排他上界。
+    ///
+    /// `dateTo` 全 App 统一是「结束日」口径（手动日期选择器也写同一种值），
+    /// `SearchViewModel.buildFilters` 会把它归零到日界再 +1 天换成排他上界。
+    /// 若这里塞的是排他上界（明天 00:00），就会被再 +1 天 —— 搜「今天」多出明天。
+    private let datePresets: [(label: String, start: Date, end: Date)] = {
         let today = Date.now
         let startOfToday = today.startOfDay
-        let tomorrowStart = startOfToday.adding(.day, value: 1)
+        let startOfWeek = today.startOfWeek
+        let startOfMonth = today.startOfMonth
+        let startOfYear = today.startOfYear
         return [
-            (String(localized: "今天"), startOfToday..<tomorrowStart),
-            (String(localized: "本周"), today.startOfWeek..<today.startOfWeek.adding(.day, value: 7)),
-            (String(localized: "本月"), today.startOfMonth..<today.startOfMonth.adding(.month, value: 1)),
-            (String(localized: "今年"), today.startOfYear..<today.startOfYear.adding(.year, value: 1)),
+            (String(localized: "今天"), startOfToday, startOfToday),
+            (String(localized: "本周"), startOfWeek, startOfWeek.adding(.day, value: 6)),
+            (String(localized: "本月"), startOfMonth, startOfMonth.adding(.month, value: 1).adding(.day, value: -1)),
+            (String(localized: "今年"), startOfYear, startOfYear.adding(.year, value: 1).adding(.day, value: -1)),
         ]
     }()
 
@@ -259,13 +265,13 @@ struct AdvancedFilterPanel: View {
             // Quick presets
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
-                    ForEach(datePresets, id: \.0) { preset in
-                        let isActive = dateFrom == preset.1.lowerBound && dateTo == preset.1.upperBound
+                    ForEach(datePresets, id: \.label) { preset in
+                        let isActive = dateFrom == preset.start && dateTo == preset.end
                         Button {
                             if isActive { dateFrom = nil; dateTo = nil }
-                            else { dateFrom = preset.1.lowerBound; dateTo = preset.1.upperBound }
+                            else { dateFrom = preset.start; dateTo = preset.end }
                         } label: {
-                            Text(preset.0)
+                            Text(preset.label)
                                 .font(.caption)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
