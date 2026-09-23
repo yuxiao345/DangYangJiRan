@@ -83,7 +83,7 @@
   `"你正在参与此共享账本，仅拥有者可管理成员"` 与 `"此账本已开启共享，其他用户可加入协作记账"`，
   两条的 `localizations` 都是**空的**。
 
-### 5. 名称一致性 —— ✅ **上架包没问题**（`荡漾计然` 只活在 Debug，是开发期残留）
+### 5. 名称一致性 —— ✅ **上架包没问题**（Debug 的 `荡漾计然` 是**有意保留的开发版标识**）
 
 **构建产物实测（Debug 与 Release 各打了一次，实测不是推断）：**
 
@@ -103,20 +103,25 @@
 也符合 Guideline 2.3.8（商店名须与设备显示名相似）。两个平台各自的显示名不同名
 （iOS `钱伲` / Mac `Qianey`），所以「同账户 iOS/macOS 不能同名」也不触发。
 
-**唯一真实影响**：本机 **Debug 装机**时桌面图标叫「荡漾计然」，与 Release 不一致 ——
-会让你人工核对时误以为上架版也叫这个名字（**我自己就踩了这个坑**，见 §八）。
+**Debug 与 Release 故意不同名（2026-09-24 用户确认）**：在本机**同一台设备**上同时装开发版和
+上架版做对照测试，靠桌面图标名一眼区分——**这是有意设计，不是残留**。所以
+`project.pbxproj:2075` 那条 Debug 的 `CFBundleDisplayName = "荡漾计然"` **保持不动**。
 
-**遗留残留（建议清理，但都不影响上架产物）：**
+**副作用（已知并接受）**：人工核对时若只看 Debug 包，会误以为上架版也叫这个名字
+（**我自己就踩了这个坑**，见 §八）。判断上架行为必须打 Release 包。
 
-| 位置 | 内容 | 说明 |
+**仓库卫生残留 —— 处置结果（2026-09-24）：**
+
+| 位置 | 内容 | 处置 |
 |---|---|---|
-| `project.pbxproj:1110` | `productName = "荡漾计然"` | 遗留字段；实际产物名由 `PRODUCT_NAME` 决定（iOS = 钱伲），`productReference` 也是 `钱伲.app` → 不影响产物 |
-| `project.pbxproj:2075` | Debug 的 `CFBundleDisplayName` | 就是上面那条；可删以与 Release 一致 |
-| `generate_xcodeproj.py:75,159,160` | `荡漾计然.app` / `name` / `productName` | ⚠️ **该脚本已严重过期**（target 名还是「荡漾计然」，`PRODUCT_NAME = $(TARGET_NAME)`）—— 若有人用它重新生成工程，会**造出一个没有「钱伲」target 的工程**。建议删除或标注废弃 |
-| `FirstCC.xcodeproj/project.pbxproj.backup.20260524_115209`<br>`…backup.phase3` | 两份 pbxproj 备份 | **已被 git 跟踪**，属仓库垃圾 |
-| `Localizable.xcstrings:10430` | 条目 `荡漾计然`（zh-Hans=荡漾计然 / en=**FirstCC**） | **Swift 代码 0 处引用** —— 孤儿条目，旧命名时代的 App 名 |
+| `generate_xcodeproj.py` | 一次性工程生成器（target 名 `荡漾计然`，`PRODUCT_NAME = $(TARGET_NAME)`，全篇 0 处提到 `钱伲`；最后改动 2026-05-06） | ✅ **已删**（本 commit）。它已比真工程落后 4 个月，且跑一次会**覆盖 `project.pbxproj`、造出没有「钱伲」target 的工程** —— 留着纯是陷阱 |
+| `project.pbxproj.backup.20260524_115209`<br>`project.pbxproj.backup.phase3` | 两份 2026-05 的 pbxproj 快照 | ✅ **已删**（本 commit）。实测 `project.pbxproj` 里 **0 处引用**，Xcode 不读、构建不碰 |
+| `project.pbxproj:2075` | Debug 的 `CFBundleDisplayName = "荡漾计然"` | ⛔ **保留**（见上文，用户有意设计） |
+| `project.pbxproj:1110` | `productName = "荡漾计然"` | ⛔ **保留**。惰性字段：实际产物名由 `PRODUCT_NAME` 决定（Debug/Release 实测产物均为 `钱伲.app`），`productReference` 也是 `钱伲.app`。动它要改真工程文件，零收益 |
+| `Localizable.xcstrings` 条目 `荡漾计然`（en=`FirstCC`） | Swift 代码 0 处引用的孤儿条目 | ⛔ **保留**。证实它**不产生任何效果**（仓库里没有 `InfoPlist.xcstrings`，Debug 显示荡漾计然是 pbxproj 字面写死的，与 Catalog 无关）；而 `Localizable.xcstrings` 当时正带着无关的未提交改动，不该混改 |
+| `.claude/settings.local 2.json:10` | 权限条目 `Bash(python3 …/generate_xcodeproj.py)` | ⚠️ **未动**（权限文件，等用户指示）。脚本已删，该条目现在指向不存在的文件、成为死条目。**另注**：这个带空格的 `settings.local 2.json` **被 git 跟踪了**，通常 `settings.local` 属本地文件，是另一处卫生问题 |
 
-→ **这一项不需要为「上架」做任何事。** 上面 5 条纯属仓库卫生，可单独清理。
+→ **这一项不需要为「上架」做任何事。** 上表纯属仓库卫生，已按用户指示清理完毕。
 
 ### 6. Mac HIG 审查（**未核实**）
 
@@ -237,7 +242,8 @@
   **同一个「选择货币」在不同页面给不同选项** —— 建议收敛到一处常量。
 - **`钱伲UITests` 的 Release 配置 bundle id 是 `com.qianey.app.--UITests`**（`project.pbxproj:1713`），
   看着像模板残留拼坏（不随包分发，优先级低）。
-- **`.claude/agents/` 下的 `pbxproj-checker`**、`generate_xcodeproj.py` 的去留从未定论。
+- **`.claude/agents/` 下的 `pbxproj-checker`** 的去留从未定论。（原先并列的 `generate_xcodeproj.py`
+  已于 2026-09-24 删除，见 §二-5。）
 
 ---
 
@@ -283,3 +289,8 @@ grep -rn "notarytool\|stapler\|altool" . --include="*.sh" --include="*.yml" --in
   已整段重写。
   *教训：验「上架会怎样」必须用**上架用的那个 configuration**（Release），
   Debug 结论不能外推到 Release。项目里已有同类纪律（[[feedback_verify_api_by_compile_not_grep]]）。*
+- **2026-09-24 四次修订（用户裁定）**：§二-5 的「遗留残留」定案 ——
+  ① Debug 显示名 `荡漾计然` **是用户有意保留的开发版标识**（同一设备对照测试时靠图标名区分），
+  **不是残留，保持不动**；② `generate_xcodeproj.py` 与两份 `project.pbxproj.backup.*` **已删除**
+  （前者查实含 0 处「钱伲」、跑一次会毁掉工程；后者在 pbxproj 里 0 引用）；
+  ③ `productName` 与 Catalog 孤儿条目**保留**（惰性/无效果，动真工程文件零收益）。
