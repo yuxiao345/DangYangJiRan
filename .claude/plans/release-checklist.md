@@ -20,7 +20,7 @@
 | 代码层最大的真缺口？ | **报销不支持部分冲销**（`Transaction` 无 `reimbursedAmount`，两平台都是全额标记） |
 | 旧清单里哪些是假警报？ | **账期 Picker 18/20/25 已不存在**（早已改成完整的 1…28 / 1…31）；隐私清单已完成且合法 |
 | 分发渠道定了吗？ | Mac 走 **App Store / TestFlight**（已被拒过一次，罪名是名称含 "Mac" 商标，`5f74a0f` 已修）→ **不需要公证** |
-| 影响上架的名称问题？ | iOS 的 `productName` / `CFBundleDisplayName` 仍是 **`荡漾计然`**，与 target `钱伲`、bundle id `com.qianey.app` 不一致 —— **待你定**（见 §二-5） |
+| 名称会不会影响上架？ | **不会。** `荡漾计然` 只写在 Debug 配置里，Release 产物无该键 → 设备显示名 = `钱伲`（Mac `Qianey`），与商店名一致（Debug/Release 各实测一次，见 §二-5） |
 | 测试规模？ | **343** 个用例（288 iOS XCTest + 42 Mac Swift Testing + 5 iOS UI + 8 Mac UI） |
 
 ---
@@ -83,35 +83,40 @@
   `"你正在参与此共享账本，仅拥有者可管理成员"` 与 `"此账本已开启共享，其他用户可加入协作记账"`，
   两条的 `localizations` 都是**空的**。
 
-### 5. 名称一致性 —— 🔴 **两个平台对外显示名都是 `荡漾计然`**（待你确认是否有意为之）
+### 5. 名称一致性 —— ✅ **上架包没问题**（`荡漾计然` 只活在 Debug，是开发期残留）
 
-**构建产物实测**（不是读 pbxproj 推断）：
+**构建产物实测（Debug 与 Release 各打了一次，实测不是推断）：**
 
-| | `CFBundleDisplayName`（设备上显示的名） | `CFBundleName` | Executable |
+| 配置 | 产物 | `CFBundleDisplayName` | `CFBundleName`（系统回落） |
 |---|---|---|---|
-| iOS `钱伲.app` | **荡漾计然** | 钱伲 | 钱伲 |
-| Mac `Qianey.app` | **荡漾计然** | Qianey | Qianey |
+| **Release**（= TestFlight / 归档 / 上架） | `钱伲.app` | **（无该键）** | **钱伲** ✅ |
+| Debug（= 本机开发装机） | `钱伲.app` | `荡漾计然` | 钱伲 |
 
-复跑：`/usr/libexec/PlistBuddy -c "Print :CFBundleDisplayName" <app>/Info.plist`
+**根因**：`INFOPLIST_KEY_CFBundleDisplayName = "荡漾计然"` 在 `project.pbxproj` 里**只有一处**
+（`:2075`），且落在**项目级 Debug** 配置里；**项目级 Release 没有这个 key**。
+`GENERATE_INFOPLIST_FILE = YES` 且 `INFOPLIST_FILE = FirstCC/Resources/Info.plist`（签入的那份
+**也没有**任何 `CFBundleDisplayName`/`CFBundleName` 键），所以 Release 产物就是没有这个键 →
+系统回落到 `CFBundleName` = `钱伲`。
 
-**根因**：`INFOPLIST_KEY_CFBundleDisplayName = "荡漾计然"` 设在 **项目级**
-（`project.pbxproj:2075`，属项目级 Debug 配置 `F475504BEE6673842BA5B48F`），
-**两个 app target 都继承它，且都没有覆盖**（全文件仅此一处 `CFBundleDisplayName`）。
-另有 `productName = "荡漾计然"` 在 target 定义处（`:1110`，但 `productReference` 仍是 `钱伲.app`）。
+**结论：不改它，对上架零影响。** 设备显示名（Release）就是 `钱伲`，与应用内 UI 一致
+（`AppLockView.swift:23`、`OnboardingView.swift:15`、`SettingsContent.swift:342` 都显示「钱伲」），
+也符合 Guideline 2.3.8（商店名须与设备显示名相似）。两个平台各自的显示名不同名
+（iOS `钱伲` / Mac `Qianey`），所以「同账户 iOS/macOS 不能同名」也不触发。
 
-**后果（两条，都影响上架）**：
+**唯一真实影响**：本机 **Debug 装机**时桌面图标叫「荡漾计然」，与 Release 不一致 ——
+会让你人工核对时误以为上架版也叫这个名字（**我自己就踩了这个坑**，见 §八）。
 
-1. **`5f74a0f` 改 Mac 名那轮其实没改到「显示名」。** 它把 `PRODUCT_NAME` 改成了 `Qianey`
-   （影响 `.app` / executable / 模块名），但 Mac 上用户看到的名字仍是 `荡漾计然`。
-   若那轮的目的是「让用户看到 Qianey」，则目标未达成。
-2. **App Store Guideline 2.3.8 风险**：商店名（ASC Name）必须与**设备上显示的名字**相似。
-   若 ASC Name 是 `钱伲` / `Qianey`，而设备名是 `荡漾计然`，就是 mismatch。
-   另外 iOS 与 Mac 同账户**不能同名** —— 现在两边显示名**完全相同**（都是 `荡漾计然`），
-   这一条也要一并考虑。
+**遗留残留（建议清理，但都不影响上架产物）：**
 
-- → **需要你确认**：`荡漾计然` 是有意选的对外名，还是改名时漏掉的残留？
-  确认后才知道该改哪一处（项目级 vs target 级 vs ASC）。
-  **本轮只记录，未改动任何代码或工程配置。**
+| 位置 | 内容 | 说明 |
+|---|---|---|
+| `project.pbxproj:1110` | `productName = "荡漾计然"` | 遗留字段；实际产物名由 `PRODUCT_NAME` 决定（iOS = 钱伲），`productReference` 也是 `钱伲.app` → 不影响产物 |
+| `project.pbxproj:2075` | Debug 的 `CFBundleDisplayName` | 就是上面那条；可删以与 Release 一致 |
+| `generate_xcodeproj.py:75,159,160` | `荡漾计然.app` / `name` / `productName` | ⚠️ **该脚本已严重过期**（target 名还是「荡漾计然」，`PRODUCT_NAME = $(TARGET_NAME)`）—— 若有人用它重新生成工程，会**造出一个没有「钱伲」target 的工程**。建议删除或标注废弃 |
+| `FirstCC.xcodeproj/project.pbxproj.backup.20260524_115209`<br>`…backup.phase3` | 两份 pbxproj 备份 | **已被 git 跟踪**，属仓库垃圾 |
+| `Localizable.xcstrings:10430` | 条目 `荡漾计然`（zh-Hans=荡漾计然 / en=**FirstCC**） | **Swift 代码 0 处引用** —— 孤儿条目，旧命名时代的 App 名 |
+
+→ **这一项不需要为「上架」做任何事。** 上面 5 条纯属仓库卫生，可单独清理。
 
 ### 6. Mac HIG 审查（**未核实**）
 
@@ -272,3 +277,9 @@ grep -rn "notarytool\|stapler\|altool" . --include="*.sh" --include="*.yml" --in
 - **2026-09-24 二次修正（用户指出）**：§三-7「Dashboard 预算概览」原被写为「未做」，
   实为**已落地**（预算概览两端都有），未做的只是「移除最近交易段」且已降为可选项。
   *教训：把「并存」误判成「未做」—— 判断某项做没做，要看目标功能在不在，而不是看旧状态还在不在。*
+- **2026-09-24 三次修正（自查）**：§二-5 初稿断言「两个平台对外显示名都是 `荡漾计然`、
+  会触发 2.3.8 拒审」——**这是错的，而且是我自己犯的**：我只打了 **Debug** 包就下了结论。
+  实测 **Release 产物压根没有 `CFBundleDisplayName`**，设备显示名是 `钱伲`（Mac `Qianey`）。
+  已整段重写。
+  *教训：验「上架会怎样」必须用**上架用的那个 configuration**（Release），
+  Debug 结论不能外推到 Release。项目里已有同类纪律（[[feedback_verify_api_by_compile_not_grep]]）。*
