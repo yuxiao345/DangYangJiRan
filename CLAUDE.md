@@ -16,7 +16,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 构建与测试策略
 
 - 任何代码修改后，必须对 iOS 和 macOS 两个目标都进行构建，然后才能声明工作完成。绝不要假设一个平台构建成功就意味着另一个也没问题。
-- 修改共享的 service/model/budget 逻辑后，在 iOS 上运行单元测试（XCTest）。注意 macOS 上 Swift Testing 并行执行不稳定的问题——建议 macOS 测试顺序运行。
+- 修改共享的 service/model/budget 逻辑后，在 iOS 上运行单元测试（XCTest），Mac 单测一并跑。
+- **Mac CoreData 测试套件必须标 `@MainActor`。** Swift Testing 默认把测试跑在协作线程池上，而 fixture 用的是 `.mainQueueConcurrencyType` context——在非主线程直接访问它违反 Core Data 的多线程编程模式，会随机崩（Apple DTS 定性：会 "trigger random crashes in Core Data"）。`.serialized` 与 `-parallel-testing-enabled NO` 只管执行顺序、**不改变运行线程**，治不了它。iOS 用 XCTest、同步方法跑在主线程，所以同一套写法在 iOS 上合法——**别因为 iOS 绿了就以为 Mac 也是**。
+- Mac 测试**不再需要** `-parallel-testing-enabled NO`：2026-09-23 实测，加上 `@MainActor` 后并行连跑 3 轮 42/42 全绿、0 崩溃。旧结论是对着已删除的 `model.copy()` 写的。
+- **测试栈不要自建 `NSManagedObjectModel`**，复用 `CoreDataModel.shared`（`FirstCC/Services/CoreDataStack.swift`，机制写在它的文档注释里）。进程里出现第二份 model，会让 `+[NSManagedObject entity]` 因同一子类被两个模型声称而解析失败，`save()` 报 `NSPersistentStoreIncompatibleSchemaError (134020)`。**数据隔离靠 store（每测试新建 coordinator + in-memory store），不靠 model。**
 
 ## Build & Run
 
