@@ -30,7 +30,7 @@
 | 层 | 状态 | 依据 |
 |---|---|---|
 | 功能层 | **完整** | 18 个 `Services/Protocols/*.swift` + 22 个 `Implementations/*.swift`；Mac 6 大报表 12 个文件齐全（`Qianeymac/Views/Reports/`） |
-| 测试层 | **358 用例 = 345 单测 + 13 UI** | 单测 **2026-09-24 实测全绿**：iOS `钱伲Tests` **303 执行（301 通过 + 2 跳过）/ 0 失败**，Mac `QianeymacTests` **42 通过 / 0 失败**。UI 13 个（`钱伲UITests` 5 + `QianeymacUITests` 8）**本次未跑**。剩余 2 个跳过项与已修项见 §六-6 |
+| 测试层 | **360 用例 = 347 单测 + 13 UI** | 单测 **2026-09-24 实测全绿**：iOS `钱伲Tests` **305 执行（303 通过 + 2 跳过）/ 0 失败**，Mac `QianeymacTests` **42 通过 / 0 失败**。UI 13 个（`钱伲UITests` 5 + `QianeymacUITests` 8）**本次未跑**。剩余 2 个跳过项与已修项见 §六-6 |
 | 本地化 | **1024 条，332 条缺 `en`** | `FirstCC/Resources/Localizable.xcstrings`（12932 行）—— 注意该文件是 **12932 行 / 1024 条**，CLAUDE.md 里「约 11750 行」已过期 |
 | CI | **有，但只测不发布** | `.github/workflows/test.yml` 只跑 `xcodebuild test`，无 archive/export/release job。另有 **Xcode Cloud 已配置但未纳入 git**（`FirstCC.xcodeproj/xcshareddata/xcodecloud/manifest.json`，未跟踪） |
 | 发布层 | **素材 0%、签名待调** | 见 §二 |
@@ -415,39 +415,67 @@ TEMP_DIAG after-delete incomeRows=0 expenseRows=0 incomeIsDeleted=false hasChang
   ② 新增 `test_settleSplit_unevenEqual_reachesSettled`（**症状回归锁**：`unsettled → partial → settled`）；
   ③ 新增 `test_equalShares_invariants_hold`（6 种人数 × 12 种总额的性质测试，含 0 人 / 0 元 / 负数）。
 - ⚠️ **未覆盖 & 已知边界**（本轮有意不改）：
-  - 🔴 **同一症状在 `.percentage`/`.fixed` 下仍然存在**（2026-09-24 审查发现，**已实测复现**）。
-    `equalShares` 只覆盖 `.equal`；另外两种模式仍直接用调用方传来的金额、每份各按分截断。
-    实测（精确小数，33%/33%/34% **确实凑满 100%**）：
+  - ✅ **同一症状在 `.percentage`/`.fixed` 下曾同样存在 → 已统一修掉**（审查发现，用户裁定「一起修」）。
+    `equalShares` 只管 `.equal` 的**分配方式**；另外两种模式的金额来自调用方，
+    每份各自按分截断后合计仍可能少于总额。实测（精确小数，33%/33%/34% **确实凑满 100%**，
+    `isAmountValid` 拦不住）：
 
-    | 总额 | 每份（分） | 合计 | 差 |
+    | 总额 | 修前每份（分） | 修前合计 | 差 |
     |---|---|---|---|
     | ¥7.77 | 256 / 256 / 264 | 776 | −1 分 |
     | ¥0.10 | 3 / 3 / 3 | 9 | −1 分 |
     | ¥99.99 | 3299 / 3299 / 3399 | 9997 | **−2 分** |
     | ¥10.00 | 330 / 330 / 340 | 1000 | 0（恰好整除） |
 
-    差额最大可达 **人数−1 分**。后果与 `.equal` 完全相同：永远到不了 `.settled`、
-    「一键结算」按钮永不消失。`.fixed` 同理：金额框是 `TextField(format: .number)`，
-    用户可输 `33.333 + 66.667`（合计恰好 = 金额，校验通过），按分截断后 3333+6666 = 9999 ≠ 10000。
-    **已加刻画测试** `SplitServiceTests.test_percentage_knownGap_sumCanBeLessThanTotal`
-    —— 刻意断言当前的错误结果，缺口可见、且修好后会立刻变红逼人更新本节。
-    **修法（未做，等用户裁定）**：在 `createSplit` 的 switch **之后**加一次归一化（约 3 行）——
-    把 `entryAmounts` 全转成分、差额补到最后一份，即可让不变量对三种模式**都**成立，
-    对 `.equal` 是空操作。代价：`.fixed` 会静默吸收调用方的差额，
-    即把「合计必须对」的保证从 UI 移进 service。
+    差额最大可达 **人数−1 分**。`.fixed` 同理：金额框是 `TextField(value:format: .number)`，
+    解析出的 `Decimal` 是**精确**的（实测 `33.333` 就是 `33.333`），于是
+    `33.333 + 66.667 == 100` 校验通过，按分截断后 3333+6666 = 9999 ≠ 10000。
+    （2026-09-24 复核：审查指出该「实测」当时没有依据 —— 现补测，
+    `TextField(value:format:)` 走 `Decimal.FormatStyle.number` 的 parseStrategy，
+    实测 `Decimal("33.333", format: .number) == Decimal(string:"33.333")` 为真，
+    且 `33.333 + 66.667 == 100` 精确成立，故这条成立。）
+    **修法（已实施）**：新增 `SplitServiceImpl.balancedToTotal(_:totalAmount:)`，
+    在 `createSplit` 的 switch **之后**统一调用一次 —— 把全部金额转成分、差额补到最后一份。
+    三种模式**都**满足 `sum(entries) == totalAmount`；对 `.equal` 差值为 0，是空操作。
+    代价（已知并接受）：`.fixed` 会**静默吸收**调用方的差额，
+    即把「合计必须对」的保证从 UI 收进 service。
+    **测试**：`test_percentage_unevenShares_sumEqualsTotal`（256/256/**265** + 付清到 `.settled`）、
+    `test_fixed_subFenAmounts_sumEqualsTotal`（3333/**6667**）、
+    `test_balancedToTotal_invariants`（5 组含空数组/负数/故意对不上，断言合计恒等于总额）。
     *⚠️ 复现时的坑：**必须用 `Decimal(string: "7.77")`，不能用 `Decimal(7.77)`** ——
     后者是 Double 字面量转换，实际是 `7.769999999999997952`，总额算出来是 776，
     会让探针误报「合计正好相等」。我第一次就踩了这个，差点把真缺口判成假警报。*
     *（这类发现说明「修一个症状」要顺着**同一个不变量**把所有产生它的分支都找一遍——
     只修 `.equal` 就是只修了 1/3。）*
-  - 循环里的 `entryAmounts[index]` 在 `amounts.count < members.count` 时**会越界崩**；
+  - 循环里的 `shares[index]` 在 **`amounts.count < members.count` 时会越界崩**；
     当前 View 恒按 `membersList` 生成等长数组，无调用方能触发，故未加防护。
-- ⚠️ **存量数据不回溯**：本次只影响**新建**的分账。已经存在的除不尽分账仍是 9999/10000，
+  - **反向错配**（`amounts.count > members.count`）**不会崩，但静默失效**（审查实测）：
+    差额补在 `amounts` 的**最后一个元素**上，而循环只写 `members.count` 份 ——
+    多出的那份不会入库，差额就落空了，症状（`.settled` 到不了）原样复现。
+    实测 `members = [M]`、`amounts = [1,2,3,4,5]`、`total = 100` → 写库 1 份 1.00 元。
+    **改前改后暴露度相同**（旧代码同样只索引 `members.count` 次），故不是本次引入的回归。
+    一处 `guard amounts.count == members.count else { throw SplitError.invalidAmounts }`
+    可同时收掉正反两个方向 —— **未加，属独立决定**（见下条 overflow 同一性质）。
+  - **doc 已相应收窄**：原先写「任何调用方（含将来的）都自动满足不变量」是**过度断言**
+    （审查据此举出可复现反例），现明确写「仅在 `amounts.count == members.count` 时成立」。
+- ⚠️ **新增了一条 Int64 溢出的 crash 路径（已实测复现，但论证为不可达 —— 未修，属独立决定）**：
+  `balancedToTotal` 里新加了 `fen.reduce(0, +)` 与 `+=`，都是**检查型** Int64 运算。
+  `Decimal.fenValue` 越界时**不回绕报错、也不饱和，而是回绕成垃圾值**（实测
+  `Decimal(string:"1e30")!.fenValue == -8814407033341083648`），三个这样的值再相加 →
+  `Swift runtime failure: arithmetic overflow`（trap）。改前**不崩**（每份各自换成分就存库，
+  只是存了垃圾值）。**可达性论证（审查给出，我认同）**：`totalAmount` 来自
+  `Transaction.amount`，其底层是 `amountInFen: Int64`，故
+  `|总额| ≤ ¥92,233,720,368,547,758.07`；加上 View 的 `sum(amounts) == amount` 门控，
+  `sum(fen) ≤ totalFen` 恒成立，部分和不会越界。**故应用内触发不到** ——
+  但该函数是 `static` 且被文档当作通用不变量守卫，将来若有别的调用方就会踩到。
+  可选处理：把 `+` / `-` 改成 `&+` / `&-`（与 `fenValue` 本身「回绕不报错」的语义一致，
+  垃圾进垃圾出、不崩），或加金额上限校验。**均未实施。**
+- ⚠️ **存量数据不回溯**：本次只影响**新建/重新保存**的分账。已经存在的除不尽分账仍是 9999/10000，
   仍卡在 `.partial`（点「一键结算」能标记全部已付，但状态显示不会变）。
   要不要照 `repairInvalidTypeFields` 的样子加一次回填修复（差值补给最后一名 entry），
   **未定，待用户裁定**。
 
-**实测**：iOS `303` 执行 / `301` 通过 / `2` 跳过 / `0` 失败（+3 条新用例）；Mac `42/42`；
+**实测**：iOS `305` 执行 / `303` 通过 / `2` 跳过 / `0` 失败（本轮共 +5 条新用例）；Mac `42/42`；
 双端构建 `BUILD SUCCEEDED`、0 error、0 条新警告。
 
 ---
@@ -546,9 +574,28 @@ xcodebuild -project FirstCC.xcodeproj -scheme Qianeymac -destination "platform=m
   **审查还发现同一不变量只修了 1/3**：`.percentage`/`.fixed` 不经 `equalShares`，每份各按分截断，
   合计仍会少于总额（实测 ¥99.99 按 33/33/34 → `3299+3299+3399 = 9997` ≠ 9999，**差 2 分**），
   症状与 `.equal` **完全相同**：仍卡 `.partial`、「一键结算」按钮仍永不消失。
-  **未修（超出本轮批准范围）** —— 已加**刻画测试**（`test_percentage_knownGap_sumCanBeLessThanTotal`，
-  刻意断言当前错误结果，修好即红）+ 记入 §六-8-2 待裁定；修法约 3 行（switch 后统一归一化）。
-  实测：iOS `303` 执行 / `301` 通过 / `2` 跳过 / `0` 失败，Mac `42/42`，双端 `BUILD SUCCEEDED`。
+  **我先按规矩只记待办 + 一条刻画测试交用户裁定，用户当天裁定「一起修」，已实施**：
+  新增 `SplitServiceImpl.balancedToTotal(_:totalAmount:)`，在 `createSplit` 的 switch **之后**统一调用，
+  三种模式都满足 `sum(entries) == totalAmount`（对 `.equal` 差值为 0，是空操作）。
+  原刻画测试改为正向断言（`test_percentage_unevenShares_sumEqualsTotal`，256/256/**265** 且付清到 `.settled`），
+  另加 `test_fixed_subFenAmounts_sumEqualsTotal`（3333/**6667**）与
+  `test_balancedToTotal_invariants`（含空数组/负数/故意对不上）。
+  本轮共新增 5 条用例。实测：iOS `305` 执行 / `303` 通过 / `2` 跳过 / `0` 失败，Mac `42/42`，双端 `BUILD SUCCEEDED`。
+  **双 agent 审查（简化/高度 + 正确性）后已应用**：
+  ① 两条新用例原先只断言 `map(\.amountInFen).sorted()` —— 那是**多重集**断言，
+  钉不住「差额落在输入顺序的最后一名」（`members` 与 `amounts` 是两个按下标对齐的数组，错位时照样通过）。
+  已按姊妹用例的写法改成**按成员反查**（`members[2] → 265`、`m2 → 6667`）。
+  ② `test_balancedToTotal_invariants` 删掉与 `test_fixed_subFenAmounts_sumEqualsTotal` 重复的一行；
+  另一行的输入改成**真实百分比形状**（`32.9967 + 32.9967 + 33.9966 == 99.99`，即「输入合计精确、
+  逐份截断丢 2 分」），原先那行（`32.99/32.99/33.99` 合计 99.97）其实是「调用方自己就凑不齐」，
+  与注释引的例子不同源。
+  ③ `equalShares` 的余数那一行**不是冗余**：`SplitFormView` 的「均分金额」预览直接调它、
+  不经过 `balancedToTotal`，删掉预览会比入库少最多 人数−1 分 —— 审查结论与我的判断一致，未动。
+  *简化建议里唯一被我否掉的一条*：让 `equalShares` 转调 `balancedToTotal` 以消掉那句重复的余数写法
+  （审查实测 90/90 输出一致）—— 判为**过度间接**：为省一行重复写法换来一次数组往返 +
+  「必须读另一个函数才知道不变量从哪来」，而现行写法 4 行自解释。
+  **记入待决、未实施**（均为审查实测、当前不可达）：见 §六-8-2 的
+  「`amounts.count > members.count` 静默失效」与「`fen.reduce` 的 Int64 溢出 crash」。
 - **2026-09-24 七次修订（用户批准后落地修复）**：§六-6 的三项**全部修完**。
   ① 新增 `Decimal.fenValue`（朝零截断），**13 处** `Decimal → Int64` setter 改走它；
   ② `TransactionServiceTests` 的 `isDeleted` 断言改为「按 id 重新 fetch 为 0 行」，跳过删除；

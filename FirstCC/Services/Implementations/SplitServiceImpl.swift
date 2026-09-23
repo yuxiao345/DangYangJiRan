@@ -36,9 +36,12 @@ struct SplitServiceImpl: SplitServiceProtocol {
             entryAmounts = amounts
         }
 
+        // 三种模式统一兜底：保证 sum(entries) == totalAmount（详见 balancedToTotal）
+        let shares = Self.balancedToTotal(entryAmounts, totalAmount: totalAmount)
+
         for (index, member) in members.enumerated() {
             let entry = SplitEntry(
-                amount: entryAmounts[index],
+                amount: shares[index],
                 member: member,
                 context: context
             )
@@ -64,11 +67,9 @@ struct SplitServiceImpl: SplitServiceProtocol {
     /// 先取整到分再均分，于是只要 **`count ≥ 1`** 就恒有 `sum(shares) == totalAmount`，
     /// 与 `SplitGroup.totalAmountInFen`（同样是分）口径一致。
     ///
-    /// ⚠️ **这个不变量目前只对 `.equal` 成立。** `.percentage` / `.fixed` 直接用调用方
-    /// 传来的金额、每份各按分截断，合计仍可能**少于**总额、仍会卡在 `.partial`
-    /// （实测：¥7.77 按 33/33/34 百分比 → 256+256+264 = 776 分 ≠ 777 分）。
-    /// 未修——修它要改另外两个分支的语义（超出本轮范围），待办见
-    /// `.claude/plans/release-checklist.md` §六-8-2。
+    /// 这里保证的是 `.equal` 这一支的**分配方式**（尽量均匀）；
+    /// 「合计等于总额」这个不变量由 `createSplit` 里统一调用的 `balancedToTotal` 兜底，
+    /// 对它而言本函数的输出差值是 0，属空操作。
     static func equalShares(totalAmount: Decimal, count: Int) -> [Decimal] {
         // 上层 UI 会拦住空选，但这里必须自保：Int64 除以 0 是运行时 trap，不是抛错
         guard count > 0 else { return [] }
@@ -77,6 +78,35 @@ struct SplitServiceImpl: SplitServiceProtocol {
         var shares = Array(repeating: base, count: count)
         shares[count - 1] += totalFen - base * Int64(count)
         return shares.map { Decimal($0) / 100 }
+    }
+
+    /// 把分摊金额归一到「**合计 == 总额**」，差额补给最后一份。
+    ///
+    /// 三种模式统一走这里。为什么需要它：**每一份各自按分截断**，合计就可能少于总额。
+    /// `.equal` 由 `equalShares` 保证合计精确（走到这里差值为 0，是空操作）；
+    /// `.percentage`/`.fixed` 的金额由调用方传入，除不尽时必然凑不齐 ——
+    /// 实测 ¥99.99 按 33/33/34 得 `3299+3299+3399 = 9997`，比总额少 **2** 分。
+    ///
+    /// 为什么必须补齐：`SplitGroup.settlementStatus` 的判据是 `totalPaid >= totalAmount`，
+    /// 合计补不齐就永远到不了 `.settled`，而 `SplitDetailView` 的「一键结算」按钮门控是
+    /// `settlementStatus != .settled` —— 于是按钮永不消失，还一直挂着「剩余 ¥0.01」。
+    ///
+    /// 这是**有意吸收**调用方的差额，不是校验：把「合计必须对」的保证从 UI 收进 service。
+    /// 差额大小受 `人数−1` 分约束（真按比例算的话），若调用方给出完全对不上的金额，
+    /// 就由最后一份全额吸收。
+    ///
+    /// 保证的范围：**差额补在 `amounts` 的最后一个元素上**，而 `createSplit` 只写
+    /// `members.count` 份 entry，所以「写进去的份数合计等于总额」只在
+    /// **`amounts.count == members.count`** 时成立。当前唯一调用方
+    /// （`SplitFormView`）用 `membersList.map` 生成 `amounts`，两者必然等长；
+    /// 但若将来出现**多给**金额的调用方，多出的份额不会写库、差额也就落空了 ——
+    /// 要覆盖这一点得在这里加长度校验，属另一件事。
+    static func balancedToTotal(_ amounts: [Decimal], totalAmount: Decimal) -> [Decimal] {
+        var fen = amounts.map(\.fenValue)
+        // 空数组时下面 fen.count - 1 会越界；members 为空时本函数本就不该造出任何 entry
+        guard !fen.isEmpty else { return [] }
+        fen[fen.count - 1] += totalAmount.fenValue - fen.reduce(0, +)
+        return fen.map { Decimal($0) / 100 }
     }
 
     func markEntryPaid(_ entry: SplitEntry, context: NSManagedObjectContext) throws {

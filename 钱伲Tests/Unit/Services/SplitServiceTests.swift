@@ -328,19 +328,16 @@ final class SplitServiceTests: CoreDataTestCase {
         XCTAssertEqual(group.settlementStatus, .settled, "付清后必须能到 .settled，否则「一键结算」按钮永不消失")
     }
 
-    /// ⚠️ **已知缺口（刻意没修）**：`.percentage` 模式合计仍可能少于总额，症状与 `equal` 同源
+    /// `.percentage` 模式：百分比凑满 100%，但每份按分截断后合计少于总额 → 差额补给最后一份
     ///
-    /// `equalShares` 只让 `.equal` 满足 `sum(entries) == totalAmount`。百分比/定额模式仍直接
-    /// 用调用方传来的金额、每份各按分截断，于是**同一个症状仍在**：合计补不齐
-    /// → `settlementStatus` 永远到不了 `.settled` → `SplitDetailView` 的「一键结算」按钮永不消失。
+    /// 回归锁：`equalShares` 只管 `.equal` 的分配方式；百分比模式的金额来自调用方，
+    /// 除不尽时必然凑不齐（曾实测 ¥7.77 按 33/33/34 → `256+256+264 = 776` ≠ 777），
+    /// 于是 `settlementStatus` 永远到不了 `.settled`、「一键结算」按钮永不消失。
+    /// 现由 `SplitServiceImpl.balancedToTotal`（在 switch 之后统一兜底）补齐。
     ///
-    /// 这条**刻意断言当前的错误结果**（characterization test），作用有二：
-    /// ① 让缺口可执行、不会被忘掉；② 将来谁修了百分比模式，这条会立刻变红，逼他更新清单。
-    /// 待办与修法（约 3 行归一化）见 `.claude/plans/release-checklist.md` §六-8-2。
-    ///
-    /// 数字实测而来，**注意用 `Decimal(string:)` 而不是 `Decimal(7.77)`** ——
-    /// 后者是 Double 字面量转换，实际是 `7.769999999999997952`，会让探针误报「合计正好相等」。
-    func test_percentage_knownGap_sumCanBeLessThanTotal() throws {
+    /// ⚠️ 数字用 `Decimal(string:)` 取精确小数，**不能写 `Decimal(7.77)`** ——
+    /// 那是 Double 字面量转换，实际是 `7.769999999999997952`，会让断言失真。
+    func test_percentage_unevenShares_sumEqualsTotal() throws {
         let ledger = context.makeLedger()
         let account = context.makeAccount("现金", ledger: ledger)
         let members = (1...3).map { context.makeMember("成员\($0)", ledger: ledger) }
@@ -359,14 +356,82 @@ final class SplitServiceTests: CoreDataTestCase {
         )
 
         XCTAssertEqual(group.totalAmountInFen, 777)
-        let fenSum = (group.entries ?? []).reduce(Int64(0)) { $0 + $1.amountInFen }
-        XCTAssertEqual(fenSum, 776, "已知缺口：256+256+264，比总额少 1 分")
+
+        let entries = (group.entries ?? [])
+        XCTAssertEqual(entries.map(\.amountInFen).sorted(), [256, 256, 265])
+        // 差额必须落在**输入顺序的最后一名**。上面的 sorted() 是多重集断言，只说"这几个
+        // 值存在"，不说"哪个值属于哪个成员" —— members 与 amounts 是两个按下标对齐的数组，
+        // 错位时 sorted() 照样通过。故按成员反查（entries 是 Set，顺序不定）
+        let fenByMember = Dictionary(
+            uniqueKeysWithValues: entries.compactMap { e in e.member.map { ($0.id, e.amountInFen) } }
+        )
+        XCTAssertEqual(fenByMember[members[0].id], 256)
+        XCTAssertEqual(fenByMember[members[1].id], 256)
+        XCTAssertEqual(fenByMember[members[2].id], 265, "多出的 1 分应补给最后一名成员")
 
         try service.settleSplit(group, context: context)
-        XCTAssertNotEqual(
-            group.settlementStatus, .settled,
-            "已知缺口：付清也到不了 .settled。修好后这条会红 —— 届时改成 XCTAssertEqual 并更新清单 §六-8-2"
+        XCTAssertEqual(group.remainingAmount, 0)
+        XCTAssertEqual(group.settlementStatus, .settled, "合计补齐后付清必须能到 .settled")
+    }
+
+    /// `.fixed` 模式：金额框允许三位小数，合计校验过得去但按分截断后仍差 1 分
+    ///
+    /// `SplitFormView` 的金额框是 `TextField(value:format: .number)`，解析出的 `Decimal`
+    /// 是精确的（实测 `33.333` 就是 `33.333`），于是 `33.333 + 66.667 == 100` 校验通过，
+    /// 但按分截断得 `3333+6666 = 9999` ≠ 10000 —— 同一类缺口，同样由 `balancedToTotal` 补齐。
+    func test_fixed_subFenAmounts_sumEqualsTotal() throws {
+        let ledger = context.makeLedger()
+        let account = context.makeAccount("现金", ledger: ledger)
+        let m1 = context.makeMember("A", ledger: ledger)
+        let m2 = context.makeMember("B", ledger: ledger)
+
+        let total = Decimal(100)
+        let amounts = [Decimal(string: "33.333")!, Decimal(string: "66.667")!]
+        XCTAssertEqual(amounts.reduce(0, +), total, "调用方给的两份合计恰好等于总额，校验拦不住")
+
+        let tx = context.makeTransaction(amount: -total, account: account, ledger: ledger)
+        let group = try service.createSplit(
+            totalAmount: total, currencyCode: "CNY", splitType: .fixed,
+            members: [m1, m2], amounts: amounts, note: nil, date: Date(),
+            transaction: tx, ledger: ledger, context: context
         )
+
+        let entries = (group.entries ?? [])
+        XCTAssertEqual(entries.map(\.amountInFen).sorted(), [3333, 6667])
+        let fenByMember = Dictionary(
+            uniqueKeysWithValues: entries.compactMap { e in e.member.map { ($0.id, e.amountInFen) } }
+        )
+        XCTAssertEqual(fenByMember[m1.id], 3333)
+        XCTAssertEqual(fenByMember[m2.id], 6667, "差额 1 分补给最后一份（m2 是按输入顺序的最后一名）")
+    }
+
+    /// `SplitServiceImpl.balancedToTotal`：合计恒等于总额，差额落在最后一份
+    func test_balancedToTotal_invariants() {
+        func d(_ s: String) -> Decimal { Decimal(string: s)! }
+
+        XCTAssertTrue(
+            SplitServiceImpl.balancedToTotal([], totalAmount: 100).isEmpty,
+            "空数组必须原样返回 —— 否则 fen.count - 1 越界崩"
+        )
+
+        let cases: [(amounts: [Decimal], total: Decimal, expected: [Int64])] = [
+            ([d("100"), d("100"), d("100")], d("300"), [10000, 10000, 10000]),      // 本来就平 → 空操作
+            ([d("33.33"), d("33.33"), d("33.33")], d("100"), [3333, 3333, 3334]),   // 调用方自己就差 1 分
+            // 输入合计**恰好**等于总额，仍差 2 分 —— 这是 `.percentage` 的真实形状：
+            // ¥99.99 按 33/33/34 逐份截断得 3299/3299/3399，与注释里引的例子同源
+            ([d("32.9967"), d("32.9967"), d("33.9966")], d("99.99"), [3299, 3299, 3401]),
+            ([d("0"), d("0"), d("0")], d("0"), [0, 0, 0]),
+            ([d("1"), d("2"), d("3")], d("0"), [100, 200, -300]),                   // 故意对不上：最后一份全额吸收
+        ]
+        // 三位小数（33.333 + 66.667 == 100、截断后 9999）已由 test_fixed_subFenAmounts_sumEqualsTotal
+        // 端到端覆盖，这里不再重复一行
+
+        for c in cases {
+            let out = SplitServiceImpl.balancedToTotal(c.amounts, totalAmount: c.total)
+            let fen = out.map(\.fenValue)
+            XCTAssertEqual(fen, c.expected, "输入 \(c.amounts) 总额 \(c.total)")
+            XCTAssertEqual(fen.reduce(Int64(0), +), c.total.fenValue, "合计必须等于总额")
+        }
     }
 
     /// settleSplit：已付的 entry 不修改
