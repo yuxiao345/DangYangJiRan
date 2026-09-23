@@ -112,10 +112,10 @@ struct TransactionListContent: View {
                         Text(selectedDate != nil ? "当天没有交易记录" : "本月暂无交易记录")
                             .font(.designBodyCaption).foregroundStyle(Color.designOnSurfaceVariant).padding(.top, 40)
                     } else {
-                        ForEach(groupedByDate, id: \.key) { group in
-                            Text(group.key).font(.designBodyCaption).foregroundStyle(Color.designOnSurfaceVariant)
+                        ForEach(groupedByDate) { group in
+                            Text(group.title).font(.designBodyCaption).foregroundStyle(Color.designOnSurfaceVariant)
                                 .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 6)
-                            ForEach(group.value) { t in
+                            ForEach(group.transactions) { t in
                                 Button {
                                     selectedTransaction = t
                                 } label: {
@@ -358,8 +358,8 @@ struct TransactionListContent: View {
         return days
     }
 
-    private var groupedByDate: [(key: String, value: [Transaction])] {
-        transactions.groupedByRelativeDate()
+    private var groupedByDate: [TransactionDayGroup] {
+        transactions.groupedByDay()
     }
 
     private func load() {

@@ -258,23 +258,24 @@ struct MacSearchView: View {
     private var resultList: some View {
         ScrollView {
             VStack(spacing: 6) {
-                ForEach(groupedResults, id: \.key) { group in
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(group.key)
-                            .font(.designBodyCaption)
-                            .foregroundStyle(Color.designOnSurfaceVariant)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.leading, 4)
+                if viewModel.groupsByDay {
+                    ForEach(viewModel.dayGroups) { group in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(group.title)
+                                .font(.designBodyCaption)
+                                .foregroundStyle(Color.designOnSurfaceVariant)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.leading, 4)
 
-                        ForEach(group.value, id: \.objectID) { t in
-                            Button {
-                                selectedTransaction = t
-                            } label: {
-                                TransactionRowView(transaction: t)
-                                    .padding(.vertical, 2)
+                            ForEach(group.transactions, id: \.objectID) { t in
+                                resultRow(t)
                             }
-                            .buttonStyle(.plain)
                         }
+                    }
+                } else {
+                    // 按金额排序时日期分组标题没有意义，铺平显示（见 SearchViewModel.groupsByDay）
+                    ForEach(viewModel.sortedResults, id: \.objectID) { t in
+                        resultRow(t)
                     }
                 }
             }
@@ -282,12 +283,14 @@ struct MacSearchView: View {
         }
     }
 
-    private var groupedResults: [(key: String, value: [Transaction])] {
-        let sorted = viewModel.sortedResults
-        let grouped = Dictionary(grouping: sorted) { t in
-            t.date.formatted(date: .complete, time: .omitted)
+    private func resultRow(_ t: Transaction) -> some View {
+        Button {
+            selectedTransaction = t
+        } label: {
+            TransactionRowView(transaction: t)
+                .padding(.vertical, 2)
         }
-        return grouped.sorted { $0.key > $1.key }.map { ($0.key, $0.value.sorted { $0.date > $1.date }) }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Empty State

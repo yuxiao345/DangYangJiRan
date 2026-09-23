@@ -80,9 +80,9 @@ struct TransactionListView: View {
                         .padding(.top, 40)
                     } else {
                         let fullSettlementIDs = Set(transactions.compactMap(\.reimbursedById))
-                        ForEach(groupedByDate, id: \.key) { group in
-                            dateSectionHeader(dateKey: group.key, transactions: group.value, fullMonthSettlementIDs: fullSettlementIDs)
-                            ForEach(group.value, id: \.objectID) { transaction in
+                        ForEach(groupedByDate) { group in
+                            dateSectionHeader(title: group.title, transactions: group.transactions, fullMonthSettlementIDs: fullSettlementIDs)
+                            ForEach(group.transactions, id: \.objectID) { transaction in
                                 NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
                                     TransactionRowView(transaction: transaction)
                                 }
@@ -161,7 +161,7 @@ struct TransactionListView: View {
 
     // MARK: - Date Section Header
 
-    private func dateSectionHeader(dateKey: String, transactions: [Transaction], fullMonthSettlementIDs: Set<UUID>) -> some View {
+    private func dateSectionHeader(title: String, transactions: [Transaction], fullMonthSettlementIDs: Set<UUID>) -> some View {
         let nonTransfer = transactions.filter { t in
             guard t.type != .transfer else { return false }
             if t.type == .expense, t.isReimbursable { return false }
@@ -176,7 +176,9 @@ struct TransactionListView: View {
                 .fill(Color.designPrimaryContainer)
                 .frame(width: 6, height: 6)
 
-            Text(LocalizedStringKey(dateKey))
+            // 标题已在 dayGroupTitle 里本地化过，这里直接用 String 渲染；
+            // 再包一层 LocalizedStringKey 会拿"已经翻译好的文本"去查一次表。
+            Text(title)
                 .font(.custom("SpaceGrotesk-Medium", fixedSize: 14))
                 .foregroundStyle(Color.designOnSurfaceVariant)
 
@@ -202,8 +204,6 @@ struct TransactionListView: View {
 
     // MARK: - Grouping
 
-    private static let dateGroupLocale = Locale(identifier: "zh_CN")
-
     private var resolvedSelectedDate: Date? {
         guard let day = selectedDay else { return nil }
         var comps = Calendar.current.dateComponents([.year, .month], from: selectedMonth)
@@ -211,8 +211,8 @@ struct TransactionListView: View {
         return Calendar.current.date(from: comps)
     }
 
-    private var groupedByDate: [(key: String, value: [Transaction])] {
-        transactions.groupedByRelativeDate(locale: Self.dateGroupLocale)
+    private var groupedByDate: [TransactionDayGroup] {
+        transactions.groupedByDay()
     }
 
     // MARK: - Data Loading

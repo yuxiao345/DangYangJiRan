@@ -174,6 +174,21 @@ final class SearchViewModel {
         }
     }
 
+    /// 仅当按日期排序时，列表才按天分组。按金额排序时分组标题没有意义，视图直接铺平用
+    /// `sortedResults`（见 `SearchView` / `MacSearchView` 的 `resultList`）。
+    var groupsByDay: Bool { sortOrder == .dateDesc }
+
+    /// 搜索结果按天分组，组间按真实日期倒序，组内按真实时间倒序。
+    ///
+    /// 分组身份与排序统一由 `groupedByDay` 用 `Date` 提供 —— 原先两端各写一份、拿完整
+    /// 日期字符串当 key 再按字符串 `>` 比较，得到的是 Unicode 码位序而非日期序。
+    ///
+    /// 标题用 `.fullDate` 而不是流水列表那种「今天/昨天/月日」—— 搜索结果可能跨年，
+    /// 不带年份的标题在跨年结果里分不清是哪一年。
+    var dayGroups: [TransactionDayGroup] {
+        sortedResults.groupedByDay(titleStyle: .fullDate)
+    }
+
     var hasManualFilters: Bool {
         !selectedCategoryIDs.isEmpty || !selectedMemberIDs.isEmpty || !selectedMerchantIDs.isEmpty || !selectedProjectIDs.isEmpty
         || dateFrom != nil || dateTo != nil || amountMin != nil || amountMax != nil

@@ -167,41 +167,26 @@ struct AccountDetailView: View {
         .glassCard(cornerRadius: 12)
     }
 
-    // MARK: - Running Balance
-
-    /// 每个日期组的期末余额 (key = 日期标签, value = 该日交易后的余额)
-    private var dateBalances: [String: Decimal] {
-        let groups = transactionDateGroups
-        var result: [String: Decimal] = [:]
-        var running = balance
-        // groups 从最新到最旧排列，从当前余额逐步回推
-        for group in groups {
-            result[group.key] = running
-            let dayNet = group.value.reduce(Decimal.zero) { $0 + $1.ledgerAmount }
-            running -= dayNet
-        }
-        return result
-    }
-
     // MARK: - Transaction List
 
     @ViewBuilder
     private var transactionList: some View {
         let groups = transactionDateGroups
-        let balances = dateBalances
-        ForEach(groups, id: \.key) { group in
+        // 余额直接由 `groups` 回推，只分组一次（不要再用 computed property 重复调 groupedByDay）。
+        let balances = groups.dailyClosingBalances(startingFrom: balance)
+        ForEach(groups) { group in
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text(group.key)
+                    Text(group.title)
                         .font(.designLabel)
                         .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
                     Spacer()
-                    if let dayBalance = balances[group.key] {
+                    if let dayBalance = balances[group.day] {
                         CurrencyText(amount: dayBalance, currencyCode: account.currencyCode, size: 13, foregroundColor: Color.designOnSurfaceVariant.opacity(0.6))
                     }
                 }
 
-                ForEach(group.value, id: \.objectID) { t in
+                ForEach(group.transactions, id: \.objectID) { t in
                     NavigationLink {
                         TransactionDetailView(transaction: t)
                     } label: {
@@ -215,8 +200,8 @@ struct AccountDetailView: View {
 
     // MARK: - Date grouping
 
-    private var transactionDateGroups: [(key: String, value: [Transaction])] {
-        transactions.groupedByRelativeDate()
+    private var transactionDateGroups: [TransactionDayGroup] {
+        transactions.groupedByDay()
     }
 
     // MARK: - Load

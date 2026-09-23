@@ -98,46 +98,35 @@ struct AccountDetailContent: View {
 
     // MARK: - Transaction List with Date Groups
 
-    private var transactionDateGroups: [(key: String, value: [Transaction])] {
-        transactions.groupedByRelativeDate()
-    }
-
-    private var dateBalances: [String: Decimal] {
-        let groups = transactionDateGroups
-        var result: [String: Decimal] = [:]
-        var running = balance
-        for group in groups {
-            result[group.key] = running
-            let dayNet = group.value.reduce(Decimal.zero) { $0 + $1.amount }
-            running -= dayNet
-        }
-        return result
+    private var transactionDateGroups: [TransactionDayGroup] {
+        transactions.groupedByDay()
     }
 
     @ViewBuilder
     private var transactionList: some View {
         let groups = transactionDateGroups
-        let balances = dateBalances
+        // 余额直接由 `groups` 回推，只分组一次（不要再用 computed property 重复调 groupedByDay）。
+        let balances = groups.dailyClosingBalances(startingFrom: balance)
 
         if transactions.isEmpty {
             Text("暂无交易记录")
                 .foregroundStyle(Color.designOnSurfaceVariant)
                 .padding(.top, 20)
         } else {
-            ForEach(groups, id: \.key) { group in
+            ForEach(groups) { group in
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text(group.key)
+                        Text(group.title)
                             .font(.designLabel)
                             .foregroundStyle(Color.designOnSurfaceVariant.opacity(0.6))
                         Spacer()
-                        if let dayBalance = balances[group.key] {
+                        if let dayBalance = balances[group.day] {
                             CurrencyText(amount: dayBalance, currencyCode: account.currencyCode,
                                          size: 13, foregroundColor: Color.designOnSurfaceVariant.opacity(0.6))
                         }
                     }
 
-                    ForEach(group.value, id: \.objectID) { t in
+                    ForEach(group.transactions, id: \.objectID) { t in
                         Button {
                             selectedTransaction = t
                         } label: {

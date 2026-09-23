@@ -238,15 +238,18 @@ struct SearchView: View {
 
     private var resultList: some View {
         List {
-            ForEach(groupedResults, id: \.key) { group in
-                Section(group.key) {
-                    ForEach(group.value, id: \.objectID) { transaction in
-                        NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
-                            TransactionRowView(transaction: transaction)
+            if viewModel.groupsByDay {
+                ForEach(viewModel.dayGroups) { group in
+                    Section(group.title) {
+                        ForEach(group.transactions, id: \.objectID) { transaction in
+                            resultRow(transaction)
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("search-result-cell")
                     }
+                }
+            } else {
+                // 按金额排序时日期分组标题没有意义，铺平显示（见 SearchViewModel.groupsByDay）
+                ForEach(viewModel.sortedResults, id: \.objectID) { transaction in
+                    resultRow(transaction)
                 }
             }
         }
@@ -254,12 +257,12 @@ struct SearchView: View {
         .accessibilityIdentifier("search-results-list")
     }
 
-    private var groupedResults: [(key: String, value: [Transaction])] {
-        let sorted = viewModel.sortedResults
-        let grouped = Dictionary(grouping: sorted) { t in
-            t.date.formatted(date: .complete, time: .omitted)
+    private func resultRow(_ transaction: Transaction) -> some View {
+        NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
+            TransactionRowView(transaction: transaction)
         }
-        return grouped.sorted { $0.key > $1.key }.map { ($0.key, $0.value.sorted { $0.date > $1.date }) }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("search-result-cell")
     }
 
     // MARK: - Empty State
