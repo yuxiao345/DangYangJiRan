@@ -73,8 +73,9 @@
 - **三个坏场景**：① 一笔大额支出分次报销 → 第一笔收入就把整笔标成已报销；② 金额不一致
   （记 900 只报 890）→ 差额永久挂在 pending，没有「差额弃权」出口；③ 多笔支出合一张报销单 → 当前 OK。
 - 改造方向：加 `reimbursedAmount`（参考借贷的 `settledAmountInFen` 分次冲销模型）+「差额弃权」终态。
-- 📌 **同一片区的另一个线索**：删除「已报销支出」时的级联删除断言也被 `XCTSkipIf(true)` 关掉了，
-  而代码里那段级联逻辑**看起来已经存在** —— 见 §六-6，需复核。
+- 📌 **同一片区的另一个线索**：删除「已报销支出」时的级联删除断言曾被 `XCTSkipIf(true)` 关掉，
+  2026-09-24 复核确认**级联本身是好的**（是测试断言写错，见 §六-6）——**本项（部分冲销）仍是真的缺口**，
+  两者不是一回事。
 
 ### 4. i18n：332 条缺 `en`
 
@@ -247,39 +248,69 @@
 - **`.claude/agents/` 下的 `pbxproj-checker`** 的去留从未定论。（原先并列的 `generate_xcodeproj.py`
   已于 2026-09-24 删除，见 §二-5。）
 
-### 6. 被 `XCTSkipIf(true)` 挡住的两个 service 断言 —— 至少一个**疑似已修**，需复核
+### 6. 被 `XCTSkipIf(true)` 挡住的两个 service 断言 —— **已复核定性：① 是真 bug，② 是测试写错**
 
 2026-09-24 跑 iOS 单测实测：`288` 执行 / `284` 通过 / **4 跳过** / 0 失败。4 个跳过全是
-**无条件** `XCTSkipIf(true, …)`（不是环境性跳过，是主动关掉的断言）。其中 2 个指向 service 层，
-**当前没有任何测试在验证它们**：
+**无条件** `XCTSkipIf(true, …)`。用户批准后把下面两处暂时去掉跑了一次（**跑完已完全还原，
+两个测试文件与 HEAD 字节一致**），结论如下：
 
-| 被关掉的断言 | 位置 | 跳过理由原文 |
+| 断言 | 位置 | 裁定 |
 |---|---|---|
-| ① `SplitEntry.amountInFen` 应为 `3333` | `钱伲Tests/Unit/Services/SplitServiceTests.swift:60`（另有 `ExportServiceTests.swift:228`、`:263` 同源） | 「`SplitServiceImpl` 创建 entry 后 `amountInFen` 写为 0」 |
-| ② 删除已报销支出后，关联的报销收入应被级联删除 | `钱伲Tests/Unit/Services/TransactionServiceTests.swift:618` | 「`deleteTransaction` 用 `try?` 吞错未级联删除 income」 |
+| ① `SplitEntry.amountInFen` 应为 `3333`（100÷3） | `钱伲Tests/Unit/Services/SplitServiceTests.swift:60` | 🔴 **真 bug，根因已锁定** |
+| ② 删除已报销支出后关联收入应被级联删除 | `钱伲Tests/Unit/Services/TransactionServiceTests.swift:618` | ✅ **级联正常，是测试断言写错** |
 
-**本轮核实（读代码，未复现）：**
+#### ① 真 bug：除不尽的 `Decimal` 会让金额变成 **0**
 
-- **① 未能证实也未能证伪。** `SplitEntry.amountInFen` 字段确实存在（`SplitEntryEntity.swift:7`，
-  由 `amount` setter `:15-17` 写入），`SplitServiceImpl.swift:42` 也确实传了 `amount: entryAmounts[index]`。
-  跳过注释里的猜测是「splitChildren fault 触发 save 重写」——**这是个待查的真问题域**，需要单独排查。
-- **② 的跳过理由很可能是过期的。** `TransactionServiceImpl.deleteTransaction:264-270` **已经写了**
-  级联删除：`type == .expense && isReimbursable && reimbursedById != nil` → fetch 关联 income → `context.delete`。
-  且 `isReimbursable`（`TransactionEntity.swift:56`）= `reimbursementStatus != .none`，`.approved` 能通过判断。
-  也就是「代码里缺的那段现在有了」——**很可能是后来补的修复，而测试跳过没再打开**。
-- ⚠️ **②的跳过字符串里方法名是错的**：写的是 `TransactionServiceImpl.deleteReimbursableExpense`，
-  但该符号**全仓库只在测试文件里出现，代码中不存在**（真名是 `deleteTransaction`）。
-  同文件的文档注释（`:614`）写的是对的。**别人照这个字符串去搜会搜不到。**
+实测失败：`XCTAssertEqual failed: ("0") is not equal to ("3333")`。
+根因**不在 service 逻辑，在 `Decimal → Int64` 的转换**（`SplitEntryEntity.swift:17`）：
 
-**复核方法（需要动测试文件，等用户点头）**：把这两处 `XCTSkipIf(true, …)` 暂时去掉跑一次——
-① 若通过则跳过理由过期；② 若通过则确认修复已生效、跳过该删。**这是唯一能定性的办法**，
-读代码只能得到「代码看起来是有的」。
+```swift
+set { amountInFen = Int64(truncating: (newValue * 100) as NSDecimalNumber) }
+```
 
-**风险**：①若为真，AA 分账的毫厘差额会丢成 0；②若为真，删除可报销支出会残留孤儿收入（与 §二-3 同片区）。
+**独立复现**（不依赖 Core Data 的最小探针）：
 
-**⚠️ 计数纪律（本次又踩一次）**：Mac 用例数我第一遍用 `grep` 数出 **41**，`xcrun xcresulttool`
-给的是 **42** —— 日志里有一行被 stdout 交错截断成 `g_excluded()' passed on 'My Mac`，正则匹配不到。
-**权威计数一律以 `.xcresult` 为准，不要数日志行**（与 CLAUDE.md 里「数警告要主行去重」同源）。
+| 值 | `Int64(truncating:)` | `NSDecimalRound(…, .plain)` + `NSDecimalNumber(decimal:).int64Value` |
+|---|---|---|
+| `300/3` = 100（能整除） | `10000` ✅ | `10000` ✅ |
+| `100/3` = 33.3333…（35 位有效数字） | **`0`** ❌ | `3333` ✅ |
+| `100/7`、`100/6`、`100/9`、`1000/3` | **全部 `0`** ❌ | 正确 |
+| 汇率换算 `712.3456789` / `712.34` / `712` | `71234` / `71234` / `71200` ✅ | 同 |
+
+→ **`Int64(truncating: NSDecimalNumber)` 对高精度小数返回 0**；凡是 `Decimal` 除法除不尽
+（`Decimal` 最多 38 位、除不尽时填满精度）都会中招。**能整除就正常**，这正是它长期没被发现的
+原因 —— 同文件的 `test_createSplit_equal_dividesEvenly`（300÷3）一直是绿的。
+
+- **影响面**：`SplitServiceImpl.createSplit:33` 的 `.equal` 模式（`totalAmount / Decimal(members.count)`）
+  → **AA 分账只要除不尽，所有人的分摊金额都是 0**。`.percentage`/`.fixed` 用的是外部传入金额，
+  若调用方自己算过除法也会中招。
+- **`TransactionEntity.swift:76` 是同一写法**，但真实汇率换算产出的是有限小数，实测**未受影响** ——
+  是同一模式的隐患，不是当前故障。
+- **修法**：改成 `NSDecimalRound(&rounded, &value, 0, .plain)`（或 `.down`）+ `NSDecimalNumber(decimal:).int64Value`。
+  ⚠️ 注意 `.plain` 会**四舍五入**（`71234.56 → 71235`），而今天是**截断**（`→ 71234`）——对
+  `TransactionEntity` 而言这是行为变更，需单独决策。AA 分账更常见的做法是「各自向下取整 + 余数分配」。
+- **未修**：等用户决定。跳过语句在修好之前应保留。
+
+#### ② 不是 bug：级联删除是好的，`isDeleted` 断言无效
+
+去掉跳过后该断言确实失败（`income.isDeleted == false`），但**深挖发现是实现行为误导了测试**：
+
+```
+TEMP_DIAG after-delete incomeRows=0 expenseRows=0 incomeIsDeleted=false hasChanges=false
+```
+
+「按照 `id` 重新 fetch，两行都查不到了」+ `hasChanges=false` → **级联删除已经生效并落盘**。
+`isDeleted` 之所以是 `false`，是因为 `deleteTransaction` 结尾 post 了 `.transactionDidChange`，
+之后 context 被 `reset()`（对象退化成 fault），而 **fault 上的 `isDeleted` 恒为 `false`**
+—— 连它自己删掉的 `expense` 也报 `false`，这就是自相矛盾的信号。
+
+- **正确修法**：断言改用「重新 fetch 该 `id` 应为空」，**不要用 `isDeleted`**。
+- ⚠️ **跳过字符串里方法名是错的**：写的是 `TransactionServiceImpl.deleteReimbursableExpense`，
+  该符号**全仓库只在测试文件里出现、代码中不存在**（真名 `deleteTransaction`；同文件 `:614` 的
+  文档注释写对了）。**照这个字符串去搜会搜不到。**
+- 另外 2 处同源的跳过（`ExportServiceTests.swift:228`、`:263`）其实是把测试**改名成 `disabled_…`**
+  退出收集，里面的 `throw XCTSkip` 是永不执行的死代码 —— 这也是「6 处 skip 语句 vs 只报 4 个 skipped」的由来。
+  **`disabled_` 前缀等于静默删除测试**，属于另一类卫生问题。
 
 ---
 
@@ -360,6 +391,13 @@ xcodebuild -project FirstCC.xcodeproj -scheme Qianeymac -destination "platform=m
   已整段重写。
   *教训：验「上架会怎样」必须用**上架用的那个 configuration**（Release），
   Debug 结论不能外推到 Release。项目里已有同类纪律（[[feedback_verify_api_by_compile_not_grep]]）。*
+- **2026-09-24 六次修订（用户批准后做实验）**：把 §六-6 那两处 `XCTSkipIf(true, …)` 暂时去掉实跑，
+  跑完**已完全还原**（两个测试文件与 HEAD 字节一致，已用 `git diff HEAD` 验证）。结论：
+  **① 是真 bug（根因锁定，见 §六-6）、② 不是 bug（级联正常，是测试断言写错）**。
+  *过程中一个值得记住的行为*：`deleteTransaction` 结尾发通知后 context 被 `reset()`，
+  对象退化为 fault，而 **fault 上的 `isDeleted` 恒为 `false`** —— 我一开始把 `income.isDeleted == false`
+  当成「没删除」的证据，差点把「测试写错」误记成「产品 bug」。改用「按 id 重新 fetch 应为空」才看清真相。
+  *教训：判断「行没了没有」要查 store，不要问内存对象的 `isDeleted`。*
 - **2026-09-24 五次修订（完整工作流复跑）**：按用户要求把工作流严格跑了一遍 ——
   ① **双端全量构建**均 `BUILD SUCCEEDED`（iOS 真编 320 个 `.swift`、Mac 359 个，0 error；
   警告 70 / 93 条，均既有、与本次清理无关）；② **单测全绿**（iOS 284 通过 / 4 跳过 / 0 失败，
