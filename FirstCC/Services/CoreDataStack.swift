@@ -2,6 +2,32 @@ import Foundation
 @preconcurrency import CoreData
 import CloudKit
 
+/// 进程内唯一的 CoreData 模型，app 与测试栈共用这一份。
+///
+/// 为什么必须单例：`NSManagedObject.init(context:)`（即 `Entity(context:)`）内部走
+/// `+[NSManagedObject entity]`，而它只按**类名**在整个进程注册过的模型里查实体描述。
+/// 进程里一旦存在第二份 `NSManagedObjectModel` 实例（同一个子类被两个模型声称），
+/// `+entity` 会返回一个空的实体描述并打 `Failed to find a unique match` 错误日志，
+/// 随后 `Entity(context:)` 的兜底行为不稳定：有时回落到 context 所属模型，有时给对象
+/// 绑上另一份模型的实体，`save()` 便报 `NSPersistentStoreIncompatibleSchemaError (134020)`
+/// （"用来打开储存的型号配置与用来创建该储存的型号配置不兼容"）。
+///
+/// 因此绝不要在别处再 `NSManagedObjectModel(contentsOf:)`，也不要 `model.copy()`——
+/// copy 会产生新的实体描述，同样制造歧义。任何栈（生产或测试用 in-memory）都复用这一份实例。
+enum CoreDataModel {
+    static let shared: NSManagedObjectModel = {
+        // 用 Bundle(for:) 而非 Bundle.main：前者按真正包含 .momd 的 bundle 解析，
+        // 生产、宿主 app 测试、无宿主测试三种形态都成立。
+        guard let modelURL = Bundle(for: Ledger.self).url(forResource: "FirstCC", withExtension: "momd") else {
+            fatalError("CoreDataModel: FirstCC.momd not found")
+        }
+        guard let model = NSManagedObjectModel(contentsOf: modelURL) else {
+            fatalError("CoreDataModel: Failed to load NSManagedObjectModel")
+        }
+        return model
+    }()
+}
+
 @Observable
 @MainActor
 final class CoreDataStack {
@@ -37,19 +63,14 @@ final class CoreDataStack {
             DiagnosticLog.log("CoreDataStack: UITEST_MODE detected, using in-memory store + skipping CloudKit")
         }
 
-        guard let modelURL = Bundle.main.url(forResource: "FirstCC", withExtension: "momd") else {
-            fatalError("CoreDataStack: FirstCC.momd not found")
-        }
-        guard let model = NSManagedObjectModel(contentsOf: modelURL) else {
-            fatalError("CoreDataStack: Failed to load NSManagedObjectModel")
-        }
+        // 复用进程内唯一的那份模型（见 CoreDataModel 的说明），不要在这里再建一份。
 
         // In UITEST_MODE: force cloudKitAvailable=false so all CloudKit branches are skipped.
         // Real production behavior unchanged when -UITEST_MODE is not passed.
         cloudKitAvailable = !isUITestMode && FileManager.default.ubiquityIdentityToken != nil
         DiagnosticLog.log("CoreDataStack: cloudKitAvailable=\(cloudKitAvailable)")
 
-        container = NSPersistentCloudKitContainer(name: "FirstCC", managedObjectModel: model)
+        container = NSPersistentCloudKitContainer(name: "FirstCC", managedObjectModel: CoreDataModel.shared)
 
         let appSupport = URL.applicationSupportDirectory
         privateURL = appSupport.appending(path: "FirstCC.sqlite")

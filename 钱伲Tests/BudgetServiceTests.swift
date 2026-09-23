@@ -2,35 +2,19 @@ import XCTest
 @preconcurrency import CoreData
 @testable import 钱伲
 
-final class BudgetServiceTests: XCTestCase {
+/// context 由 `CoreDataTestCase` 提供；勿自建 `NSManagedObjectModel`（原理见 `CoreDataModel`）。
+final class BudgetServiceTests: CoreDataTestCase {
 
-    var context: NSManagedObjectContext!
     var service: BudgetServiceImpl!
 
     override func setUp() {
         super.setUp()
-        context = createInMemoryContext()
         service = BudgetServiceImpl()
     }
 
     override func tearDown() {
-        context = nil
         service = nil
         super.tearDown()
-    }
-
-    // MARK: - Test Infrastructure
-
-    private func createInMemoryContext() -> NSManagedObjectContext {
-        guard let modelURL = Bundle(for: BudgetBook.self).url(forResource: "FirstCC", withExtension: "momd"),
-              let model = NSManagedObjectModel(contentsOf: modelURL) else {
-            fatalError("Failed to load CoreData model from bundle")
-        }
-        let coordinator = NSPersistentStoreCoordinator(managedObjectModel: model)
-        try! coordinator.addPersistentStore(ofType: NSInMemoryStoreType, configurationName: nil, at: nil)
-        let ctx = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
-        ctx.persistentStoreCoordinator = coordinator
-        return ctx
     }
 
     // MARK: Helpers
