@@ -1,6 +1,6 @@
 # Swift 6 迁移：Core Data model 共享与全局状态
 
-> 生成日期：2026-09-23
+> 生成日期：2026-09-23 ／ 修订：2026-09-24（§3.2 结论更正，新增 §3.5 阻断项清单）
 > 起因：审查 `FirstCC/Services/CoreDataStack.swift:17` 的 `CoreDataModel.shared` 在 Swift 6 下的合规性。
 > 结论已超出「一行代码」的范围 —— 它牵出的是「进程内只允许一份 `NSManagedObjectModel`」这条约束的出处，
 > 以及 Apple 对这个场景到底说了什么。
@@ -15,7 +15,7 @@
 | 将来 Swift 6 会怎么报？ | iOS 模块在**声明侧**报 `#MutableGlobalVariable`（error）；Mac 因 `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` 改为**消费侧**报 actor 隔离警告 |
 | 正解是什么？ | `nonisolated(unsafe) static let shared: NSManagedObjectModel` —— 实测 5 种配置下唯一全清的写法 |
 | 最大的风险？ | **不是这一行**，是它与 Mac 测试 Suite 上 `@MainActor` 的纠缠（见「五、风险登记」） |
-| 这一行能代表 Swift 6 迁移吗？ | **不能。** Mac app target 全量构建有 **12 个** `#NonSendableInAsyncConformanceOrOverride`，那些在 Swift 6 下也是 error |
+| 这一行能代表 Swift 6 迁移吗？ | **不能。** 全项目实测共 **6 个** Swift 6 阻断项（Mac 5 + iOS 1），它们在 Swift 6 下也是 error —— 清单见 **§3.5** |
 
 **一句话总纲**：现在这份 `CoreDataModel.shared` 是 **Apple-conformant（符合 Apple 写明的约束），
 但不是 Apple-documented recipe（Apple 从没为「app 与测试共处一进程」提供过配方）。**
@@ -206,17 +206,42 @@ Apple 文档化的**共享**手段是 `init(name:managedObjectModel:)` 注入 �
 @_Concurrency::MainActor @preconcurrency @_hasInitialValue public static let shared: CoreData::NSManagedObjectModel
 ```
 
-### 3.2 消费侧：`@testable import` 在 Swift 5 下**不做这项检查**
+### 3.2 消费侧：「0 警告」的真原因（🔁 2026-09-24 更正）
 
-这是「为什么现在 0 警告」的答案。对照实验（模块声明为 `@MainActor` 隔离，消费侧从 nonisolated 上下文访问）：
+> **本节原写「`@testable import` 在 Swift 5 下不做这项检查」—— 错。**
+> 那个结论建立在一组**同时改了两个变量**的对照实验上（`public` vs `internal` 访问级别
+> **与** `plain` vs `@testable` 导入一起变了），把因归错了变量。下面是隔离变量后的重测。
 
-| 消费侧写法 | Swift 5 | Swift 6 |
-|---|---|---|
-| 普通 `import` | ⚠️ 报 `main actor-isolated static property 'shared' can not be referenced from a nonisolated context` | ⚠️ 报 |
-| **`@testable import`** | ✅ **不报** | ⚠️ 报 |
+**重测方法**：声明侧固定为「`@MainActor` 隔离的 `static let shared: NSManagedObjectModel`」，
+只逐个改变四个自变量 —— `enum` / `final class` 声明形态 × 显式 `@MainActor` / 由
+`-default-isolation` 推断 × `plain import` / `@testable import` × Swift 5 / Swift 6：
 
-本项目 `QianeymacTests/*` 与 `钱伲Tests/*` **清一色用 `@testable import`**。
-所以现在的「全绿」是**编译器没查，不是写法合法**。
+| 声明形态 | 隔离来源 | 导入方式 | Swift 5 | Swift 6 |
+|---|---|---|---|---|
+| `enum` | 显式 `@MainActor` | `@testable` | ⚠️ 报 | ⚠️ 报 |
+| `final class` | 显式 `@MainActor` | `@testable` | ⚠️ 报 | ⚠️ 报 |
+| `enum` | 推断（`-default-isolation`） | `@testable` | ⚠️ 报 | ⚠️ 报 |
+| `final class` | 推断（`-default-isolation`） | `@testable` | ⚠️ 报 | ⚠️ 报 |
+
+→ **`@testable import` 完全不掩盖这个诊断。** Swift 5 下照样从 nonisolated 上下文报
+`main actor-isolated static property 'shared' can not be referenced from a nonisolated context`。
+
+（`plain import` 那几格因声明是 `internal` 而报 `cannot find 'Holder' in scope`，测不成，
+故未列入上表；能测的都是 `@testable` 那几格，也正是本项目实际使用的形态。）
+
+**那 Mac 测试 target 为什么是 0 警告？** 因为那里唯一一处访问**本身就合法**：
+`QianeymacTests/BudgetServiceTests.swift:48` 的 `CoreDataModel.shared` 位于
+`@MainActor` 标注的 Suite 内（同文件 `:23`）。**它不是被掩盖，是真的合规。**
+
+两条佐证：
+
+1. `5c7e08c` 把「测试改用 `CoreDataModel.shared`」和「Suite 加 `@MainActor`」写进了
+   **同一个 commit** —— 从来不存在过「未加 `@MainActor` 却访问该单例」的状态，
+   所以那个「被掩盖的违规」本来就不存在。
+2. 新鲜 Mac 全量构建日志里 `can not be referenced from a nonisolated context` = **0 条**。
+
+**但迁移风险依然成立**（见 R1）：Mac 那个 `@MainActor` 一旦被当成「多余的清理」删掉，
+会**同时**放回 Core Data 线程违规**和**这条隔离诊断。
 
 ### 3.3 三种写法的诊断矩阵
 
@@ -241,9 +266,66 @@ Apple 文档化的**共享**手段是 `init(name:managedObjectModel:)` 注入 �
 | `钱伲Tests/TestSupport/InMemoryCoreDataStack.swift:19` | `@testable import 钱伲` | 被声明侧 error 先挡住 |
 | `QianeymacTests/BudgetServiceTests.swift:48` | `@testable import Qianeymac`，Suite 标了 `@MainActor` | ✅ 合法 |
 
-**注意最后一行**：Mac 测试现在恰好合法，**只是因为 Suite 上标了 `@MainActor`**。
+**注意最后一行**：Mac 测试现在恰好合法，**只是因为 Suite 上标了 `@MainActor`**——
+是**真合法**，不是编译器漏查（机制见 §3.2）。
 
-### 3.5 Swift 语言层依据（SE-0412）
+### 3.5 全项目 Swift 6 阻断项清单（2026-09-24，三次独立全量构建去重测量）
+
+**计数方法（重要）**：clean derivedDataPath 全量构建 × 3，只取以
+`^/Users/…: warning:` 开头的**主行**去重。**不要**用「日志里含某句话的行数」计数 ——
+每条警告会打主行 + `| \`- warning:` 续行，增量总结阶段还会再重复打印一次，**行数必然虚高**。
+（本文件初版的「12 个」就是这么来的：实际 5 条，数成了 12 行。）
+
+**A. Mac app target —— 5 条**（三次构建名单完全一致）
+
+| 位置 | 方法 | 问题 |
+|---|---|---|
+| `FirstCC/Services/Implementations/ExchangeRateServiceImpl.swift:9:10` | `fetchRate(from:to:context:)` | 返回非 Sendable 的 `ExchangeRate` |
+| `FirstCC/Services/Implementations/SyncServiceImpl.swift:115:10` | `fetchParticipants(for:)` | 传入非 Sendable 的 `Ledger` |
+| `…/SyncServiceImpl.swift:268:10` | `discoverShare(for:)` | 同上 |
+| `…/SyncServiceImpl.swift:297:10` | `validateShare(for:)` | 同上 |
+| `…/SyncServiceImpl.swift:327:10` | `removeParticipant(_:from:)` | 同上 |
+
+全部标 `[#NonSendableInAsyncConformanceOrOverride]`，正文形如
+*"non-Sendable type 'X' cannot be returned from / sent … main actor-isolated implementation to
+caller of protocol requirement 'Y'; this is an error in the Swift 6 language mode"*。
+
+**共同点与根因**：**代码全在共享层，却只在 Mac 出现。** Mac app target 独有
+`SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`（`project.pbxproj` 仅两处：1836 / 1878），
+使这 5 个 impl 被推断为 MainActor 隔离；而 `FirstCC/Services/Protocols/` 里对应的
+`func` requirement 是 nonisolated（`ExchangeRateServiceProtocol.swift:5`；
+`SyncServiceProtocol.swift:10,13,15,16`），于是非 Sendable 类型要跨隔离边界。
+**iOS 侧一条都没有**（iOS 没有这个设置）。
+
+→ 所以这不是「改 5 个方法」，而是要先**决定 Mac 那个开关怎么收场**：给 5 条 requirement
+加 `@MainActor`、给 5 个 impl 加 `nonisolated`、还是去掉 target 级 `-default-isolation`。
+**是设计决策，不是机械替换。**
+
+**B. iOS —— 1 条**
+
+`钱伲Tests/SharedLedgerImportServiceTests.swift:17:43` ——
+`let _ = SharedLedgerImportService.shared` 从非主线程的 XCTest 方法访问，而
+`SharedLedgerImportService` 是显式 `@MainActor`（`SharedLedgerImportService.swift:4`）。
+它位于 `disabled_` 前缀的用例里，在 `XCTSkip` 之后的死代码段。
+
+**C. ⚠️ 不计入清单的一组：`#UnavailableSendableConformance`（计数不可复现）**
+
+仓库里 **15 个**实体类声明了 `NSManagedObject, @unchecked Sendable`（`FirstCC/Models/CoreData/`），
+但单次构建只报其中 **3～5 个**，且**成员每次不同**：
+
+| 构建 | 报出的类 |
+|---|---|
+| 旧日志 | Category / Member / RecurringRule / SplitGroup / TransactionTemplate（5） |
+| 新构建 1 | CreditCardStatement / SplitEntry / SplitGroup（3） |
+| 新构建 2 | 同上（3） |
+
+最小复现（`final class X: NSManagedObject, @unchecked Sendable`，加 `@objc(Category)` 类名、
+加 `-default-isolation MainActor`，Swift 5 与 Swift 6）**全部干净，复现不出来**。
+且它**没有** "this is an error in the Swift 6 language mode" 这半句。
+
+→ **归入待查，不计入阻断项清单。** 教训：**别拿单次构建日志给这一组报数字。**
+
+### 3.6 Swift 语言层依据（SE-0412）
 
 > "Under strict concurrency checking, require every global variable to either be isolated to a
 > global actor or be both: 1. immutable 2. of `Sendable` type"
@@ -270,9 +352,8 @@ Apple 文档化的**共享**手段是 `init(name:managedObjectModel:)` 注入 �
 **不要单独改这一行。** 它拿不到任何可见收益（Swift 5 下前后都是 0 警告），而且会削弱
 「这里在 Swift 6 下会报」这个可见的提醒。按顺序一次做完：
 
-1. **先解决规模更大的阻塞项。** Mac app target 全量构建实测有 **12 个**
-   `[#NonSendableInAsyncConformanceOrOverride]` 警告 —— 那在 Swift 6 下是 error。
-   这一行只是路上的一个小坑。
+1. **先解决规模更大的阻塞项。** 全项目实测 **6 个** Swift 6 阻断项（Mac 5 + iOS 1，
+   清单与根因见 §3.5）—— 它们在 Swift 6 下是 error。这一行只是路上的一个小坑。
 2. **改声明**：`FirstCC/Services/CoreDataStack.swift:17`
    ```swift
    nonisolated(unsafe) static let shared: NSManagedObjectModel = { … }()
@@ -315,7 +396,7 @@ Mac 测试 Suite 上的 `@MainActor` 现在**同时干两件事**：
 
 ### 🟡 R3 —— 单独改它治不了 Swift 6 迁移
 
-见「四、1」。12 个 `#NonSendableInAsyncConformanceOrOverride` 是更硬的阻塞项。
+见「四、1」。6 个阻断项（Mac 5 + iOS 1，清单见 §3.5）是更硬的阻塞项。
 
 ### 🟢 R4 —— 不改的风险是零
 
@@ -355,7 +436,9 @@ enum CoreDataModel {
 EOF
 xcrun swiftc -typecheck -sdk "$SDK" -swift-version 6 decl.swift
 
-# ② 消费侧：@testable import 在 Swift 5 下不检查、Swift 6 下才报
+# ② 消费侧：@testable import 不掩盖隔离诊断 —— Swift 5 与 6 都会报
+#    （对同一份 decl.swift 换成 enum / final class、显式 @MainActor / -default-isolation
+#     推断，四种组合的结论一致，见 §3.2）
 xcrun swiftc -emit-module -emit-library -module-name M -swift-version 5 -enable-testing \
   -default-isolation MainActor -sdk "$SDK" decl.swift -o libM.dylib
 cat > consumer.swift <<'EOF'
@@ -396,3 +479,12 @@ done
 - 修复：`1be4ba4`（共享 model）、`5c7e08c`（Mac 测试复用共享 model + `@MainActor`）、`1ea1660`（CLAUDE.md 更正）
 - 声明：`FirstCC/Services/CoreDataStack.swift:17`
 - 测试栈：`钱伲Tests/TestSupport/InMemoryCoreDataStack.swift`、`QianeymacTests/BudgetServiceTests.swift`
+
+---
+
+**修订记录**
+
+- **2026-09-24**：更正 §3.2（`@testable import` 掩盖论的错误归因 → 2×2×2 重测 + 「本来就合法」），
+  新增 §3.5（6 条阻断项全量清单 + `#UnavailableSendableConformance` 计数不可复现的警告），
+  §〇/§四/§五 的「12 个」全部更正为 **5 个**（Mac）/ **6 个**（全项目）。
+  根因：初版把「含某句话的日志行数」当成了警告条数。
