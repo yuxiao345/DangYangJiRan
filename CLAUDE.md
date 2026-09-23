@@ -20,6 +20,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Mac CoreData 测试套件必须标 `@MainActor`。** Swift Testing 默认把测试跑在协作线程池上，而 fixture 用的是 `.mainQueueConcurrencyType` context——在非主线程直接访问它违反 Core Data 的多线程编程模式，会随机崩（Apple DTS 定性：会 "trigger random crashes in Core Data"）。`.serialized` 与 `-parallel-testing-enabled NO` 只管执行顺序、**不改变运行线程**，治不了它。iOS 用 XCTest、同步方法跑在主线程，所以同一套写法在 iOS 上合法——**别因为 iOS 绿了就以为 Mac 也是**。
 - Mac 测试**不再需要** `-parallel-testing-enabled NO`：2026-09-23 实测，加上 `@MainActor` 后并行连跑 3 轮 42/42 全绿、0 崩溃。旧结论是对着已删除的 `model.copy()` 写的。
 - **测试栈不要自建 `NSManagedObjectModel`**，复用 `CoreDataModel.shared`（`FirstCC/Services/CoreDataStack.swift`，机制写在它的文档注释里）。进程里出现第二份 model，会让 `+[NSManagedObject entity]` 因同一子类被两个模型声称而解析失败，`save()` 报 `NSPersistentStoreIncompatibleSchemaError (134020)`。**数据隔离靠 store（每测试新建 coordinator + in-memory store），不靠 model。**
+- **Swift 6 迁移的结论与清单见 `.claude/research/swift6-migration-coredata-model.md`。** 那一刻到来时先读它，别自己重新推。三条要点：① `CoreDataModel.shared` 这行全局状态在 Swift 6 下 iOS 模块报 `#MutableGlobalVariable`(error)、Mac 因 `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` 改为消费侧报 actor 隔离警告——现在 0 警告只是因为 `@testable import` 在 Swift 5 下不做这项检查；② 正解是 `nonisolated(unsafe) static let`，但**必须同一 commit 给 Mac Suite 的 `@MainActor` 加锚定注释**，否则将来被当冗余删掉会重新引入随机崩；③ 这行治不了迁移，Mac app target 另有 12 个 `#NonSendableInAsyncConformanceOrOverride`。
+- 上一条里的「重复 model → 134020」是**本项目实测**的现象链，**不是 Apple 文档说法**（SDK 头里 134020 的注释是"store 返回 save 错误，如缺表/无权限"）。Apple 工程师只确认过「重复 model 就是歧义的来源」（论坛 thread 682136），定性是「这是 bug，去提 feedback」，**从未建议把 model 做成单例**。详见上面那份文档。
 
 ## Build & Run
 
@@ -343,6 +345,18 @@ Mac 报表位于 `Qianeymac/Views/Reports/`，使用独立组件拼装（非复�
 
 约 11750 行 String Catalog（条目数随项目自然增长）。
 
-## 外部知识库
+## 知识库
+
+**项目内（git 跟踪，跟着分支走）**
+
+遇到下列议题时**先读对应文档**，不要从零重推：
+
+| 议题 | 文档 |
+|------|------|
+| Swift 6 迁移 / `CoreDataModel.shared` 全局状态 / `+entity` 歧义 / `nonisolated(unsafe)` | `.claude/research/swift6-migration-coredata-model.md` |
+| Swift Charts API 与 macOS 图表崩溃 | `.claude/research/apple-chart-knowledge-base.md` |
+| SwiftData → Core Data 迁移的历史研究 | `.claude/plans/swiftdata-to-coredata-migration-research.md` |
+
+**外部（纯本地，不 Git）**
 
 - **iPhone Duo / iOS 27 折叠屏适配知识库**：`~/Developer-Notes/apple-ios27-foldable/`（纯本地，不 Git）。当用户提到 iPhone Duo / 折叠屏 / iOS 27 / Xcode 27 适配时，**先 Read 该目录的 README.md** 再回答。该知识库涵盖 HIG 设计原则、iOS 27/27.1 新 API（ReservedRegion / ArrangementView / 工具栏垂直化）、SwiftUI 代码示例、SDK 行为差异、对钱伲项目的具体适配方建议。Apple 官方 HIG 正文页面 WebFetch 抓不到，需要时建议用户自己浏览器打开 `https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo`。
