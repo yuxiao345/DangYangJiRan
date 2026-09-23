@@ -343,7 +343,8 @@ Mac 报表位于 `Qianeymac/Views/Reports/`，使用独立组件拼装（非复�
 
 ### 现有条目数
 
-约 11750 行 String Catalog（条目数随项目自然增长）。
+**12932 行 / 1024 条**（2026-09-24 实测）。其中 **332 条缺 `en`**、313 条 `localizations` 完全为空——
+新增条目时**别只加 key 不加翻译**，工作区就曾在往空条目上继续加。
 
 ## 知识库
 
@@ -353,8 +354,10 @@ Mac 报表位于 `Qianeymac/Views/Reports/`，使用独立组件拼装（非复�
 
 | 议题 | 文档 |
 |------|------|
+| **上架清单 / App Store 素材 / 报销部分冲销缺口 / 各项未决待办** | `.claude/plans/release-checklist.md` |
 | Swift 6 迁移 / `CoreDataModel.shared` 全局状态 / `+entity` 歧义 / `nonisolated(unsafe)` | `.claude/research/swift6-migration-coredata-model.md` |
 | Swift Charts API 与 macOS 图表崩溃 | `.claude/research/apple-chart-knowledge-base.md` |
+| Mac 报表的设计规划与实施状态 | `.claude/research/mac-reporting-plan.md` |
 | SwiftData → Core Data 迁移的历史研究 | `.claude/plans/swiftdata-to-coredata-migration-research.md` |
 
 **外部（纯本地，不 Git）**

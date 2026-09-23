@@ -9,6 +9,17 @@
 
 ---
 
+> ## ⚠️ 实施状态（2026-09-24 实测更正）
+>
+> **§七 路线图里的复选框已全部过期**（原本全是 `[ ]`，但 Phase 1/2 其实早已完成）。
+> 实际状态：**6 大报表全部落地**，`Qianeymac/Views/Reports/` 共 12 个文件。
+> 唯一未做的是 **Phase 4 的「macOS HIG 审查」**（与上架清单 P0-6 同一项）。
+>
+> 本文已从「规划」转为**历史设计记录** —— 需要「现在有什么报表」请看
+> `.claude/plans/release-checklist.md` 与 `CLAUDE.md` 的「Mac 报表架构」一节。
+
+---
+
 ## 一、个人/家庭财务分析 — 需求梳理
 
 ### 核心财务问题（用户真正关心的）
@@ -355,28 +366,35 @@ Tooltip: .designMonoData
 
 ## 七、实施路线图
 
-### Phase 1 — 基础报表（对标 iOS 功能升级）
-- [ ] 现金流趋势图（LineMark + AreaMark + RuleMark）
-- [ ] 支出分类甜甜圈（复用 SectorMark + 改造 TreeMap）
-- [ ] 时间周期选择器 + 数据加载
-- [ ] Mac 端 ReportViewModel 扩展
+> ✅/❌ 为 **2026-09-24 实测**结果（原文档全为未勾选的 `[ ]`，已不反映实际）。
 
-### Phase 2 — 高级报表
-- [ ] 净资产时间线（AreaMark 堆叠）
-- [ ] 预算执行对比（BarMark + RuleMark）
-- [ ] 资产配置甜甜圈
+### Phase 1 — 基础报表（对标 iOS 功能升级）— ✅ 全部完成
+- [x] 现金流趋势图（LineMark + AreaMark + RuleMark）→ `MacTrendChartView.swift`
+- [x] 支出分类甜甜圈（复用 SectorMark + 改造 TreeMap）→ `MacCategoryChartView.swift` + `DonutChart.swift` + `SunburstView.swift` + `MacTreemapView.swift`
+- [x] 时间周期选择器 + 数据加载 → `ReportContent.swift`（含 `reportPickerBar` + 各报表专属周期集合）
+- [x] Mac 端 ReportViewModel 扩展 → 已扩展到 6 种 `ReportType`
 
-### Phase 3 — 进阶可视化
-- [ ] 瀑布图（自定义 BarMark 组合）
-- [ ] 日历热力图（RectangleMark 热力图）
-- [ ] 总览多面板 Dashboard
+### Phase 2 — 高级报表 — ✅ 全部完成
+- [x] 净资产时间线（AreaMark 堆叠）→ `MacAssetChartView.swift`
+- [x] 预算执行对比（BarMark + RuleMark）→ `MacBudgetChartView.swift`
+- [x] 资产配置甜甜圈 → `MacAssetAllocationView.swift`
 
-### Phase 4 — 交互打磨
-- [ ] 悬停 tooltip
-- [ ] 下钻导航
-- [ ] 导出功能
-- [ ] 动画调优
-- [ ] macOS HIG 审查
+### Phase 3 — 进阶可视化 — ✅ 完成（1 项以变体落地）
+- [x] 瀑布图（自定义 BarMark 组合）→ `DashboardContentColumn.swift:385` `waterfallChart` + `WaterfallSegment:608`
+- [x] 总览多面板 Dashboard → `DashboardContentColumn.swift`（多卡片面板）
+- [~] 日历热力图 → **以「每日热力」形式落在流水列表**（`TransactionListContent.swift:383-387`），
+      **未做成独立报表类型**；如需独立报告需另开
+
+### Phase 4 — 交互打磨 — ✅ 4/5（唯 HIG 审查未做）
+- [x] 悬停 tooltip → `MacTrendChartView.swift:293`、`MacAssetChartView.swift:263`，及 `CategoryBarList`/`MacAssetAllocationView`/`MacTreemapView` 的 `onHover`
+- [x] 下钻导航 → `MacDimensionChartView.swift:40`（`TransactionDetailList`）
+- [x] 导出功能 → `Qianeymac/Views/Settings/MacExportView.swift`
+- [x] 动画调优 → `Reports/` 下 32 处 `withAnimation` / `.animation(`
+- [ ] **macOS HIG 审查** → ❌ **仍未做**。见 `.claude/plans/release-checklist.md` §二-6
+
+### 计划外实际新增（本文档未规划但已落地）
+- 第 6 种报表 `ReportType.member`「多维分析」（商家/项目双维度）→ `MacDimensionChartView.swift`
+- 共用组件 `TransactionDetailList.swift`、`CategoryBarList.swift`（从 `MacCategoryChartView` 提取）
 
 ---
 
