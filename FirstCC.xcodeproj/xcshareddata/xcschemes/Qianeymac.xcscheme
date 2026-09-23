@@ -16,7 +16,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "9AB5F8AF2FCD51C400F5044E"
-               BuildableName = "Qianeymac.app"
+               BuildableName = "Qianey.app"
                BlueprintName = "Qianeymac"
                ReferencedContainer = "container:FirstCC.xcodeproj">
             </BuildableReference>
@@ -70,7 +70,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "9AB5F8AF2FCD51C400F5044E"
-            BuildableName = "Qianeymac.app"
+            BuildableName = "Qianey.app"
             BlueprintName = "Qianeymac"
             ReferencedContainer = "container:FirstCC.xcodeproj">
          </BuildableReference>
@@ -87,7 +87,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "9AB5F8AF2FCD51C400F5044E"
-            BuildableName = "Qianeymac.app"
+            BuildableName = "Qianey.app"
             BlueprintName = "Qianeymac"
             ReferencedContainer = "container:FirstCC.xcodeproj">
          </BuildableReference>

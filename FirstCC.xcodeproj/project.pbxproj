@@ -485,7 +485,7 @@
 		94984FEE09494C159C5146C9 /* FirstCC.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = FirstCC.xcdatamodel; sourceTree = "<group>"; };
 		979E204D2E243EDB0A12BEA4 /* TransactionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionListView.swift; sourceTree = "<group>"; };
 		97FCEDFC1A08B135CB216CDC /* icon_dark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon_dark.png; sourceTree = "<group>"; };
-		9AB5F8B02FCD51C400F5044E /* Qianeymac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Qianeymac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9AB5F8B02FCD51C400F5044E /* Qianey.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Qianey.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		9AB5F8C12FCD51C700F5044E /* QianeymacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QianeymacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9AB5F8CB2FCD51C700F5044E /* QianeymacUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QianeymacUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9AC8FB6A2FE3BC1A00679EC7 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
@@ -646,7 +646,7 @@
 			isa = PBXGroup;
 			children = (
 				B32C03A63952C3F6371B88FA /* 钱伲.app */,
-				9AB5F8B02FCD51C400F5044E /* Qianeymac.app */,
+				9AB5F8B02FCD51C400F5044E /* Qianey.app */,
 				9AB5F8C12FCD51C700F5044E /* QianeymacTests.xctest */,
 				9AB5F8CB2FCD51C700F5044E /* QianeymacUITests.xctest */,
 				9C5F7DB65DAA4F58BF386458 /* 钱伲Tests.xctest */,
@@ -1117,8 +1117,8 @@
 				9AB5F8B12FCD51C400F5044E /* Qianeymac */,
 			);
 			name = Qianeymac;
-			productName = Qianeymac;
-			productReference = 9AB5F8B02FCD51C400F5044E /* Qianeymac.app */;
+			productName = "Qianey";
+			productReference = 9AB5F8B02FCD51C400F5044E /* Qianey.app */;
 			productType = "com.apple.product-type.application";
 		};
 		9AB5F8C02FCD51C700F5044E /* QianeymacTests */ = {
@@ -1807,7 +1807,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
-				INFOPLIST_KEY_NSContactsUsageDescription = "Qianeymac uses your contacts to show participant avatars.";
+				INFOPLIST_KEY_NSContactsUsageDescription = "Contacts access is used to show participant avatars.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1816,7 +1816,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 26.5;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.qianey.app.mac.Qianeymac;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "Qianey";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = macosx;
@@ -1848,7 +1848,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
-				INFOPLIST_KEY_NSContactsUsageDescription = "Qianeymac uses your contacts to show participant avatars.";
+				INFOPLIST_KEY_NSContactsUsageDescription = "Contacts access is used to show participant avatars.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1857,7 +1857,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 26.5;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.qianey.app.mac.Qianeymac;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "Qianey";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = macosx;
@@ -1889,7 +1889,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Qianeymac.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Qianeymac";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Qianey.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Qianey";
 			};
 			name = Debug;
 		};
@@ -1912,7 +1912,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Qianeymac.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Qianeymac";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Qianey.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Qianey";
 			};
 			name = Release;
 		};
