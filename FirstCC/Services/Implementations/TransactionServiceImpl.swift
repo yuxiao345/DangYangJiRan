@@ -364,10 +364,13 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
         t.currencyCode = currencyCode
         if currencyCode != ledgerCurrencyCode, let rate = exchangeRate {
             t.exchangeRate = Double(truncating: rate as NSDecimalNumber)
-            let computed = t.amount * rate
-            // 使用 Double 中间值避免 Swift 6.3 / macOS 26 beta 中
-            // NSDecimalNumber → Int64 的高精度 Decimal 转换 bug
-            t.convertedAmountInFen = Int64((computed * 100 as NSDecimalNumber).doubleValue)
+            // 走 convertedAmount 的 setter（→ Decimal.fenValue，朝零截断）。
+            // 这里原先用 Double 中间值绕一个「高精度 Decimal 转换 bug」，注释把根因
+            // 记成了 Swift 6.3 / macOS 26 beta 的问题 —— 真因是 Int64(truncating:) 的
+            // 语义，已在 Decimal.fenValue 里修掉。另外 Int64(Double) 遇 NaN/∞ 是
+            // fatal error（进程崩），fenValue 至少不崩 —— 但别把这读成「正确」：
+            // NaN 经 fenValue 得到的是垃圾值（实测 4501261337），只是不会崩而已。
+            t.convertedAmount = t.amount * rate
         } else {
             t.exchangeRate = 0
             t.convertedAmountInFen = 0

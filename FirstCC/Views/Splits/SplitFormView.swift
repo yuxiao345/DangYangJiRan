@@ -96,11 +96,17 @@ struct SplitFormView: View {
 
                 if splitType == .equal && !selectedMembers.isEmpty {
                     Section {
-                        HStack {
-                            Text("每人")
-                            Spacer()
-                            Text(amount / Decimal(selectedMembers.count), format: .currency(code: transaction.currencyCode))
-                                .foregroundStyle(.secondary)
+                        // 走 service 的同一份算法：除不尽时余数补给最后一名成员，
+                        // 所以这里要逐人列出——写 `amount / count` 会比实际少最多 (人数−1) 分。
+                        let list = selectedMembersArray
+                        let shares = SplitServiceImpl.equalShares(totalAmount: amount, count: list.count)
+                        ForEach(Array(list.enumerated()), id: \.element.id) { index, member in
+                            HStack {
+                                Text(member.name)
+                                Spacer()
+                                Text(shares[index], format: .currency(code: transaction.currencyCode))
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     } header: {
                         Text("均分金额")
@@ -156,8 +162,9 @@ struct SplitFormView: View {
         let amounts: [Decimal]?
         switch splitType {
         case .equal:
-            let share = amount / Decimal(membersList.count)
-            amounts = Array(repeating: share, count: membersList.count)
+            // equal 模式的金额由 service 自己算（`SplitServiceImpl.equalShares`），
+            // 这里传 nil —— 以前在这里算一份、service 再重算一份，两份算法不同就出事
+            amounts = nil
         case .percentage:
             amounts = membersList.map { amount * (fixedAmounts[$0.id] ?? 0) / 100 }
         case .fixed:

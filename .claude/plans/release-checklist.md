@@ -30,7 +30,7 @@
 | 层 | 状态 | 依据 |
 |---|---|---|
 | 功能层 | **完整** | 18 个 `Services/Protocols/*.swift` + 22 个 `Implementations/*.swift`；Mac 6 大报表 12 个文件齐全（`Qianeymac/Views/Reports/`） |
-| 测试层 | **355 用例 = 342 单测 + 13 UI** | 单测 **2026-09-24 实测全绿**：iOS `钱伲Tests` **300 执行（298 通过 + 2 跳过）/ 0 失败**，Mac `QianeymacTests` **42 通过 / 0 失败**。UI 13 个（`钱伲UITests` 5 + `QianeymacUITests` 8）**本次未跑**。剩余 2 个跳过项与已修项见 §六-6 |
+| 测试层 | **358 用例 = 345 单测 + 13 UI** | 单测 **2026-09-24 实测全绿**：iOS `钱伲Tests` **303 执行（301 通过 + 2 跳过）/ 0 失败**，Mac `QianeymacTests` **42 通过 / 0 失败**。UI 13 个（`钱伲UITests` 5 + `QianeymacUITests` 8）**本次未跑**。剩余 2 个跳过项与已修项见 §六-6 |
 | 本地化 | **1024 条，332 条缺 `en`** | `FirstCC/Resources/Localizable.xcstrings`（12932 行）—— 注意该文件是 **12932 行 / 1024 条**，CLAUDE.md 里「约 11750 行」已过期 |
 | CI | **有，但只测不发布** | `.github/workflows/test.yml` 只跑 `xcodebuild test`，无 archive/export/release job。另有 **Xcode Cloud 已配置但未纳入 git**（`FirstCC.xcodeproj/xcshareddata/xcodecloud/manifest.json`，未跟踪） |
 | 发布层 | **素材 0%、签名待调** | 见 §二 |
@@ -289,8 +289,9 @@ var fenValue: Int64 {
 ⚠️ **`Decimal.RoundingMode` 没有 `.floor`**（只有 `.plain`/`.down`/`.up`/`.bankers`），
 且 `.down` 是**朝 −∞**、`.up` 是**朝 +∞** —— 名字反直觉，朝零截断只能写 `v < 0 ? .up : .down`。
 
-**验证**：iOS 单测 `300` 执行 / `298` 通过 / `2` 跳过 / `0` 失败（284 基线 + 2 条取消跳过转绿 +
-12 条新增 `fenValue` 用例）；Mac `42/42`。新增 `钱伲Tests/DecimalCurrencyTests.swift` 专门锁
+**验证**（**该 commit 当时的数字**；同一分支后续又改了 `.equal` 余数与 `applyCurrency`，
+当前数字见 §六-8 末尾）：iOS 单测 `300` 执行 / `298` 通过 / `2` 跳过 / `0` 失败
+（284 基线 + 2 条取消跳过转绿 + 12 条新增 `fenValue` 用例）；Mac `42/42`。新增 `钱伲Tests/DecimalCurrencyTests.swift` 专门锁
 `fenValue` 的截断语义与「除不尽不再是 0」这两件事（③ 的 11 个无覆盖调用点靠它兜）。
 
 #### ① 真 bug：除不尽的 `Decimal` 会让金额变成 **0** —— ✅ 已修
@@ -311,8 +312,10 @@ set { amountInFen = Int64(truncating: (newValue * 100) as NSDecimalNumber) }   /
   若调用方自己算过除法也会中招。
 - **已修**：13 处调用点全部改走 `Decimal.fenValue`（定义见本节顶部）。`SplitServiceTests.swift:60`
   的 `XCTSkipIf` 已删除，该用例现在转绿。
-- **有意不改**：AA 分账除不尽时的 `0.01` 余数**不分配**（3 人分 100 元 → 各 3333 分，合计 9999 分，
-  差 1 分）。这是既有行为，项目自己的测试就断言 `3333`，本轮保持。
+- ~~**有意不改**：AA 分账除不尽时的 `0.01` 余数**不分配**（各 3333 分，合计 9999 分）~~
+  → **该遗留同日已修，见 §六-8-2。** 当时判它「是既有行为、项目自己的测试就断言 `3333`」，
+  但漏看了 3333×3 = 9999 **补不齐总额**，于是 `settlementStatus` 永远到不了 `.settled`
+  —— 那不是「保持现状」，是留了个坏掉的判据。**「测试也这么断言」不等于「这是对的」。**
 
 #### ② 不是 bug：级联删除是好的，`isDeleted` 断言无效 —— ✅ 测试已修
 
@@ -344,6 +347,108 @@ TEMP_DIAG after-delete incomeRows=0 expenseRows=0 incomeIsDeleted=false hasChang
   而是把测试**改名成 `disabled_…`** 退出收集，里面的 `throw XCTSkip` 是永不执行的死代码 ——
   这也是「6 处 skip 语句 vs 只报 4 个 skipped」的由来。
   **`disabled_` 前缀等于静默删除测试**，属于另一类卫生问题，未获批准故未处理。
+
+### 7. `ExportServiceTests` 的一对 `disabled_` 测试静默消失（**独立修复项，用户 2026-09-24 指定单独做以留痕**）
+
+| 项 | 内容 |
+|---|---|
+| 位置 | `钱伲Tests/ExportServiceTests.swift:227`（CSV）、`:262`（JSON） |
+| 症状 | 测试名带 `disabled_` 前缀 → **退出 XCTest 收集**，永远不会被跑到；而函数体首行又是 `throw XCTSkip(...)`，**永不执行的死代码**。等于**双重失效**，两个测试静默消失 |
+| 跳过理由 | ❌ **误归因**：写的是「`SplitServiceImpl` 创建 entry 后 `amountInFen` 被重置为 0（service bug）」。实际这两个测试用 `SplitEntry(amount: 200)` / `(amount: 100)` **直接构造**，200 和 100 乘 100 都是整数，旧 `Int64(truncating:)` 下本来就正确 —— 那个 bug **根本影响不到它们**。（它们自己的注释还写着「绕过 SplitService 的 entry amount bug」，是在绕一个不适用的 bug。） |
+| ⚠️ 解封**预计是红的**，且原因与金额无关 | 该文件里 `SplitGroup(` 构造次数 **0**，而测试写的是 `entry1.splitGroup = tx.splitGroup` —— `tx.splitGroup` 是 nil，equals把 entry 挂在**空**上，导出很可能根本看不到这些 entry。所以这不只是「删掉前缀就行」，**测试本身是坏的**，需要建真的 `SplitGroup` 并正确关联 entry |
+| 为什么单独做 | 修它 = 修测试本身，与 §六-6 的金额 bug 是两件事；用户指定单独立项，好在 git 上留痕 |
+
+### 8. 收尾两件 —— ✅ **已修（2026-09-24，用户裁定「1、3 解决；2 放代办独立修」）**
+
+#### 8-1. `applyCurrency` 是全项目最后一处没走 `fenValue` 的元→分换算
+
+| 项 | 内容 |
+|---|---|
+| 位置 | `TransactionServiceImpl.swift` `applyCurrency`（旧第 370 行） |
+| 旧写法 | `t.convertedAmountInFen = Int64((computed * 100 as NSDecimalNumber).doubleValue)` |
+| 旧注释 | 「使用 Double 中间值避免 **Swift 6.3 / macOS 26 beta** 中 `NSDecimalNumber → Int64` 的高精度转换 bug」 —— ❌ **根因记错了**，真因是 `Int64(truncating:)` 的语义（§六-6 ①），与 Swift/macOS 版本无关 |
+| 裁定 | **不是活跃 bug**（不会给出离谱的值），但**并非与旧写法逐位相同** —— 见下表的实测对照 |
+| 它有四个真问题 | ① `Int64(Double)` 遇 `NaN`/`∞`/越界是 **fatal error（进程崩）**；`fenValue` 不崩，但**也别读成「正确」**——`Decimal.nan.fenValue` 返回的是**垃圾值**（实测 `4501261337`）而非 0；② 旧写法有**双重舍入**，实测会偏 1 分（见下表）；③ 上表那条错误注释把根因记成 Swift/macOS 版本 bug，会误导后人；④ 它是全项目唯一没走 `fenValue` 的元→分换算 |
+| 已修 | `t.convertedAmount = t.amount * rate` —— 走 setter → `Decimal.fenValue`，注释重写为真因 |
+
+**新旧写法实测对照**（金额 −1000.00…+1000.00 按分步进，共 200001 例 × 各 rate）：
+
+| rate（来源） | 差异例数 | 举例 |
+|---|---|---|
+| `1.0` / `7.2451`（两位小数，Mac 路径常见） | `0 / 200001` | 完全一致 |
+| `9.628999999999998` | `0 / 200001` | 完全一致 |
+| `0.3333333333333333`（**iOS 路径**：`AddEditTransactionView` 用 `Decimal(string:)` 存 16 位有效数字的汇率，如 1/3） | **`12598 / 200001`（6.3%）** | amount `-983.04` × `1/3`：旧 **`-32768`** / 新 **`-32767`**；精确值 `-32767.9999999999967232`，截断朝零 = `-32767` → **新值才是对的** |
+
+⚠️ **所以这条不是纯空操作**：对上面那类 16 位有效数字的汇率，旧写法每 16 例就有 1 例偏 1 分，
+新写法会**在下次保存时静默把已存的 `convertedAmountInFen` 纠正过来**（幅度 ≤1 分）。
+方向是「变正确」，但**是一处会动到存量数据的改动**，别当成纯重构。
+
+- **`.else` 分支的 `t.convertedAmountInFen = 0` 有意保留**：与 setter 写 0 完全等价
+  （`Decimal(0).fenValue == 0`），改它只扩大 diff，无行为差异。
+- **`t.exchangeRate = Double(truncating: ...)` 有意不动**，且**不要**照着 §六-6 去批量改它。
+  实测 `Double(truncating: NSDecimalNumber)` 与 `.doubleValue` 逐位一致，**没有**那个陷阱；
+  坑只属于**整数版** `truncating:`（走 `int64Value`）。全仓 50+ 处 `Double(truncating:)`
+  基本都是百分比/图表用途，属于另一类。**把 §六-6 的结论机械外推到它们身上会造成大范围无关改动。**
+
+#### 8-2. AA 分账余数不分配 → `settlementStatus` 永远到不了 `.settled`
+
+- **位置**：`SplitServiceImpl.createSplit` 的 `.equal` 分支（旧第 33 行 `totalAmount / Decimal(members.count)`）。
+- **症状链**：¥100 分 3 人 → 各存 3333 分，**合计 9999 < 10000**
+  → `SplitGroup.settlementStatus`（`totalPaid >= totalAmount`）**永不成立**
+  → 全部付清也停在 `.partial`
+  → `SplitDetailView:63` 的「一键结算」按钮门控正是 `settlementStatus != .settled`
+  → **按钮永不消失**，且一直挂着 `remainingAmount` 算出的「剩余 ¥0.01」。
+- **根因**：`totalAmount / Decimal(members.count)` 除不尽时 `Decimal` 会填满 38 位有效数字，
+  每份再按分截断 → 每份都往下取 → 合计必然 **≤** 总额。§六-6 只修了「截断成 0」，
+  这个「每份少一点点」还在。
+- **修法（用户选 (a)：余数补给最后一名成员）**：新增
+  `SplitServiceImpl.equalShares(totalAmount:count:)`，**先按分取整再均分**，
+  余数（`< 人数` 分）补给最后一份 → `sum(entries.amountInFen) == totalAmountInFen` **恒成立**。
+  ¥100 分 3 人 → `3333 / 3333 / 3334`。
+- **顺带收掉两处同算法的不一致**（不一起收就是新的不一致）：
+  - `SplitFormView` 的 `createSplit()` 曾自己算一份等分金额，而 service 对 `.equal` 根本不用它
+    （传了也被丢弃）—— **两份算法并存**。现传 `nil`，算法只留在 service 一份。
+  - 同文件的「均分金额」**预览**（旧 `:102`）是**第三份**除法，除不尽时会比实际入库少 1 分
+    —— 现改为逐人列出，且直接调同一个 `equalShares`。
+- **测试**：① 改 `test_createSplit_equal_unevenDivision_remainderGoesToLastMember`
+  （断言 `3333/3333/3334`、按成员反查余数归属、`sum == totalAmountInFen`）；
+  ② 新增 `test_settleSplit_unevenEqual_reachesSettled`（**症状回归锁**：`unsettled → partial → settled`）；
+  ③ 新增 `test_equalShares_invariants_hold`（6 种人数 × 12 种总额的性质测试，含 0 人 / 0 元 / 负数）。
+- ⚠️ **未覆盖 & 已知边界**（本轮有意不改）：
+  - 🔴 **同一症状在 `.percentage`/`.fixed` 下仍然存在**（2026-09-24 审查发现，**已实测复现**）。
+    `equalShares` 只覆盖 `.equal`；另外两种模式仍直接用调用方传来的金额、每份各按分截断。
+    实测（精确小数，33%/33%/34% **确实凑满 100%**）：
+
+    | 总额 | 每份（分） | 合计 | 差 |
+    |---|---|---|---|
+    | ¥7.77 | 256 / 256 / 264 | 776 | −1 分 |
+    | ¥0.10 | 3 / 3 / 3 | 9 | −1 分 |
+    | ¥99.99 | 3299 / 3299 / 3399 | 9997 | **−2 分** |
+    | ¥10.00 | 330 / 330 / 340 | 1000 | 0（恰好整除） |
+
+    差额最大可达 **人数−1 分**。后果与 `.equal` 完全相同：永远到不了 `.settled`、
+    「一键结算」按钮永不消失。`.fixed` 同理：金额框是 `TextField(format: .number)`，
+    用户可输 `33.333 + 66.667`（合计恰好 = 金额，校验通过），按分截断后 3333+6666 = 9999 ≠ 10000。
+    **已加刻画测试** `SplitServiceTests.test_percentage_knownGap_sumCanBeLessThanTotal`
+    —— 刻意断言当前的错误结果，缺口可见、且修好后会立刻变红逼人更新本节。
+    **修法（未做，等用户裁定）**：在 `createSplit` 的 switch **之后**加一次归一化（约 3 行）——
+    把 `entryAmounts` 全转成分、差额补到最后一份，即可让不变量对三种模式**都**成立，
+    对 `.equal` 是空操作。代价：`.fixed` 会静默吸收调用方的差额，
+    即把「合计必须对」的保证从 UI 移进 service。
+    *⚠️ 复现时的坑：**必须用 `Decimal(string: "7.77")`，不能用 `Decimal(7.77)`** ——
+    后者是 Double 字面量转换，实际是 `7.769999999999997952`，总额算出来是 776，
+    会让探针误报「合计正好相等」。我第一次就踩了这个，差点把真缺口判成假警报。*
+    *（这类发现说明「修一个症状」要顺着**同一个不变量**把所有产生它的分支都找一遍——
+    只修 `.equal` 就是只修了 1/3。）*
+  - 循环里的 `entryAmounts[index]` 在 `amounts.count < members.count` 时**会越界崩**；
+    当前 View 恒按 `membersList` 生成等长数组，无调用方能触发，故未加防护。
+- ⚠️ **存量数据不回溯**：本次只影响**新建**的分账。已经存在的除不尽分账仍是 9999/10000，
+  仍卡在 `.partial`（点「一键结算」能标记全部已付，但状态显示不会变）。
+  要不要照 `repairInvalidTypeFields` 的样子加一次回填修复（差值补给最后一名 entry），
+  **未定，待用户裁定**。
+
+**实测**：iOS `303` 执行 / `301` 通过 / `2` 跳过 / `0` 失败（+3 条新用例）；Mac `42/42`；
+双端构建 `BUILD SUCCEEDED`、0 error、0 条新警告。
 
 ---
 
@@ -415,6 +520,35 @@ xcodebuild -project FirstCC.xcodeproj -scheme Qianeymac -destination "platform=m
 
 ## 八、修订记录
 
+- **2026-09-24 八次修订**：§六-8 两件收尾（用户裁定「1、3 解决；2 放代办独立修」）。
+  ① `TransactionServiceImpl.applyCurrency` 改走 `convertedAmount` setter（→ `fenValue`），
+  并**纠正那条把根因记成「Swift 6.3 / macOS 26 beta bug」的注释**；
+  ② 新增 `SplitServiceImpl.equalShares`，AA 分账除不尽的余数补给最后一名成员，
+  使 `sum(entries) == totalAmount` 恒成立 —— 修掉「付清了却永远到不了 `.settled`、
+  「一键结算」按钮永不消失」；连带收掉 `SplitFormView` 里的**两份重复等分算法**
+  （一份被 service 丢弃、一份是会说谎的预览）。
+  （本轮共新增 3 条用例，实测数字见本节末尾。）
+  *教训*：**「项目自己的测试就断言 3333」不等于「3333 是对的」** —— 七次修订时我把
+  「余数不分配」判成「保持既有行为」，漏看了 3333×3 = 9999 补不齐总额，那个判据从头就是坏的。
+  另记一条**防止过度外推**：`Int64(truncating:)` 有坑，但 `Double(truncating:)` **没有**
+  （实测逐位等于 `.doubleValue`），全仓 50+ 处 `Double(truncating:)` 不要照着 §六-6 批量改。
+  **但「陷阱不在那个 API 上」不等于「换掉它是空操作」** —— 见下条。
+  **审查纠出我两处过度断言，均已实测更正**（细节见 §六-8）：
+  ① 我写「`Double(truncating:)` 没陷阱、现实输入下新旧一致」——**陷阱那句对，结论错**。
+  旧写法是 `Int64(Double 中间值)`，多了一趟 Double 舍入；实测 iOS 路径那种 16 位有效数字的汇率
+  （`AddEditTransactionView` 用 `Decimal(string:)`，如 1/3）下，金额扫 −1000.00…+1000.00
+  **200001 例里 12598 例（6.3%）差 1 分**，且**新值才是正确截断**
+  （`-983.04 × 1/3`：旧 `-32768` / 新 `-32767`，精确值 `-32767.9999…`）。所以这条改动
+  **不是纯重构** —— 它会在下次保存时静默纠正存量 `convertedAmountInFen`（≤1 分，方向是变正确）。
+  ② `equalShares` 的 docstring 原写「恒有 `sum(shares) == totalAmount`」——对 `count ≥ 1` 成立，
+  对 `count == 0` 不成立（返回 `[]`，合计 0 ≠ 总额），已把范围写进注释。
+  *教训*：**改一处换算，先量「新旧到底一不一样」，别用「这个 API 上没有那个陷阱」替代测量。*
+  **审查还发现同一不变量只修了 1/3**：`.percentage`/`.fixed` 不经 `equalShares`，每份各按分截断，
+  合计仍会少于总额（实测 ¥99.99 按 33/33/34 → `3299+3299+3399 = 9997` ≠ 9999，**差 2 分**），
+  症状与 `.equal` **完全相同**：仍卡 `.partial`、「一键结算」按钮仍永不消失。
+  **未修（超出本轮批准范围）** —— 已加**刻画测试**（`test_percentage_knownGap_sumCanBeLessThanTotal`，
+  刻意断言当前错误结果，修好即红）+ 记入 §六-8-2 待裁定；修法约 3 行（switch 后统一归一化）。
+  实测：iOS `303` 执行 / `301` 通过 / `2` 跳过 / `0` 失败，Mac `42/42`，双端 `BUILD SUCCEEDED`。
 - **2026-09-24 七次修订（用户批准后落地修复）**：§六-6 的三项**全部修完**。
   ① 新增 `Decimal.fenValue`（朝零截断），**13 处** `Decimal → Int64` setter 改走它；
   ② `TransactionServiceTests` 的 `isDeleted` 断言改为「按 id 重新 fetch 为 0 行」，跳过删除；
