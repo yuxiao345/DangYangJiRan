@@ -14,7 +14,15 @@ extension NSManagedObjectContext {
     }
 }
 
-@Suite(.serialized) struct BudgetServiceTests {
+/// 必须 `@MainActor`：Swift Testing 默认把测试跑在协作线程池上，而 fixture 用的是
+/// `.mainQueueConcurrencyType` context —— 在非主线程直接访问它违反 Core Data 的多线程
+/// 编程模式，Apple DTS 对此的定性是 "Violating the programming pattern can trigger
+/// random crashes in Core Data"。实测：不加时崩在协作线程池的 `save()` 上（宿主 app 被
+/// 反复重启，失败集合每轮不同）；加上后连续 3 轮 30/30 通过。
+/// 注意 `.serialized` 与 `-parallel-testing-enabled NO` 只管执行顺序，**不改变运行线程**。
+@MainActor
+@Suite(.serialized)
+struct BudgetServiceTests {
 
     // MARK: - Per-test state
 
@@ -28,23 +36,21 @@ extension NSManagedObjectContext {
 
     // MARK: - Infrastructure
 
-    /// 从 app bundle 加载 FirstCC.momd。
-    /// 每次调用返回一份独立的 copy，确保测试之间零共享状态。
-    private static func loadModel() -> NSManagedObjectModel {
-        let bundle = Bundle(for: BudgetBook.self)
-        guard let url = bundle.url(forResource: "FirstCC", withExtension: "momd"),
-              let model = NSManagedObjectModel(contentsOf: url) else {
-            fatalError("Cannot load FirstCC.momd from \(bundle.bundlePath)")
-        }
-        // copy() 返回深拷贝，实体描述完全独立，彻底杜绝跨测试状态污染
-        return model.copy() as! NSManagedObjectModel
-    }
-
-    /// 每次调用创建独立的 in-memory CoreData stack（每个 test 拥有隔离的数据空间）
+    /// 每次调用创建独立的 in-memory CoreData stack（每个 test 拥有隔离的数据空间）。
+    ///
+    /// model 复用进程内唯一的那份 `CoreDataModel.shared`，**数据隔离靠 store、不靠 model**：
+    /// 每次新建 coordinator + 新建 in-memory store。绝不能在这里自建 model 或 `model.copy()`
+    /// ——宿主 `Qianey.app` 启动时（`QianeymacApp.swift` 的 `AppContainer()`）已经建了一份，
+    /// 进程里出现第二份会让 `+[NSManagedObject entity]` 因同一子类被两个模型声称而解析失败，
+    /// `Entity(context:)` 的兜底不稳定，`save()` 报 NSPersistentStoreIncompatibleSchemaError
+    /// (134020) 而崩。完整机制见 `CoreDataModel` 的文档注释。
     static func makeContext() -> NSManagedObjectContext {
-        let model = loadModel()
-        let coordinator = NSPersistentStoreCoordinator(managedObjectModel: model)
-        try! coordinator.addPersistentStore(ofType: NSInMemoryStoreType, configurationName: nil, at: nil)
+        let coordinator = NSPersistentStoreCoordinator(managedObjectModel: CoreDataModel.shared)
+        do {
+            try coordinator.addPersistentStore(ofType: NSInMemoryStoreType, configurationName: nil, at: nil)
+        } catch {
+            fatalError("Failed to add in-memory store: \(error)")
+        }
         let ctx = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
         ctx.persistentStoreCoordinator = coordinator
         return ctx
