@@ -14,7 +14,7 @@ final class BudgetItem: NSManagedObject, @unchecked Sendable {
 
     var amount: Decimal {
         get { Decimal(amountInFen) / 100 }
-        set { amountInFen = Int64(truncating: (newValue * 100) as NSDecimalNumber) }
+        set { amountInFen = newValue.fenValue }
     }
 
     var period: BudgetPeriod {

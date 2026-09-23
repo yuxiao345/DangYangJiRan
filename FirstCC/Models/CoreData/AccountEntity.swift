@@ -37,12 +37,12 @@ final class Account: NSManagedObject, @unchecked Sendable {
 
     var initialBalance: Decimal {
         get { Decimal(initialBalanceInFen) / 100 }
-        set { initialBalanceInFen = Int64(truncating: (newValue * 100) as NSDecimalNumber) }
+        set { initialBalanceInFen = newValue.fenValue }
     }
 
     var creditLimit: Decimal? {
         get { creditLimitInFen == 0 ? nil : Decimal(creditLimitInFen) / 100 }
-        set { creditLimitInFen = newValue.map { Int64(truncating: ($0 * 100) as NSDecimalNumber) } ?? 0 }
+        set { creditLimitInFen = newValue?.fenValue ?? 0 }
     }
 
     var billingDayValue: Int? {

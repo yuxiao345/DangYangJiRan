@@ -30,7 +30,7 @@
 | 层 | 状态 | 依据 |
 |---|---|---|
 | 功能层 | **完整** | 18 个 `Services/Protocols/*.swift` + 22 个 `Implementations/*.swift`；Mac 6 大报表 12 个文件齐全（`Qianeymac/Views/Reports/`） |
-| 测试层 | **343 用例 = 330 单测 + 13 UI** | 单测 **2026-09-24 实测全绿**：iOS `钱伲Tests` 288 执行（284 通过 + **4 跳过**）/ Mac `QianeymacTests` 42 通过 / 0 失败。UI 13 个（`钱伲UITests` 5 + `QianeymacUITests` 8）**本次未跑**。跳过项见 §六-6 |
+| 测试层 | **355 用例 = 342 单测 + 13 UI** | 单测 **2026-09-24 实测全绿**：iOS `钱伲Tests` **300 执行（298 通过 + 2 跳过）/ 0 失败**，Mac `QianeymacTests` **42 通过 / 0 失败**。UI 13 个（`钱伲UITests` 5 + `QianeymacUITests` 8）**本次未跑**。剩余 2 个跳过项与已修项见 §六-6 |
 | 本地化 | **1024 条，332 条缺 `en`** | `FirstCC/Resources/Localizable.xcstrings`（12932 行）—— 注意该文件是 **12932 行 / 1024 条**，CLAUDE.md 里「约 11750 行」已过期 |
 | CI | **有，但只测不发布** | `.github/workflows/test.yml` 只跑 `xcodebuild test`，无 archive/export/release job。另有 **Xcode Cloud 已配置但未纳入 git**（`FirstCC.xcodeproj/xcshareddata/xcodecloud/manifest.json`，未跟踪） |
 | 发布层 | **素材 0%、签名待调** | 见 §二 |
@@ -248,50 +248,73 @@
 - **`.claude/agents/` 下的 `pbxproj-checker`** 的去留从未定论。（原先并列的 `generate_xcodeproj.py`
   已于 2026-09-24 删除，见 §二-5。）
 
-### 6. 被 `XCTSkipIf(true)` 挡住的两个 service 断言 —— **已复核定性：① 是真 bug，② 是测试写错**
+### 6. 两个被 `XCTSkipIf(true)` 挡住的断言 + 同类 `Decimal → Int64` 转换 —— ✅ **已全部修复（2026-09-24）**
 
 2026-09-24 跑 iOS 单测实测：`288` 执行 / `284` 通过 / **4 跳过** / 0 失败。4 个跳过全是
 **无条件** `XCTSkipIf(true, …)`。用户批准后把下面两处暂时去掉跑了一次（**跑完已完全还原，
 两个测试文件与 HEAD 字节一致**），结论如下：
 
-| 断言 | 位置 | 裁定 |
-|---|---|---|
-| ① `SplitEntry.amountInFen` 应为 `3333`（100÷3） | `钱伲Tests/Unit/Services/SplitServiceTests.swift:60` | 🔴 **真 bug，根因已锁定** |
-| ② 删除已报销支出后关联收入应被级联删除 | `钱伲Tests/Unit/Services/TransactionServiceTests.swift:618` | ✅ **级联正常，是测试断言写错** |
+| 断言 | 位置 | 裁定 | 状态 |
+|---|---|---|---|
+| ① `SplitEntry.amountInFen` 应为 `3333`（100÷3） | `钱伲Tests/Unit/Services/SplitServiceTests.swift:60` | 🔴 **真 bug，根因已锁定** | ✅ 已修（跳过已删） |
+| ② 删除已报销支出后关联收入应被级联删除 | `钱伲Tests/Unit/Services/TransactionServiceTests.swift:618` | ✅ **级联正常，是测试断言写错** | ✅ 已修（断言改写） |
+| ③ 其余 12 处同写法的 `Decimal → Int64` setter | 6 个 model 文件 | 🟡 同模式隐患（① 之外的 11 处无覆盖） | ✅ 已修（统一走 helper） |
 
-#### ① 真 bug：除不尽的 `Decimal` 会让金额变成 **0**
-
-实测失败：`XCTAssertEqual failed: ("0") is not equal to ("3333")`。
-根因**不在 service 逻辑，在 `Decimal → Int64` 的转换**（`SplitEntryEntity.swift:17`）：
+**修复方案（用户批准）**：新增共享 helper，13 处调用点全部改走它。
 
 ```swift
-set { amountInFen = Int64(truncating: (newValue * 100) as NSDecimalNumber) }
+// FirstCC/Extensions/Decimal+Currency.swift（放在已有的 Decimal 扩展里，不新建文件
+// —— 新建文件要改 6 处 pbxproj，而该文件当时带着无关的未提交改动，放已有文件里零 pbxproj 改动）
+var fenValue: Int64 {
+    var scaled = self * 100
+    var rounded = Decimal()
+    NSDecimalRound(&rounded, &scaled, 0, scaled < 0 ? .up : .down)
+    return NSDecimalNumber(decimal: rounded).int64Value
+}
 ```
 
-**独立复现**（不依赖 Core Data 的最小探针）：
+**取「朝零截断」而非四舍五入**（用户选择「保持现状」）。实测对照，能精确表示的值新旧**逐一相同**，
+故对存量数据无行为变更：
 
-| 值 | `Int64(truncating:)` | `NSDecimalRound(…, .plain)` + `NSDecimalNumber(decimal:).int64Value` |
+| 值 | 旧 `Int64(truncating:)` | 新 `fenValue` |
 |---|---|---|
-| `300/3` = 100（能整除） | `10000` ✅ | `10000` ✅ |
-| `100/3` = 33.3333…（35 位有效数字） | **`0`** ❌ | `3333` ✅ |
-| `100/7`、`100/6`、`100/9`、`1000/3` | **全部 `0`** ❌ | 正确 |
-| 汇率换算 `712.3456789` / `712.34` / `712` | `71234` / `71234` / `71200` ✅ | 同 |
+| `100/3` | **`0`** ❌ | `3333` ✅ |
+| `-100/3` | **`0`** ❌ | `-3333` ✅ |
+| `100/7` / `1000/3` | **`0`** ❌ | `1428` / `33333` ✅ |
+| `300/3` | `10000` | `10000`（同） |
+| `712.3456789` / `712.34` / `712` | `71234` / `71234` / `71200` | 同 |
+| `1.005` / `2.675` / `-1.005` | `100` / `267` / `-100` | 同（**是截断不是四舍五入**：四舍五入会给 `101`/`268`/`-101`） |
+| `-0.999` / `-0.001` / `0` | `-99` / `0` / `0` | 同 |
+
+⚠️ **`Decimal.RoundingMode` 没有 `.floor`**（只有 `.plain`/`.down`/`.up`/`.bankers`），
+且 `.down` 是**朝 −∞**、`.up` 是**朝 +∞** —— 名字反直觉，朝零截断只能写 `v < 0 ? .up : .down`。
+
+**验证**：iOS 单测 `300` 执行 / `298` 通过 / `2` 跳过 / `0` 失败（284 基线 + 2 条取消跳过转绿 +
+12 条新增 `fenValue` 用例）；Mac `42/42`。新增 `钱伲Tests/DecimalCurrencyTests.swift` 专门锁
+`fenValue` 的截断语义与「除不尽不再是 0」这两件事（③ 的 11 个无覆盖调用点靠它兜）。
+
+#### ① 真 bug：除不尽的 `Decimal` 会让金额变成 **0** —— ✅ 已修
+
+实测失败：`XCTAssertEqual failed: ("0") is not equal to ("3333")`。
+根因**不在 service 逻辑，在 `Decimal → Int64` 的转换**：
+
+```swift
+set { amountInFen = Int64(truncating: (newValue * 100) as NSDecimalNumber) }   // ❌ 高精度时返回 0
+```
 
 → **`Int64(truncating: NSDecimalNumber)` 对高精度小数返回 0**；凡是 `Decimal` 除法除不尽
 （`Decimal` 最多 38 位、除不尽时填满精度）都会中招。**能整除就正常**，这正是它长期没被发现的
-原因 —— 同文件的 `test_createSplit_equal_dividesEvenly`（300÷3）一直是绿的。
+原因 —— 同文件的 `test_createSplit_equal_dividesEvenly`（300÷3）一直是绿的。数值对照表见本节顶部。
 
 - **影响面**：`SplitServiceImpl.createSplit:33` 的 `.equal` 模式（`totalAmount / Decimal(members.count)`）
   → **AA 分账只要除不尽，所有人的分摊金额都是 0**。`.percentage`/`.fixed` 用的是外部传入金额，
   若调用方自己算过除法也会中招。
-- **`TransactionEntity.swift:76` 是同一写法**，但真实汇率换算产出的是有限小数，实测**未受影响** ——
-  是同一模式的隐患，不是当前故障。
-- **修法**：改成 `NSDecimalRound(&rounded, &value, 0, .plain)`（或 `.down`）+ `NSDecimalNumber(decimal:).int64Value`。
-  ⚠️ 注意 `.plain` 会**四舍五入**（`71234.56 → 71235`），而今天是**截断**（`→ 71234`）——对
-  `TransactionEntity` 而言这是行为变更，需单独决策。AA 分账更常见的做法是「各自向下取整 + 余数分配」。
-- **未修**：等用户决定。跳过语句在修好之前应保留。
+- **已修**：13 处调用点全部改走 `Decimal.fenValue`（定义见本节顶部）。`SplitServiceTests.swift:60`
+  的 `XCTSkipIf` 已删除，该用例现在转绿。
+- **有意不改**：AA 分账除不尽时的 `0.01` 余数**不分配**（3 人分 100 元 → 各 3333 分，合计 9999 分，
+  差 1 分）。这是既有行为，项目自己的测试就断言 `3333`，本轮保持。
 
-#### ② 不是 bug：级联删除是好的，`isDeleted` 断言无效
+#### ② 不是 bug：级联删除是好的，`isDeleted` 断言无效 —— ✅ 测试已修
 
 去掉跳过后该断言确实失败（`income.isDeleted == false`），但**深挖发现是实现行为误导了测试**：
 
@@ -300,17 +323,27 @@ TEMP_DIAG after-delete incomeRows=0 expenseRows=0 incomeIsDeleted=false hasChang
 ```
 
 「按照 `id` 重新 fetch，两行都查不到了」+ `hasChanges=false` → **级联删除已经生效并落盘**。
-`isDeleted` 之所以是 `false`，是因为 `deleteTransaction` 结尾 post 了 `.transactionDidChange`，
-之后 context 被 `reset()`（对象退化成 fault），而 **fault 上的 `isDeleted` 恒为 `false`**
+`isDeleted` 之所以是 `false`，是因为 **它只在「删除尚未保存」期间为 `true`**：`deleteTransaction`
+结尾执行了 `try context.save()`（`:289`），保存后对象转成 fault，`isDeleted` 便变回 `false`
 —— 连它自己删掉的 `expense` 也报 `false`，这就是自相矛盾的信号。
 
-- **正确修法**：断言改用「重新 fetch 该 `id` 应为空」，**不要用 `isDeleted`**。
-- ⚠️ **跳过字符串里方法名是错的**：写的是 `TransactionServiceImpl.deleteReimbursableExpense`，
-  该符号**全仓库只在测试文件里出现、代码中不存在**（真名 `deleteTransaction`；同文件 `:614` 的
-  文档注释写对了）。**照这个字符串去搜会搜不到。**
-- 另外 2 处同源的跳过（`ExportServiceTests.swift:228`、`:263`）其实是把测试**改名成 `disabled_…`**
-  退出收集，里面的 `throw XCTSkip` 是永不执行的死代码 —— 这也是「6 处 skip 语句 vs 只报 4 个 skipped」的由来。
-  **`disabled_` 前缀等于静默删除测试**，属于另一类卫生问题。
+> ⚠️ **本条曾错误归因，已更正**：初稿写的是「post 了 `.transactionDidChange` → context 被 `reset()`」。
+> 实际 **全仓 `grep` 不到任何 `.reset()` / `refreshAllObjects()`**，该通知的消费方全是 SwiftUI
+> `.onReceive` + 两个只断言「通知发了」的测试 observer。用临时探针实测（iOS 测试栈，全程不 reset）：
+> `delete 后/save 前 isDeleted=true, hasChanges=true` → `save 后 isDeleted=false, isFault=true`。
+> **真因就是 `save()` 本身。**
+> *教训：结论碰巧对（「不能用 `isDeleted`」）不等于因果链对。给机制起名字之前先确认那个名字在代码里真的存在。*
+
+- **已修**：断言改为「按 `id` 重新 fetch 应为 0 行」（新增私有 helper `transactionCount(id:)`），
+  **并加了正向对照**（一条不该被删的交易 `count == 1`），避免两条 `== 0` 一起空过。
+  删除**之前**先取出 `id` —— save 后对象转 fault，再读属性不安全（本轮诊断时曾因此崩掉 test host）。
+  **不要用 `isDeleted`。**
+- ⚠️ **原跳过字符串里方法名是错的**：写的是 `TransactionServiceImpl.deleteReimbursableExpense`，
+  该符号**全仓库只在测试文件里出现、代码中不存在**（真名 `deleteTransaction`）。该错误字符串已随跳过一并删掉。
+- **本轮未动**：另外 2 处同源的跳过（`ExportServiceTests.swift:228`、`:263`）其实不是 `XCTSkipIf`，
+  而是把测试**改名成 `disabled_…`** 退出收集，里面的 `throw XCTSkip` 是永不执行的死代码 ——
+  这也是「6 处 skip 语句 vs 只报 4 个 skipped」的由来。
+  **`disabled_` 前缀等于静默删除测试**，属于另一类卫生问题，未获批准故未处理。
 
 ---
 
@@ -373,10 +406,34 @@ xcodebuild -project FirstCC.xcodeproj -scheme Qianeymac -destination "platform=m
 > 每条警告有主行 + `| \`- warning:` 续行，总结阶段还会重复打印一次，行数必然虚高。
 > ② 数测试用例要用 **`.xcresult`**，不要 grep 日志 —— 日志行会被 stdout 交错截断。
 > ③ 别把「增量空跑」当成功 —— `BUILD SUCCEEDED` 也可能是 0 个编译步骤，先看 `SwiftCompile` 计数。
+> ④ 但 `SwiftCompile` 的**行数取决于编译模式**：iOS 那条命令带 `SWIFT_COMPILATION_MODE=wholemodule`，
+> 整个模块一条命令、每架构一行 → **只有 2 行是正常的**；Mac 不加该 flag，走逐文件 → 数百行。
+> **判真编没编，要看那一行里是否列出了你改的文件名，不是数行数。**
+> （2026-09-24 本轮我自己又差点被 2 行误导一次，重新查证后才确认是真编译。）
 
 ---
 
 ## 八、修订记录
+
+- **2026-09-24 七次修订（用户批准后落地修复）**：§六-6 的三项**全部修完**。
+  ① 新增 `Decimal.fenValue`（朝零截断），**13 处** `Decimal → Int64` setter 改走它；
+  ② `TransactionServiceTests` 的 `isDeleted` 断言改为「按 id 重新 fetch 为 0 行」，跳过删除；
+  ③ 新增 `钱伲Tests/DecimalCurrencyTests.swift`（12 用例）锁住 `fenValue` 行为。
+  实测 iOS `300` 执行 / `298` 通过 / `2` 跳过 / `0` 失败，Mac `42/42`，双端构建 `BUILD SUCCEEDED`。
+  **复核还纠出我自己一处错误归因**：§六-6 ② 与 §八「六次修订」原写 `isDeleted` 变 false 是
+  「context 被 `reset()`」所致 —— 全仓根本没有 `reset()`，实测真因就是 `deleteTransaction`
+  结尾的 `save()`（`isDeleted` 只在删除待保存期间为 true）。三处注释/文档已一并更正，
+  memory `reference_coredata_isdeleted_on_fault` 同步重写。
+  *教训：结论碰巧对不等于因果链对。*
+  **审查还点了两处未闭环（未动，待用户裁定）**：① `TransactionServiceImpl:370` 是全项目最后一处
+  没走 `fenValue` 的元→分换算（用 Double 中间值，注释把根因误记成「Swift 6.3 beta 的 bug」，
+  且 `Int64(Double)` 遇 NaN 是 fatal error 而 `fenValue` 不崩）；② `ExportServiceTests` 那对
+  `disabled_` 测试的跳过理由同属误归因（它们用 `SplitEntry(amount: 200/100)` 直接构造，本就整除）。
+  *两个值得记住的点*：**helper 放进了已有的 `Decimal+Currency.swift` 而不是新建文件** ——
+  `FirstCC/Extensions/` 不在同步组里（同步组只覆盖 5 个目录），新建文件要手改 6 处 `project.pbxproj`，
+  而那个文件当时带着**无关的未提交改动**，放已有文件里把「混提交」的风险直接消掉了；
+  **`Decimal.RoundingMode` 没有 `.floor`**，且 `.down` 是朝 −∞、`.up` 是朝 +∞，名字反直觉，
+  朝零截断只能写 `v < 0 ? .up : .down`。
 
 - **2026-09-24** 建立。取代 `project_release_checklist` / `project_prerelease_review` 两份 2026-08 memory。
   全部条目重新实测；销掉 3 条假警报（隐私清单、账期 Picker、拆分统计），
@@ -394,10 +451,13 @@ xcodebuild -project FirstCC.xcodeproj -scheme Qianeymac -destination "platform=m
 - **2026-09-24 六次修订（用户批准后做实验）**：把 §六-6 那两处 `XCTSkipIf(true, …)` 暂时去掉实跑，
   跑完**已完全还原**（两个测试文件与 HEAD 字节一致，已用 `git diff HEAD` 验证）。结论：
   **① 是真 bug（根因锁定，见 §六-6）、② 不是 bug（级联正常，是测试断言写错）**。
-  *过程中一个值得记住的行为*：`deleteTransaction` 结尾发通知后 context 被 `reset()`，
-  对象退化为 fault，而 **fault 上的 `isDeleted` 恒为 `false`** —— 我一开始把 `income.isDeleted == false`
-  当成「没删除」的证据，差点把「测试写错」误记成「产品 bug」。改用「按 id 重新 fetch 应为空」才看清真相。
+  *过程中一个值得记住的行为*：`deleteTransaction` 结尾 `save()` 之后，被删对象转为 fault，
+  而 **`isDeleted` 此时是 `false`**（它只在「删除待保存」期间为 `true`）—— 我一开始把
+  `income.isDeleted == false` 当成「没删除」的证据，差点把「测试写错」误记成「产品 bug」。
+  改用「按 id 重新 fetch 应为空」才看清真相。
   *教训：判断「行没了没有」要查 store，不要问内存对象的 `isDeleted`。*
+  （注：本条初稿把机制写成「context 被 `reset()`」，**是错的**，已在七次修订后续更正 ——
+  全仓没有 `reset()`，真因只是 `save()`。见 §六-6 ② 的更正块。）
 - **2026-09-24 五次修订（完整工作流复跑）**：按用户要求把工作流严格跑了一遍 ——
   ① **双端全量构建**均 `BUILD SUCCEEDED`（iOS 真编 320 个 `.swift`、Mac 359 个，0 error；
   警告 70 / 93 条，均既有、与本次清理无关）；② **单测全绿**（iOS 284 通过 / 4 跳过 / 0 失败，

@@ -22,7 +22,7 @@ final class SplitGroup: NSManagedObject, @unchecked Sendable {
 
     var totalAmount: Decimal {
         get { Decimal(totalAmountInFen) / 100 }
-        set { totalAmountInFen = Int64(truncating: (newValue * 100) as NSDecimalNumber) }
+        set { totalAmountInFen = newValue.fenValue }
     }
 
     var totalPaid: Decimal {

@@ -18,12 +18,12 @@ final class CreditCardStatement: NSManagedObject, @unchecked Sendable {
 
     var statementAmount: Decimal? {
         get { statementAmountInFen == 0 ? nil : Decimal(statementAmountInFen) / 100 }
-        set { statementAmountInFen = newValue.map { Int64(truncating: ($0 * 100) as NSDecimalNumber) } ?? 0 }
+        set { statementAmountInFen = newValue?.fenValue ?? 0 }
     }
 
     var reconciledAppAmount: Decimal? {
         get { reconciledAppAmountInFen == 0 ? nil : Decimal(reconciledAppAmountInFen) / 100 }
-        set { reconciledAppAmountInFen = newValue.map { Int64(truncating: ($0 * 100) as NSDecimalNumber) } ?? 0 }
+        set { reconciledAppAmountInFen = newValue?.fenValue ?? 0 }
     }
 
     override func awakeFromInsert() {

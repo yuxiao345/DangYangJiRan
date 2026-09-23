@@ -18,7 +18,7 @@ final class Project: NSManagedObject, @unchecked Sendable {
 
     var budget: Decimal? {
         get { budgetInFen == 0 ? nil : Decimal(budgetInFen) / 100 }
-        set { budgetInFen = newValue.map { Int64(truncating: ($0 * 100) as NSDecimalNumber) } ?? 0 }
+        set { budgetInFen = newValue?.fenValue ?? 0 }
     }
 
     override func awakeFromInsert() {

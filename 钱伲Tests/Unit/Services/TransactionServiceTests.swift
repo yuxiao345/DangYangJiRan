@@ -610,12 +610,15 @@ final class TransactionServiceTests: CoreDataTestCase {
         XCTAssertNil(expense.reimbursedById)
     }
 
-    /// 删除可报销支出 +关联的报销收入：报销收入也被删除
-    /// Known issue: TransactionServiceImpl.deleteTransaction 中用 `try?` 静默吞错，
-    /// 导致 income 未被级联删除。Service 代码 bug，待单独修复。
-    /// 在不修 service 代码的前提下，本测试标 XCTSkipIf。
+    /// 删除可报销支出 + 关联的报销收入：报销收入也被级联删除
+    ///
+    /// 断言按 id 重新 fetch，**不能**用 `income.isDeleted`：`isDeleted` 只在删除**尚未保存**
+    /// 时为 `true`；`deleteTransaction` 结尾执行了 `try context.save()`
+    /// （`TransactionServiceImpl:289`），保存后对象转成 fault，`isDeleted` 变回 `false`
+    /// ——即使那行确实已删除并落盘。（实测，全程不涉及 `reset()`：
+    /// `delete 后/save 前 isDeleted=true, hasChanges=true` → `save 后 isDeleted=false, isFault=true`。）
+    /// 级联删除本身一直是好的，此前误判成 service bug 就是因为这条断言。
     func test_deleteReimbursableExpense_removesReimbursementIncome() throws {
-        try XCTSkipIf(true, "Known issue: TransactionServiceImpl.deleteReimbursableExpense 用 try? 吞错未级联删除 income，待 service 修复")
         let ledger = context.makeLedger()
         let account = context.makeAccount("现金", ledger: ledger)
         let expense = context.makeTransaction(
@@ -628,9 +631,26 @@ final class TransactionServiceTests: CoreDataTestCase {
         expense.reimbursedById = income.id
         try context.save()
 
+        // 删除前先取 id：save 后对象转为 fault，届时再读属性不安全（本轮诊断时曾因此崩过 test host）
+        let incomeID = income.id
+        let expenseID = expense.id
+
+        // 正向对照：一条不该被删的交易，证明 transactionCount 确实能返回非 0
+        let survivor = context.makeTransaction(amount: -7, account: account, ledger: ledger)
+        let survivorID = survivor.id
+
         try service.deleteTransaction(expense, context: context)
 
-        XCTAssertTrue(income.isDeleted, "reimbursement income 应在删除 expense 后被级联删除")
+        XCTAssertEqual(try transactionCount(id: survivorID), 1, "正向对照：不该被删的交易应仍在")
+        XCTAssertEqual(try transactionCount(id: incomeID), 0, "reimbursement income 应在删除 expense 后被级联删除")
+        XCTAssertEqual(try transactionCount(id: expenseID), 0, "expense 自身应被删除")
+    }
+
+    /// 按 id 重新 fetch 交易行数。以 store 为准，绕开 `isDeleted` 只在「删除待保存」期间为真的陷阱。
+    private func transactionCount(id: UUID) throws -> Int {
+        let req = NSFetchRequest<Transaction>(entityName: "Transaction")
+        req.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        return try context.count(for: req)
     }
 
     // MARK: - applyCurrency

@@ -73,7 +73,7 @@ final class Transaction: NSManagedObject, @unchecked Sendable {
     // MARK: - Int64 money bridges
     var amount: Decimal {
         get { Decimal(amountInFen) / 100 }
-        set { amountInFen = Int64(truncating: (newValue * 100) as NSDecimalNumber) }
+        set { amountInFen = newValue.fenValue }
     }
 
     var exchangeRateValue: Double? {
@@ -93,17 +93,17 @@ final class Transaction: NSManagedObject, @unchecked Sendable {
 
     var convertedAmount: Decimal? {
         get { convertedAmountInFen == 0 ? nil : Decimal(convertedAmountInFen) / 100 }
-        set { convertedAmountInFen = newValue.map { Int64(truncating: ($0 * 100) as NSDecimalNumber) } ?? 0 }
+        set { convertedAmountInFen = newValue?.fenValue ?? 0 }
     }
 
     var refundAmount: Decimal? {
         get { refundAmountInFen == 0 ? nil : Decimal(refundAmountInFen) / 100 }
-        set { refundAmountInFen = newValue.map { Int64(truncating: ($0 * 100) as NSDecimalNumber) } ?? 0 }
+        set { refundAmountInFen = newValue?.fenValue ?? 0 }
     }
 
     var settledAmount: Decimal? {
         get { settledAmountInFen == 0 ? nil : Decimal(settledAmountInFen) / 100 }
-        set { settledAmountInFen = newValue.map { Int64(truncating: ($0 * 100) as NSDecimalNumber) } ?? 0 }
+        set { settledAmountInFen = newValue?.fenValue ?? 0 }
     }
 
     // MARK: - JSON string bridges

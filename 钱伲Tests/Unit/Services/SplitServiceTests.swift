@@ -53,11 +53,11 @@ final class SplitServiceTests: CoreDataTestCase {
         XCTAssertEqual(tx.splitGroup, group)
     }
 
-    /// equal 模式：金额不能整除时（如 100/3）会带 0.01 元的小数
-    /// Known issue: SplitServiceImpl 写入 entries 后 amountInFen 被重置为 0（怀疑 splitChildren fault 触发 save 重写）。
-    /// 在不修 service 代码的前提下，本测试标 XCTSkipIf。
+    /// equal 模式：金额不能整除时（如 100/3）每份 33.33…，写库按分**朝零截断**为 3333
+    ///
+    /// 这条曾因 `Int64(truncating:)` 对高精度 `Decimal` 返回 0 而失败，已随
+    /// `Decimal.fenValue` 修复（`FirstCC/Extensions/Decimal+Currency.swift`）。
     func test_createSplit_equal_unevenDivision_decimalShare() throws {
-        try XCTSkipIf(true, "Known issue: SplitServiceImpl 创建 entry 后 amountInFen 写为 0，service 代码层 bug，待单独修复")
         let ledger = context.makeLedger()
         let account = context.makeAccount("现金", ledger: ledger)
         let members = (1...3).map { context.makeMember("成员\($0)", ledger: ledger) }
