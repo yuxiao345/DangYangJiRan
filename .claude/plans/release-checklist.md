@@ -30,7 +30,7 @@
 | 层 | 状态 | 依据 |
 |---|---|---|
 | 功能层 | **完整** | 18 个 `Services/Protocols/*.swift` + 22 个 `Implementations/*.swift`；Mac 6 大报表 12 个文件齐全（`Qianeymac/Views/Reports/`） |
-| 测试层 | **343 用例** | 见 §七 复跑命令 |
+| 测试层 | **343 用例 = 330 单测 + 13 UI** | 单测 **2026-09-24 实测全绿**：iOS `钱伲Tests` 288 执行（284 通过 + **4 跳过**）/ Mac `QianeymacTests` 42 通过 / 0 失败。UI 13 个（`钱伲UITests` 5 + `QianeymacUITests` 8）**本次未跑**。跳过项见 §六-6 |
 | 本地化 | **1024 条，332 条缺 `en`** | `FirstCC/Resources/Localizable.xcstrings`（12932 行）—— 注意该文件是 **12932 行 / 1024 条**，CLAUDE.md 里「约 11750 行」已过期 |
 | CI | **有，但只测不发布** | `.github/workflows/test.yml` 只跑 `xcodebuild test`，无 archive/export/release job。另有 **Xcode Cloud 已配置但未纳入 git**（`FirstCC.xcodeproj/xcshareddata/xcodecloud/manifest.json`，未跟踪） |
 | 发布层 | **素材 0%、签名待调** | 见 §二 |
@@ -73,6 +73,8 @@
 - **三个坏场景**：① 一笔大额支出分次报销 → 第一笔收入就把整笔标成已报销；② 金额不一致
   （记 900 只报 890）→ 差额永久挂在 pending，没有「差额弃权」出口；③ 多笔支出合一张报销单 → 当前 OK。
 - 改造方向：加 `reimbursedAmount`（参考借贷的 `settledAmountInFen` 分次冲销模型）+「差额弃权」终态。
+- 📌 **同一片区的另一个线索**：删除「已报销支出」时的级联删除断言也被 `XCTSkipIf(true)` 关掉了，
+  而代码里那段级联逻辑**看起来已经存在** —— 见 §六-6，需复核。
 
 ### 4. i18n：332 条缺 `en`
 
@@ -245,6 +247,40 @@
 - **`.claude/agents/` 下的 `pbxproj-checker`** 的去留从未定论。（原先并列的 `generate_xcodeproj.py`
   已于 2026-09-24 删除，见 §二-5。）
 
+### 6. 被 `XCTSkipIf(true)` 挡住的两个 service 断言 —— 至少一个**疑似已修**，需复核
+
+2026-09-24 跑 iOS 单测实测：`288` 执行 / `284` 通过 / **4 跳过** / 0 失败。4 个跳过全是
+**无条件** `XCTSkipIf(true, …)`（不是环境性跳过，是主动关掉的断言）。其中 2 个指向 service 层，
+**当前没有任何测试在验证它们**：
+
+| 被关掉的断言 | 位置 | 跳过理由原文 |
+|---|---|---|
+| ① `SplitEntry.amountInFen` 应为 `3333` | `钱伲Tests/Unit/Services/SplitServiceTests.swift:60`（另有 `ExportServiceTests.swift:228`、`:263` 同源） | 「`SplitServiceImpl` 创建 entry 后 `amountInFen` 写为 0」 |
+| ② 删除已报销支出后，关联的报销收入应被级联删除 | `钱伲Tests/Unit/Services/TransactionServiceTests.swift:618` | 「`deleteTransaction` 用 `try?` 吞错未级联删除 income」 |
+
+**本轮核实（读代码，未复现）：**
+
+- **① 未能证实也未能证伪。** `SplitEntry.amountInFen` 字段确实存在（`SplitEntryEntity.swift:7`，
+  由 `amount` setter `:15-17` 写入），`SplitServiceImpl.swift:42` 也确实传了 `amount: entryAmounts[index]`。
+  跳过注释里的猜测是「splitChildren fault 触发 save 重写」——**这是个待查的真问题域**，需要单独排查。
+- **② 的跳过理由很可能是过期的。** `TransactionServiceImpl.deleteTransaction:264-270` **已经写了**
+  级联删除：`type == .expense && isReimbursable && reimbursedById != nil` → fetch 关联 income → `context.delete`。
+  且 `isReimbursable`（`TransactionEntity.swift:56`）= `reimbursementStatus != .none`，`.approved` 能通过判断。
+  也就是「代码里缺的那段现在有了」——**很可能是后来补的修复，而测试跳过没再打开**。
+- ⚠️ **②的跳过字符串里方法名是错的**：写的是 `TransactionServiceImpl.deleteReimbursableExpense`，
+  但该符号**全仓库只在测试文件里出现，代码中不存在**（真名是 `deleteTransaction`）。
+  同文件的文档注释（`:614`）写的是对的。**别人照这个字符串去搜会搜不到。**
+
+**复核方法（需要动测试文件，等用户点头）**：把这两处 `XCTSkipIf(true, …)` 暂时去掉跑一次——
+① 若通过则跳过理由过期；② 若通过则确认修复已生效、跳过该删。**这是唯一能定性的办法**，
+读代码只能得到「代码看起来是有的」。
+
+**风险**：①若为真，AA 分账的毫厘差额会丢成 0；②若为真，删除可报销支出会残留孤儿收入（与 §二-3 同片区）。
+
+**⚠️ 计数纪律（本次又踩一次）**：Mac 用例数我第一遍用 `grep` 数出 **41**，`xcrun xcresulttool`
+给的是 **42** —— 日志里有一行被 stdout 交错截断成 `g_excluded()' passed on 'My Mac`，正则匹配不到。
+**权威计数一律以 `.xcresult` 为准，不要数日志行**（与 CLAUDE.md 里「数警告要主行去重」同源）。
+
 ---
 
 ## 七、核实方法与复跑命令
@@ -268,9 +304,44 @@ grep -rn "MetricKit\|MXMetricManager\|Crashlytics\|Sentry\|Firebase" --include="
 grep -rn "notarytool\|stapler\|altool" . --include="*.sh" --include="*.yml" --include="*.py"
 ```
 
-> ⚠️ **计数纪律（本项目踩过两次）**：数构建警告要用**主行去重**
-> （`^/Users/…: warning:`），不要用「含某句话的日志行数」——每条警告有主行 + `| \`- warning:`
-> 续行，总结阶段还会重复打印一次，行数必然虚高。
+**跑测试并取权威计数（别数日志行）：**
+
+```bash
+# iOS 单测
+xcodebuild test -project FirstCC.xcodeproj -scheme 钱伲 \
+  -destination "platform=iOS Simulator,name=iPhone 17" \
+  -only-testing:钱伲Tests -derivedDataPath /tmp/firstcc-ios-test -jobs 4
+
+# Mac 单测
+xcodebuild test -project FirstCC.xcodeproj -scheme Qianeymac \
+  -destination "platform=macOS" \
+  -only-testing:QianeymacTests -derivedDataPath /tmp/firstcc-test-build -jobs 4
+
+# ✅ 权威计数（2026-09-24 起统一用这个，不要 grep 日志）
+for d in /tmp/firstcc-ios-test /tmp/firstcc-test-build; do
+  XC=$(ls -dt $d/Logs/Test/*.xcresult | head -1)
+  xcrun xcresulttool get test-results summary --path "$XC" \
+    | python3 -c "import json,sys; d=json.load(sys.stdin); print({k:d[k] for k in ('result','passedTests','failedTests','skippedTests')})"
+done
+```
+
+**全量构建（干净 DerivedData，避免增量空跑冒充成功）：**
+
+```bash
+rm -rf /tmp/firstcc-build-full /tmp/firstcc-mac-build-full
+xcodebuild -project FirstCC.xcodeproj -scheme 钱伲 \
+  -destination "platform=iOS Simulator,name=iPhone 17" \
+  -derivedDataPath /tmp/firstcc-build-full -jobs 4 SWIFT_COMPILATION_MODE=wholemodule build
+xcodebuild -project FirstCC.xcodeproj -scheme Qianeymac -destination "platform=macOS" \
+  -derivedDataPath /tmp/firstcc-mac-build-full -jobs 4 SWIFT_COMPILATION_MODE=wholemodule build
+# 验证「真编了」：grep -cE "SwiftCompile" 应为数百，不是 0
+```
+
+> ⚠️ **计数纪律（本项目踩过三次）**：
+> ① 数构建警告要用**主行去重**（`^/Users/…: warning:`），不要用「含某句话的日志行数」——
+> 每条警告有主行 + `| \`- warning:` 续行，总结阶段还会重复打印一次，行数必然虚高。
+> ② 数测试用例要用 **`.xcresult`**，不要 grep 日志 —— 日志行会被 stdout 交错截断。
+> ③ 别把「增量空跑」当成功 —— `BUILD SUCCEEDED` 也可能是 0 个编译步骤，先看 `SwiftCompile` 计数。
 
 ---
 
@@ -289,6 +360,17 @@ grep -rn "notarytool\|stapler\|altool" . --include="*.sh" --include="*.yml" --in
   已整段重写。
   *教训：验「上架会怎样」必须用**上架用的那个 configuration**（Release），
   Debug 结论不能外推到 Release。项目里已有同类纪律（[[feedback_verify_api_by_compile_not_grep]]）。*
+- **2026-09-24 五次修订（完整工作流复跑）**：按用户要求把工作流严格跑了一遍 ——
+  ① **双端全量构建**均 `BUILD SUCCEEDED`（iOS 真编 320 个 `.swift`、Mac 359 个，0 error；
+  警告 70 / 93 条，均既有、与本次清理无关）；② **单测全绿**（iOS 284 通过 / 4 跳过 / 0 失败，
+  Mac 42 通过 / 0 失败）；③ 新增 **§六-6**：4 个被 `XCTSkipIf(true)` 无条件关掉的断言，
+  其中 2 个指向 service 层（`SplitEntry.amountInFen` 写为 0；删除可报销支出的级联删除），
+  **②的代码路径看起来已存在 → 跳过理由疑似过期**，且跳过字符串里的方法名
+  `deleteReimbursableExpense` 在代码中根本不存在；④ §一 测试层补上实测分解（343 = 330 单测 + 13 UI）；
+  ⑤ §七 补 `.xcresult` 权威计数与「干净 DerivedData」命令，计数纪律扩到三条。
+  *教训（我自己犯的）*：本轮我一度用 `ls README*` 判断有无 CI，zsh 因「无匹配」中断整条命令，
+  我据此向用户说「项目无 CI」—— **实为假阴性**，`.github/workflows/test.yml` 一直都在。
+  *别用会因无匹配而中断的 glob 去证明「某物不存在」。*
 - **2026-09-24 四次修订（用户裁定）**：§二-5 的「遗留残留」定案 ——
   ① Debug 显示名 `荡漾计然` **是用户有意保留的开发版标识**（同一设备对照测试时靠图标名区分），
   **不是残留，保持不动**；② `generate_xcodeproj.py` 与两份 `project.pbxproj.backup.*` **已删除**
