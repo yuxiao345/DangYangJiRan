@@ -32,7 +32,10 @@ struct SplitServiceImpl: SplitServiceProtocol {
         case .equal:
             entryAmounts = Self.equalShares(totalAmount: totalAmount, count: members.count)
         case .percentage, .fixed:
-            guard let amounts else { throw SplitError.invalidAmounts }
+            // 长度必须一致：下面的循环只写 members.count 份 entry，而 balancedToTotal 把差额
+            // 补给 amounts 的**最后一个元素** —— 少了会越界崩，多了则多出的那份不入库、
+            // 差额落空、`settlementStatus` 照样到不了 `.settled`。两种错配都在这里挡掉。
+            guard let amounts, amounts.count == members.count else { throw SplitError.invalidAmounts }
             entryAmounts = amounts
         }
 
@@ -97,10 +100,9 @@ struct SplitServiceImpl: SplitServiceProtocol {
     ///
     /// 保证的范围：**差额补在 `amounts` 的最后一个元素上**，而 `createSplit` 只写
     /// `members.count` 份 entry，所以「写进去的份数合计等于总额」只在
-    /// **`amounts.count == members.count`** 时成立。当前唯一调用方
-    /// （`SplitFormView`）用 `membersList.map` 生成 `amounts`，两者必然等长；
-    /// 但若将来出现**多给**金额的调用方，多出的份额不会写库、差额也就落空了 ——
-    /// 要覆盖这一点得在这里加长度校验，属另一件事。
+    /// **`amounts.count == members.count`** 时成立 —— 这个前提由 `createSplit` 的
+    /// `.percentage`/`.fixed` 分支用 `guard` 保证（错配直接抛 `invalidAmounts`）。
+    /// 本函数自己**不做长度校验**：它是纯函数，只对给定的数组负责。
     static func balancedToTotal(_ amounts: [Decimal], totalAmount: Decimal) -> [Decimal] {
         var fen = amounts.map(\.fenValue)
         // 空数组时下面 fen.count - 1 会越界；members 为空时本函数本就不该造出任何 entry

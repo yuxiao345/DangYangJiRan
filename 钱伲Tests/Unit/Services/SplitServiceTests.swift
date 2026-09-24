@@ -240,6 +240,53 @@ final class SplitServiceTests: CoreDataTestCase {
         }
     }
 
+    /// amounts 与 members 数量不一致：**两个方向**都应抛 invalidAmounts
+    ///
+    /// 以前两个方向都没挡，且**失败方式不同**（审查实测，把 guard 摘掉复现）：
+    /// - **少了**：循环写第 3 份时 `shares[2]` 越界 → **trap**。注意
+    ///   `XCTAssertThrowsError` **抓不住 trap** —— 进程被杀，失败表现是「测试包中途终止」，
+    ///   而不是干脆的 "did not throw"。
+    /// - **多了**：差额补在 `amounts` 的**最后一个元素**上，而那个下标永远不会被写库
+    ///   （循环只走 `members.count` 次）→ 写进去的 3 份合计 ≠ 总额
+    ///   → `settlementStatus` 照样到不了 `.settled`。这一支是**干净的失败**（能报 "did not throw"）。
+    ///
+    /// 因为「少了」那支先跑且会 trap，把 guard 摘掉时它会先崩、掩盖后一支的断言 ——
+    /// 这是可接受的：只要 guard 在，两支都断言到位。
+    func test_createSplit_amountsCountMismatch_throws() {
+        let ledger = context.makeLedger()
+        let account = context.makeAccount("现金", ledger: ledger)
+        let members = (1...3).map { context.makeMember("成员\($0)", ledger: ledger) }
+
+        // 2 份（少 1 份）/ 5 份（多 2 份）；金额值本身无关紧要 —— guard 只读 `.count`，
+        // 抛错发生在 balancedToTotal 之前，所以刻意用同一个值，免得读者去算合计
+        for amountsCount in [2, 5] {
+            let amounts = [Decimal](repeating: 30, count: amountsCount)
+            let label = "\(amountsCount) 份金额 vs \(members.count) 名成员"
+            let tx = context.makeTransaction(amount: -100, account: account, ledger: ledger)
+
+            XCTAssertThrowsError(
+                try service.createSplit(
+                    totalAmount: 100,
+                    currencyCode: "CNY",
+                    splitType: .fixed,
+                    members: members,
+                    amounts: amounts,
+                    note: nil,
+                    date: Date(),
+                    transaction: tx,
+                    ledger: ledger,
+                    context: context
+                ),
+                "\(label)：必须抛错，否则要么越界崩、要么差额落空"
+            ) { error in
+                guard case SplitError.invalidAmounts = error else {
+                    XCTFail("\(label)：期望 SplitError.invalidAmounts，得到 \(error)")
+                    return
+                }
+            }
+        }
+    }
+
     // MARK: - markEntryPaid
 
     /// 标记单个 entry 已支付

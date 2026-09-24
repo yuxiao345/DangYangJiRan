@@ -447,17 +447,44 @@ TEMP_DIAG after-delete incomeRows=0 expenseRows=0 incomeIsDeleted=false hasChang
     会让探针误报「合计正好相等」。我第一次就踩了这个，差点把真缺口判成假警报。*
     *（这类发现说明「修一个症状」要顺着**同一个不变量**把所有产生它的分支都找一遍——
     只修 `.equal` 就是只修了 1/3。）*
-  - 循环里的 `shares[index]` 在 **`amounts.count < members.count` 时会越界崩**；
-    当前 View 恒按 `membersList` 生成等长数组，无调用方能触发，故未加防护。
-  - **反向错配**（`amounts.count > members.count`）**不会崩，但静默失效**（审查实测）：
-    差额补在 `amounts` 的**最后一个元素**上，而循环只写 `members.count` 份 ——
-    多出的那份不会入库，差额就落空了，症状（`.settled` 到不了）原样复现。
-    实测 `members = [M]`、`amounts = [1,2,3,4,5]`、`total = 100` → 写库 1 份 1.00 元。
-    **改前改后暴露度相同**（旧代码同样只索引 `members.count` 次），故不是本次引入的回归。
-    一处 `guard amounts.count == members.count else { throw SplitError.invalidAmounts }`
-    可同时收掉正反两个方向 —— **未加，属独立决定**（见下条 overflow 同一性质）。
+  - **两个方向的 `amounts`/`members` 错配 —— ✅ 已挡（用户 2026-09-24 裁定「只加长度 guard」）**：
+    - 少了（`amounts.count < members.count`）：循环里的 `shares[index]` **会越界崩**。
+    - 多了（`amounts.count > members.count`）：**不崩但静默失效**（审查实测）—— 差额补在
+      `amounts` 的**最后一个元素**上，而循环只写 `members.count` 份，多出的那份不入库、
+      差额就落空了，症状（`.settled` 到不了）**原样复现**。实测 `members = [M]`、
+      `amounts = [1,2,3,4,5]`、`total = 100` → 写库 1 份 1.00 元。
+    - 两者**改前改后暴露度相同**（旧代码同样只索引 `members.count` 次），不是本次引入的回归；
+      当前唯一调用方 `SplitFormView` 用 `membersList.map` 生成 `amounts`，两者必然等长，
+      **应用内不可达**。
+    - 修法：`.percentage`/`.fixed` 分支加 `guard let amounts, amounts.count == members.count
+      else { throw SplitError.invalidAmounts }`；`balancedToTotal` **仍不做长度校验**（它是纯函数，
+      只对给定数组负责，前提由上游保证）。回归锁
+      `test_createSplit_amountsCountMismatch_throws`（少了 1 份 / 多了 2 份，两个方向）。
+    - ⚠️ **两个方向的失败方式不同，别指望这条测试给出两份干净的红**（审查摘掉 guard 实测）：
+      「少了」是 **trap**（`shares[2]` 越界 → 进程被杀），而 `XCTAssertThrowsError`
+      **抓不住 trap** —— 失败表现是「测试包中途终止」而不是 "did not throw"；
+      「多了」才是干净失败。摘掉 guard 时先跑的那支会崩、掩盖后一支的断言，可接受。
+    - 「少了」那支 `shares[2]` 越界的 index 边界是**可证的**：`.percentage`/`.fixed` 由本条 guard
+      保证 `entryAmounts.count == members.count`；`.equal` 由 `equalShares` 保证（`count ≥ 1` 返回
+      `count` 个、`count ≤ 0` 返回 `[]`，而 0 成员时循环不执行）；`balancedToTotal` 保长（空输入
+      早返回 `[]`）。故 `shares.count == members.count == 循环次数`，最大下标不会越界。
   - **doc 已相应收窄**：原先写「任何调用方（含将来的）都自动满足不变量」是**过度断言**
     （审查据此举出可复现反例），现明确写「仅在 `amounts.count == members.count` 时成立」。
+  - ⚠️ **另记一处既有隐患（未动）**：`createSplit` 的 `group` 创建、
+    `transaction.splitGroup = group`、`isSplitParent = true` 都在 switch **之前**，
+    而抛 `invalidAmounts` 在 switch **之内** —— 所以抛错时 context 里**留着未保存的
+    `SplitGroup` 和已置位的 `isSplitParent`**。`SplitFormView:194` 的 `catch` 只
+    `Logger.error`、不 `rollback()`，也**不 dismiss**（用户停在表单页）：
+    之后任何一次无关的 `context.save()` 都会把这个孤儿 `SplitGroup` 落库。
+    这条从旧的 `amounts == nil` 抛错路径就存在（不是本次引入），本次只是**多了一个**触发点
+    （同样不可达）。要彻底收掉得把这三个赋值挪到校验之后，属独立决定。
+    **审查用 `git log -L` 定到了引入点**：`guard let amounts else { throw … }` 自
+    `cd09c85`（2026-05-25）起就在这个「赋值之后」的位置，上面那三行更早（`145d4bb`/`ab670d5`），
+    且两个既有测试（`test_createSplit_percentage_missingAmounts_throws` /
+    `…_fixed_missingAmounts_throws`）**早就在走同一条抛错后置**。
+    **孤儿是真的会落库**（审查实测）：回归锁里第 2 轮 `context.makeTransaction` 内部
+    `try! save()` 把第 1 轮留下的孤儿 `SplitGroup` 提交了 —— 每个测试用独立的 in-memory store，
+    所以不跨测试泄漏，但这证明它不是「只在内存里挂着」。
 - ⚠️ **新增了一条 Int64 溢出的 crash 路径（已实测复现，但论证为不可达 —— 未修，属独立决定）**：
   `balancedToTotal` 里新加了 `fen.reduce(0, +)` 与 `+=`，都是**检查型** Int64 运算。
   `Decimal.fenValue` 越界时**不回绕报错、也不饱和，而是回绕成垃圾值**（实测
@@ -469,13 +496,18 @@ TEMP_DIAG after-delete incomeRows=0 expenseRows=0 incomeIsDeleted=false hasChang
   `sum(fen) ≤ totalFen` 恒成立，部分和不会越界。**故应用内触发不到** ——
   但该函数是 `static` 且被文档当作通用不变量守卫，将来若有别的调用方就会踩到。
   可选处理：把 `+` / `-` 改成 `&+` / `&-`（与 `fenValue` 本身「回绕不报错」的语义一致，
-  垃圾进垃圾出、不崩），或加金额上限校验。**均未实施。**
+  垃圾进垃圾出、不崩），或加金额上限校验。
+  **用户 2026-09-24 裁定：不动**（只加长度 guard）。理由认同 —— 触发条件是
+  `|总额| > ¥9.2 亿亿`，而 `Transaction.amount` 的底层 `amountInFen` 是 `Int64`，
+  应用内根本存不下这种值；为不可达路径把检查型算术降级成静默回绕，得不偿失。
 - ⚠️ **存量数据不回溯**：本次只影响**新建/重新保存**的分账。已经存在的除不尽分账仍是 9999/10000，
   仍卡在 `.partial`（点「一键结算」能标记全部已付，但状态显示不会变）。
   要不要照 `repairInvalidTypeFields` 的样子加一次回填修复（差值补给最后一名 entry），
-  **未定，待用户裁定**。
+  **用户 2026-09-24 裁定：先不动，用户自己看要不要修** —— 未列 P0/P1，留在本节。
+  ⚠️ 盘点影响面时注意：这不是「少数历史脏数据」，而是**所有历史除不尽分账**都要命中，
+  只要存在过就必然显示异常（判断口径：`sum(entries.amountInFen) != SplitGroup.totalAmountInFen`）。
 
-**实测**：iOS `305` 执行 / `303` 通过 / `2` 跳过 / `0` 失败（本轮共 +5 条新用例）；Mac `42/42`；
+**实测**：iOS `306` 执行 / `304` 通过 / `2` 跳过 / `0` 失败（本轮共 +6 条新用例）；Mac `42/42`；
 双端构建 `BUILD SUCCEEDED`、0 error、0 条新警告。
 
 ---
@@ -548,6 +580,19 @@ xcodebuild -project FirstCC.xcodeproj -scheme Qianeymac -destination "platform=m
 
 ## 八、修订记录
 
+- **2026-09-24 九次修订（用户裁定后落地）**：本次两处审查缺口，用户裁定「只加长度 guard」，
+  **溢出那处不动**。落地 `SplitServiceImpl.createSplit` 的
+  `guard let amounts, amounts.count == members.count else { throw SplitError.invalidAmounts }`
+  一个 guard 收掉正反两个方向（少了越界崩 / 多了差额落空），回归锁
+  `test_createSplit_amountsCountMismatch_throws`。
+  **审查后修正了三处我自己的记述精度**（代码没动）：① 我原本在原例里写「实测
+  `members = [M]`、`amounts = [1,2,3,4,5]`」当成**该测试的输入** —— 它不是，已改成按机制描述；
+  ② 补记「少了」那支是 **trap 而 `XCTAssertThrowsError` 抓不住 trap**，两个方向的失败方式不同；
+  ③ 补记孤儿 `SplitGroup` **确实会落库**（测试第 2 轮的 `try! save()` 就提交了第 1 轮留下的）。
+  另**否掉**简化建议一条：把重复 3 次的 `XCTAssertThrowsError` + `guard case` 抽成本地 helper
+  —— 那要动两个**既有**测试，超出本次范围，且 XCTest 里这种 4 行写法就是惯用法。
+  实测：iOS `306` 执行 / `304` 通过 / `2` 跳过 / `0` 失败；Mac `42/42`；双端 `BUILD SUCCEEDED`。
+
 - **2026-09-24 八次修订**：§六-8 两件收尾（用户裁定「1、3 解决；2 放代办独立修」）。
   ① `TransactionServiceImpl.applyCurrency` 改走 `convertedAmount` setter（→ `fenValue`），
   并**纠正那条把根因记成「Swift 6.3 / macOS 26 beta bug」的注释**；
@@ -596,6 +641,14 @@ xcodebuild -project FirstCC.xcodeproj -scheme Qianeymac -destination "platform=m
   「必须读另一个函数才知道不变量从哪来」，而现行写法 4 行自解释。
   **记入待决、未实施**（均为审查实测、当前不可达）：见 §六-8-2 的
   「`amounts.count > members.count` 静默失效」与「`fen.reduce` 的 Int64 溢出 crash」。
+  **用户当天裁定，已按裁定落地**：
+  ① **加长度 guard**（`.percentage`/`.fixed` 分支 `guard let amounts, amounts.count == members.count`）——
+  一个 `guard` 同时收掉「少了越界崩」与「多了差额落空」两个方向，回归锁
+  `test_createSplit_amountsCountMismatch_throws`；
+  ② **溢出不动** —— 触发条件是 `|总额| > ¥9.2 亿亿`，而 `Transaction.amount` 底层
+  `amountInFen` 是 `Int64`，应用内根本存不下，为不可达路径把检查型算术降级成静默回绕得不偿失。
+  **本轮共新增 6 条用例。实测：iOS `306` 执行 / `304` 通过 / `2` 跳过 / `0` 失败，Mac `42/42`，
+  双端 `BUILD SUCCEEDED`。**
 - **2026-09-24 七次修订（用户批准后落地修复）**：§六-6 的三项**全部修完**。
   ① 新增 `Decimal.fenValue`（朝零截断），**13 处** `Decimal → Int64` setter 改走它；
   ② `TransactionServiceTests` 的 `isDeleted` 断言改为「按 id 重新 fetch 为 0 行」，跳过删除；
