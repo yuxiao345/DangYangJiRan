@@ -181,8 +181,17 @@
   （只有 `NSPrivacyTracking=false` + `NSPrivacyAccessedAPICategoryUserDefaults`/`CA92.1`），
   且**同时是 iOS 与 Mac 两个 app target 的 Resources 成员**。
   来历：`f37b6e6` 创建 → 首版 key/value 是编造的导致 ITMS-91055/91056 被拒 → `3de9a6c` 修正。
-  ⚠️ 遗留：`project.pbxproj` 里有**两份 `PBXFileReference` 指向同一路径**，其中一份是
-  「Resources」组下的悬空引用（未被任何 build phase 使用，实际用的是「Recovered References」组那份）—— 建议清理。
+  ✅ 2026-09-28 清理完毕：原先有两份 `PBXFileReference` 指向同一路径 —— `PRIVACY0001` 挂在
+  「Resources」组下（`path = FirstCC/Resources/PrivacyInfo.xcprivacy`，而该组自身已带
+  `path = Resources`，解析成不存在的 `FirstCC/Resources/FirstCC/Resources/…`，Xcode 里是红的，
+  且不被任何 build phase 使用），实际进包的是「Recovered References」组里那份 `PRIVACY0003`
+  （根相对路径侥幸正确）。现已删掉 `PRIVACY0001` 与空掉的「Recovered References」组，
+  只留 `PRIVACY0003` 一份（ID 保留 —— 两个 target 的 build file 都指向它），
+  `path` 改为组相对的 `PrivacyInfo.xcprivacy`，并挂到「Resources」组下。
+  **实测证据**：两端构建产物里都有 `PrivacyInfo.xcprivacy`
+  （`钱伲.app/PrivacyInfo.xcprivacy` 501 字节、`Qianey.app/Contents/Resources/PrivacyInfo.xcprivacy`）。
+  遗留（本次不动）：同一「Resources」组里 `B7179DD4…` 与 `7DB63CE4…` 两个 `Assets.xcassets`
+  引用同名并存，性质与本次相同，属同一类历史债务。
 - **账期 Picker 18/20/25** ✅ **不存在**。实测已是完整的 `ForEach(1...28)`（账单日）/
   `ForEach(1...31)`（还款日），默认 `billingDay = 1`、`dueDay = 5`
   （`AddEditAccountView.swift:133-142`、`AccountsManagementView.swift:245-254`、`MacAccountEditSheet.swift:36-37`）。
@@ -590,6 +599,28 @@ xcodebuild -project FirstCC.xcodeproj -scheme Qianeymac -destination "platform=m
 ---
 
 ## 八、修订记录
+
+- **2026-09-28 十一次修订（清偿两笔审查债：pbxproj 死引用 + 去重范围）**：用户裁定「4、6 处理掉」，
+  第 6 项选「先收窄 + 明写约束」。
+  ④ **pbxproj 双 `PBXFileReference` + 空「Recovered References」组**：删掉悬空的 `PRIVACY0001`
+  （挂在带 `path = Resources` 的组下却写 `path = FirstCC/Resources/PrivacyInfo.xcprivacy`，
+  解析成不存在的路径、且不被任何 build phase 使用），把实际进包的 `PRIVACY0003` 移入该组、
+  `path` 改为组相对的 `PrivacyInfo.xcprivacy`（ID 保留 —— 两个 target 的 build file 都指向它），
+  删除空组及其在主组 children 的条目。**实证**：两端产物里都有 `PrivacyInfo.xcprivacy`
+  （`钱伲.app/PrivacyInfo.xcprivacy`、`Qianey.app/Contents/Resources/PrivacyInfo.xcprivacy`）。
+  ⑥ **去重范围收窄**：`deduplicateRecurringTransactions` 的入组条件由 `template != nil` 改为
+  `template != nil && template.recurringRule != nil` —— 原先"用户拿普通模板手记的一笔"会被
+  和周期生成的那笔判成同一期而删掉。`TemplateServiceImpl.createTransaction(from:)` 与
+  `disableRecurring` 各补一段文档写明约束与代价（**`disableRecurring` 全仓无生产调用点**：
+  UI 的"停用"走 `toggleActive`（规则保留）、"删除"走删模板（`Transaction.template` 删除规则为
+  Nullify）—— 所以那两条代价眼下都是潜伏的，不是线上缺口）。
+  新增 2 条测试并**做了回归验证**：把收窄那行临时改回旧写法，测试确实变红
+  （`("1") is not equal to ("2")`），还原后 md5 逐字节一致。混合 fixture 那条同时断言
+  「非周期模板 2 笔全留」+「周期模板同日重复删到 1 笔」，避免负向断言在"去重整个失效"时误绿。
+  实测：iOS `316` 执行 / `2` 跳过 / `0` 失败；Mac `42/42`；双端 `BUILD SUCCEEDED`、0 error；
+  `plutil -lint` 通过、ID 引用集合双向相等（603 定义 = 603 引用）。
+  遗留未动：同一「Resources」组里 `B7179DD4…` 与 `7DB63CE4…` 两个 `Assets.xcassets` 引用同名并存，
+  与 ④ 同性质，另案处理。
 
 - **2026-09-28 十次修订（周期账修复的事后审查落地）**：对已推送的 `b761841` / `01e8707` 跑了 4 路并行审查
   （周期账核心逻辑 / CoreDataStack 与调用点 / 四个编辑器错误收尾 / 工作区未提交文件），

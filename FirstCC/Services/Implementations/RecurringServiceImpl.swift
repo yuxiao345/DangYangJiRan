@@ -46,6 +46,13 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
         return rule
     }
 
+    /// 停用周期账：删掉规则，模板本身留下。
+    ///
+    /// ⚠️ 本方法会把 `template.recurringRule` 置 nil，而 `deduplicateRecurringTransactions`
+    /// 正是拿"模板挂没挂规则"当判重范围的判据 —— 一旦调用，该模板名下已生成的交易立即退出
+    /// 判重范围，其中可能存在的跨设备重复就再也清不掉了。
+    /// 目前**全仓没有生产调用点**（UI 的"停用"走 `toggleActive`，规则保留），所以是潜伏缺口；
+    /// 要把"停用"接回这里之前，先给交易加一个显式的"由规则生成"标记（详见该方法的注释）。
     func disableRecurring(template: TransactionTemplate, context: NSManagedObjectContext) throws {
         if let rule = template.recurringRule {
             rule.template = nil
@@ -148,6 +155,10 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
     /// 跨设备去重：移除同一模板+同一天生成的重复周期交易。
     /// 应在 CloudKit 远程同步完成后调用，清理其他设备独立创建的重复记录。
     ///
+    /// **只管周期模板**：判重范围是「此刻挂着 `recurringRule` 的模板」名下那些交易，
+    /// 因为"同一期"这个概念只对自动生成的期次成立。**从未启用过**周期规则的模板名下
+    /// 同一天的两笔是用户自己记的两笔，不是重复（细节与代价见循环里的注释）。
+    ///
     /// **保留者必须由每台设备独立算出同一个结论**，否则两端可能各删掉对方那条，两条全没。
     /// 判据按序：
     /// 1. 有人手动改过的那条优先 —— 机器自己补生成的那条往往比用户的修正"更新"，
@@ -166,7 +177,23 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
 
         var copiesByOccurrence: [String: [Transaction]] = [:]
         for t in transactions {
-            guard let template = t.template else { continue }
+            // 只判**周期模板**的期次：`template != nil` 这个条件本身太宽，它同样圈得进
+            // 「用户拿某个普通模板手动记的一笔」（`TemplateServiceImpl.createTransaction(from:)`
+            // 会挂 `template`）。那种交易从来没有对应的"自动生成的那一期"，同一天两条
+            // 只是用户当天记了两笔，按"同一期"裁决就会删掉其中一条 —— 那是删用户的账。
+            //
+            // 代价（两处，都是已知的）：
+            // 1. 判据是"模板**此刻**挂没挂规则"，所以 `disableRecurring` 过的模板（规则被删、
+            //    `template.recurringRule` 置 nil）名下若还留着跨设备重复，就此永久退出判重范围、
+            //    再也合不上。眼下不打紧：`disableRecurring` 全仓**没有生产调用点**，UI 里的
+            //    "停用"走的是 `toggleActive`（只翻 `isActive`，规则保留），"删除"走的是删模板
+            //    （`Transaction.template` 的删除规则是 Nullify，两边都脱范）。一旦有人把
+            //    `disableRecurring` 接回 UI，这条就会变成真缺口 —— 届时该改用显式的
+            //    "由规则生成"标记，而不是拿规则在不在当代理条件。
+            // 2. CloudKit 分批导入的中间态（`recurringRule` 还没解析过来）会被跳过一轮。
+            //    能自愈：去重挂在 `NSPersistentStoreRemoteChange` 上、每次远程变更都跑
+            //    （`AppContainer.deduplicateRecurring`，无限流），规则到位那一批会再触发一次。
+            guard let template = t.template, template.recurringRule != nil else { continue }
             let dayKey = Self.occurrenceKey(ledgerID: template.ledger?.id, templateID: template.id, date: t.date, calendar: cal)
             copiesByOccurrence[dayKey, default: []].append(t)
         }

@@ -11,7 +11,8 @@ import XCTest
 ///
 /// 已修（见文件末尾测试）：`deduplicateRecurringTransactions` 的裁决规则
 /// （手改优先 → 时间戳较晚 → UUID 全序）与「同模板同一天」分组键的账本维度；
-/// `processDueRecurring` 的同类判据共用同一份键，且三处账本一律取自**模板**。
+/// `processDueRecurring` 的同类判据共用同一份键，且三处账本一律取自**模板**；
+/// 去重范围收窄到**周期模板**（`recurringRule != nil`），非周期模板名下的交易不再被判重。
 /// 生成时机（等本次启动第一次 CloudKit 导入）由 `CoreDataStack.waitForImportSinceLaunch` 收窄，
 /// 但它只把窗口从"生成早于全部导入"缩到"早于含目标记录的那一批"，**不是**彻底消除 ——
 /// 剩余窗口仍由去重兜底。
@@ -332,6 +333,7 @@ final class RecurringServiceTests: CoreDataTestCase {
         let ledger = context.makeLedger("L")
         let template = makeTemplate("Apple Music", ledger: ledger)
         let day = Date()
+        attachRule(to: template, startDate: day)
 
         let edited = makeRecurringTx(template: template, ledger: ledger, amount: -20, date: day)
         edited.createdAt = day
@@ -357,6 +359,7 @@ final class RecurringServiceTests: CoreDataTestCase {
         let ledger = context.makeLedger("L")
         let template = makeTemplate("月租", ledger: ledger)
         let day = Date()
+        attachRule(to: template, startDate: day)
 
         let copies = (0..<2).map { _ in
             makeRecurringTx(template: template, ledger: ledger, amount: -100, date: day)
@@ -382,6 +385,7 @@ final class RecurringServiceTests: CoreDataTestCase {
         let ledger = context.makeLedger("L")
         let template = makeTemplate("月租", ledger: ledger)
         let day = Date()
+        attachRule(to: template, startDate: day)
 
         let earlierEdit = makeRecurringTx(template: template, ledger: ledger, amount: -10, date: day)
         earlierEdit.createdAt = day
@@ -411,6 +415,8 @@ final class RecurringServiceTests: CoreDataTestCase {
         let sourceTemplate = makeTemplate("月租", ledger: source)
         let cloneTemplate = makeTemplate("月租", ledger: clone)
         cloneTemplate.id = sourceTemplate.id                  // 复制账本保留模板 id
+        attachRule(to: sourceTemplate, startDate: day)
+        attachRule(to: cloneTemplate, startDate: day)
         try context.save()
 
         let sourceTx = makeRecurringTx(template: sourceTemplate, ledger: source, amount: -100, date: day)
@@ -422,6 +428,64 @@ final class RecurringServiceTests: CoreDataTestCase {
 
         let remaining = try context.fetch(NSFetchRequest<Transaction>(entityName: "Transaction"))
         XCTAssertEqual(remaining.count, 2, "两个账本各自的周期交易都是有效数据，不能当成重复删掉")
+    }
+
+    // MARK: - 去重范围：只判周期模板
+
+    /// 普通（非周期）模板名下同一天的两笔不是"同一期"，不能当重复删掉。
+    ///
+    /// `TemplateServiceImpl.createTransaction(from:)` 会挂 `template`，而那个模板没有
+    /// `recurringRule` —— 它从未自动生成过任何一期，这两笔都是用户自己记的，只是碰巧同一天。
+    /// 收窄前的实现按 `template != nil` 分组，会判成重复删掉一条（按本 fixture 的
+    /// 时间戳：两条都没被手改，裁决落到"留 `createdAt` 较晚的"，于是删掉 `first`）。
+    /// （线上打不到：保存路径 `AddEditTransactionView.applyTemplate` 只预填字段、不挂 `template`；
+    /// 这个测试锁的是"哪天有人把模板接到 UI 上"之后不会被去重误删。）
+    func test_deduplicateRecurringTransactions_ignoresTransactionsFromNonRecurringTemplate() throws {
+        let ledger = context.makeLedger("L")
+        let template = makeTemplate("买菜", ledger: ledger)      // 刻意不挂 recurringRule
+        let day = Date()
+
+        let first = makeRecurringTx(template: template, ledger: ledger, amount: -30, date: day)
+        first.createdAt = day
+        first.modifiedAt = day
+        let second = makeRecurringTx(template: template, ledger: ledger, amount: -50, date: day)
+        second.createdAt = day.addingTimeInterval(3600)
+        second.modifiedAt = second.createdAt
+        try context.save()
+
+        try service.deduplicateRecurringTransactions(context: context)
+
+        let remaining = try context.fetch(NSFetchRequest<Transaction>(entityName: "Transaction"))
+        XCTAssertEqual(remaining.count, 2, "非周期模板的两笔都是用户自己记的，一笔都不能删")
+    }
+
+    /// 混合 fixture：同一个 context 里同时放「非周期模板的两笔（都该留）」与「周期模板的
+    /// 同日重复（该删到一条）」，一次断言两个数字。
+    ///
+    /// 上一条是纯负向断言 —— 去重整个失效（比如误把 fetch 谓词改成永不匹配）时它照样绿。
+    /// 这一条把"范围收窄了"和"去重还在干活"钉在一起：只满足一半的实现过不了。
+    func test_deduplicateRecurringTransactions_narrowsScope_withoutDisablingDedup() throws {
+        let ledger = context.makeLedger("L")
+        let day = Date()
+
+        let plainTemplate = makeTemplate("买菜", ledger: ledger)       // 无规则 → 不判重
+        let recurringTemplate = makeTemplate("月租", ledger: ledger)
+        attachRule(to: recurringTemplate, startDate: day)             // 有规则 → 判重
+
+        let plainA = makeRecurringTx(template: plainTemplate, ledger: ledger, amount: -30, date: day)
+        let plainB = makeRecurringTx(template: plainTemplate, ledger: ledger, amount: -50, date: day)
+        let dupA = makeRecurringTx(template: recurringTemplate, ledger: ledger, amount: -100, date: day)
+        let dupB = makeRecurringTx(template: recurringTemplate, ledger: ledger, amount: -100, date: day)
+        for (offset, tx) in [plainA, plainB, dupA, dupB].enumerated() {
+            tx.createdAt = day.addingTimeInterval(Double(offset))
+            tx.modifiedAt = tx.createdAt
+        }
+        try context.save()
+
+        try service.deduplicateRecurringTransactions(context: context)
+
+        XCTAssertEqual(try count(ofTransactionsOf: plainTemplate), 2, "非周期模板的两笔都得留下")
+        XCTAssertEqual(try count(ofTransactionsOf: recurringTemplate), 1, "周期模板的同日重复仍要被清掉一条")
     }
 
     // MARK: - 生成侧：账本关系未解析 / interval=0
@@ -492,6 +556,7 @@ final class RecurringServiceTests: CoreDataTestCase {
         let ledger = context.makeLedger("L")
         let template = makeTemplate("Apple Music", ledger: ledger)
         let day = Date()
+        attachRule(to: template, startDate: day)
 
         let stalePrice = makeRecurringTx(template: template, ledger: ledger, amount: -17, date: day)
         stalePrice.createdAt = day
@@ -511,6 +576,28 @@ final class RecurringServiceTests: CoreDataTestCase {
     }
 
     // MARK: - Helpers
+
+    /// 数某个模板名下还剩几笔交易。
+    private func count(ofTransactionsOf template: TransactionTemplate) throws -> Int {
+        let request = NSFetchRequest<Transaction>(entityName: "Transaction")
+        request.predicate = NSPredicate(format: "template == %@", template)
+        return try context.fetch(request).count
+    }
+
+    /// 给模板挂一条启用的周期规则。
+    ///
+    /// `deduplicateRecurringTransactions` 只判**周期模板**名下的期次，所以判重相关的 fixture
+    /// 必须先把"这是个周期模板"表达出来 —— 不挂规则的模板，它名下的交易一笔都不会被判重。
+    @discardableResult
+    private func attachRule(to template: TransactionTemplate, startDate: Date) -> RecurringRule {
+        let rule = RecurringRule(
+            frequency: .monthly, interval: 1, startDate: startDate, endDate: nil, context: context
+        )
+        rule.template = template
+        template.recurringRule = rule
+        template.isRecurring = true
+        return rule
+    }
 
     @discardableResult
     private func makeRecurringTx(
