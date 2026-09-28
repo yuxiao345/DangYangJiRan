@@ -842,6 +842,9 @@ struct AddEditTransactionView: View {
                 Button {
                     collapseNumpad()
                     type = t
+                    // 切 type 后保持 numpad 弹出，编辑主金额字段
+                    focusedNoteField = nil
+                    withAnimation { showNumpad = true }
                 } label: {
                     Label(t.displayName, systemImage: t.systemIcon)
                         .font(.designLabel)
