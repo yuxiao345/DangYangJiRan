@@ -55,6 +55,12 @@ final class CoreDataStack {
     /// Used by `waitForImportSettled` to detect when initial sync is complete.
     private(set) var lastImportEventTime: Date = Date.now
 
+    /// 本次启动是否已经收到过一次成功的 CloudKit 导入。
+    /// 周期账生成要等这个信号 —— 见 `waitForImportSinceLaunch`。
+    /// 导入事件只可能在 `loadStores()` 之后到达（store 未加载时 CloudKit 不工作），
+    /// 所以这个标志天然是"本次启动"的语义。
+    private(set) var hasImportedSinceLaunch = false
+
     let cloudKitAvailable: Bool
 
     init() {
@@ -180,6 +186,7 @@ final class CoreDataStack {
             // Track successful import events to detect when initial sync settles
             if event.type.rawValue == 1 && event.succeeded {
                 self.lastImportEventTime = Date.now
+                self.hasImportedSinceLaunch = true
             }
         }
 
@@ -296,6 +303,31 @@ final class CoreDataStack {
             try? await Task.sleep(nanoseconds: 1_000_000_000)
         }
         DiagnosticLog.log("CoreDataStack: initial import timeout after \(maxWait)s")
+    }
+
+    /// 等本次启动的第一次成功 CloudKit 导入落地，返回是否真的等到了。
+    ///
+    /// 周期账生成必须等它：本设备若在导入落地前就补生成"别端已经生成过、但还没同步过来"
+    /// 的期间，就会造出跨设备重复 —— 那是重复的**根因**，事后去重只能清理、不能预防。
+    /// 导入落地后，`processDueRecurring` 的 `existingByDay` 检查就能看见这批导入带来的
+    /// 别端交易，不会再补一条。
+    ///
+    /// 强度说明：这**不是**"别端那几笔一定已经到了"的保证 —— 标志位由本次启动**第一个**
+    /// 成功的导入事件置位，而导入是分批的，那一批未必含目标记录。它只是把窗口从
+    /// "生成早于全部导入"收窄到"生成早于包含目标记录的那一批"，剩余窗口仍由去重兜底。
+    ///
+    /// 超时（离线启动、未登录 iCloud、导入极慢）返回 `false`，调用方按原行为继续：
+    /// 不能因为等不到导入就永远不生成周期账 —— 那种情况退回"照常生成 + 事后去重"。
+    func waitForImportSinceLaunch(maxWait: TimeInterval = 15.0) async -> Bool {
+        guard cloudKitAvailable else { return false }
+        guard !hasImportedSinceLaunch else { return true }
+        let start = Date.now
+        while Date().timeIntervalSince(start) < maxWait {
+            try? await Task.sleep(for: .milliseconds(500))
+            if hasImportedSinceLaunch { return true }
+        }
+        DiagnosticLog.log("CoreDataStack: no CloudKit import within \(maxWait)s, recurring generation proceeds without waiting")
+        return false
     }
 
     // MARK: - CloudKit Sharing

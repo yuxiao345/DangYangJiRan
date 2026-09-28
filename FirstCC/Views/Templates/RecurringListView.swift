@@ -61,6 +61,17 @@ struct RecurringListView: View {
         .onChange(of: editingRule) { _, newValue in
             if newValue == nil { listVersion += 1; loadRules() }
         }
+        // CloudKit 导入是别的进程/协调器写库，本视图不会自己重绘 —— 不监听就会一直显示
+        // 导入前的旧值（金额改完在另一台设备上看还是旧的，实际库里已经是对的）。
+        // 该通知由 Core Data 在后台队列投递（`AppContainer` 观察同一通知时用的是 `queue: .main`），
+        // 所以必须显式切回主线程再改 @State，否则是「后台线程发布变更」。
+        .onReceive(
+            NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange)
+                .receive(on: DispatchQueue.main)
+        ) { _ in
+            listVersion += 1
+            loadRules()
+        }
         .task { loadRules() }
     }
 

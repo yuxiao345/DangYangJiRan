@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 @preconcurrency import CoreData
 
 struct MacRecurringListView: View {
@@ -68,6 +69,15 @@ struct MacRecurringListView: View {
         .designScreen()
         .onAppear(perform: load)
         .onChange(of: refreshTrigger) { _, _ in load() }
+        // CloudKit 导入是别的进程/协调器写库，本视图不会自己重绘 —— 不监听就会一直显示
+        // 导入前的旧值（与 iOS `RecurringListView` 同一处理）。该通知由 Core Data 在后台队列
+        // 投递（`AppContainer` 观察同一通知时用的是 `queue: .main`），必须显式切回主线程再改 @State。
+        .onReceive(
+            NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange)
+                .receive(on: DispatchQueue.main)
+        ) { _ in
+            load()
+        }
         .alert("删除周期账", isPresented: $showDeleteAlert) {
             Button("取消", role: .cancel) { ruleToDelete = nil }
             Button("删除", role: .destructive) { confirmDelete() }

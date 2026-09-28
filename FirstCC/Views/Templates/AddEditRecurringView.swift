@@ -281,54 +281,87 @@ struct AddEditRecurringView: View {
             errorMessage = String(localized: "同名周期账「\(name)」已存在")
             return
         }
-        if let rule = editingRule, let t = rule.template {
-            t.name = name
-            t.type = type
-            t.amount = amount
-            t.note = note.isEmpty ? nil : note
-            t.account = selectedAccount
-            t.toAccount = selectedToAccount
-            t.category = type.allowsTagFields ? selectedCategory : nil
-            t.member = type.allowsTagFields ? selectedMember : nil
-            t.merchant = type.allowsTagFields ? selectedMerchant : nil
-            t.project = type.allowsTagFields ? selectedProject : nil
-            try? appContainer.templateService.updateTemplate(t, context: modelContext)
-            let end = hasEndDate ? endDate : nil
-            try? appContainer.recurringService.setRecurring(
-                template: t,
-                frequency: frequency,
-                interval: interval,
-                startDate: startDate,
-                endDate: end,
-                context: modelContext
-            )
-            try? appContainer.recurringService.processAndDeduplicate(context: modelContext)
-        } else {
-            let template = TransactionTemplate(
-                name: name,
-                type: type,
-                amount: amount,
-                note: note.isEmpty ? nil : note,
-                account: selectedAccount,
-                toAccount: selectedToAccount,
-                category: type.allowsTagFields ? selectedCategory : nil,
-                member: type.allowsTagFields ? selectedMember : nil,
-                merchant: type.allowsTagFields ? selectedMerchant : nil,
-                project: type.allowsTagFields ? selectedProject : nil,
-                context: modelContext
-            )
-            try? appContainer.templateService.createTemplate(template, ledger: ledger, context: modelContext)
-            let end = hasEndDate ? endDate : nil
-            try? appContainer.recurringService.setRecurring(
-                template: template,
-                frequency: frequency,
-                interval: interval,
-                startDate: startDate,
-                endDate: end,
-                context: modelContext
-            )
-            try? appContainer.recurringService.processAndDeduplicate(context: modelContext)
+        // 写库失败必须让用户看见，所以这里不能再 `try?` 吞掉错误：那会让 sheet 照常关闭，
+        // 用户以为改好了，实际上金额从没落库（周期账金额"改完又变回去"就查不出是哪一层丢的）。
+        //
+        // 失败时 catch 负责收尾（见下方注释）；但要注意三步保存是各自 `context.save()` 的，
+        // 不是原子操作：编辑分支若第 2/3 步失败，第 1 步已落库的字段改动不会被撤销
+        // （让用户再点一次保存即可补齐），这一点无法只靠 catch 解决。
+        var createdTemplate: TransactionTemplate?
+        do {
+            if let rule = editingRule, let t = rule.template {
+                t.name = name
+                t.type = type
+                t.amount = amount
+                t.note = note.isEmpty ? nil : note
+                t.account = selectedAccount
+                t.toAccount = selectedToAccount
+                t.category = type.allowsTagFields ? selectedCategory : nil
+                t.member = type.allowsTagFields ? selectedMember : nil
+                t.merchant = type.allowsTagFields ? selectedMerchant : nil
+                t.project = type.allowsTagFields ? selectedProject : nil
+                try appContainer.templateService.updateTemplate(t, context: modelContext)
+                let end = hasEndDate ? endDate : nil
+                try appContainer.recurringService.setRecurring(
+                    template: t,
+                    frequency: frequency,
+                    interval: interval,
+                    startDate: startDate,
+                    endDate: end,
+                    context: modelContext
+                )
+                try appContainer.recurringService.processAndDeduplicate(context: modelContext)
+            } else {
+                let template = TransactionTemplate(
+                    name: name,
+                    type: type,
+                    amount: amount,
+                    note: note.isEmpty ? nil : note,
+                    account: selectedAccount,
+                    toAccount: selectedToAccount,
+                    category: type.allowsTagFields ? selectedCategory : nil,
+                    member: type.allowsTagFields ? selectedMember : nil,
+                    merchant: type.allowsTagFields ? selectedMerchant : nil,
+                    project: type.allowsTagFields ? selectedProject : nil,
+                    context: modelContext
+                )
+                createdTemplate = template
+                try appContainer.templateService.createTemplate(template, ledger: ledger, context: modelContext)
+                let end = hasEndDate ? endDate : nil
+                try appContainer.recurringService.setRecurring(
+                    template: template,
+                    frequency: frequency,
+                    interval: interval,
+                    startDate: startDate,
+                    endDate: end,
+                    context: modelContext
+                )
+                try appContainer.recurringService.processAndDeduplicate(context: modelContext)
+            }
+            dismiss()
+        } catch {
+            // 收尾顺序不能颠倒：
+            // ① 先把"已经落库的半成品"删掉 —— 新建分支里模板是第 1 步就 save 过的，
+            //    留着它用户重试时会撞上上面的"同名"守卫（新建分支没有 editingRule 可排除自己）。
+            //    `isTemporaryID` 说明这次插入根本没成功（第 1 步就抛了），那交给 ② 的 rollback 丢弃。
+            // ② 再 rollback 丢弃未保存的脏改动 —— 那些赋值改的是共享 viewContext 上的托管对象，
+            //    不清掉的话，之后任意一次无关的 `context.save()`（例如远程变化触发的去重）
+            //    都会把这次"已报失败"的改动静默写进库。
+            // 注意 ② 必须在 ① 的 save 之后：rollback 会撤销尚未保存的删除。
+            if let created = createdTemplate, !created.objectID.isTemporaryID {
+                // `generatedTransactions` 的删除规则是 Nullify（见 xcdatamodeld 的 contents），
+                // 删模板**不会**连带删掉它们：第 3 步 `processDueRecurring` 已经 save 过一笔
+                // 生成的交易，只删模板就会把那笔没打算建的流水留在账本里（已落库，② 撤不回）。
+                // `recurringRule` 是 Cascade，删模板时自动带走，不需要显式删。
+                for tx in created.generatedTransactions ?? [] { modelContext.delete(tx) }
+                modelContext.delete(created)
+                // 这一步的 save 若也失败，② 的 rollback 会把刚删掉的模板复活（用户重试就会撞上
+                // 上面的"同名"守卫）—— 二次失败的边角；即便如此，脏改动仍被 ② 清掉了。
+                try? modelContext.save()
+            }
+            modelContext.rollback()
+            DiagnosticLog.log("AddEditRecurringView: save FAILED: \(error.localizedDescription)")
+            errorMessage = error.localizedDescription
         }
-        dismiss()
     }
 }

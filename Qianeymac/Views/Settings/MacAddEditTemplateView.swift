@@ -194,36 +194,56 @@ struct MacAddEditTemplateView: View {
             errorMessage = String(localized: "同名模板「\(name)」已存在"); showErrorAlert = true; return
         }
 
-        if let t = editing {
-            t.name = name
-            t.type = type
-            t.amount = amount
-            t.note = note.isEmpty ? nil : note
-            t.account = selectedAccount
-            t.toAccount = selectedToAccount
-            t.category = type.allowsTagFields ? selectedCategory : nil
-            t.member = type.allowsTagFields ? selectedMember : nil
-            t.merchant = type.allowsTagFields ? selectedMerchant : nil
-            t.project = type.allowsTagFields ? selectedProject : nil
-            try? appContainer.templateService.updateTemplate(t, context: modelContext)
-        } else {
-            let template = TransactionTemplate(
-                name: name,
-                type: type,
-                amount: amount,
-                currencyCode: l.defaultCurrencyCode,
-                note: note.isEmpty ? nil : note,
-                sortOrder: 0,
-                account: selectedAccount,
-                toAccount: selectedToAccount,
-                category: type.allowsTagFields ? selectedCategory : nil,
-                member: type.allowsTagFields ? selectedMember : nil,
-                merchant: type.allowsTagFields ? selectedMerchant : nil,
-                project: type.allowsTagFields ? selectedProject : nil,
-                context: modelContext
-            )
-            try? appContainer.templateService.createTemplate(template, ledger: l, context: modelContext)
+        // 写库失败必须让用户看见，不能再用 `try?` 吞掉：那会让 sheet 照常关闭，
+        // 用户以为存好了，实际金额/账户从没落库。收尾见 catch 内注释 —— 与 iOS
+        // `AddEditTemplateView.save` 同一套。
+        var createdTemplate: TransactionTemplate?
+        do {
+            if let t = editing {
+                t.name = name
+                t.type = type
+                t.amount = amount
+                t.note = note.isEmpty ? nil : note
+                t.account = selectedAccount
+                t.toAccount = selectedToAccount
+                t.category = type.allowsTagFields ? selectedCategory : nil
+                t.member = type.allowsTagFields ? selectedMember : nil
+                t.merchant = type.allowsTagFields ? selectedMerchant : nil
+                t.project = type.allowsTagFields ? selectedProject : nil
+                try appContainer.templateService.updateTemplate(t, context: modelContext)
+            } else {
+                let template = TransactionTemplate(
+                    name: name,
+                    type: type,
+                    amount: amount,
+                    currencyCode: l.defaultCurrencyCode,
+                    note: note.isEmpty ? nil : note,
+                    sortOrder: 0,
+                    account: selectedAccount,
+                    toAccount: selectedToAccount,
+                    category: type.allowsTagFields ? selectedCategory : nil,
+                    member: type.allowsTagFields ? selectedMember : nil,
+                    merchant: type.allowsTagFields ? selectedMerchant : nil,
+                    project: type.allowsTagFields ? selectedProject : nil,
+                    context: modelContext
+                )
+                createdTemplate = template
+                try appContainer.templateService.createTemplate(template, ledger: l, context: modelContext)
+            }
+            dismiss()
+        } catch {
+            // 顺序不能颠倒：① 先删掉本次已落库的模板（新建分支它已 save 过，留着会让用户
+            // 重试时撞上"同名"守卫；`isTemporaryID` 说明第 1 步就没成功，交给 ② 丢弃）；
+            // ② 再 rollback 丢弃未保存的脏改动，否则它们会被之后任意一次无关的
+            // `context.save()` 静默写进库。② 必须在 ① 的 save 之后，rollback 会撤销未保存的删除。
+            if let created = createdTemplate, !created.objectID.isTemporaryID {
+                modelContext.delete(created)
+                try? modelContext.save()
+            }
+            modelContext.rollback()
+            DiagnosticLog.log("MacAddEditTemplateView: save FAILED: \(error.localizedDescription)")
+            errorMessage = error.localizedDescription
+            showErrorAlert = true
         }
-        dismiss()
     }
 }

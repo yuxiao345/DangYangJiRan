@@ -222,17 +222,24 @@ struct MainSplitView: View {
 
     private func processRecurring() {
         guard appContainer.currentLedger != nil else { return }
-        do {
-            try appContainer.recurringService.processDueRecurring(context: appContainer.viewContext)
-            // 跨设备去重每天最多执行一次
-            let lastKey = "lastRecurringDedup"
-            let last = UserDefaults.standard.object(forKey: lastKey) as? Date ?? .distantPast
-            if Date().timeIntervalSince(last) >= 86400 {
-                try appContainer.recurringService.deduplicateRecurringTransactions(context: appContainer.viewContext)
-                UserDefaults.standard.set(Date(), forKey: lastKey)
+        Task { @MainActor in
+            // 同 iOS `RootView`：生成要等本次启动第一次 CloudKit 导入落地，否则本机会为
+            // "别端已经生成过、但还没同步过来"的期间再补一条 —— 那是跨设备重复的根因。
+            // 等不到（离线/未登录 iCloud）就超时返回 false，退回"照常生成 + 事后去重"。
+            await appContainer.coreDataStack.waitForImportSinceLaunch()
+            guard appContainer.currentLedger != nil else { return }
+            do {
+                try appContainer.recurringService.processDueRecurring(context: appContainer.viewContext)
+                // 跨设备去重每天最多执行一次
+                let lastKey = "lastRecurringDedup"
+                let last = UserDefaults.standard.object(forKey: lastKey) as? Date ?? .distantPast
+                if Date().timeIntervalSince(last) >= 86400 {
+                    try appContainer.recurringService.deduplicateRecurringTransactions(context: appContainer.viewContext)
+                    UserDefaults.standard.set(Date(), forKey: lastKey)
+                }
+            } catch {
+                DiagnosticLog.log("processRecurring FAILED: \(error.localizedDescription)")
             }
-        } catch {
-            DiagnosticLog.log("processRecurring FAILED: \(error.localizedDescription)")
         }
     }
 
