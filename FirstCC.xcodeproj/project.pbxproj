@@ -63,6 +63,7 @@
 		517D6324F03D3B3A354D6D42 /* ExchangeRateServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 865CD094F9E94DE4C2138BB8 /* ExchangeRateServiceProtocol.swift */; };
 		53B3187B6D014EEFC21F7394 /* MemberServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3AF3A57D98AF9971AA6B6BD /* MemberServiceProtocol.swift */; };
 		5543511DB6AB4F5EB8DF1F1D /* BudgetItemEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEC88579A77D47DBAA48EFDB /* BudgetItemEntity.swift */; };
+		55C7DABA3062D00D00FD0F97 /* FirstCC/Resources/PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = PRIVACY0003XXXXXXXXXXXX /* FirstCC/Resources/PrivacyInfo.xcprivacy */; };
 		56025E3F889643DE9F32DCC7 /* ReportViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E45CC9E82755427EADB2BA5F /* ReportViewModel.swift */; };
 		5706EEFBE51A45F5824DA425 /* TransactionEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDE2C5AB898F4AC29BCAAFEE /* TransactionEntity.swift */; };
 		576BD9D6213C4149A383800C /* RecurringRuleEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFDB4DF6538746E0A70203A4 /* RecurringRuleEntity.swift */; };
@@ -95,7 +96,6 @@
 		803DB65AEFD59F91515684DC /* TransactionServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C9129B1EACD775E7DEFFE6F /* TransactionServiceImpl.swift */; };
 		81A6AB43953A4872B66EAD5D /* BudgetScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86ED35EF02754C528ABCF097 /* BudgetScope.swift */; };
 		82E34F6926D5EA39AACE8C57 /* CategorySeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = E63522FC24F70BAA3ED09CB9 /* CategorySeeder.swift */; };
-		C3A7F19E5B2D4E8A9F013D77 /* AddFloatingButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4B8A20F6C3E5F9BA1024E88 /* AddFloatingButton.swift */; };
 		8345512F45BA0E7F55334110 /* CurrencyText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50A8DC88431F6E95C688521D /* CurrencyText.swift */; };
 		84E3651E1012F35AC2419287 /* BankMatchStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AA4347743E8B06C8DF84744 /* BankMatchStatus.swift */; };
 		85DD12DBCBCD4B9AAD4EA49D /* CalendarDayCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 411149EDDF514343B9073596 /* CalendarDayCell.swift */; };
@@ -227,7 +227,6 @@
 		9AC8FB292FE3BBA000679EC7 /* JetBrainsMono-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F00100000000000000000007 /* JetBrainsMono-Medium.ttf */; };
 		9AC8FB2A2FE3BBA000679EC7 /* JetBrainsMono-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F00100000000000000000008 /* JetBrainsMono-Bold.ttf */; };
 		9AC8FB6B2FE3BC1A00679EC7 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 9AC8FB6A2FE3BC1A00679EC7 /* Localizable.xcstrings */; };
-		PRIVACY0002XXXXXXXXXXXX /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = PRIVACY0003XXXXXXXXXXXX /* PrivacyInfo.xcprivacy */; };
 		9AC8FB6C2FE3BC1A00679EC7 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 9AC8FB6A2FE3BC1A00679EC7 /* Localizable.xcstrings */; };
 		9B863D6EE456400A886BF4FE /* DonutChartContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C66C0A248C949A08F849676 /* DonutChartContent.swift */; };
 		9DDFB9E1B80A2E556EDF6639 /* LedgerSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D8132C4EDFBAEEC7935A871 /* LedgerSettingsView.swift */; };
@@ -268,6 +267,7 @@
 		C1D67EB2243A69FD46E300EC /* ExportServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A3BECB91DEF16E35F62A662 /* ExportServiceProtocol.swift */; };
 		C2FB5D6D038756A445E6BC68 /* RefundSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3D3CD96BEEFA305CD0CB6E4 /* RefundSheetView.swift */; };
 		C38E3E4DEA4F4398ADFA40A1 /* NumpadGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 458691A145A84013AA5641B6 /* NumpadGrid.swift */; };
+		C3A7F19E5B2D4E8A9F013D77 /* AddFloatingButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4B8A20F6C3E5F9BA1024E88 /* AddFloatingButton.swift */; };
 		C6253E631CFE8A4A4D0230DD /* BankLogoPresets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25BD8B7423ECB057766F757C /* BankLogoPresets.swift */; };
 		C64599CA223F4F38A14CB3FA /* LedgerEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E2DCACB16BA4534A2BD913F /* LedgerEntity.swift */; };
 		C67A66089AB07D1C1D06860F /* icon_dark.png in Resources */ = {isa = PBXBuildFile; fileRef = 97FCEDFC1A08B135CB216CDC /* icon_dark.png */; };
@@ -326,6 +326,7 @@
 		FD2C9721768BC0DECAFBD9EA /* LedgerRole.swift in Sources */ = {isa = PBXBuildFile; fileRef = 123B9066865398E03B8DD922 /* LedgerRole.swift */; };
 		FD91B103255DEB923850049C /* CloudKitConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FD37181CF946710701C84CD /* CloudKitConfig.swift */; };
 		FFD3CC4FA09133AB7E0CFC53 /* AccountDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89DBFB59681FF75B16E21478 /* AccountDetailView.swift */; };
+		PRIVACY0002XXXXXXXXXXXX /* FirstCC/Resources/PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = PRIVACY0003XXXXXXXXXXXX /* FirstCC/Resources/PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -425,7 +426,6 @@
 		4C66C0A248C949A08F849676 /* DonutChartContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DonutChartContent.swift; sourceTree = "<group>"; };
 		4E27A05422424BA38456B730 /* MemberCategoryCrossView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberCategoryCrossView.swift; sourceTree = "<group>"; };
 		4E626A3E9AA323C5C1461333 /* LendingStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LendingStatus.swift; sourceTree = "<group>"; };
-		D4B8A20F6C3E5F9BA1024E88 /* AddFloatingButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddFloatingButton.swift; sourceTree = "<group>"; };
 		50A8DC88431F6E95C688521D /* CurrencyText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyText.swift; sourceTree = "<group>"; };
 		558D0E183039581300D331CA /* 钱伲UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "钱伲UITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5640103E5835D55C3875566E /* TransactionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionDetailView.swift; sourceTree = "<group>"; };
@@ -489,8 +489,6 @@
 		9AB5F8C12FCD51C700F5044E /* QianeymacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QianeymacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9AB5F8CB2FCD51C700F5044E /* QianeymacUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QianeymacUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9AC8FB6A2FE3BC1A00679EC7 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
-		PRIVACY0001XXXXXXXXXXXX /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = file; path = "FirstCC/Resources/PrivacyInfo.xcprivacy"; sourceTree = "<group>"; };
-		PRIVACY0003XXXXXXXXXXXX /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = file; path = "FirstCC/Resources/PrivacyInfo.xcprivacy"; sourceTree = "<group>"; };
 		9C21B584CD4840E630796829 /* CreditCardReconciliationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditCardReconciliationView.swift; sourceTree = "<group>"; };
 		9C5F7DB65DAA4F58BF386458 /* 钱伲Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "钱伲Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		9CCBBC471DD34C89B04A236A /* LedgerDeepCopyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedgerDeepCopyService.swift; sourceTree = "<group>"; };
@@ -521,6 +519,7 @@
 		CEC88579A77D47DBAA48EFDB /* BudgetItemEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetItemEntity.swift; sourceTree = "<group>"; };
 		D301E304595F4FE79A15BF68 /* Set+Toggle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Set+Toggle.swift"; sourceTree = "<group>"; };
 		D3D3CD96BEEFA305CD0CB6E4 /* RefundSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefundSheetView.swift; sourceTree = "<group>"; };
+		D4B8A20F6C3E5F9BA1024E88 /* AddFloatingButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddFloatingButton.swift; sourceTree = "<group>"; };
 		D630BB06AF584365B63460B4 /* SplitServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitServiceImpl.swift; sourceTree = "<group>"; };
 		D8AD404B99214C1B879EF145 /* MerchantEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MerchantEntity.swift; sourceTree = "<group>"; };
 		D8E979140E64CD5A924B3FB5 /* CSVStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVStorage.swift; sourceTree = "<group>"; };
@@ -556,6 +555,8 @@
 		FB18074394D7CADFC89B2D67 /* CurrencyServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyServiceProtocol.swift; sourceTree = "<group>"; };
 		FD9C98A4532441F197C92D1E /* SplitFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitFormView.swift; sourceTree = "<group>"; };
 		FFDB4DF6538746E0A70203A4 /* RecurringRuleEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringRuleEntity.swift; sourceTree = "<group>"; };
+		PRIVACY0001XXXXXXXXXXXX /* FirstCC/Resources/PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = file; path = FirstCC/Resources/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		PRIVACY0003XXXXXXXXXXXX /* FirstCC/Resources/PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = FirstCC/Resources/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -760,7 +761,7 @@
 			isa = PBXGroup;
 			children = (
 				9AC8FB6A2FE3BC1A00679EC7 /* Localizable.xcstrings */,
-				PRIVACY0001XXXXXXXXXXXX /* PrivacyInfo.xcprivacy */,
+				PRIVACY0001XXXXXXXXXXXX /* FirstCC/Resources/PrivacyInfo.xcprivacy */,
 				B7179DD40F926BA5C3E05A8B /* Assets.xcassets */,
 				7DB63CE4205FA78E2BE83CF3 /* Assets.xcassets */,
 				F00300000000000000000001 /* Fonts */,
@@ -829,6 +830,14 @@
 			path = Extensions;
 			sourceTree = "<group>";
 		};
+		55C7DABB3062D00D00FD0F97 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				PRIVACY0003XXXXXXXXXXXX /* FirstCC/Resources/PrivacyInfo.xcprivacy */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 		70D7BE057289A0AB182528D0 /* Main */ = {
 			isa = PBXGroup;
 			children = (
@@ -881,6 +890,7 @@
 				9AB5F8CE2FCD51C700F5044E /* QianeymacUITests */,
 				558D0E193039581300D331CA /* 钱伲UITests */,
 				0E67BE8D2A5AA9DFE4D9A3C1 /* Products */,
+				55C7DABB3062D00D00FD0F97 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1261,7 +1271,7 @@
 				9AC8FB262FE3BBA000679EC7 /* SpaceGrotesk-SemiBold.ttf in Resources */,
 				9AC8FB272FE3BBA000679EC7 /* SpaceGrotesk-Bold.ttf in Resources */,
 				9AC8FB6C2FE3BC1A00679EC7 /* Localizable.xcstrings in Resources */,
-				PRIVACY0002XXXXXXXXXXXX /* PrivacyInfo.xcprivacy in Resources */,
+				55C7DABA3062D00D00FD0F97 /* FirstCC/Resources/PrivacyInfo.xcprivacy in Resources */,
 				9AC8FB282FE3BBA000679EC7 /* JetBrainsMono-Regular.ttf in Resources */,
 				9AC8FB292FE3BBA000679EC7 /* JetBrainsMono-Medium.ttf in Resources */,
 				9AC8FB2A2FE3BBA000679EC7 /* JetBrainsMono-Bold.ttf in Resources */,
@@ -1289,7 +1299,7 @@
 				4C123E5116650484726DA9F7 /* Assets.xcassets in Resources */,
 				F00200000000000000000001 /* SpaceGrotesk-Light.ttf in Resources */,
 				9AC8FB6B2FE3BC1A00679EC7 /* Localizable.xcstrings in Resources */,
-				PRIVACY0002XXXXXXXXXXXX /* PrivacyInfo.xcprivacy in Resources */,
+				PRIVACY0002XXXXXXXXXXXX /* FirstCC/Resources/PrivacyInfo.xcprivacy in Resources */,
 				F00200000000000000000002 /* SpaceGrotesk-Regular.ttf in Resources */,
 				F00200000000000000000003 /* SpaceGrotesk-Medium.ttf in Resources */,
 				F00200000000000000000004 /* SpaceGrotesk-SemiBold.ttf in Resources */,
