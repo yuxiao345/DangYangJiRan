@@ -76,3 +76,12 @@ struct PixelProgressBar: View, Animatable {
     }
 }
 
+#Preview {
+    VStack(spacing: 16) {
+        PixelProgressBar(progress: 0.3, tint: .green, totalBlocks: 20)
+        PixelProgressBar(progress: 0.7, tint: .orange, totalBlocks: 20)
+        PixelProgressBar(progress: 1.0, tint: .red, totalBlocks: 20)
+    }
+    .padding(24)
+}
+
