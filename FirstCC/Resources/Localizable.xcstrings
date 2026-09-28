@@ -1202,6 +1202,23 @@
     "余额：" : {
 
     },
+    "你正在参与此共享账本，仅拥有者可管理成员" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're a participant in this shared ledger; only the owner can manage members"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你正在参与此共享账本，仅拥有者可管理成员"
+          }
+        }
+      }
+    },
     "使用%@解锁" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8490,6 +8507,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "此操作不可撤销，确定要删除此交易吗？"
+          }
+        }
+      }
+    },
+    "此账本已开启共享，其他用户可加入协作记账" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This ledger is shared; others can join to collaborate"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此账本已开启共享，其他用户可加入协作记账"
           }
         }
       }
