@@ -63,7 +63,7 @@
 		517D6324F03D3B3A354D6D42 /* ExchangeRateServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 865CD094F9E94DE4C2138BB8 /* ExchangeRateServiceProtocol.swift */; };
 		53B3187B6D014EEFC21F7394 /* MemberServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3AF3A57D98AF9971AA6B6BD /* MemberServiceProtocol.swift */; };
 		5543511DB6AB4F5EB8DF1F1D /* BudgetItemEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEC88579A77D47DBAA48EFDB /* BudgetItemEntity.swift */; };
-		55C7DABA3062D00D00FD0F97 /* FirstCC/Resources/PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = PRIVACY0003XXXXXXXXXXXX /* FirstCC/Resources/PrivacyInfo.xcprivacy */; };
+		55C7DABA3062D00D00FD0F97 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = PRIVACY0003XXXXXXXXXXXX /* PrivacyInfo.xcprivacy */; };
 		56025E3F889643DE9F32DCC7 /* ReportViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E45CC9E82755427EADB2BA5F /* ReportViewModel.swift */; };
 		5706EEFBE51A45F5824DA425 /* TransactionEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDE2C5AB898F4AC29BCAAFEE /* TransactionEntity.swift */; };
 		576BD9D6213C4149A383800C /* RecurringRuleEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFDB4DF6538746E0A70203A4 /* RecurringRuleEntity.swift */; };
@@ -326,7 +326,7 @@
 		FD2C9721768BC0DECAFBD9EA /* LedgerRole.swift in Sources */ = {isa = PBXBuildFile; fileRef = 123B9066865398E03B8DD922 /* LedgerRole.swift */; };
 		FD91B103255DEB923850049C /* CloudKitConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FD37181CF946710701C84CD /* CloudKitConfig.swift */; };
 		FFD3CC4FA09133AB7E0CFC53 /* AccountDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89DBFB59681FF75B16E21478 /* AccountDetailView.swift */; };
-		PRIVACY0002XXXXXXXXXXXX /* FirstCC/Resources/PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = PRIVACY0003XXXXXXXXXXXX /* FirstCC/Resources/PrivacyInfo.xcprivacy */; };
+		PRIVACY0002XXXXXXXXXXXX /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = PRIVACY0003XXXXXXXXXXXX /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -555,8 +555,7 @@
 		FB18074394D7CADFC89B2D67 /* CurrencyServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyServiceProtocol.swift; sourceTree = "<group>"; };
 		FD9C98A4532441F197C92D1E /* SplitFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitFormView.swift; sourceTree = "<group>"; };
 		FFDB4DF6538746E0A70203A4 /* RecurringRuleEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringRuleEntity.swift; sourceTree = "<group>"; };
-		PRIVACY0001XXXXXXXXXXXX /* FirstCC/Resources/PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = file; path = FirstCC/Resources/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		PRIVACY0003XXXXXXXXXXXX /* FirstCC/Resources/PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = FirstCC/Resources/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		PRIVACY0003XXXXXXXXXXXX /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -761,7 +760,7 @@
 			isa = PBXGroup;
 			children = (
 				9AC8FB6A2FE3BC1A00679EC7 /* Localizable.xcstrings */,
-				PRIVACY0001XXXXXXXXXXXX /* FirstCC/Resources/PrivacyInfo.xcprivacy */,
+				PRIVACY0003XXXXXXXXXXXX /* PrivacyInfo.xcprivacy */,
 				B7179DD40F926BA5C3E05A8B /* Assets.xcassets */,
 				7DB63CE4205FA78E2BE83CF3 /* Assets.xcassets */,
 				F00300000000000000000001 /* Fonts */,
@@ -830,14 +829,6 @@
 			path = Extensions;
 			sourceTree = "<group>";
 		};
-		55C7DABB3062D00D00FD0F97 /* Recovered References */ = {
-			isa = PBXGroup;
-			children = (
-				PRIVACY0003XXXXXXXXXXXX /* FirstCC/Resources/PrivacyInfo.xcprivacy */,
-			);
-			name = "Recovered References";
-			sourceTree = "<group>";
-		};
 		70D7BE057289A0AB182528D0 /* Main */ = {
 			isa = PBXGroup;
 			children = (
@@ -890,7 +881,6 @@
 				9AB5F8CE2FCD51C700F5044E /* QianeymacUITests */,
 				558D0E193039581300D331CA /* 钱伲UITests */,
 				0E67BE8D2A5AA9DFE4D9A3C1 /* Products */,
-				55C7DABB3062D00D00FD0F97 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1271,7 +1261,7 @@
 				9AC8FB262FE3BBA000679EC7 /* SpaceGrotesk-SemiBold.ttf in Resources */,
 				9AC8FB272FE3BBA000679EC7 /* SpaceGrotesk-Bold.ttf in Resources */,
 				9AC8FB6C2FE3BC1A00679EC7 /* Localizable.xcstrings in Resources */,
-				55C7DABA3062D00D00FD0F97 /* FirstCC/Resources/PrivacyInfo.xcprivacy in Resources */,
+				55C7DABA3062D00D00FD0F97 /* PrivacyInfo.xcprivacy in Resources */,
 				9AC8FB282FE3BBA000679EC7 /* JetBrainsMono-Regular.ttf in Resources */,
 				9AC8FB292FE3BBA000679EC7 /* JetBrainsMono-Medium.ttf in Resources */,
 				9AC8FB2A2FE3BBA000679EC7 /* JetBrainsMono-Bold.ttf in Resources */,
@@ -1299,7 +1289,7 @@
 				4C123E5116650484726DA9F7 /* Assets.xcassets in Resources */,
 				F00200000000000000000001 /* SpaceGrotesk-Light.ttf in Resources */,
 				9AC8FB6B2FE3BC1A00679EC7 /* Localizable.xcstrings in Resources */,
-				PRIVACY0002XXXXXXXXXXXX /* FirstCC/Resources/PrivacyInfo.xcprivacy in Resources */,
+				PRIVACY0002XXXXXXXXXXXX /* PrivacyInfo.xcprivacy in Resources */,
 				F00200000000000000000002 /* SpaceGrotesk-Regular.ttf in Resources */,
 				F00200000000000000000003 /* SpaceGrotesk-Medium.ttf in Resources */,
 				F00200000000000000000004 /* SpaceGrotesk-SemiBold.ttf in Resources */,
