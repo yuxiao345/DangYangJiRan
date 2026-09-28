@@ -107,6 +107,17 @@ final class CoreDataStack {
                 let sharedOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: CloudKitConfig.containerIdentifier)
                 sharedOptions.databaseScope = .shared
                 sharedDescription.cloudKitContainerOptions = sharedOptions
+                // 该选项是 **per-store** 的（SDK 头注释：「a persistent store posts a
+                // NSPersistentStoreRemoteChangeNotification for every write to the store」），
+                // 只在私有库上设，共享库的 CloudKit 导入就不会投递通知，私有库那份不会兜底。
+                // 缺的后果是实打实的：`AppContainer` 的导入后去重钩子对共享账本一次都不跑，
+                // 共享账本的列表也不会因别端改动而刷新。
+                // 官方 sample 的写法是 `privateStoreDescription.copy()`，于是把 history tracking
+                // 一起带了过去；这里**刻意只开广播**：项目的监听方全是「收到就整体重读」，
+                // 从不读通知里的 history token，用不上流水账，而 history tracking 开过就不能关
+                // （据 Apple 工程师论坛回复，关闭会让 store 被强制只读）。
+                // 若将来要改用官方那套「按 token 增量处理」的精细去重，再一并打开即可。
+                sharedDescription.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
                 container.persistentStoreDescriptions = [privateDescription, sharedDescription]
             } else {
                 container.persistentStoreDescriptions = [privateDescription]
@@ -491,6 +502,9 @@ final class CoreDataStack {
         let options = NSPersistentCloudKitContainerOptions(containerIdentifier: CloudKitConfig.containerIdentifier)
         options.databaseScope = .shared
         desc.cloudKitContainerOptions = options
+        // 与 `init` 里的共享 store 描述保持一致：少了这一行，重置共享 store 之后
+        // 该 store 就再也不投递变更通知了（选项是 per-store，且必须在打开 store 之前设好）。
+        desc.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
         try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
             coordinator.addPersistentStore(with: desc) { _, error in
                 if let error { cont.resume(throwing: error) }
