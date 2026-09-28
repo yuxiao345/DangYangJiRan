@@ -77,14 +77,16 @@
   2026-09-24 复核确认**级联本身是好的**（是测试断言写错，见 §六-6）——**本项（部分冲销）仍是真的缺口**，
   两者不是一回事。
 
-### 4. i18n：332 条缺 `en`
+### 4. i18n：330 条缺 `en`
 
-- 1024 条中 **332 条没有 `en`**，其中 **313 条 `localizations` 完全为空**（既无 zh-Hans 也无 en）。
+- 1024 条中 **330 条没有 `en`**，其中 **311 条 `localizations` 完全为空**（既无 zh-Hans 也无 en）。
 - 空条目的 key 多为符号/格式串（`''`、`' '`、`'–'`、`'%@年'`、`'%lld笔'`、`'↔'` …），
   但仍有 `'%@ 锁'`、`'%@:'` 这类**会显示给人看**的。
-- ⚠️ **工作区正在继续增加空条目**：未提交的 `Localizable.xcstrings` 改动新增了
-  `"你正在参与此共享账本，仅拥有者可管理成员"` 与 `"此账本已开启共享，其他用户可加入协作记账"`，
-  两条的 `localizations` 都是**空的**。
+- ✅ **2026-09-28**：原先"工作区正在继续增加"的两条空条目
+  `"你正在参与此共享账本，仅拥有者可管理成员"` 与 `"此账本已开启共享，其他用户可加入协作记账"`
+  已补上 `zh-Hans` + `en`。上面 330 / 311 就是补完后的实测值（python 读 JSON 统计，不是 grep 数行）。
+- 遗留一处：`LedgerSettingsView.swift:114`（`#if DEBUG` 分支）把中文字面量放进 `String` 变量再拼接后交给
+  `Text`，那条路径**不走本地化**（Release 分支 `:117` 的三元字面量走 `LocalizedStringKey`，已被本次修复覆盖）。
 
 ### 5. 名称一致性 —— ✅ **上架包没问题**（Debug 的 `荡漾计然` 是**有意保留的开发版标识**）
 
@@ -247,6 +249,15 @@
   看着像模板残留拼坏（不随包分发，优先级低）。
 - **`.claude/agents/` 下的 `pbxproj-checker`** 的去留从未定论。（原先并列的 `generate_xcodeproj.py`
   已于 2026-09-24 删除，见 §二-5。）
+- **共享 store 是否真的投递 `NSPersistentStoreRemoteChange` —— 待真机验证（2026-09-28 记）**：
+  `CoreDataStack` 给 shared store description 只设了 `NSPersistentStoreRemoteChangeNotificationPostOptionKey`
+  （刻意**没有**同时开 `NSPersistentHistoryTrackingKey`，见 `CoreDataStack.swift` init 与 `resetSharedStore()` 两处）。
+  Apple 文档与官方 sharing sample 一律两个选项一起设，**没有任何文档说明"只开广播"能否单独生效**——
+  官方 sample 用的是 `privateStoreDescription.copy()`，共享 store 天然继承两个选项，所以从 sample 看不出单设的后果。
+  验证方法：真机上挂一个临时观察者，在 `NSPersistentStoreRemoteChange` 里打印 `userInfo` 的 store URL / identifier，
+  确认共享 store 确实投递；确认不了就按官方 sample 把 `NSPersistentHistoryTrackingKey` 也补上
+  （注意 history tracking 一旦开启据说不可关闭，属**论坛级**证据，未独立验证）。
+  若不生效，症状是「别人共享给你的账本，导入后列表不刷新」——`transactionDidChange` 那一整套已经补齐，缺的只是这一跳。
 
 ### 6. 两个被 `XCTSkipIf(true)` 挡住的断言 + 同类 `Decimal → Int64` 转换 —— ✅ **已全部修复（2026-09-24）**
 
@@ -579,6 +590,29 @@ xcodebuild -project FirstCC.xcodeproj -scheme Qianeymac -destination "platform=m
 ---
 
 ## 八、修订记录
+
+- **2026-09-28 十次修订（周期账修复的事后审查落地）**：对已推送的 `b761841` / `01e8707` 跑了 4 路并行审查
+  （周期账核心逻辑 / CoreDataStack 与调用点 / 四个编辑器错误收尾 / 工作区未提交文件），
+  用户裁定「A + B + C 三组全修」，落地：
+  ① `waitForImportSinceLaunch` 去掉没人用的 `-> Bool`（根因是 **async 函数**未用返回值会告警；
+     某审查 agent 断言"普通函数不告警"，被构建日志证伪。两端各 2 条 `#NoUsage` 随之消失）；
+  ② `occurrenceKey` 三处调用点统一从**模板**取账本（原先"建索引取交易、查索引取模板"，
+     CloudKit 分批导入时交易的 `ledger` 关系暂为 nil → 落在 `-` 桶，既重复生成又让去重永远合不上。
+     这是本次**新加账本维度**带进来的窗口，旧代码没有该维度反而撞不到）；
+  ③ 去重裁决在"都没被人改过"时改为留 `createdAt` 较晚的那条（原先只比 UUID，模板改价后
+     有一半概率留下旧价 —— 即用户最初报的「Mac 显示 17、手机显示 20」那一族）；
+  ④ `processDueRecurring` 加「日期必须前进」守卫（`interval = 0` 时 `following == nextDate`，
+     `while` 会原地打转卡死主线程。两个平台的 Stepper 限 1…99，眼下只有 API 与测试能触发）；
+  ⑤ 四个编辑器 catch 的 `rollback()` 补注波及范围（用的是全应用共用的 viewContext，
+     丢的是它上面**所有**未保存改动，不止本视图改的那几个字段）；
+  ⑥ 失败清理删掉刚生成的交易后补发 `transactionDidChange`。
+  新增 3 条测试并**做了回归验证**：把 ② 的账本来源临时改回旧写法，测试确实变红
+  （`("2") is not equal to ("1")`，即多生成一笔），还原后 md5 与改动前逐字节一致。
+  实测：iOS `314` 执行 / `312` 通过 / `2` 跳过 / `0` 失败；Mac `42/42`；双端 `BUILD SUCCEEDED`、0 error。
+  遗留未动：`CoreDataStack.swift:200` 的 actor 隔离警告（与相邻 `:199` 同源，属既有模式，
+  并入 Swift 6 迁移清单处理，不单独改）；等待函数的"取消即忙等"（当前两处调用都是非结构化 `Task`，
+  取消不到，属防御性建议）。
+
 
 - **2026-09-24 九次修订（用户裁定后落地）**：本次两处审查缺口，用户裁定「只加长度 guard」，
   **溢出那处不动**。落地 `SplitServiceImpl.createSplit` 的

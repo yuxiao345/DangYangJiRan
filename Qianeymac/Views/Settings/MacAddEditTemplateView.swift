@@ -236,6 +236,11 @@ struct MacAddEditTemplateView: View {
             // 重试时撞上"同名"守卫；`isTemporaryID` 说明第 1 步就没成功，交给 ② 丢弃）；
             // ② 再 rollback 丢弃未保存的脏改动，否则它们会被之后任意一次无关的
             // `context.save()` 静默写进库。② 必须在 ① 的 save 之后，rollback 会撤销未保存的删除。
+            // ② 的波及范围要知道：`modelContext` 是全应用共用的那一个 viewContext
+            // （来自 `@Environment(\.managedObjectContext)`），`rollback()` 丢的是它上面
+            // **所有**未保存改动，不止本视图改的这几个字段。当前所有写入路径都是"改完立即 save"，
+            // 留不下跨帧的脏数据，所以打不到；将来若有代码在 viewContext 上留下未保存改动，
+            // 这里会连它一起丢掉。
             if let created = createdTemplate, !created.objectID.isTemporaryID {
                 modelContext.delete(created)
                 try? modelContext.save()

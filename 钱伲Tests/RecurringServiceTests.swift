@@ -9,8 +9,9 @@ import XCTest
 /// Known issues（disabled_ 前缀）：`nextGenerateDate` 的间接访问仍靠 service 层
 /// `try?` 兜底；以及 fetch Transaction 在重影下 try? 吞错问题。
 ///
-/// 已修（见文件末尾测试）：`deduplicateRecurringTransactions` 的裁决规则（手改优先 + UUID 全序）
-/// 与「同模板同一天」分组键的账本维度；`processDueRecurring` 的同类判据也共用同一份键。
+/// 已修（见文件末尾测试）：`deduplicateRecurringTransactions` 的裁决规则
+/// （手改优先 → 时间戳较晚 → UUID 全序）与「同模板同一天」分组键的账本维度；
+/// `processDueRecurring` 的同类判据共用同一份键，且三处账本一律取自**模板**。
 /// 生成时机（等本次启动第一次 CloudKit 导入）由 `CoreDataStack.waitForImportSinceLaunch` 收窄，
 /// 但它只把窗口从"生成早于全部导入"缩到"早于含目标记录的那一批"，**不是**彻底消除 ——
 /// 剩余窗口仍由去重兜底。
@@ -349,7 +350,7 @@ final class RecurringServiceTests: CoreDataTestCase {
         XCTAssertEqual(remaining.first?.amount, -20)
     }
 
-    /// 两条都没人动过 → 保留 `id` 最小的那条。
+    /// 两条都没人动过、`createdAt` 也相同 → 才轮到 `id` 最小的那条。
     /// UUID 全局唯一且可全序比较，所以每台设备对同一批数据独立算出的保留者相同
     /// （Apple 官方 sample "Remove duplicate data" 用的就是这个裁决方式）。
     func test_deduplicateRecurringTransactions_prefersLowestUUID_whenNeitherEdited() throws {
@@ -421,6 +422,92 @@ final class RecurringServiceTests: CoreDataTestCase {
 
         let remaining = try context.fetch(NSFetchRequest<Transaction>(entityName: "Transaction"))
         XCTAssertEqual(remaining.count, 2, "两个账本各自的周期交易都是有效数据，不能当成重复删掉")
+    }
+
+    // MARK: - 生成侧：账本关系未解析 / interval=0
+
+    /// CloudKit 分批导入的中间态：交易的 `ledger` 关系还没解析（暂时为 nil）时，
+    /// 「这一期生成过没有」的键也必须能和正常态算出的键对上。
+    ///
+    /// 建索引与查索引若各取一个来源（交易 vs 模板），这笔暂时没有账本的交易会落进 `-` 桶，
+    /// 而查询用的是真账本键 → 本机再生成一笔；随后去重又把两笔分进两个桶，永远合不上。
+    /// 所以三处一律从模板取账本。
+    func test_processDueRecurring_doesNotRegenerate_whenExistingCopyHasUnresolvedLedger() throws {
+        let ledger = context.makeLedger("L")
+        let template = makeTemplate("月租", ledger: ledger)
+        // 本期：起算日 ≤ 现在，且再往后一期就超过现在，保证规则正好停在这一期上
+        let dueDate = Date().addingTimeInterval(-86400 * 5)
+
+        let unresolved = Transaction(
+            type: .expense, amount: -100, currencyCode: "CNY", date: dueDate, context: context
+        )
+        unresolved.template = template          // ledger 故意不设：模拟关系尚未解析
+        try context.save()
+
+        _ = try service.setRecurring(
+            template: template, frequency: .monthly, interval: 1,
+            startDate: dueDate, endDate: nil, context: context
+        )
+
+        try service.processDueRecurring(context: context)
+
+        let req = NSFetchRequest<Transaction>(entityName: "Transaction")
+        req.predicate = NSPredicate(format: "template == %@", template)
+        XCTAssertEqual(
+            try context.fetch(req).count, 1,
+            "这一期已经有了（只是账本关系还没解析），不该再生成一笔"
+        )
+    }
+
+    /// `interval = 0` 时 `calculateNextDate` 加 0 个月返回同一天，循环必须能停下来。
+    ///
+    /// UI 的间隔 Stepper 限 1…99，但 `setRecurring` 是协议公开 API，测试与将来的调用点都能传 0。
+    /// 提醒：若「必须前进」的守卫被删掉，本测试会**挂死**而不是失败 —— 那正是这个缺陷的形状，
+    /// 别把它当成环境卡顿。
+    func test_processDueRecurring_intervalZero_terminatesWithoutGenerating() throws {
+        let ledger = context.makeLedger("L")
+        let template = makeTemplate("月租", ledger: ledger)
+
+        let rule = try service.setRecurring(
+            template: template, frequency: .monthly, interval: 0,
+            startDate: Date().addingTimeInterval(-86400 * 10), endDate: nil, context: context
+        )
+
+        try service.processDueRecurring(context: context)
+
+        let req = NSFetchRequest<Transaction>(entityName: "Transaction")
+        req.predicate = NSPredicate(format: "template == %@", template)
+        XCTAssertEqual(try context.fetch(req).count, 0, "日期不前进就不该生成，更不该卡死")
+        XCTAssertEqual(rule.nextGenerateDate, rule.startDate, "守卫是不前进就跳出，不该推进 nextGenerateDate")
+    }
+
+    // MARK: - deduplicateRecurringTransactions：都没被手改时的裁决
+
+    /// 两条都没人动过时，留 `createdAt` 更晚的那条 —— 后生成的那台设备读到的是更晚的模板值。
+    ///
+    /// 场景：模板金额从 17 改成 20，先收到变更的设备和后收到的那台各按新旧价生成了同一期，
+    /// 两条都没被手改。只比 UUID 会有一半概率把旧价那条留下（用户最初报的"Mac 显示 17、
+    /// 手机显示 20"就是这个形状）。
+    func test_deduplicateRecurringTransactions_prefersLaterCreatedAt_whenNeitherEdited() throws {
+        let ledger = context.makeLedger("L")
+        let template = makeTemplate("Apple Music", ledger: ledger)
+        let day = Date()
+
+        let stalePrice = makeRecurringTx(template: template, ledger: ledger, amount: -17, date: day)
+        stalePrice.createdAt = day
+        stalePrice.modifiedAt = day                                // 机器生成，没人动过
+
+        let freshPrice = makeRecurringTx(template: template, ledger: ledger, amount: -20, date: day)
+        freshPrice.createdAt = day.addingTimeInterval(600)         // 更晚生成 → 读到 20
+        freshPrice.modifiedAt = freshPrice.createdAt
+        try context.save()
+
+        try service.deduplicateRecurringTransactions(context: context)
+
+        let remaining = try context.fetch(NSFetchRequest<Transaction>(entityName: "Transaction"))
+        XCTAssertEqual(remaining.count, 1)
+        XCTAssertEqual(remaining.first?.id, freshPrice.id, "应留下更晚生成的那条")
+        XCTAssertEqual(remaining.first?.amount, -20, "更晚生成的那条读到的是更新后的模板金额")
     }
 
     // MARK: - Helpers

@@ -313,17 +313,29 @@ struct MacAddEditRecurringView: View {
             // ② 再 rollback 丢弃未保存的脏改动 —— 那些赋值改的是共享 viewContext 上的托管对象，
             //    不清掉的话，之后任意一次无关的 `context.save()`（例如远程变化触发的去重）
             //    都会把这次"已报失败"的改动静默写进库。
+            //    波及范围要知道：`modelContext` 是全应用共用的那一个 viewContext
+            //    （来自 `@Environment(\.managedObjectContext)`），`rollback()` 丢的是它上面
+            //    **所有**未保存改动，不止本视图改的这几个字段。当前所有写入路径都是"改完立即 save"，
+            //    留不下跨帧的脏数据，所以打不到；将来若有代码在 viewContext 上留下未保存改动，
+            //    这里会连它一起丢掉。
             // 注意 ② 必须在 ① 的 save 之后：rollback 会撤销尚未保存的删除。
             if let created = createdTemplate, !created.objectID.isTemporaryID {
                 // `generatedTransactions` 的删除规则是 Nullify（见 xcdatamodeld 的 contents），
                 // 删模板**不会**连带删掉它们：第 3 步 `processDueRecurring` 已经 save 过一笔
                 // 生成的交易，只删模板就会把那笔没打算建的流水留在账本里（已落库，② 撤不回）。
                 // `recurringRule` 是 Cascade，删模板时自动带走，不需要显式删。
-                for tx in created.generatedTransactions ?? [] { modelContext.delete(tx) }
+                let generated = created.generatedTransactions ?? []
+                for tx in generated { modelContext.delete(tx) }
                 modelContext.delete(created)
-                // 这一步的 save 若也失败，② 的 rollback 会把刚删掉的模板复活（用户重试就会撞上
-                // 上面的"同名"守卫）—— 二次失败的边角；即便如此，脏改动仍被 ② 清掉了。
+                // 这一步的 save 若也失败，② 的 rollback 会把刚删掉的模板**连同上面这些交易**
+                // 一起恢复（save 在 store 层是原子的，不会只剩一半），用户重试就会撞上上面的
+                // "同名"守卫 —— 二次失败的边角，不会留下半状态；脏改动仍被 ② 清掉。
                 try? modelContext.save()
+                // 第 3 步生成时已经发过一次 `transactionDidChange`，把这些交易推上过屏；
+                // 现在又把它们删了，得再发一次，否则监听该通知的总览/流水会留着一行已不存在的交易。
+                if !generated.isEmpty {
+                    NotificationCenter.default.post(name: .transactionDidChange, object: nil)
+                }
             }
             modelContext.rollback()
             DiagnosticLog.log("MacAddEditRecurringView: save FAILED: \(error.localizedDescription)")

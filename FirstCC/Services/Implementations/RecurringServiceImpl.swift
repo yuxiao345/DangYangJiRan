@@ -75,7 +75,7 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
         var existingByDay: [String: Bool] = [:]
         for tx in existingTxs {
             guard let tmpl = tx.template else { continue }
-            existingByDay[Self.occurrenceKey(ledgerID: tx.ledger?.id, templateID: tmpl.id, date: tx.date, calendar: cal)] = true
+            existingByDay[Self.occurrenceKey(ledgerID: tmpl.ledger?.id, templateID: tmpl.id, date: tx.date, calendar: cal)] = true
         }
 
         var didInsert = false
@@ -87,6 +87,16 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
                 let following = RecurringRule.calculateNextDate(
                     from: nextDate, frequency: rule.frequency, interval: Int(rule.interval)
                 )
+
+                // 日期必须前进，否则下面这个 `while` 会原地打转把主线程卡死：
+                // `following == nextDate` 时 `following <= now` 恒成立，`nextDate` 永不变化。
+                // 可达路径：`setRecurring` 是协议公开 API，interval 传 0 时 `calculateNextDate`
+                // 加 0 就是同一天；它的 `?? date` 兜底在 `byAdding` 失败时同样返回原日期。
+                // 两个平台的间隔 Stepper 限 1…99，所以眼下只有 API 与测试能触发。
+                guard following > nextDate else {
+                    DiagnosticLog.log("RecurringService: rule \(rule.id.uuidString.prefix(8)) 的下一次日期没有前进（interval=\(rule.interval)），跳过本期生成")
+                    break
+                }
 
                 // 跳过已错过的期间
                 guard following > now else {
@@ -142,10 +152,12 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
     /// 判据按序：
     /// 1. 有人手动改过的那条优先 —— 机器自己补生成的那条往往比用户的修正"更新"，
     ///    按时间裁决会删掉用户手改的那条（Apple Music 涨价那次就是这么丢的）；
-    /// 2. 两条都被人改过时，留后改的那条（代表用户最新意图）；
-    /// 3. 其余情况留 `id` 最小的那条 —— UUID 全局唯一且可全序比较，所以各端选出的保留者
-    ///    一致（Apple 官方 sample "Remove duplicate data" 的裁决方式）。两条内容一致时也走这条，
-    ///    删掉哪个都不丢信息。
+    /// 2. 同一组内比时间戳，留较晚的那条：都被人改过时看 `modifiedAt`（代表用户最新意图），
+    ///    都没被改过时看 `createdAt` —— 后生成的那台设备读到的是更晚的模板值。模板改价后，
+    ///    先收到变更的设备和后收到的那台会各按新旧价生成一笔，两条都没被手改，
+    ///    只比 UUID 会有一半概率留下旧价那条；
+    /// 3. 时间戳也相同时，留 `id` 最小的那条 —— UUID 全局唯一且可全序比较，所以各端选出的
+    ///    保留者一致（Apple 官方 sample "Remove duplicate data" 的裁决方式）。
     func deduplicateRecurringTransactions(context: NSManagedObjectContext) throws {
         let request = NSFetchRequest<Transaction>(entityName: "Transaction")
         request.predicate = NSPredicate(format: "template != nil")
@@ -155,7 +167,7 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
         var copiesByOccurrence: [String: [Transaction]] = [:]
         for t in transactions {
             guard let template = t.template else { continue }
-            let dayKey = Self.occurrenceKey(ledgerID: t.ledger?.id, templateID: template.id, date: t.date, calendar: cal)
+            let dayKey = Self.occurrenceKey(ledgerID: template.ledger?.id, templateID: template.id, date: t.date, calendar: cal)
             copiesByOccurrence[dayKey, default: []].append(t)
         }
 
@@ -165,9 +177,13 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
                 let aEdited = Self.isManuallyEdited(a)
                 let bEdited = Self.isManuallyEdited(b)
                 if aEdited != bEdited { return aEdited }
-                // 两条都被人改过：后改的那条是用户最新意图。两边时间戳相同时落到
-                // 末尾的 UUID 比较，避免排序谓词对等导致各端顺序不一致。
-                if aEdited, a.modifiedAt != b.modifiedAt { return a.modifiedAt > b.modifiedAt }
+                // 同组内比时间戳，取较晚的：都被人改过看 `modifiedAt`（用户最新意图），
+                // 都没被改过看 `createdAt`（后生成的那台读到的是更晚的模板值）。
+                // 两个时间戳都随记录同步，各端能独立算出同一结论。
+                let aStamp = aEdited ? a.modifiedAt : a.createdAt
+                let bStamp = bEdited ? b.modifiedAt : b.createdAt
+                if aStamp != bStamp { return aStamp > bStamp }
+                // 时间戳相同才落到 UUID 比较，避免排序谓词对等导致各端顺序不一致。
                 return a.id.uuidString < b.id.uuidString
             }
             duplicates.append(contentsOf: ranked.dropFirst())
@@ -194,6 +210,12 @@ struct RecurringServiceImpl: RecurringServiceProtocol {
     /// （`copyTemplate`/`copyRecurringRule` 都带 `n.id = src.id`），所以源账本与副本里
     /// 各有一个 id 相同的模板与规则。少了账本维度，"副本模板的这一天"与"源模板的这一天"
     /// 会被当成同一期。
+    ///
+    /// 账本一律取自**模板**（`template.ledger`），三处调用点都是 —— 不要改从交易那边取。
+    /// 交易身上那条 ledger 关系在 CloudKit 分批导入的中间态下可能还没解析（暂时为 nil），
+    /// 于是"建索引"与"查索引"会算出分属两个桶的键：既会重复生成一笔，又会让去重永远合不上
+    /// （一个落在 `-` 桶、一个落在真账本桶）。正常路径下两者本就相等
+    /// （生成时 `transaction.ledger = template.ledger`），所以统一取模板不改变正常行为。
     private static func occurrenceKey(
         ledgerID: UUID?,
         templateID: UUID,

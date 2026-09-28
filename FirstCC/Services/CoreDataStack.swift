@@ -327,18 +327,18 @@ final class CoreDataStack {
     /// 成功的导入事件置位，而导入是分批的，那一批未必含目标记录。它只是把窗口从
     /// "生成早于全部导入"收窄到"生成早于包含目标记录的那一批"，剩余窗口仍由去重兜底。
     ///
-    /// 超时（离线启动、未登录 iCloud、导入极慢）返回 `false`，调用方按原行为继续：
+    /// 超时（离线启动、未登录 iCloud、导入极慢）就放弃等待，调用方按原行为继续：
     /// 不能因为等不到导入就永远不生成周期账 —— 那种情况退回"照常生成 + 事后去重"。
-    func waitForImportSinceLaunch(maxWait: TimeInterval = 15.0) async -> Bool {
-        guard cloudKitAvailable else { return false }
-        guard !hasImportedSinceLaunch else { return true }
+    ///
+    /// 「等到了没有」只写进日志：调用方两条路径行为完全一致，返回结果没人用，所以不返回。
+    func waitForImportSinceLaunch(maxWait: TimeInterval = 15.0) async {
+        guard cloudKitAvailable, !hasImportedSinceLaunch else { return }
         let start = Date.now
         while Date().timeIntervalSince(start) < maxWait {
             try? await Task.sleep(for: .milliseconds(500))
-            if hasImportedSinceLaunch { return true }
+            if hasImportedSinceLaunch { return }
         }
         DiagnosticLog.log("CoreDataStack: no CloudKit import within \(maxWait)s, recurring generation proceeds without waiting")
-        return false
     }
 
     // MARK: - CloudKit Sharing
