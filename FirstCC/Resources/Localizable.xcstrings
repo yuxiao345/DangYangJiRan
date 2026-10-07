@@ -102,7 +102,20 @@
       }
     },
     "· %lld项" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "· %lld items"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "· %lld项"
+          }
+        }
+      }
     },
     "· 已暂停" : {
       "extractionState" : "manual",
@@ -122,7 +135,20 @@
       }
     },
     "· 总" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "· Total"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "· 总"
+          }
+        }
+      }
     },
     "(%lld)" : {
 
@@ -303,13 +329,32 @@
       }
     },
     "%@ 锁" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Lock"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 锁"
+          }
+        }
+      }
     },
     "%@:" : {
 
     },
     "%@（%lld笔）" : {
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ (%2$lld)"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "new",
@@ -339,7 +384,20 @@
       }
     },
     "%@年" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@年"
+          }
+        }
+      }
     },
     "%lld" : {
 
@@ -365,7 +423,20 @@
       }
     },
     "%lld 笔" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld entries"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 笔"
+          }
+        }
+      }
     },
     "%lld（%lld笔）" : {
       "extractionState" : "manual",
@@ -398,16 +469,68 @@
 
     },
     "%lld个预算项" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld budget items"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld个预算项"
+          }
+        }
+      }
     },
     "%lld年" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld年"
+          }
+        }
+      }
     },
     "%lld日" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld日"
+          }
+        }
+      }
     },
     "%lld月" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Month %lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld月"
+          }
+        }
+      }
     },
     "%lld月%lld日" : {
       "extractionState" : "manual",
@@ -427,7 +550,20 @@
       }
     },
     "%lld月明细" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Month %lld Details"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld月明细"
+          }
+        }
+      }
     },
     "↔" : {
 
@@ -484,7 +620,20 @@
 
     },
     "App未匹配明细（%lld笔）" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unmatched in App (%lld)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App未匹配明细（%lld笔）"
+          }
+        }
+      }
     },
     "App记账" : {
       "extractionState" : "manual",
@@ -504,10 +653,36 @@
       }
     },
     "App记账明细" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In-App Entries"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App记账明细"
+          }
+        }
+      }
     },
     "App记账金额" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In-App Amount"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App记账金额"
+          }
+        }
+      }
     },
     "Base" : {
 
@@ -647,7 +822,20 @@
       }
     },
     "iCloud 共享" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud Sharing"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud 共享"
+          }
+        }
+      }
     },
     "JPY (日元)" : {
       "extractionState" : "manual",
@@ -673,10 +861,36 @@
 
     },
     "OCR 识别测试" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OCR Test"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OCR 识别测试"
+          }
+        }
+      }
     },
     "OCR原始行文本（%lld 行）" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OCR raw lines (%lld)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OCR原始行文本（%lld 行）"
+          }
+        }
+      }
     },
     "OCR原文: %@" : {
       "extractionState" : "manual",
@@ -696,7 +910,20 @@
       }
     },
     "PDF 已加载（%lld 页）" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PDF loaded (%lld pages)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PDF 已加载（%lld 页）"
+          }
+        }
+      }
     },
     "Selected" : {
 
@@ -745,7 +972,20 @@
       }
     },
     "一键结算" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settle All"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一键结算"
+          }
+        }
+      }
     },
     "万" : {
       "extractionState" : "manual",
@@ -782,10 +1022,36 @@
       }
     },
     "上个月" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous Month"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上个月"
+          }
+        }
+      }
     },
     "上级：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parent:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上级："
+          }
+        }
+      }
     },
     "上级分类" : {
       "extractionState" : "manual",
@@ -805,10 +1071,36 @@
       }
     },
     "下个月" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next Month"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下个月"
+          }
+        }
+      }
     },
     "下次生成: %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下次生成: %@"
+          }
+        }
+      }
     },
     "下次生成: %lld" : {
       "extractionState" : "manual",
@@ -862,7 +1154,20 @@
       }
     },
     "主题" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Theme"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "主题"
+          }
+        }
+      }
     },
     "书本教材" : {
       "extractionState" : "manual",
@@ -899,16 +1204,68 @@
       }
     },
     "交易信息" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transaction Info"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "交易信息"
+          }
+        }
+      }
     },
     "交易未找到" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transaction not found"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "交易未找到"
+          }
+        }
+      }
     },
     "交易类型" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transaction Type"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "交易类型"
+          }
+        }
+      }
     },
     "交易类型：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transaction Type:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "交易类型："
+          }
+        }
+      }
     },
     "交易详情" : {
       "extractionState" : "manual",
@@ -1200,7 +1557,20 @@
       }
     },
     "余额：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Balance:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "余额："
+          }
+        }
+      }
     },
     "你正在参与此共享账本，仅拥有者可管理成员" : {
       "extractionState" : "manual",
@@ -1373,7 +1743,20 @@
       }
     },
     "信用卡设置" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Credit Card Settings"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "信用卡设置"
+          }
+        }
+      }
     },
     "信用额度" : {
       "extractionState" : "manual",
@@ -1393,7 +1776,20 @@
       }
     },
     "信用额度：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Credit Limit:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "信用额度："
+          }
+        }
+      }
     },
     "借入" : {
       "extractionState" : "manual",
@@ -1464,7 +1860,20 @@
       }
     },
     "借贷: %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lending: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "借贷: %@"
+          }
+        }
+      }
     },
     "借贷交易必须有且仅有一个借贷账户参与" : {
       "extractionState" : "manual",
@@ -1654,7 +2063,20 @@
       }
     },
     "共 %lld 个账户" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld accounts"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共 %lld 个账户"
+          }
+        }
+      }
     },
     "共享单车" : {
       "extractionState" : "manual",
@@ -1674,7 +2096,20 @@
       }
     },
     "共享失败" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sharing Failed"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共享失败"
+          }
+        }
+      }
     },
     "共享失败，请检查网络或确认共享邀请仍然有效后重试" : {
       "extractionState" : "manual",
@@ -1728,7 +2163,20 @@
       }
     },
     "共享已失效" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share No Longer Valid"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共享已失效"
+          }
+        }
+      }
     },
     "共享成员" : {
       "extractionState" : "manual",
@@ -1748,7 +2196,20 @@
       }
     },
     "共享未就绪" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sharing Not Ready"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共享未就绪"
+          }
+        }
+      }
     },
     "共享管理" : {
       "extractionState" : "manual",
@@ -1785,7 +2246,20 @@
       }
     },
     "关于" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关于"
+          }
+        }
+      }
     },
     "关联待付款" : {
       "extractionState" : "manual",
@@ -1805,10 +2279,36 @@
       }
     },
     "关联待报销" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link to Reimbursement"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关联待报销"
+          }
+        }
+      }
     },
     "关联待收" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link to Collect"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关联待收"
+          }
+        }
+      }
     },
     "关联待收款" : {
       "extractionState" : "manual",
@@ -1828,7 +2328,20 @@
       }
     },
     "关联待还" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link to Repay"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关联待还"
+          }
+        }
+      }
     },
     "关键词" : {
       "extractionState" : "manual",
@@ -1866,6 +2379,12 @@
     },
     "关闭「%@」将同时关闭其下的 %lld 个子分类，确定要继续吗？" : {
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Closing “%1$@” will also close its %2$lld subcategories. Do you want to continue?"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "new",
@@ -1875,7 +2394,20 @@
       }
     },
     "关闭共享" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop Sharing"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭共享"
+          }
+        }
+      }
     },
     "关闭共享后，其他成员将无法访问此账本。你的数据将保留为本地账本。" : {
       "extractionState" : "manual",
@@ -1895,7 +2427,20 @@
       }
     },
     "关闭父分类" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close Parent Category"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭父分类"
+          }
+        }
+      }
     },
     "其他" : {
       "extractionState" : "manual",
@@ -2068,7 +2613,20 @@
       }
     },
     "最低金额不能高于最高金额" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minimum amount cannot be greater than maximum amount"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最低金额不能高于最高金额"
+          }
+        }
+      }
     },
     "最大可退金额 %@" : {
       "extractionState" : "manual",
@@ -2173,7 +2731,20 @@
       }
     },
     "最高金额不能低于最低金额" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maximum amount cannot be less than minimum amount"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最高金额不能低于最低金额"
+          }
+        }
+      }
     },
     "净资产" : {
       "extractionState" : "manual",
@@ -2193,7 +2764,20 @@
       }
     },
     "分摊备注（可选）" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Split note (optional)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分摊备注（可选）"
+          }
+        }
+      }
     },
     "分摊方式" : {
       "extractionState" : "manual",
@@ -2213,7 +2797,20 @@
       }
     },
     "分摊详情" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Split Details"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分摊详情"
+          }
+        }
+      }
     },
     "分摊金额配置无效" : {
       "extractionState" : "manual",
@@ -2267,7 +2864,20 @@
       }
     },
     "分类：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Category:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分类："
+          }
+        }
+      }
     },
     "分类(%@" : {
       "extractionState" : "manual",
@@ -2287,7 +2897,20 @@
       }
     },
     "分类(%lld)" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Categories (%lld)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分类(%lld)"
+          }
+        }
+      }
     },
     "分类占比" : {
       "extractionState" : "manual",
@@ -2341,10 +2964,36 @@
       }
     },
     "切换到 %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch to %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "切换到 %@"
+          }
+        }
+      }
     },
     "切换到报表 %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch to report %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "切换到报表 %@"
+          }
+        }
+      }
     },
     "列格式：消费日期,记账日期,交易说明,交易类别,金额" : {
       "extractionState" : "manual",
@@ -2398,7 +3047,20 @@
       }
     },
     "创建分摊" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Split"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建分摊"
+          }
+        }
+      }
     },
     "创建分摊失败: %@" : {
       "extractionState" : "manual",
@@ -2452,7 +3114,20 @@
       }
     },
     "创建或选择自定义类型名称" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create or select a custom type name"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建或选择自定义类型名称"
+          }
+        }
+      }
     },
     "创建者" : {
       "extractionState" : "manual",
@@ -2523,13 +3198,52 @@
       }
     },
     "删除周期账" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Recurring Entry"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除周期账"
+          }
+        }
+      }
     },
     "删除商家" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Merchant"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除商家"
+          }
+        }
+      }
     },
     "删除商家失败: %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Failed to delete merchant: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除商家失败: %@"
+          }
+        }
+      }
     },
     "删除失败: %@" : {
       "extractionState" : "manual",
@@ -2549,7 +3263,20 @@
       }
     },
     "删除模板" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Template"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除模板"
+          }
+        }
+      }
     },
     "删除此交易" : {
       "extractionState" : "manual",
@@ -2569,7 +3296,20 @@
       }
     },
     "删除此对账记录" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete This Reconciliation"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除此对账记录"
+          }
+        }
+      }
     },
     "删除此对账记录后，该账期内的交易将恢复为“未对账”状态，可重新参与对账。" : {
       "extractionState" : "manual",
@@ -2589,10 +3329,36 @@
       }
     },
     "删除联系人" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Contact"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除联系人"
+          }
+        }
+      }
     },
     "删除账本" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Ledger"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除账本"
+          }
+        }
+      }
     },
     "删除账本会同时删除该账本下的所有数据，此操作不可撤销。" : {
       "extractionState" : "manual",
@@ -2612,13 +3378,52 @@
       }
     },
     "删除项目" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Project"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除项目"
+          }
+        }
+      }
     },
     "删除预算计划" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Budget Plan"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除预算计划"
+          }
+        }
+      }
     },
     "删除预算项" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Budget Item"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除预算项"
+          }
+        }
+      }
     },
     "利息" : {
       "extractionState" : "manual",
@@ -2893,7 +3698,20 @@
       }
     },
     "匹配数量：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Matches:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "匹配数量："
+          }
+        }
+      }
     },
     "匹配预算项" : {
       "extractionState" : "manual",
@@ -2913,7 +3731,20 @@
       }
     },
     "匹配预算项：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Matching budget items:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "匹配预算项："
+          }
+        }
+      }
     },
     "医疗" : {
       "extractionState" : "manual",
@@ -3018,7 +3849,20 @@
       }
     },
     "即将上线" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coming Soon"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "即将上线"
+          }
+        }
+      }
     },
     "原交易摘要" : {
       "extractionState" : "manual",
@@ -3106,7 +3950,20 @@
       }
     },
     "参与者" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Participant"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "参与者"
+          }
+        }
+      }
     },
     "取消" : {
       "extractionState" : "manual",
@@ -3126,7 +3983,20 @@
       }
     },
     "取消选择成员 %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deselect member %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消选择成员 %@"
+          }
+        }
+      }
     },
     "变卖资产" : {
       "extractionState" : "manual",
@@ -3248,10 +4118,36 @@
       }
     },
     "合计: %@%%" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total: %@%%"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "合计: %@%%"
+          }
+        }
+      }
     },
     "合计: ¥%@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total: ¥%@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "合计: ¥%@"
+          }
+        }
+      }
     },
     "同名分类「%@」已存在" : {
       "extractionState" : "manual",
@@ -3356,7 +4252,20 @@
       }
     },
     "同步中..." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Syncing…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步中..."
+          }
+        }
+      }
     },
     "同步未就绪，请确认 iCloud 已登录且网络正常" : {
       "extractionState" : "manual",
@@ -3393,10 +4302,29 @@
       }
     },
     "名称：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "名称："
+          }
+        }
+      }
     },
     "后半段（%@-%@）消耗放缓，约为前半段%@%%" : {
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The second half (%1$@–%2$@) slowed to about %3$@%% of the first half"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "new",
@@ -3407,6 +4335,12 @@
     },
     "后半段（%@-%@）消耗明显加快，约为前半段%@%%" : {
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The second half (%1$@–%2$@) accelerated to about %3$@%% of the first half"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "new",
@@ -3450,10 +4384,36 @@
       }
     },
     "启用共享" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable Sharing"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "启用共享"
+          }
+        }
+      }
     },
     "启用周期账" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable recurring entry"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "启用周期账"
+          }
+        }
+      }
     },
     "周" : {
       "extractionState" : "manual",
@@ -3541,7 +4501,20 @@
       }
     },
     "周期账管理" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recurring Entries"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "周期账管理"
+          }
+        }
+      }
     },
     "商家" : {
       "extractionState" : "manual",
@@ -3561,7 +4534,20 @@
       }
     },
     "商家：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Merchant:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "商家："
+          }
+        }
+      }
     },
     "商家(%@" : {
       "extractionState" : "manual",
@@ -3581,7 +4567,20 @@
       }
     },
     "商家(%lld)" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Merchants (%lld)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "商家(%lld)"
+          }
+        }
+      }
     },
     "商家名称" : {
       "extractionState" : "manual",
@@ -3703,10 +4702,36 @@
       }
     },
     "图片中未识别到文字，请确保截图清晰" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No text found in the image. Make sure the screenshot is clear."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "图片中未识别到文字，请确保截图清晰"
+          }
+        }
+      }
     },
     "在预算内" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On budget"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在预算内"
+          }
+        }
+      }
     },
     "均分" : {
       "extractionState" : "manual",
@@ -3811,7 +4836,20 @@
       }
     },
     "备注：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Note:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "备注："
+          }
+        }
+      }
     },
     "备注（可选）" : {
       "extractionState" : "manual",
@@ -3831,7 +4869,20 @@
       }
     },
     "复制" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复制"
+          }
+        }
+      }
     },
     "外观" : {
       "extractionState" : "manual",
@@ -3851,7 +4902,20 @@
       }
     },
     "外观模式" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appearance Mode"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "外观模式"
+          }
+        }
+      }
     },
     "多维分析" : {
       "extractionState" : "manual",
@@ -3939,7 +5003,20 @@
       }
     },
     "如 餐饮/购物" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "e.g. Dining/Shopping"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "如 餐饮/购物"
+          }
+        }
+      }
     },
     "姓名" : {
       "extractionState" : "manual",
@@ -4316,7 +5393,20 @@
       }
     },
     "密码" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passcode"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "密码"
+          }
+        }
+      }
     },
     "对方" : {
       "extractionState" : "manual",
@@ -4353,10 +5443,36 @@
       }
     },
     "对账匹配" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconciliation Matches"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "对账匹配"
+          }
+        }
+      }
     },
     "对账管理" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconciliation"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "对账管理"
+          }
+        }
+      }
     },
     "导入 0 个账本，正在刷新本地账本列表" : {
       "extractionState" : "manual",
@@ -4376,13 +5492,52 @@
       }
     },
     "导入结果：%lld 个账本" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imported %lld ledgers"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导入结果：%lld 个账本"
+          }
+        }
+      }
     },
     "导入银行账单CSV" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import Bank Statement CSV"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导入银行账单CSV"
+          }
+        }
+      }
     },
     "导出" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导出"
+          }
+        }
+      }
     },
     "导出 CSV" : {
       "extractionState" : "manual",
@@ -4419,7 +5574,20 @@
       }
     },
     "导航" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navigate"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导航"
+          }
+        }
+      }
     },
     "将创建新交易" : {
       "extractionState" : "manual",
@@ -4541,13 +5709,52 @@
       }
     },
     "展开分类 %lld" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expand category %lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "展开分类 %lld"
+          }
+        }
+      }
     },
     "展开明细" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show breakdown"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "展开明细"
+          }
+        }
+      }
     },
     "峰值区间" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Peak Period"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "峰值区间"
+          }
+        }
+      }
     },
     "工资卡" : {
       "extractionState" : "manual",
@@ -4601,7 +5808,20 @@
       }
     },
     "差额 %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Difference %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "差额 %@"
+          }
+        }
+      }
     },
     "差额 ¥%@" : {
       "extractionState" : "manual",
@@ -4706,7 +5926,20 @@
       }
     },
     "已关联退款" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refund Linked"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已关联退款"
+          }
+        }
+      }
     },
     "已切换到共享账本：%@" : {
       "extractionState" : "manual",
@@ -4726,10 +5959,36 @@
       }
     },
     "已同步" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synced"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已同步"
+          }
+        }
+      }
     },
     "已归档" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Archived"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已归档"
+          }
+        }
+      }
     },
     "已忽略" : {
       "extractionState" : "manual",
@@ -4800,16 +6059,68 @@
       }
     },
     "已暂停" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paused"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已暂停"
+          }
+        }
+      }
     },
     "已有类型" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Existing"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已有类型"
+          }
+        }
+      }
     },
     "已核对" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconciled"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已核对"
+          }
+        }
+      }
     },
     "已生成 %lld 笔" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generated %lld entries"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已生成 %lld 笔"
+          }
+        }
+      }
     },
     "已用 %@" : {
       "extractionState" : "manual",
@@ -4982,7 +6293,20 @@
       }
     },
     "已选: %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selected: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已选: %@"
+          }
+        }
+      }
     },
     "已选合计" : {
       "extractionState" : "manual",
@@ -5019,7 +6343,20 @@
       }
     },
     "已隐藏" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hidden"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已隐藏"
+          }
+        }
+      }
     },
     "币种" : {
       "extractionState" : "manual",
@@ -5039,7 +6376,20 @@
       }
     },
     "币种：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Currency:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "币种："
+          }
+        }
+      }
     },
     "年" : {
       "extractionState" : "manual",
@@ -5059,10 +6409,36 @@
       }
     },
     "年份" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Year"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "年份"
+          }
+        }
+      }
     },
     "年度" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yearly"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "年度"
+          }
+        }
+      }
     },
     "年终奖" : {
       "extractionState" : "manual",
@@ -5167,7 +6543,20 @@
       }
     },
     "建议平均日花费控制在 ¥1 以内" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try to keep your average daily spend under ¥1"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建议平均日花费控制在 ¥1 以内"
+          }
+        }
+      }
     },
     "开启后可邀请其他 iCloud 用户共同记账" : {
       "extractionState" : "manual",
@@ -5204,7 +6593,20 @@
       }
     },
     "开始OCR识别" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start OCR"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开始OCR识别"
+          }
+        }
+      }
     },
     "开始日期" : {
       "extractionState" : "manual",
@@ -5224,7 +6626,20 @@
       }
     },
     "开始日期：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start Date:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开始日期："
+          }
+        }
+      }
     },
     "归档" : {
       "extractionState" : "manual",
@@ -5244,7 +6659,20 @@
       }
     },
     "归档：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Archive:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "归档："
+          }
+        }
+      }
     },
     "归档账户" : {
       "extractionState" : "manual",
@@ -5264,10 +6692,36 @@
       }
     },
     "当前账本" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Current Ledger"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前账本"
+          }
+        }
+      }
     },
     "当天没有交易记录" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No transactions on this day"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当天没有交易记录"
+          }
+        }
+      }
     },
     "影视服务" : {
       "extractionState" : "manual",
@@ -5321,7 +6775,20 @@
       }
     },
     "待收" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To Collect"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "待收"
+          }
+        }
+      }
     },
     "待结算" : {
       "extractionState" : "manual",
@@ -5341,7 +6808,20 @@
       }
     },
     "待还" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To Repay"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "待还"
+          }
+        }
+      }
     },
     "待还款" : {
       "extractionState" : "manual",
@@ -5412,10 +6892,36 @@
       }
     },
     "总支出" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total Expense"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "总支出"
+          }
+        }
+      }
     },
     "总收入" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total Income"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "总收入"
+          }
+        }
+      }
     },
     "总览" : {
       "extractionState" : "manual",
@@ -5571,7 +7077,20 @@
       }
     },
     "成员：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Member:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "成员："
+          }
+        }
+      }
     },
     "成员(%@" : {
       "extractionState" : "manual",
@@ -5591,7 +7110,20 @@
       }
     },
     "成员(%lld)" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Members (%lld)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "成员(%lld)"
+          }
+        }
+      }
     },
     "成员分摊" : {
       "extractionState" : "manual",
@@ -5900,7 +7432,20 @@
       }
     },
     "找到 %lld 笔交易，合计 " : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Found %lld transactions, total "
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "找到 %lld 笔交易，合计 "
+          }
+        }
+      }
     },
     "投资" : {
       "extractionState" : "manual",
@@ -6277,7 +7822,20 @@
       }
     },
     "描述：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Description:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "描述："
+          }
+        }
+      }
     },
     "提示" : {
       "extractionState" : "manual",
@@ -6331,7 +7889,20 @@
       }
     },
     "搜索分类..." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search categories…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜索分类..."
+          }
+        }
+      }
     },
     "搜索结果" : {
       "extractionState" : "manual",
@@ -6351,10 +7922,36 @@
       }
     },
     "撤销" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "撤销"
+          }
+        }
+      }
     },
     "操作失败" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Operation Failed"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "操作失败"
+          }
+        }
+      }
     },
     "支" : {
       "extractionState" : "manual",
@@ -6544,7 +8141,20 @@
       }
     },
     "收起明细" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide breakdown"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收起明细"
+          }
+        }
+      }
     },
     "教育" : {
       "extractionState" : "manual",
@@ -6598,7 +8208,20 @@
       }
     },
     "数据不足" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not enough data"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "数据不足"
+          }
+        }
+      }
     },
     "数据产品" : {
       "extractionState" : "manual",
@@ -6635,10 +8258,36 @@
       }
     },
     "数据导出" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Data"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "数据导出"
+          }
+        }
+      }
     },
     "数据管理" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data Management"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "数据管理"
+          }
+        }
+      }
     },
     "数码" : {
       "extractionState" : "manual",
@@ -6658,13 +8307,52 @@
       }
     },
     "整体节奏" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overall Pace"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "整体节奏"
+          }
+        }
+      }
     },
     "整体节奏可控，保持当前消费习惯" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pace is under control — keep it up"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "整体节奏可控，保持当前消费习惯"
+          }
+        }
+      }
     },
     "整体预算" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overall Budget"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "整体预算"
+          }
+        }
+      }
     },
     "新加坡元" : {
       "extractionState" : "manual",
@@ -6701,7 +8389,20 @@
       }
     },
     "新增商家" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Merchant"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增商家"
+          }
+        }
+      }
     },
     "新增账户" : {
       "extractionState" : "manual",
@@ -6721,10 +8422,36 @@
       }
     },
     "新增账本" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Ledger"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增账本"
+          }
+        }
+      }
     },
     "新增账目" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Transaction"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增账目"
+          }
+        }
+      }
     },
     "新建分类" : {
       "extractionState" : "manual",
@@ -6744,10 +8471,36 @@
       }
     },
     "新建周期账" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Recurring Entry"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新建周期账"
+          }
+        }
+      }
     },
     "新建对账" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Reconciliation"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新建对账"
+          }
+        }
+      }
     },
     "新建模板" : {
       "extractionState" : "manual",
@@ -6767,7 +8520,20 @@
       }
     },
     "新建账本" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Ledger"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新建账本"
+          }
+        }
+      }
     },
     "新建项目" : {
       "extractionState" : "manual",
@@ -6787,7 +8553,20 @@
       }
     },
     "新建预算计划" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Budget Plan"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新建预算计划"
+          }
+        }
+      }
     },
     "新建预算项" : {
       "extractionState" : "manual",
@@ -6841,7 +8620,20 @@
       }
     },
     "方式" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Method"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "方式"
+          }
+        }
+      }
     },
     "旅游" : {
       "extractionState" : "manual",
@@ -6912,7 +8704,20 @@
       }
     },
     "无（顶级分类）" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None (top level)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无（顶级分类）"
+          }
+        }
+      }
     },
     "无匹配结果" : {
       "extractionState" : "manual",
@@ -6932,7 +8737,20 @@
       }
     },
     "无搜索结果" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No results"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无搜索结果"
+          }
+        }
+      }
     },
     "无效的分享目标" : {
       "extractionState" : "manual",
@@ -7122,7 +8940,20 @@
       }
     },
     "日期差%lld天" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dates differ by %lld days"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日期差%lld天"
+          }
+        }
+      }
     },
     "日期疑" : {
       "extractionState" : "manual",
@@ -7193,7 +9024,20 @@
       }
     },
     "时间范围" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Date Range"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "时间范围"
+          }
+        }
+      }
     },
     "时间进度" : {
       "extractionState" : "manual",
@@ -7213,7 +9057,20 @@
       }
     },
     "明细" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Breakdown"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "明细"
+          }
+        }
+      }
     },
     "星巴克" : {
       "extractionState" : "manual",
@@ -7250,19 +9107,84 @@
       }
     },
     "显示" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appearance"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示"
+          }
+        }
+      }
     },
     "显示分类" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show category"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示分类"
+          }
+        }
+      }
     },
     "暂停" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂停"
+          }
+        }
+      }
     },
     "暂停周期账" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause recurring entry"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂停周期账"
+          }
+        }
+      }
     },
     "暂无" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无"
+          }
+        }
+      }
     },
     "暂无交易" : {
       "extractionState" : "manual",
@@ -7299,7 +9221,20 @@
       }
     },
     "暂无共享成员" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No shared members"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无共享成员"
+          }
+        }
+      }
     },
     "暂无分类" : {
       "extractionState" : "manual",
@@ -7319,7 +9254,20 @@
       }
     },
     "暂无周期账" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No recurring entries"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无周期账"
+          }
+        }
+      }
     },
     "暂无周期账，点击右上角 + 添加" : {
       "extractionState" : "manual",
@@ -7339,7 +9287,20 @@
       }
     },
     "暂无商家" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No merchants"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无商家"
+          }
+        }
+      }
     },
     "暂无商家，点击右上角 + 添加" : {
       "extractionState" : "manual",
@@ -7478,10 +9439,36 @@
       }
     },
     "暂无数据" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No data"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无数据"
+          }
+        }
+      }
     },
     "暂无模板" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No templates"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无模板"
+          }
+        }
+      }
     },
     "暂无模板，点击右上角 + 添加" : {
       "extractionState" : "manual",
@@ -7501,7 +9488,20 @@
       }
     },
     "暂无联系人" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No contacts"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无联系人"
+          }
+        }
+      }
     },
     "暂无账户" : {
       "extractionState" : "manual",
@@ -7555,7 +9555,20 @@
       }
     },
     "暂无账本" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No ledgers"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无账本"
+          }
+        }
+      }
     },
     "暂无资产数据" : {
       "extractionState" : "manual",
@@ -7575,10 +9588,36 @@
       }
     },
     "暂无趋势数据" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No trend data"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无趋势数据"
+          }
+        }
+      }
     },
     "暂无项目" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No projects"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无项目"
+          }
+        }
+      }
     },
     "暂无项目，点击右上角 + 添加" : {
       "extractionState" : "manual",
@@ -7632,7 +9671,20 @@
       }
     },
     "暂无预算计划" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No budget plans"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无预算计划"
+          }
+        }
+      }
     },
     "暂无预算计划，点击右上角 + 添加" : {
       "extractionState" : "manual",
@@ -7754,10 +9806,36 @@
       }
     },
     "月份" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Month"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "月份"
+          }
+        }
+      }
     },
     "月度" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monthly"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "月度"
+          }
+        }
+      }
     },
     "服饰" : {
       "extractionState" : "manual",
@@ -8219,7 +10297,20 @@
       }
     },
     "本月暂无支出" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No spending this month"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本月暂无支出"
+          }
+        }
+      }
     },
     "本月结余" : {
       "extractionState" : "manual",
@@ -8290,16 +10381,68 @@
       }
     },
     "来源" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Source"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "来源"
+          }
+        }
+      }
     },
     "查看资产" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View assets"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看资产"
+          }
+        }
+      }
     },
     "查看资产配置" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View asset allocation"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看资产配置"
+          }
+        }
+      }
     },
     "查看预算详情" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View budget details"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看预算详情"
+          }
+        }
+      }
     },
     "标签" : {
       "extractionState" : "manual",
@@ -8438,7 +10581,20 @@
       }
     },
     "正在创建共享..." : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Creating share…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在创建共享..."
+          }
+        }
+      }
     },
     "正在接受共享邀请" : {
       "extractionState" : "manual",
@@ -8492,7 +10648,20 @@
       }
     },
     "此操作不可撤销" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This cannot be undone"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此操作不可撤销"
+          }
+        }
+      }
     },
     "此操作不可撤销，确定要删除此交易吗？" : {
       "extractionState" : "manual",
@@ -8580,7 +10749,20 @@
       }
     },
     "每人金额" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Amount per Person"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每人金额"
+          }
+        }
+      }
     },
     "每周" : {
       "extractionState" : "manual",
@@ -8668,7 +10850,20 @@
       }
     },
     "每月%lld日" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Day %lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每月%lld日"
+          }
+        }
+      }
     },
     "水果" : {
       "extractionState" : "manual",
@@ -8790,19 +10985,84 @@
       }
     },
     "浅色" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Light"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "浅色"
+          }
+        }
+      }
     },
     "浅色模式" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Light Mode"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "浅色模式"
+          }
+        }
+      }
     },
     "消耗分析" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spending Analysis"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "消耗分析"
+          }
+        }
+      }
     },
     "消耗呈上升趋势，建议留意近期预算执行情况" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spending is trending up — keep an eye on your recent budget usage"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "消耗呈上升趋势，建议留意近期预算执行情况"
+          }
+        }
+      }
     },
     "消耗速率" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Burn Rate"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "消耗速率"
+          }
+        }
+      }
     },
     "消费税收" : {
       "extractionState" : "manual",
@@ -8839,7 +11099,20 @@
       }
     },
     "深色" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dark"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "深色"
+          }
+        }
+      }
     },
     "深色模式" : {
       "extractionState" : "manual",
@@ -8876,10 +11149,36 @@
       }
     },
     "添加分类" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add category"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加分类"
+          }
+        }
+      }
     },
     "添加周期账" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add recurring entry"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加周期账"
+          }
+        }
+      }
     },
     "添加商家" : {
       "extractionState" : "manual",
@@ -8899,10 +11198,36 @@
       }
     },
     "添加商家失败: %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Failed to add merchant: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加商家失败: %@"
+          }
+        }
+      }
     },
     "添加备注" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add note"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加备注"
+          }
+        }
+      }
     },
     "添加子项" : {
       "extractionState" : "manual",
@@ -8922,7 +11247,20 @@
       }
     },
     "添加对账单" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add statement"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加对账单"
+          }
+        }
+      }
     },
     "添加成员" : {
       "extractionState" : "manual",
@@ -8942,22 +11280,100 @@
       }
     },
     "添加模板" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add template"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加模板"
+          }
+        }
+      }
     },
     "添加联系人" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add contact"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加联系人"
+          }
+        }
+      }
     },
     "添加账户" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add account"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加账户"
+          }
+        }
+      }
     },
     "添加项目" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add project"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加项目"
+          }
+        }
+      }
     },
     "添加预算本" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add budget book"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加预算本"
+          }
+        }
+      }
     },
     "添加预算项" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add budget item"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加预算项"
+          }
+        }
+      }
     },
     "清空" : {
       "extractionState" : "manual",
@@ -8977,7 +11393,20 @@
       }
     },
     "清空搜索" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear search"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清空搜索"
+          }
+        }
+      }
     },
     "清除" : {
       "extractionState" : "manual",
@@ -9014,7 +11443,20 @@
       }
     },
     "清除搜索" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear search"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清除搜索"
+          }
+        }
+      }
     },
     "清除选择" : {
       "extractionState" : "manual",
@@ -9119,7 +11561,20 @@
       }
     },
     "点击下方 + 开始记一笔" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap + below to add a transaction"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击下方 + 开始记一笔"
+          }
+        }
+      }
     },
     "点击切换到对应月份" : {
       "extractionState" : "manual",
@@ -9156,25 +11611,116 @@
       }
     },
     "点击右上角 + 添加分类" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap + in the top right to add a category"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击右上角 + 添加分类"
+          }
+        }
+      }
     },
     "点击右上角 + 添加周期账" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap + in the top right to add a recurring entry"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击右上角 + 添加周期账"
+          }
+        }
+      }
     },
     "点击右上角 + 添加商家" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap + in the top right to add a merchant"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击右上角 + 添加商家"
+          }
+        }
+      }
     },
     "点击右上角 + 添加模板" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap + in the top right to add a template"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击右上角 + 添加模板"
+          }
+        }
+      }
     },
     "点击右上角 + 添加联系人" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap + in the top right to add a contact"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击右上角 + 添加联系人"
+          }
+        }
+      }
     },
     "点击右上角 + 添加账户" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap + in the top right to add an account"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击右上角 + 添加账户"
+          }
+        }
+      }
     },
     "点击右上角 + 添加项目" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap + in the top right to add a project"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击右上角 + 添加项目"
+          }
+        }
+      }
     },
     "点击更换图标" : {
       "extractionState" : "manual",
@@ -9263,6 +11809,12 @@
     },
     "版本 %@ (%@)" : {
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version %1$@ (%2$@)"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "new",
@@ -9340,7 +11892,20 @@
       }
     },
     "状态：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "状态："
+          }
+        }
+      }
     },
     "现金" : {
       "extractionState" : "manual",
@@ -9428,10 +11993,36 @@
       }
     },
     "生物识别不可用" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Biometrics Unavailable"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生物识别不可用"
+          }
+        }
+      }
     },
     "用CSV总额填充: ¥%@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fill with CSV total: ¥%@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用CSV总额填充: ¥%@"
+          }
+        }
+      }
     },
     "用CSV总额填充: ¥%@.formatted(.number.precision(.fractionLength(2))))" : {
       "extractionState" : "manual",
@@ -9519,25 +12110,116 @@
       }
     },
     "确定" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确定"
+          }
+        }
+      }
     },
     "确定删除此预算项？" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete this budget item?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确定删除此预算项？"
+          }
+        }
+      }
     },
     "确定要删除周期账「%@」吗？此操作不可撤销。" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete the recurring entry “%@”? This cannot be undone."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确定要删除周期账「%@」吗？此操作不可撤销。"
+          }
+        }
+      }
     },
     "确定要删除商家「%@」吗？此操作不可撤销。" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete the merchant “%@”? This cannot be undone."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确定要删除商家「%@」吗？此操作不可撤销。"
+          }
+        }
+      }
     },
     "确定要删除模板「%@」吗？此操作不可撤销。" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete the template “%@”? This cannot be undone."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确定要删除模板「%@」吗？此操作不可撤销。"
+          }
+        }
+      }
     },
     "确定要删除项目「%@」吗？此操作不可撤销。" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete the project “%@”? This cannot be undone."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确定要删除项目「%@」吗？此操作不可撤销。"
+          }
+        }
+      }
     },
     "确定要删除预算计划「%@」吗？此操作不可撤销。" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete the budget plan “%@”? This cannot be undone."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确定要删除预算计划「%@」吗？此操作不可撤销。"
+          }
+        }
+      }
     },
     "确认" : {
       "extractionState" : "manual",
@@ -9557,7 +12239,20 @@
       }
     },
     "确认关闭" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm Close"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确认关闭"
+          }
+        }
+      }
     },
     "确认删除" : {
       "extractionState" : "manual",
@@ -9577,10 +12272,36 @@
       }
     },
     "确认对账（完成核对）" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm Reconciliation"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确认对账（完成核对）"
+          }
+        }
+      }
     },
     "确认报销" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm Reimbursement"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确认报销"
+          }
+        }
+      }
     },
     "确认退款" : {
       "extractionState" : "manual",
@@ -9668,7 +12389,20 @@
       }
     },
     "离线" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Offline"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "离线"
+          }
+        }
+      }
     },
     "笔" : {
       "extractionState" : "manual",
@@ -9739,10 +12473,36 @@
       }
     },
     "筛选" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "筛选"
+          }
+        }
+      }
     },
     "管理共享" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage Sharing"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "管理共享"
+          }
+        }
+      }
     },
     "管理员" : {
       "extractionState" : "manual",
@@ -9779,7 +12539,20 @@
       }
     },
     "类别：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Category:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "类别："
+          }
+        }
+      }
     },
     "类别（如 餐饮/购物）" : {
       "extractionState" : "manual",
@@ -9816,7 +12589,20 @@
       }
     },
     "类型：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "类型："
+          }
+        }
+      }
     },
     "类型筛选" : {
       "extractionState" : "manual",
@@ -9938,7 +12724,20 @@
       }
     },
     "结束日期：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "End Date:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "结束日期："
+          }
+        }
+      }
     },
     "继续搜索" : {
       "extractionState" : "manual",
@@ -10026,7 +12825,20 @@
       }
     },
     "编辑周期账" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit Recurring Entry"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "编辑周期账"
+          }
+        }
+      }
     },
     "编辑商家" : {
       "extractionState" : "manual",
@@ -10046,7 +12858,20 @@
       }
     },
     "编辑商家失败: %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Failed to edit merchant: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "编辑商家失败: %@"
+          }
+        }
+      }
     },
     "编辑子项金额" : {
       "extractionState" : "manual",
@@ -10066,10 +12891,36 @@
       }
     },
     "编辑对账" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit Reconciliation"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "编辑对账"
+          }
+        }
+      }
     },
     "编辑对账单" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit Statement"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "编辑对账单"
+          }
+        }
+      }
     },
     "编辑成员" : {
       "extractionState" : "manual",
@@ -10106,7 +12957,20 @@
       }
     },
     "编辑联系人" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit Contact"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "编辑联系人"
+          }
+        }
+      }
     },
     "编辑账户" : {
       "extractionState" : "manual",
@@ -10143,7 +13007,20 @@
       }
     },
     "编辑预算计划" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit Budget Plan"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "编辑预算计划"
+          }
+        }
+      }
     },
     "编辑预算项" : {
       "extractionState" : "manual",
@@ -10265,13 +13142,52 @@
       }
     },
     "翻转查看消耗速率详情" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flip to see burn rate details"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "翻转查看消耗速率详情"
+          }
+        }
+      }
     },
     "翻转查看预算执行详情" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flip to see budget details"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "翻转查看预算执行详情"
+          }
+        }
+      }
     },
     "联系人管理" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contacts"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "联系人管理"
+          }
+        }
+      }
     },
     "聚会活动" : {
       "extractionState" : "manual",
@@ -10342,7 +13258,20 @@
       }
     },
     "自动" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatic"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动"
+          }
+        }
+      }
     },
     "自定义" : {
       "extractionState" : "manual",
@@ -10413,7 +13342,20 @@
       }
     },
     "节奏平稳，前后两段消耗接近" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steady pace — spending is even across the period"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "节奏平稳，前后两段消耗接近"
+          }
+        }
+      }
     },
     "节奏持平" : {
       "extractionState" : "manual",
@@ -10433,7 +13375,20 @@
       }
     },
     "节奏超前" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ahead of pace"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "节奏超前"
+          }
+        }
+      }
     },
     "英镑" : {
       "extractionState" : "manual",
@@ -10453,7 +13408,20 @@
       }
     },
     "草稿" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draft"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "草稿"
+          }
+        }
+      }
     },
     "荡漾计然" : {
       "extractionState" : "manual",
@@ -10558,7 +13526,20 @@
       }
     },
     "计划名称" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plan Name"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "计划名称"
+          }
+        }
+      }
     },
     "记一笔" : {
       "extractionState" : "manual",
@@ -10612,7 +13593,20 @@
       }
     },
     "设置信用额度" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set Credit Limit"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设置信用额度"
+          }
+        }
+      }
     },
     "设置预算，掌控每月开支" : {
       "extractionState" : "manual",
@@ -10649,10 +13643,36 @@
       }
     },
     "识别中…" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recognizing…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "识别中…"
+          }
+        }
+      }
     },
     "识别结果（%lld 笔）" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recognized (%lld)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "识别结果（%lld 笔）"
+          }
+        }
+      }
     },
     "试试换个关键词，例如 餐饮 或 2026" : {
       "extractionState" : "manual",
@@ -10774,7 +13794,20 @@
       }
     },
     "请先在主窗口工具栏创建账本" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create a ledger from the main window toolbar first"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请先在主窗口工具栏创建账本"
+          }
+        }
+      }
     },
     "请让账本拥有者通过 iMessage 分享邀请链接给您。" : {
       "extractionState" : "manual",
@@ -10794,7 +13827,20 @@
       }
     },
     "请输入商家名称" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter a merchant name"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请输入商家名称"
+          }
+        }
+      }
     },
     "请选择账户" : {
       "extractionState" : "manual",
@@ -10865,13 +13911,52 @@
       }
     },
     "账单日：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Statement Day:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "账单日："
+          }
+        }
+      }
     },
     "账单月份" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Statement Month"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "账单月份"
+          }
+        }
+      }
     },
     "账单金额" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Statement Amount"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "账单金额"
+          }
+        }
+      }
     },
     "账户" : {
       "extractionState" : "manual",
@@ -10891,7 +13976,20 @@
       }
     },
     "账户：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Account:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "账户："
+          }
+        }
+      }
     },
     "账户名称" : {
       "extractionState" : "manual",
@@ -10979,13 +14077,52 @@
       }
     },
     "账本管理" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage Ledgers"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "账本管理"
+          }
+        }
+      }
     },
     "账本设置" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ledger Settings"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "账本设置"
+          }
+        }
+      }
     },
     "货币" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Currency"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "货币"
+          }
+        }
+      }
     },
     "购物" : {
       "extractionState" : "manual",
@@ -11107,7 +14244,20 @@
       }
     },
     "超出预算" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Over budget"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "超出预算"
+          }
+        }
+      }
     },
     "超前" : {
       "extractionState" : "manual",
@@ -11161,10 +14311,36 @@
       }
     },
     "趋势" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trend"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "趋势"
+          }
+        }
+      }
     },
     "跟随系统" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatic"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "跟随系统"
+          }
+        }
+      }
     },
     "跨币种换算" : {
       "extractionState" : "manual",
@@ -11235,10 +14411,36 @@
       }
     },
     "转入账户：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To Account:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "转入账户："
+          }
+        }
+      }
     },
     "转入金额" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To Amount"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "转入金额"
+          }
+        }
+      }
     },
     "转出" : {
       "extractionState" : "manual",
@@ -11275,10 +14477,36 @@
       }
     },
     "转出账户：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From Account:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "转出账户："
+          }
+        }
+      }
     },
     "转出金额" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From Amount"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "转出金额"
+          }
+        }
+      }
     },
     "转账" : {
       "extractionState" : "manual",
@@ -11434,7 +14662,20 @@
       }
     },
     "近2年" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last 2 Years"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "近2年"
+          }
+        }
+      }
     },
     "近3年" : {
       "extractionState" : "manual",
@@ -11488,13 +14729,45 @@
       }
     },
     "近12月" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last 12 Months"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "近12月"
+          }
+        }
+      }
     },
     "近18月" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last 18 Months"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "近18月"
+          }
+        }
+      }
     },
     "近期消耗强度极高（%@-%@），建议关注该区间的支出项目" : {
       "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spending intensity is very high around %1$@–%2$@. Review the items in that period."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "new",
@@ -11520,7 +14793,20 @@
       }
     },
     "返回资产配置概览" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back to allocation overview"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "返回资产配置概览"
+          }
+        }
+      }
     },
     "还有%@项未显示" : {
       "extractionState" : "manual",
@@ -11540,7 +14826,20 @@
       }
     },
     "还有%lld项未显示" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld more not shown"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "还有%lld项未显示"
+          }
+        }
+      }
     },
     "还款" : {
       "extractionState" : "manual",
@@ -11577,7 +14876,20 @@
       }
     },
     "还款日：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Payment Due Day:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "还款日："
+          }
+        }
+      }
     },
     "这是共享账本。删除后其他成员将无法访问，数据将保留在你的本地。" : {
       "extractionState" : "manual",
@@ -11631,7 +14943,20 @@
       }
     },
     "退出共享" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leave Share"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退出共享"
+          }
+        }
+      }
     },
     "退出后你将无法访问此共享账本。数据将保留一份本地副本。" : {
       "extractionState" : "manual",
@@ -11872,7 +15197,20 @@
       }
     },
     "选择CSV文件" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose CSV File"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择CSV文件"
+          }
+        }
+      }
     },
     "选择Logo" : {
       "extractionState" : "manual",
@@ -11909,7 +15247,20 @@
       }
     },
     "选择分类 %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select category %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择分类 %@"
+          }
+        }
+      }
     },
     "选择商家" : {
       "extractionState" : "manual",
@@ -11946,13 +15297,52 @@
       }
     },
     "选择成员 %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select member %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择成员 %@"
+          }
+        }
+      }
     },
     "选择日期" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select Date"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择日期"
+          }
+        }
+      }
     },
     "选择日期范围" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select Date Range"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择日期范围"
+          }
+        }
+      }
     },
     "选择模板" : {
       "extractionState" : "manual",
@@ -11989,7 +15379,20 @@
       }
     },
     "选择资产配置分区" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select an allocation segment"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择资产配置分区"
+          }
+        }
+      }
     },
     "选择银行账单PDF" : {
       "extractionState" : "manual",
@@ -12179,7 +15582,20 @@
       }
     },
     "金额：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Amount:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "金额："
+          }
+        }
+      }
     },
     "金额差¥%@" : {
       "extractionState" : "manual",
@@ -12267,7 +15683,20 @@
       }
     },
     "钱伲 — 家庭记账与资产管理" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qianey — Family Budgeting & Asset Management"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "钱伲 — 家庭记账与资产管理"
+          }
+        }
+      }
     },
     "银行" : {
       "extractionState" : "manual",
@@ -12321,7 +15750,20 @@
       }
     },
     "银行账单金额" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bank Statement Amount"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "银行账单金额"
+          }
+        }
+      }
     },
     "门诊挂号" : {
       "extractionState" : "manual",
@@ -12341,7 +15783,20 @@
       }
     },
     "间隔：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interval:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "间隔："
+          }
+        }
+      }
     },
     "间隔: %@" : {
       "extractionState" : "manual",
@@ -12361,7 +15816,20 @@
       }
     },
     "间隔: %lld" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interval: %lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "间隔: %lld"
+          }
+        }
+      }
     },
     "附件" : {
       "extractionState" : "manual",
@@ -12381,7 +15849,20 @@
       }
     },
     "隐藏分类" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide category"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隐藏分类"
+          }
+        }
+      }
     },
     "零食" : {
       "extractionState" : "manual",
@@ -12401,7 +15882,20 @@
       }
     },
     "需要%@验证" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Requires %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要%@验证"
+          }
+        }
+      }
     },
     "非预算项" : {
       "extractionState" : "manual",
@@ -12438,7 +15932,20 @@
       }
     },
     "项" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "items"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "项"
+          }
+        }
+      }
     },
     "项目" : {
       "extractionState" : "manual",
@@ -12458,7 +15965,20 @@
       }
     },
     "项目：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Project:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "项目："
+          }
+        }
+      }
     },
     "项目(%@" : {
       "extractionState" : "manual",
@@ -12478,7 +15998,20 @@
       }
     },
     "项目(%lld)" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Projects (%lld)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "项目(%lld)"
+          }
+        }
+      }
     },
     "项目名称" : {
       "extractionState" : "manual",
@@ -12549,10 +16082,36 @@
       }
     },
     "预算:" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Budget:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "预算:"
+          }
+        }
+      }
     },
     "预算：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Budget:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "预算："
+          }
+        }
+      }
     },
     "预算使用" : {
       "extractionState" : "manual",
@@ -12572,10 +16131,36 @@
       }
     },
     "预算内" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On budget"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "预算内"
+          }
+        }
+      }
     },
     "预算周期" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Budget Period"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "预算周期"
+          }
+        }
+      }
     },
     "预算周期已结束" : {
       "extractionState" : "manual",
@@ -12629,7 +16214,20 @@
       }
     },
     "预算管理" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Budgets"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "预算管理"
+          }
+        }
+      }
     },
     "预算设置" : {
       "extractionState" : "manual",
@@ -12649,10 +16247,36 @@
       }
     },
     "预算进度可控" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On track"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "预算进度可控"
+          }
+        }
+      }
     },
     "预算进度超支" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Over budget"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "预算进度超支"
+          }
+        }
+      }
     },
     "预算金额" : {
       "extractionState" : "manual",
@@ -12689,7 +16313,20 @@
       }
     },
     "预览" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preview"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "预览"
+          }
+        }
+      }
     },
     "预计会超支，请调整预算并严格控制支出" : {
       "extractionState" : "manual",
@@ -12760,7 +16397,20 @@
       }
     },
     "频率：" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frequency:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "频率："
+          }
+        }
+      }
     },
     "颜色" : {
       "extractionState" : "manual",
@@ -12780,7 +16430,20 @@
       }
     },
     "颜色选项" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Color options"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "颜色选项"
+          }
+        }
+      }
     },
     "额度" : {
       "extractionState" : "manual",
@@ -12885,7 +16548,20 @@
       }
     },
     "验证失败，请重试" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verification failed. Try again."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "验证失败，请重试"
+          }
+        }
+      }
     },
     "高级筛选" : {
       "extractionState" : "manual",
