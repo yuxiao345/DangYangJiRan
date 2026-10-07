@@ -597,7 +597,9 @@ struct MacAddTransactionSheet: View {
                            parentId: { $0.parent?.id },
                            recentKey: "recent_category")
                 if let cat = selectedCategory, (cat.children?.count ?? 0) > 0 {
-                    Text("已选择上级分类「\(cat.name)」，可展开选择更具体的子分类")
+                    // 分类名要查 catalog：内置分类名就是 String Catalog 的 key，
+                    // 用户自建分类名查不到会原样返回，两种情况都对
+                    Text("已选择上级分类「\(NSLocalizedString(cat.name, comment: ""))」，可展开选择更具体的子分类")
                         .font(.caption).foregroundStyle(.orange)
                         .padding(.horizontal, 24)
                 }
@@ -674,22 +676,39 @@ struct MacAddTransactionSheet: View {
                 .font(.designBodyMedium)
                 .foregroundStyle(.secondary)
                 .frame(width: 60, alignment: .trailing)
-            MacPopupPicker(
-                selection: selection,
-                items: items,
-                icon: icon,
-                name: name,
-                color: color,
-                indent: indent,
-                parentId: parentId,
-                recentKey: recentKey,
-                onSelect: { item in
-                    if let key = recentKey {
-                        recordRecent(item, key: key)
+            // 层级字段（分类）改走可搜索 popover：分类一多，原生菜单只能滚动翻找，
+            // 且 `NSMenuItem.indentationLevel` 首次展开时有缩进不生效的现象。
+            // 判别依据现成：只有分类调用点传了 indent + parentId。
+            if let indent, let parentId {
+                MacSearchablePicker(
+                    selection: selection,
+                    items: items,
+                    name: name,
+                    icon: icon,
+                    color: color,
+                    depth: indent,
+                    parentId: parentId,
+                    recentKey: recentKey
+                )
+                .frame(width: 250)
+            } else {
+                MacPopupPicker(
+                    selection: selection,
+                    items: items,
+                    icon: icon,
+                    name: name,
+                    color: color,
+                    indent: indent,
+                    parentId: parentId,
+                    recentKey: recentKey,
+                    onSelect: { item in
+                        if let key = recentKey {
+                            recordRecent(item, key: key)
+                        }
                     }
-                }
-            )
-            .frame(width: 250)
+                )
+                .frame(width: 250)
+            }
         }
         .padding(.horizontal, 24).padding(.vertical, 8)
     }
@@ -860,16 +879,15 @@ struct MacAddTransactionSheet: View {
         HStack(spacing: 12) {
             Text("分类").font(.designBodyMedium).foregroundStyle(.secondary)
                 .frame(width: 60, alignment: .trailing)
-            MacPopupPicker(
+            MacSearchablePicker(
                 selection: Binding(get: { item.category }, set: { splitItems[i].category = $0 }),
                 items: categories,
-                icon: { $0.iconName },
                 name: { $0.name },
+                icon: { $0.iconName },
                 color: { Color(hex: $0.colorHex) },
-                indent: { cat in var d = 0; var p = cat.parent; while p != nil { d += 1; p = p?.parent }; return d },
+                depth: { cat in var d = 0; var p = cat.parent; while p != nil { d += 1; p = p?.parent }; return d },
                 parentId: { $0.parent?.id },
-                recentKey: "recent_category",
-                onSelect: { recordRecent($0, key: "recent_category") }
+                recentKey: "recent_category"
             )
             .frame(width: 220)
             Spacer()
