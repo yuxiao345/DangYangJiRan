@@ -1454,23 +1454,6 @@
         }
       }
     },
-    "今天" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Today"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "今天"
-          }
-        }
-      }
-    },
     "今年" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -9119,23 +9102,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "星巴克"
-          }
-        }
-      }
-    },
-    "昨天" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Yesterday"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "昨天"
           }
         }
       }
