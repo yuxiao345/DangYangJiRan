@@ -32,6 +32,7 @@
 | `13-accounts-{dark,light}{,-en}.png` | 账户列表，4 张 |
 | `16-transactions-light.png` | 流水列表，浅色（与 `11-transactions-light.png` 同屏，冗余） |
 | `17-budget-{dark,light}{,-en}.png` | 设置 → 账本设置 → 预算管理，4 张 |
+| `ipad13/` 下 12 张（`10-dashboard`、`13-accounts`、`12-reports-cat` × 深浅 × 中英）| 13 英寸 iPad 专用，见下节 |
 
 留着做 App Store **截图**素材时会用到。
 
@@ -63,6 +64,62 @@
 > 显示成圆点），冷启动后必须点一下眼睛图标、并**等完 2–4 秒的逐位揭示动画**才能拍，
 > 否则拍到的是一排点。另外英文布局下 `Net Worth` 比 `净资产` 宽，眼睛按钮的 x 坐标
 > 会从约 89.8 移到约 125.8——按旧坐标点会误触卡片的「展开明细」开关。
+
+## iPad 13 英寸（2064×2752）
+
+**为什么必须单独拍**：`钱伲` 的 `TARGETED_DEVICE_FAMILY = "1,2"`（含 iPad），
+App Store Connect 就强制要求 **13 英寸 iPad 显示屏截屏**，否则提交时报
+「你必须上传 13 英寸 iPad 显示屏的截屏」。iPhone 那套尺寸不合用。
+
+放在 `ipad13/` 子目录，12 张：
+
+```
+10-dashboard-{dark,light}{,-en}.png
+13-accounts-{dark,light}{,-en}.png
+12-reports-cat-{dark,light}{,-en}.png
+```
+
+设备用 **iPad Pro 13-inch (M4) → 2064×2752**，命名与内容跟 iPhone 那套一一对应
+（同一屏、同一外观、同一语言），便于对照。
+
+### 三个 iPad 专属的坑
+
+1. **必须打 Release 包，不能沿用 Debug 包。**
+   Debug 设了 `INFOPLIST_KEY_CFBundleDisplayName = 荡漾计然`（有意留的开发版标识），
+   而 **iPad 的状态栏会在左上角显示 `CFBundleDisplayName`**（日期旁边）。
+   iPhone 有灵动岛、状态栏不显示它，所以 iPhone 那套一直没暴露这个问题。
+   Release 没有这个 key → 回落到 `PRODUCT_NAME`（`钱伲`），才是该上架的名字。
+   → 命令换成 `-configuration Release`，产物路径 =
+   `Build/Products/Release-iphonesimulator/钱伲.app`。
+
+2. **iPadOS 18+ 把经典 `TabView` + `.tabItem` 渲染成顶部居中的悬浮标签栏**
+   （既不是底栏，也不是侧边栏）。`MainTabView.swift` 没有任何 `.tabViewStyle` /
+   sidebar 适配代码，属原生默认行为，**不是 bug、不用改**。
+
+3. **英文那 6 张里有中文专有名词**（账本名「我的账本」、商户名、账户名）。
+   它们和 iPhone 那套一样是**用户数据**，切 app 语言翻不掉——要干净就得改 sqlite
+   里的数据（见「改名映射」）。**本轮决定「就这样收下」，不做数据改名**，
+   所以英文 iPad 截图里保留这些中文专有名词。若日后要重拍，先按「改名映射」改名。
+
+### 切外观的两个 plist，别搞混（踩过）
+
+iOS 模拟器的 app 偏好有**两个同名文件**：
+
+| 路径 | 谁写 | 谁读 |
+|---|---|---|
+| `data/Library/Preferences/com.qianey.app.plist`（设备级）| `simctl spawn … defaults write` | **app 读它拿 `appearanceMode`** |
+| `data/Containers/Data/Application/<UUID>/Library/Preferences/com.qianey.app.plist`（容器级）| app 自己写的 key | 朴素地拷容器时会拷到它 |
+
+**在新设备上拍深色时**，`defaults write` 必须写在**那台设备**上：
+
+```bash
+xcrun simctl spawn <该设备的 UDID> defaults write com.qianey.app appearanceMode dark
+```
+
+两个容易误判的坑：
+- 只拷贝容器级 plist，会**丢掉 `appearanceMode`**（它在设备级那个里）。
+- `xcrun simctl ui <dev> appearance` 报的是**系统**外观（light），
+  **不是** app 自己的 `appearanceMode` 设置——别拿它当判断依据。
 
 ## 怎么拍
 
@@ -148,17 +205,30 @@ xcrun simctl io <UUID> screenshot tools/appstore-assets/screenshots/14-addtx-dar
 - **会**：账户类型分组头（`现金/借记卡/信用卡/电子钱包`）、报表名、周期名、维度名——
   这些是 catalog 条目，切语言即变。
 - **不会**：账本名、账户名、成员名、商户名、项目名。全是用户数据。
-- **看情况**：分类名。它是用户数据，但报表模块现在会把它当 catalog key 查一次
-  （见下面那条），所以「餐饮饮食」这类内置分类会自动出英文名。
+- **看情况**：分类名。它是用户数据，但内置分类同时是 catalog 的 key，报表模块会
+  统一查一次（见下面那条），所以「餐饮饮食」这类内置分类会自动出英文名。
 
-- **分类名曾经也是例外，现已修**：报表模块原来用裸 `Text(item.name)` 渲染名字
-  （`CategoryPieChartView.swift:279`、`MemberPieChartView.swift:112`、
-  `MemberCategoryCrossView.swift:82`），不走 `LocalizedStringKey`，所以即使 catalog 里
-  有「餐饮饮食 → Food & Dining」也查不到。2026-10-07 的 `39a16ab` 已把这 3 处改成
-  `Text(LocalizedStringKey(item.name))`，与全应用其余 20 多处一致。
-  → **catalog 里有条目的分类现在会自动出英文名，不必再改分类数据。**
-  只有 catalog 里没有的分类仍会显示中文（已知 `数码产品`、`停车车位`），
-  但它们只在下钻层级出现，L1 报表图拍不到。
+- **分类名曾经也是例外，分两批修完**：报表模块最初有几处用裸 `Text(item.name)`
+  渲染分类名，不走 `LocalizedStringKey`，所以即使 catalog 里有
+  「餐饮饮食 → Food & Dining」也查不到。
+  - `39a16ab` 修了 3 处**纯列表**：`CategoryPieChartView.swift:279`、
+    `MemberPieChartView.swift:112`、`MemberCategoryCrossView.swift:82`（成员列）。
+  - 2026-10-07 又补修 **6 处漏网的**：
+    - **环形图图例** `DonutChartContent.swift:21`——之前一直没修，是英文截图里
+      最显眼的中文残留。
+    - 与之**必须同改**的 `CategoryPieChartView.swift:218`（`gradientLookup` 的 key）。
+      两处用的是同一个字符串当 key，只改一边会让配色全部查不到、**所有扇区变灰**。
+    - `MemberCategoryCrossView.swift:110`（**分类列**——上次只改了同文件的成员列）。
+    - Mac 3 处：`CategoryBarList.swift:100`、`DonutChart.swift:174`、
+      `MacBudgetChartView.swift:615/666`。
+  - ⚠️ **图例那处不能照抄 `Text(LocalizedStringKey(...))`**：Swift Charts 的图例
+    显示的是 plottable 的**值**而不是标签，而值必须是 `String`，用不了
+    `LocalizedStringKey`。所以共享的 `CategoryExpenseItem` 上加了
+    `var localizedName: String { NSLocalizedString(name, comment: "") }`——
+    这是本项目 scenario E 的既有写法（`AccountType`、`LedgerType` 等 15+ 处在用）。
+  → **catalog 里有条目的分类现在会出英文名，图例也一样，不必再改分类数据。**
+  只有 catalog 里没有的分类仍显示中文——**实测默认 94 个分类里只有 2 个缺 `en`**
+  （`数码产品`、`停车车位`，都在 L2，L1 报表图拍不到）。
 
 ### 改名映射（照抄，别现编）
 
@@ -183,8 +253,8 @@ xcrun simctl io <UUID> screenshot tools/appstore-assets/screenshots/14-addtx-dar
 京东→JD.com｜德邦快递→Deppon Express｜中国广电→China Broadnet｜中通快递→ZTO Express｜
 中国邮政 EMS→China Post EMS
 
-**分类不用改**（2026-10-07 起）：`39a16ab` 之后报表走 `LocalizedStringKey`，
-catalog 里有条目的分类自动显示英文。
+**分类不用改**（2026-10-07 起，**含图例**）：报表模块走 `LocalizedStringKey` /
+`NSLocalizedString`，catalog 里有条目的分类自动显示英文。
 > 历史备注（在那之前必须做、现已作废）：94 条分类名要逐条改成英文，映射直接查
 > `Localizable.xcstrings` 取官方英文名（`餐饮饮食→Food & Dining`、
 > `交通出行→Transportation`、`购物消费→Shopping` 等），不要自己翻；
@@ -218,8 +288,21 @@ catalog 里有条目的分类自动显示英文。
   现在改成从 `Date` 组件直接取年月，分组 key 用与 locale 无关的「年*100+月」。
 - 同一个函数里横轴月份乱序（fetch 没带 `sortDescriptors`，按 Core Data 任意返回顺序画）
   ——已按年月升序排序。
-- 英文报表图例/列表出现中文分类名——报表 3 处裸 `Text(name)` 已改成
+- 英文报表列表出现中文分类名——报表 3 处裸 `Text(name)` 已改成
   `Text(LocalizedStringKey(name))`（见上一节）。
+
+**已修（2026-10-07，第二批量，含本轮）：**
+
+- **英文环形图**图例**仍是中文分类名**——`39a16ab` 只修了纯列表，图例那处
+  （`DonutChartContent.swift:21`）漏了，因为图例显示的是 plottable 的**值**、
+  值必须是 `String`，`LocalizedStringKey` 救不了。已改走
+  `CategoryExpenseItem.localizedName`，并同步改了 `gradientLookup` 的 key。
+- 同一缺陷另 5 处（Mac 柱状列表/环形图悬浮面板/预算执行卡片、iOS 交叉表分类列）
+  ——见上一节。
+- ⚠️ **`tools/appstore-assets/screenshots/` 下已入库的 6 张英文报表图**
+  （`12-reports-cat-{dark,light}-en.png` 与 `ipad13/` 里同名的 2 张）
+  **拍的是修复前的图例**，图例仍是中文分类名。**本轮先不重拍**（用户决定），
+  所以这 6 张与当前代码不符。中文那套不受影响（中文 key 查回中文）。
 
 **未修（拍到就如实留着）：**
 
