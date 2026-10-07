@@ -55,40 +55,15 @@ struct MacSearchablePicker<T: Identifiable & Hashable>: View {
     // MARK: - Body
 
     var body: some View {
-        Button {
-            isPresented = true
-        } label: {
-            fieldLabel
-        }
-        .buttonStyle(.bordered)
-        .frame(maxWidth: .infinity)
+        // 触发按钮是**原生 NSPopUpButton**（见 `SearchablePopUpButton`）：只借它的外壳，
+        // 点击被拦下、不弹菜单，由下面的 popover 呈现可搜索列表。
+        // 外壳因此与同表单「成员/商家/项目」源自同一控件，不存在调参对齐问题。
+        SearchablePopUpButtonView(
+            title: selection.map(displayName) ?? String(localized: "无"),
+            icon: selection.map { (name: icon($0), color: color($0)) },
+            onActivate: { isPresented = true }
+        )
         .popover(isPresented: $isPresented) { popoverContent }
-    }
-
-    private var fieldLabel: some View {
-        HStack(spacing: 6) {
-            if let selection {
-                Image(systemName: icon(selection))
-                    .font(.system(size: 12))
-                    .foregroundStyle(color(selection))
-                Text(displayName(selection))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-            } else {
-                Text(String(localized: "无"))
-                    .foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 8)
-            Image(systemName: "chevron.up.chevron.down")
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(.secondary)
-        }
-        .padding(.horizontal, 8)
-        // 24 = 实测的原生 NSPopUpButton(.rounded) 自然高度（NSHostingView.fittingSize）。
-        // `.bordered` 不额外加高，内层高度就是总高；同表单另 3 个选择器是原生弹窗，
-        // 这里必须对齐到 24，否则并排会差 2pt。
-        .frame(height: 24)
-        .contentShape(Rectangle())
     }
 
     // MARK: - Popover

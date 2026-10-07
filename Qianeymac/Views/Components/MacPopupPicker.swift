@@ -118,18 +118,11 @@ struct MacPopupPicker<T: Identifiable & Hashable>: NSViewRepresentable {
 
     private func menuItem(for value: T, useIndent: Bool) -> NSMenuItem {
         let item = NSMenuItem(title: name(value), action: nil, keyEquivalent: "")
-        item.image = tintedIcon(systemName: icon(value), color: color(value))
+        item.image = TintedSymbolImage.make(systemName: icon(value), color: color(value))
         item.representedObject = value
         // indentationLevel — Apple standard API (macOS 10.0+), indents icon + text together
         item.indentationLevel = useIndent ? (indent?(value) ?? 0) : 0
         return item
-    }
-
-    private func tintedIcon(systemName: String, color: Color) -> NSImage? {
-        guard let base = NSImage(systemSymbolName: systemName, accessibilityDescription: nil) else { return nil }
-        let paletteConfig = NSImage.SymbolConfiguration(paletteColors: [NSColor(color)])
-        let sized = NSImage.SymbolConfiguration(pointSize: 12, weight: .regular)
-        return base.withSymbolConfiguration(sized.applying(paletteConfig))
     }
 
     // MARK: - Coordinator

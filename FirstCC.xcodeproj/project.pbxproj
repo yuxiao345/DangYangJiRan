@@ -180,8 +180,6 @@
 		9A8E07F12FCD55E8004FCB60 /* BiometricAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = AED97BB9935C8B1476C9B44C /* BiometricAuth.swift */; };
 		9A8E07F22FCD55E8004FCB60 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD4A1F1B5AEBDDC7F400369 /* Logger.swift */; };
 		9A8E07F32FCD55E8004FCB60 /* CSVStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8E979140E64CD5A924B3FB5 /* CSVStorage.swift */; };
-		B13704B3C9107ED5C8B02282 /* PinyinHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23AC684050F690265DF6AF72 /* PinyinHelper.swift */; };
-		FC19C86B07965018C24D89BE /* PinyinHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23AC684050F690265DF6AF72 /* PinyinHelper.swift */; };
 		9A8E07F52FCD55E8004FCB60 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30A7BF23BB03561C42D70AE8 /* Constants.swift */; };
 		9A8E07F62FCD55E8004FCB60 /* SwiftDataBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9140DF48EBC4497697CB6590 /* SwiftDataBridge.swift */; };
 		9A8E07F72FCD55E8004FCB60 /* CloudKitConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FD37181CF946710701C84CD /* CloudKitConfig.swift */; };
@@ -253,6 +251,7 @@
 		ADB53C1D3DACDF4D57030627 /* SearchablePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 942E11744D3E866B2C87DA3F /* SearchablePickerView.swift */; };
 		ADBE28204CA0156801F20C78 /* MemberServiceImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AEEA720C57BCDC5B0AB899D /* MemberServiceImpl.swift */; };
 		AF85B9267B379FF7D263C82A /* PendingReimbursementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F371BCA0764C641C933F49E1 /* PendingReimbursementView.swift */; };
+		B13704B3C9107ED5C8B02282 /* PinyinHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23AC684050F690265DF6AF72 /* PinyinHelper.swift */; };
 		B1C2D3E4F5061728394A5B6C /* CloudKitShareCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728394A5B6B /* CloudKitShareCoordinator.swift */; };
 		B2F84D17B669435ABA7351E2 /* MemberPieChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E447B662BB7407285A77329 /* MemberPieChartView.swift */; };
 		B7A42A252BC1A2076CE28411 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD4A1F1B5AEBDDC7F400369 /* Logger.swift */; };
@@ -325,6 +324,7 @@
 		F7D55B0A36612442816CF219 /* ProjectServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD1D998232FDB38B5BD81C15 /* ProjectServiceProtocol.swift */; };
 		F882A518E36393398F41A4D3 /* CurrencyFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 616DDCA24AD507E700D4E02A /* CurrencyFormatter.swift */; };
 		FA5AE7A3C7B3480B8CD17A18 /* LedgerDeepCopyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CCBBC471DD34C89B04A236A /* LedgerDeepCopyService.swift */; };
+		FC19C86B07965018C24D89BE /* PinyinHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23AC684050F690265DF6AF72 /* PinyinHelper.swift */; };
 		FD2C9721768BC0DECAFBD9EA /* LedgerRole.swift in Sources */ = {isa = PBXBuildFile; fileRef = 123B9066865398E03B8DD922 /* LedgerRole.swift */; };
 		FD91B103255DEB923850049C /* CloudKitConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FD37181CF946710701C84CD /* CloudKitConfig.swift */; };
 		FFD3CC4FA09133AB7E0CFC53 /* AccountDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89DBFB59681FF75B16E21478 /* AccountDetailView.swift */; };
@@ -400,6 +400,7 @@
 		1F11A80E181707BCA833B204 /* BankLogoPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankLogoPickerView.swift; sourceTree = "<group>"; };
 		1FD60ED36414C665A9E3DF7F /* ReportsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportsView.swift; sourceTree = "<group>"; };
 		2003AB9FBA8CF16B3F2DF283 /* AccountAllocationItem+Aggregate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AccountAllocationItem+Aggregate.swift"; sourceTree = "<group>"; };
+		23AC684050F690265DF6AF72 /* PinyinHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinyinHelper.swift; sourceTree = "<group>"; };
 		25BD8B7423ECB057766F757C /* BankLogoPresets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankLogoPresets.swift; sourceTree = "<group>"; };
 		26B6D818A9814FD5A0945FCA /* MemberSplitDonutContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberSplitDonutContent.swift; sourceTree = "<group>"; };
 		297D1C5A7B4E05864B4F68D9 /* ReconciliationServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReconciliationServiceProtocol.swift; sourceTree = "<group>"; };
@@ -441,7 +442,6 @@
 		5FC8D84871E3B70292214887 /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
 		60AB34C39292D3BB074364F5 /* CreateLedgerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateLedgerView.swift; sourceTree = "<group>"; };
 		616DDCA24AD507E700D4E02A /* CurrencyFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyFormatter.swift; sourceTree = "<group>"; };
-		23AC684050F690265DF6AF72 /* PinyinHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinyinHelper.swift; sourceTree = "<group>"; };
 		633DAA0D7A1EA35858B5D954 /* AccountListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountListView.swift; sourceTree = "<group>"; };
 		63446C2A98E1F8D484F47DF5 /* MerchantServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MerchantServiceProtocol.swift; sourceTree = "<group>"; };
 		64AA61EF5A31711AAB71EBB9 /* RecurringListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringListView.swift; sourceTree = "<group>"; };
@@ -488,7 +488,7 @@
 		94984FEE09494C159C5146C9 /* FirstCC.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = FirstCC.xcdatamodel; sourceTree = "<group>"; };
 		979E204D2E243EDB0A12BEA4 /* TransactionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionListView.swift; sourceTree = "<group>"; };
 		97FCEDFC1A08B135CB216CDC /* icon_dark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon_dark.png; sourceTree = "<group>"; };
-		9AB5F8B02FCD51C400F5044E /* Qianey.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Qianey.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		9AB5F8B02FCD51C400F5044E /* Qianey.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Qianey.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9AB5F8C12FCD51C700F5044E /* QianeymacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QianeymacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9AB5F8CB2FCD51C700F5044E /* QianeymacUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QianeymacUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9AC8FB6A2FE3BC1A00679EC7 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
@@ -1121,7 +1121,7 @@
 				9AB5F8B12FCD51C400F5044E /* Qianeymac */,
 			);
 			name = Qianeymac;
-			productName = "Qianey";
+			productName = Qianey;
 			productReference = 9AB5F8B02FCD51C400F5044E /* Qianey.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -1823,7 +1823,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.qianey.app.mac.Qianeymac;
 				PRODUCT_MODULE_NAME = Qianeymac;
-				PRODUCT_NAME = "Qianey";
+				PRODUCT_NAME = Qianey;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = macosx;
@@ -1865,7 +1865,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.qianey.app.mac.Qianeymac;
 				PRODUCT_MODULE_NAME = Qianeymac;
-				PRODUCT_NAME = "Qianey";
+				PRODUCT_NAME = Qianey;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = macosx;
