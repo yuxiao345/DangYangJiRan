@@ -37,6 +37,9 @@
 
 > **报表与账户那 16 张是 2026-10-07 拍的**，旧的单张 `12-reports-dark.png` 已删除
 > （它被 `12-reports-cat-dark.png` 取代）。
+> 其中 **`12-reports-trend-*` 那 4 张当天又重拍过一次**：`ReportViewModel` 修掉了
+> 月份轴依赖「年」字、以及横轴月份乱序两个 bug（commit `39a16ab`）。中文那 2 张的
+> 月份顺序原本也是乱的，所以中英各 2 张一起重拍。
 > **预算那 4 张也是 2026-10-07 补的**——之前只有英文版被重拍过（旧英文版标题还是中文
 > 「预算管理」，因为当时 String Catalog 缺 `en`），中文那对是原先拍的、一直没入库。
 >
@@ -144,14 +147,18 @@ xcrun simctl io <UUID> screenshot tools/appstore-assets/screenshots/14-addtx-dar
 
 - **会**：账户类型分组头（`现金/借记卡/信用卡/电子钱包`）、报表名、周期名、维度名——
   这些是 catalog 条目，切语言即变。
-- **不会**：账本名、账户名、成员名、商户名、项目名、**分类名**。全是用户数据。
+- **不会**：账本名、账户名、成员名、商户名、项目名。全是用户数据。
+- **看情况**：分类名。它是用户数据，但报表模块现在会把它当 catalog key 查一次
+  （见下面那条），所以「餐饮饮食」这类内置分类会自动出英文名。
 
-⚠️ **分类名有个例外中的例外**：报表模块用裸 `Text(item.name)` 渲染名字
-（`CategoryPieChartView.swift:279`、`MemberPieChartView.swift:112`、
-`MemberCategoryCrossView.swift:82`），**不走 `LocalizedStringKey`**，所以查不到 catalog，
-即使 catalog 里有「餐饮饮食 → Food & Dining」也没用。全应用其它 20 多处
-（账户行、导航标题、各种选择器）都是 `Text(LocalizedStringKey(name))`，只有报表模块是例外。
-→ **拍英文报表图必须先改分类数据**，否则图例和列表里是中文分类名。
+- **分类名曾经也是例外，现已修**：报表模块原来用裸 `Text(item.name)` 渲染名字
+  （`CategoryPieChartView.swift:279`、`MemberPieChartView.swift:112`、
+  `MemberCategoryCrossView.swift:82`），不走 `LocalizedStringKey`，所以即使 catalog 里
+  有「餐饮饮食 → Food & Dining」也查不到。2026-10-07 的 `39a16ab` 已把这 3 处改成
+  `Text(LocalizedStringKey(item.name))`，与全应用其余 20 多处一致。
+  → **catalog 里有条目的分类现在会自动出英文名，不必再改分类数据。**
+  只有 catalog 里没有的分类仍会显示中文（已知 `数码产品`、`停车车位`），
+  但它们只在下钻层级出现，L1 报表图拍不到。
 
 ### 改名映射（照抄，别现编）
 
@@ -176,10 +183,12 @@ xcrun simctl io <UUID> screenshot tools/appstore-assets/screenshots/14-addtx-dar
 京东→JD.com｜德邦快递→Deppon Express｜中国广电→China Broadnet｜中通快递→ZTO Express｜
 中国邮政 EMS→China Post EMS
 
-**分类**（1 个顶层 + 若干子类，共 94 条）：**直接查 `Localizable.xcstrings` 取官方英文名**
-（`餐饮饮食→Food & Dining`、`交通出行→Transportation`、`购物消费→Shopping` 等），
-不要自己翻。只有 catalog 里没有的才现取——已知 2 条：`数码产品→Digital Products`、
-`停车车位→Parking`。
+**分类不用改**（2026-10-07 起）：`39a16ab` 之后报表走 `LocalizedStringKey`，
+catalog 里有条目的分类自动显示英文。
+> 历史备注（在那之前必须做、现已作废）：94 条分类名要逐条改成英文，映射直接查
+> `Localizable.xcstrings` 取官方英文名（`餐饮饮食→Food & Dining`、
+> `交通出行→Transportation`、`购物消费→Shopping` 等），不要自己翻；
+> catalog 里没有的只有 2 条：`数码产品→Digital Products`、`停车车位→Parking`。
 
 ### 怎么改
 
@@ -201,10 +210,21 @@ xcrun simctl io <UUID> screenshot tools/appstore-assets/screenshots/14-addtx-dar
 拍照时如果发现下面这些，**不要以为是拍错了、也不要自行修图**——它们是 app 当前的真实行为，
 图是如实反映。修要改 Swift 代码。
 
+**已修（2026-10-07，commit `39a16ab`）——重拍时不必再绕过：**
+
+- 英文「收支趋势」月份轴显示 `26Oct`，且比中文版少了年份分组条、少了图例右侧的
+  「2025 – 2026」范围标注。`ReportViewModel` 原先把 `year(.twoDigits)\(month(.abbreviated))`
+  拼成的**显示串**当分组 key，再靠找「年」字反解析年份；英文串里没有「年」字，年份就丢了。
+  现在改成从 `Date` 组件直接取年月，分组 key 用与 locale 无关的「年*100+月」。
+- 同一个函数里横轴月份乱序（fetch 没带 `sortDescriptors`，按 Core Data 任意返回顺序画）
+  ——已按年月升序排序。
+- 英文报表图例/列表出现中文分类名——报表 3 处裸 `Text(name)` 已改成
+  `Text(LocalizedStringKey(name))`（见上一节）。
+
+**未修（拍到就如实留着）：**
+
 | 现象 | 根因 | 影响面 |
 |---|---|---|
-| 英文「收支趋势」月份轴显示 `26Oct / 26Aug / …`，且**比中文版少了年份分组条** | `ReportViewModel.swift:818` 把 `year(.twoDigits)\(month(.abbreviated))` 直接拼接。中文下 `year` 出「25年」，拼成 `25年10月`，`parseYearMonth`（`:1909`）靠找「年」字拆出年份；英文下出 `26Oct`，**没有「年」字**，拆分失败 → 整串当月标签显示，年份分组随之消失 | 英文界面 |
-| 英文报表图例/列表出现中文分类名 | 报表模块用裸 `Text(item.name)`，不走 `LocalizedStringKey`（见上）。截图里是英文，是因为**演示数据被改成了英文**，不是因为控件翻译生效 | 英文界面；用户自建分类同样中招 |
 | Mac「资产变化」报表的 x 轴标签 | `ReportViewModel.swift:904` 硬编码 `String(format: "%02d年%d月", …)`，违反 CLAUDE.md 的日期格式规范（应用 `Date.FormatStyle` 随 locale 自适应） | Mac 英文界面 |
 | 账户新增/编辑表单里出现英文 `Logo` | `Section("Logo")`（`AccountsManagementView.swift:207`、`AddEditAccountView.swift:98`）——key 本身是英文，中文侧没有值 | 中文界面 |
 
