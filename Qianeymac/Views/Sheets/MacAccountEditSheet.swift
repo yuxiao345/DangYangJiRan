@@ -180,7 +180,7 @@ struct MacAccountEditSheet: View {
                     .textFieldStyle(.roundedBorder)
                     .multilineTextAlignment(.trailing)
                     .onChange(of: balanceString) { _, v in
-                        balanceString = v.filter { "0123456789.".contains($0) }
+                        balanceString = sanitizeAmount(v, allowNegative: true)
                         initialBalance = Decimal(string: balanceString) ?? 0
                     }
             }
@@ -198,7 +198,7 @@ struct MacAccountEditSheet: View {
                         .textFieldStyle(.roundedBorder)
                         .multilineTextAlignment(.trailing)
                         .onChange(of: creditLimitString) { _, v in
-                            creditLimitString = v.filter { "0123456789.".contains($0) }
+                            creditLimitString = sanitizeAmount(v, allowNegative: false)
                             creditLimit = Decimal(string: creditLimitString) ?? 0
                         }
                 }
@@ -234,6 +234,15 @@ struct MacAccountEditSheet: View {
         } else {
             existingCustomTypes = Array(Set(names)).sorted()
         }
+    }
+
+    /// 规范化金额输入：只保留数字、小数点，以及（可选）开头的负号。
+    private func sanitizeAmount(_ input: String, allowNegative: Bool) -> String {
+        var s = input.filter { $0.isNumber || $0 == "." }
+        if allowNegative, input.hasPrefix("-") {
+            s = "-" + s
+        }
+        return s
     }
 
     private func save() {
