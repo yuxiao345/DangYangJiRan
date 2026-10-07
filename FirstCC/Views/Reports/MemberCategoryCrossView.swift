@@ -107,7 +107,7 @@ struct MemberCategoryCrossView: View {
                 RoundedRectangle(cornerRadius: 2)
                     .fill(Color(hex: item.colorHex) ?? .gray)
                     .frame(width: 10, height: 10)
-                Text(item.categoryName)
+                Text(LocalizedStringKey(item.categoryName))
                     .font(.designBodySmall)
                     .foregroundStyle(Color.designOnSurface)
                     .lineLimit(1)

@@ -176,17 +176,17 @@ struct CategoryPieChartView: View {
                     HStack(spacing: 2) {
                         Image(systemName: "chevron.left")
                             .font(.designBodySmall)
-                        Text(centerTitle)
+                        Text(LocalizedStringKey(centerTitle))
                             .font(.designBodySmall)
                     }
                     .foregroundStyle(Color.designAccentGreen)
                 }
             } else if memberSplitActive {
-                Text(centerTitle)
+                Text(LocalizedStringKey(centerTitle))
                     .font(.designBodySmall)
                     .foregroundStyle(Color.designOnSurfaceVariant)
             } else {
-                Text(centerTitle)
+                Text(LocalizedStringKey(centerTitle))
                     .font(.designBodySmall)
                     .foregroundStyle(Color.designOnSurfaceVariant)
             }
@@ -215,7 +215,7 @@ struct CategoryPieChartView: View {
         var map: [String: LinearGradient] = [:]
         func collect(_ items: [CategoryExpenseItem]) {
             for item in items {
-                map[item.name] = gradientFor(hex: item.colorHex)
+                map[item.localizedName] = gradientFor(hex: item.colorHex)
                 collect(item.children)
             }
         }
@@ -402,7 +402,7 @@ struct CategoryPieChartView: View {
                     HStack(spacing: 2) {
                         Image(systemName: "chevron.left")
                             .font(.designBodySmall.weight(.medium))
-                        Text(centerTitle)
+                        Text(LocalizedStringKey(centerTitle))
                             .font(.designBodyMedium.weight(.medium))
                     }
                     .foregroundStyle(Color.designAccentGreen)

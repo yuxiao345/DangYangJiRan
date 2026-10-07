@@ -19,7 +19,7 @@ struct TransactionDetailList: View {
                     Image(systemName: "chevron.left")
                 }
                 .buttonStyle(DesignGlassCircleButton())
-                Text(centerTitle)
+                Text(LocalizedStringKey(centerTitle))
                     .font(.designBodyMedium)
                     .foregroundStyle(Color.designOnSurface)
                     .padding(.leading, 8)

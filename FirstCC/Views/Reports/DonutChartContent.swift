@@ -1,8 +1,9 @@
 import SwiftUI
 import Charts
 
-/// Shared donut chart used by both iOS and Mac category breakdown views.
-/// Separated to avoid Swift type-checker timeout on complex modifier chains.
+/// iOS 分类占比图专用（唯一调用者是 `CategoryPieChartView`）。
+/// Mac 用的是自己手绘的 `Qianeymac/Views/Reports/DonutChart.swift`，两者不共享代码。
+/// 拆成独立文件是为了绕开复杂 modifier 链导致的 Swift 类型检查超时。
 struct DonutChartContent: View {
     let categories: [CategoryExpenseItem]
     let animationProgress: Double
@@ -18,7 +19,7 @@ struct DonutChartContent: View {
                 innerRadius: .ratio(0.5),
                 angularInset: 2.5
             )
-            .foregroundStyle(by: .value("Category", item.name))
+            .foregroundStyle(by: .value("Category", item.localizedName))
         }
         .chartForegroundStyleScale { gradientLookup[$0] ?? fallbackGradient }
         .chartAngleSelection(value: $selectedAngle)

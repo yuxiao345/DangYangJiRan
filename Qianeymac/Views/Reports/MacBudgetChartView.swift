@@ -241,7 +241,8 @@ struct MacBudgetChartView: View {
             if aheadItems.isEmpty {
                 Text(String(localized: "暂无")).font(.designMicroLabel).foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
             } else {
-                Text(aheadItems.prefix(3).map(\.name).joined(separator: "、"))
+                // 逐个本地化：拼成一个串后整体查 catalog 是查不到的
+                Text(aheadItems.prefix(3).map { NSLocalizedString($0.name, comment: "") }.joined(separator: "、"))
                     .font(.system(size: 8)).foregroundStyle(Color.designOnSurfaceVariant).lineLimit(2)
             }
         }
@@ -264,7 +265,8 @@ struct MacBudgetChartView: View {
             if controlledItems.isEmpty {
                 Text(String(localized: "暂无")).font(.designMicroLabel).foregroundStyle(Color.designOnSurfaceVariant.opacity(0.4))
             } else {
-                Text(controlledItems.prefix(3).map(\.name).joined(separator: "、"))
+                // 逐个本地化：拼成一个串后整体查 catalog 是查不到的
+                Text(controlledItems.prefix(3).map { NSLocalizedString($0.name, comment: "") }.joined(separator: "、"))
                     .font(.system(size: 8)).foregroundStyle(Color.designOnSurfaceVariant).lineLimit(2)
             }
         }
@@ -612,7 +614,7 @@ private struct BudgetCardView: View {
                 RoundedRectangle(cornerRadius: 2)
                     .fill(Color(hex: item.colorHex) ?? .gray)
                     .frame(width: 10, height: 10)
-                Text(item.name)
+                Text(LocalizedStringKey(item.name))
                     .font(.designBodySmall)
                     .foregroundStyle(Color.designOnSurface)
                     .lineLimit(1)
@@ -663,7 +665,7 @@ private struct BudgetCardView: View {
                 RoundedRectangle(cornerRadius: 2)
                     .fill(Color(hex: item.colorHex) ?? .gray)
                     .frame(width: 10, height: 10)
-                Text(item.name)
+                Text(LocalizedStringKey(item.name))
                     .font(.designBodySmall)
                     .foregroundStyle(Color.designOnSurface)
                     .lineLimit(1)

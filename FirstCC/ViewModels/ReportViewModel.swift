@@ -75,6 +75,20 @@ struct CategoryExpenseItem: Identifiable {
     let percentage: Double
     let parentID: UUID?
     let children: [CategoryExpenseItem]
+
+    /// 本地化后的分类名（String 版）。分类名是用户数据，但内置分类同时是
+    /// String Catalog 的 key，所以显示时在此统一查表。
+    ///
+    /// 需要 String 而不是 `LocalizedStringKey` 的唯一场景是 Swift Charts：
+    /// 图例显示的是 plottable 的**值**而非标签，而值必须是 `String`。
+    ///
+    /// ⚠️ `DonutChartContent` 的 `.value("Category", …)` 与 `CategoryPieChartView`
+    /// 的 `gradientLookup` 必须共用本属性作 key：只改一边会让配色查不到、扇区全灰。
+    ///
+    /// 已知边界：两个不同分类若本地化后同名（用户自建「旅行」与内置「旅游」都变成
+    /// "Travel"），在图表里会被并成同一条 series——扇区合并、共用一色，而下方列表
+    /// 仍按各自 colorHex 显示两色。默认分类集实测不撞，需用户自建才触发。
+    var localizedName: String { NSLocalizedString(name, comment: "") }
 }
 
 // MARK: - Dimension Type

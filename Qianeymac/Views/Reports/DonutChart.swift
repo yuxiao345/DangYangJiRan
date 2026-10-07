@@ -92,7 +92,7 @@ struct DonutChart: View {
                     Image(systemName: "chevron.left")
                 }
                 .buttonStyle(DesignGlassCircleButton())
-                Text(centerTitle)
+                Text(LocalizedStringKey(centerTitle))
                     .font(.designBodyMedium)
                     .foregroundStyle(Color.designOnSurface)
                     .padding(.leading, 8)
@@ -150,7 +150,7 @@ struct DonutChart: View {
 
     private var centerLabel: some View {
         VStack(spacing: 2) {
-            Text(centerTitle)
+            Text(LocalizedStringKey(centerTitle))
                 .font(.designBodySmall)
                 .foregroundStyle(Color.designOnSurfaceVariant)
             CurrencyText(amount: totalExpense, currencyCode: "", size: 20, foregroundColor: Color.designOnSurface, fractionDigits: 0)
@@ -171,7 +171,7 @@ struct DonutChart: View {
                         Circle()
                             .fill(Color(hex: item.colorHex) ?? .gray)
                             .frame(width: 10, height: 10)
-                        Text(item.name)
+                        Text(LocalizedStringKey(item.name))
                             .font(.designBodyMedium)
                             .foregroundStyle(Color.designOnSurface)
                     }
