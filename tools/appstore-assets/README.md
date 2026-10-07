@@ -32,8 +32,30 @@ Apple 2026-10-05 启用的新素材位，**只在 iOS 27 / iPadOS 27 及以上�
 | 两者通用 | 16:9 | 5244 × 2950 | 仅 png | `universal-16x9-*.png` |
 
 **优先用专用规格（21:9 / 3:2）**，它们的安全区宽得多，版式能舒展。16:9「通用素材」
-的唯一好处是一张图两用（上传后在 ASC 勾选 **Use header asset in search results**），
-代价是安全区被压到画布宽的 26.7%，字号被迫缩小。三个都出了，用哪个由你决定。
+的唯一好处是一张图两用，代价是安全区被压到画布宽的 26.7%，字号被迫缩小。
+复用要在 ASC 里显式选（原话，2026-10-07 核过）：
+
+> "To use the same asset for both your product page and search results, select
+> **Use header asset in search results**. This option is only available for
+> universal creative assets. Otherwise, upload or choose a dedicated asset for
+> search results."
+
+三个规格都出了，用哪个由你决定。
+
+### ⚠️ 深浅两套是给你「挑」的，不是都传
+
+**Apple 的创意素材文档里没有「light / dark 变体」这个概念**——2026-10-07 查了
+[规格页](https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications/)、
+[Manage your assets](https://developer.apple.com/help/app-store-connect/manage-app-information/manage-your-app-store-assets)
+和 [Asset best practices](https://developer.apple.com/app-store/asset-best-practices/) 三处，一处都没提。
+所以每个素材位**每个语言只填一张图**，深浅二选一。
+
+出两套是因为 App 本身有深浅两种外观，哪套更好看得你定；**不是要你传两张**。
+（这也是为什么 `-dark` / `-light` 只进文件名、不进任何 ASC 字段。）
+
+语言同理：官方文档也没明说创意素材要不要按语言分别上传（那句「切换语言上传」
+写在截图/preview 一节）。但素材里的 UI 是中文还是英文一眼可见，**按语言分别出图**
+是稳妥做法——中英各一套，别混用。
 
 Apple 的其他硬约束：
 
