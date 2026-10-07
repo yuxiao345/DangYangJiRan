@@ -212,8 +212,8 @@ A manual bookkeeping app with no sign-up, where your data stays in your own iClo
 
 | 字段 | 状态 | 说明 |
 |---|---|---|
-| **隐私政策 URL** | 🟡 **页面已成稿，待上线**——送审阻断项 | 页面在 `~/Documents/AI/qianey-legal/privacy.html`（独立公开仓库，不放在本仓库的 `docs/`，原因见下）。建好仓库开 Pages 后填入 |
-| **支持 URL** | 🟡 页面已成稿，待上线 | 同上，`~/Documents/AI/qianey-legal/support.html`；不能填 App Store 链接 |
+| **隐私政策 URL** | ✅ **已上线**（2026-10-07 实测 200） | `https://yuxiao345.github.io/qianey-legal/privacy.html` |
+| **支持 URL** | ✅ **已上线**（2026-10-07 实测 200） | `https://yuxiao345.github.io/qianey-legal/support.html` |
 | 营销 URL | 可选 | 无 |
 | 分类 | 建议 **财务**（主要）+ 效率（次要） | 竞品多在财务 |
 | 内容分级 | 4+ | 素材也必须是 4+，见 README |
@@ -225,13 +225,13 @@ A manual bookkeeping app with no sign-up, where your data stays in your own iClo
 ## 待办
 
 - [x] 中英文案定稿，全部字段经 `check_lengths.py` 校验在限内（2026-10-07）
-- [ ] **隐私政策 URL / 支持 URL 上线** —— 送审阻断项。页面已写好（见 `~/Documents/AI/qianey-legal/`），
-      还差三步：① 替换页面里的 `【支持邮箱】` 和 `【开发者名称】` 占位符；
-      ② 在 GitHub 建**公开**仓库 `qianey-legal` 并 push（命令见该目录 README）；
-      ③ Settings → Pages 选 `main` / root，拿到 URL 后填进 ASC。
-      > ⚠️ 这两个页面**不放本仓库的 `docs/`**：那里已经有 `multi-device-sync-qa.md` 和
-      > `pm-testing-issues.md` 两个**内部**文档（后者是待修复 bug 清单），而 GitHub Pages 会
-      > 把该目录下的所有文件都公开。
+- [x] **隐私政策 URL / 支持 URL 上线**（2026-10-07 实测三个 URL 均 200）——
+      页面在独立公开仓库 `~/Documents/AI/qianey-legal/`（remote `git@github.com:yuxiao345/qianey-legal.git`），
+      GitHub Pages 源 = `main` / root。
+      > ⚠️ 这两个页面**故意不放本仓库的 `docs/`**：那里有 `multi-device-sync-qa.md` 和
+      > `pm-testing-issues.md` 两个**内部**文档（后者是待修复 bug 清单），
+      > 而 GitHub Pages 会把该目录下的所有文件都公开。改页面请去 `qianey-legal` 那个仓库。
+- [ ] 改完任何页面内容，**必须跑**该仓库 README 里的 `grep -rn "【" *.html` 并点开线上 URL 确认
 - [ ] 文案改动后**必须重跑** `python3 tools/appstore-assets/check_lengths.py`
 - [ ] Mac 端（Qianey）另备一套文案，不能与本套同名同文
 
