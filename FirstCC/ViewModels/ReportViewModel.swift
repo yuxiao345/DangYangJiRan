@@ -768,38 +768,45 @@ final class ReportViewModel {
         case .last3Years:
             let monthFmt = Date.FormatStyle.dateTime.month(.abbreviated)
             let yearFmt = Date.FormatStyle.dateTime.year(.twoDigits)
+            let cal = Calendar.current
 
-            var byYearMonth: [String: (monthLabel: String, income: Decimal, expense: Decimal)] = [:]
-            var order: [String] = []
+            // 分组 key 用「年*100+月」这种与 locale 无关的数字，不要拿「要显示的字符串」当 key。
+            // 以前 key 是拼出来的显示串（中文「26年10月」/ 英文「26Oct」），再靠字符串里的
+            // 「年」字反解析年份——英文串里没有「年」，年份就丢了，年份分组条整条消失。
+            var byKey: [Int: (label: String, monthLabel: String, year: Int, income: Decimal, expense: Decimal)] = [:]
+            var order: [Int] = []
 
             for t in filtered {
-                let yearKey = t.date.formatted(yearFmt)
-                let monthKey = t.date.formatted(monthFmt)
-                let compoundKey = "\(yearKey)\(monthKey)"
+                let year = cal.component(.year, from: t.date)
+                let month = cal.component(.month, from: t.date)
+                let key = year * 100 + month
 
-                if byYearMonth[compoundKey] == nil {
-                    order.append(compoundKey)
-                    byYearMonth[compoundKey] = (
-                        monthLabel: monthKey,
+                if byKey[key] == nil {
+                    order.append(key)
+                    byKey[key] = (
+                        label: "\(t.date.formatted(yearFmt))\(t.date.formatted(monthFmt))",
+                        monthLabel: t.date.formatted(monthFmt),
+                        year: year,
                         income: 0,
                         expense: 0
                     )
                 }
-                guard var entry = byYearMonth[compoundKey] else { continue }
+                guard var entry = byKey[key] else { continue }
                 if t.type == .income {
                     entry.income += ledgerAmount(t)
                 } else {
                     entry.expense += t.netExpenseAmount
                 }
-                byYearMonth[compoundKey] = entry
+                byKey[key] = entry
             }
-            trendData = order.compactMap { key in
-                byYearMonth[key].map { v in
-                    let (year, _) = parseYearMonth(from: key)
-                    return TrendDataPoint(
-                        label: key,
+            // order 必须排一次：上面那个 fetch 没带 sortDescriptors，Core Data 的返回顺序是任意的，
+            // 直接照用的话横轴月份就是乱的。图里会 reversed()，所以这里按年月升序。
+            trendData = order.sorted().compactMap { key in
+                byKey[key].map { v in
+                    TrendDataPoint(
+                        label: v.label,
                         monthLabel: v.monthLabel,
-                        year: year,
+                        year: v.year,
                         income: v.income,
                         expense: v.expense
                     )
@@ -817,30 +824,41 @@ final class ReportViewModel {
             let monthFmt = Date.FormatStyle.dateTime.month(.abbreviated)
             let yearFmt = Date.FormatStyle.dateTime.year(.twoDigits)
 
-            var byMonth: [String: (income: Decimal, expense: Decimal)] = [:]
-            var monthOrder: [String] = []
+            // 同 .last3Years：分组 key 用「年*100+月」，年份直接从 Date 取，不去反解析显示串。
+            var byKey: [Int: (label: String, monthLabel: String, year: Int, income: Decimal, expense: Decimal)] = [:]
+            var order: [Int] = []
 
             for t in filtered {
-                let key = useYearPrefix ? "\(t.date.formatted(yearFmt))\(t.date.formatted(monthFmt))" : t.date.formatted(monthFmt)
-                if byMonth[key] == nil {
-                    monthOrder.append(key)
-                    byMonth[key] = (0, 0)
+                let year = cal.component(.year, from: t.date)
+                let month = cal.component(.month, from: t.date)
+                let key = year * 100 + month
+                let monthLabel = t.date.formatted(monthFmt)
+
+                if byKey[key] == nil {
+                    order.append(key)
+                    byKey[key] = (
+                        label: useYearPrefix ? "\(t.date.formatted(yearFmt))\(monthLabel)" : monthLabel,
+                        monthLabel: monthLabel,
+                        year: year,
+                        income: 0,
+                        expense: 0
+                    )
                 }
-                guard var entry = byMonth[key] else { continue }
+                guard var entry = byKey[key] else { continue }
                 if t.type == .income {
                     entry.income += ledgerAmount(t)
                 } else {
                     entry.expense += t.netExpenseAmount
                 }
-                byMonth[key] = entry
+                byKey[key] = entry
             }
-            trendData = monthOrder.compactMap { key in
-                byMonth[key].map { v in
-                    let (year, monthLabel) = parseYearMonth(from: key)
-                    return TrendDataPoint(
-                        label: key,
-                        monthLabel: monthLabel,
-                        year: year,
+            trendData = order.sorted().compactMap { key in
+                byKey[key].map { v in
+                    // 单年周期不插年份分组条（与改动前一致），跨年才给 year
+                    TrendDataPoint(
+                        label: v.label,
+                        monthLabel: v.monthLabel,
+                        year: useYearPrefix ? v.year : nil,
                         income: v.income,
                         expense: v.expense
                     )
@@ -1905,15 +1923,4 @@ final class ReportViewModel {
         return current
     }
 
-    /// Parse compound key into (year, monthLabel). E.g. "24年6月" → (2024, "6月"), "6月" → (nil, "6月")
-    private func parseYearMonth(from key: String) -> (year: Int?, monthLabel: String) {
-        guard let nianIdx = key.firstIndex(of: "年") else {
-            return (nil, key)
-        }
-        let yearStr = String(key[..<nianIdx])
-        let monthStr = String(key[key.index(after: nianIdx)...])
-        guard let yy = Int(yearStr) else { return (nil, key) }
-        let year = yy >= 100 ? yy : 2000 + yy
-        return (year, monthStr)
-    }
 }

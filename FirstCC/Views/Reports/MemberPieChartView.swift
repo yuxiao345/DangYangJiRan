@@ -109,7 +109,7 @@ struct MemberPieChartView: View {
                             .foregroundStyle(memberColor(for: index))
                             .frame(width: 28, height: 28)
 
-                        Text(member.name)
+                        Text(LocalizedStringKey(member.name))
                             .font(.designBodyMedium)
                             .foregroundStyle(Color.designOnSurface)
 

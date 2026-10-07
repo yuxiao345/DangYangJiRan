@@ -79,7 +79,7 @@ struct MemberCategoryCrossView: View {
 
             // Member columns
             ForEach(allMembers) { member in
-                Text(member.name)
+                Text(LocalizedStringKey(member.name))
                     .font(.designMonoDataSmall)
                     .foregroundStyle(Color.designOnSurfaceVariant)
                     .frame(width: 72, alignment: .trailing)

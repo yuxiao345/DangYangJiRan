@@ -276,7 +276,7 @@ struct CategoryPieChartView: View {
                         .fill(Color(hex: item.colorHex) ?? .gray)
                         .frame(width: 12, height: 12)
 
-                    Text(item.name)
+                    Text(LocalizedStringKey(item.name))
                         .font(.designBodyMedium)
                         .foregroundStyle(Color.designOnSurface)
 
