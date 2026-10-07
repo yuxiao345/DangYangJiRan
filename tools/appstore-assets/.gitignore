@@ -1,0 +1,11 @@
+# 诊断目录里体积大、且不必入库的两类：
+#
+# 旧构图/ —— 改版前的 banner 成品（13 MB）。它们**在 git 历史里**：
+#   git show 41f3a40:tools/appstore-assets/output/banner-zh-dark.png > /tmp/old.png
+# 留一份在本地的意义只是对照，没必要让每次 clone 都背着。
+#
+# banner-*-safearea.png —— 当初用来证明「旧构图的内容正好躲开安全区」的一次性证据
+# （19 MB）。结论已经写进 README 的「安全区」一节，图本身不再需要。
+# 想重看任意一张成品的叠加图，跑 safecheck.swift 即可。
+diag/旧构图/
+diag/banner-*-safearea.png
