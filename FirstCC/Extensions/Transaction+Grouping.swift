@@ -92,7 +92,78 @@ extension Array where Element == Transaction {
     }
 }
 
+/// 一组「同一个月」的日期组。
+///
+/// `month` 是归零到月首的 `Date`，同时是分组身份和排序依据；`title` 只用于渲染，
+/// **不要**拿它参与分组、排序，也不要当 `ForEach` 的 id —— 与 `TransactionDayGroup`
+/// 同一个理由：显示字符串随 locale 变，还可能跨年撞车。
+struct TransactionMonthGroup: Identifiable {
+    let month: Date
+    let title: String
+    let dayGroups: [TransactionDayGroup]
+
+    var id: Date { month }
+
+    /// 当月全部交易（跨日组展平）。
+    var transactions: [Transaction] { dayGroups.flatMap(\.transactions) }
+
+    /// 当月流入合计（只累加 `amount > 0` 的部分），恒 ≥ 0。口径说明见 `outflow`。
+    var inflow: Decimal {
+        transactions.reduce(Decimal.zero) { $0 + ($1.amount > 0 ? $1.amount : 0) }
+    }
+
+    /// 当月流出合计（只累加 `amount < 0` 的部分），恒 ≤ 0。
+    ///
+    /// 口径是**原始 `amount` 的正负号**，即「进账 / 出账」，不是按 `type` 分的
+    /// 「收入 / 支出」。这么切有两个理由：
+    /// ① `inflow + outflow ≡ Σ amount`，与每日期末余额（`dailyClosingBalances` 就是朴素
+    ///   `Σ amount` 回推）以及账户余额同口径；
+    /// ② 改用 `signedAmount` 按 type 重推符号（转账一律记负）后，表头两个数之和
+    ///   就不再等于同期余额变动，头与它下面的日余额会互相矛盾。
+    ///
+    /// **表头的颜色与它下面那些行的颜色不是同一套语义**，别照着行色去调表头：
+    /// 行色按 `type` 走（`TransactionRowView.amountView`：转账恒蓝且抹掉符号、借贷负数为橙、
+    /// 支出恒红），表头只有「流入绿 / 流出红」两桶。于是同一笔 `.expense` 退款
+    /// （`createRefund` 存成 `type: .expense` + **正** `amount`）在行里是红色 `+¥100`，
+    /// 在表头计入流入是绿色 `+¥100`；同一笔转账在转出方页面表头是红色流出、
+    /// 在转入方页面表头是绿色流入，而行里两处都是蓝色 `↔`。
+    /// 金额是同一笔、颜色不同源，这是刻意保留的差异，不是 bug。
+    var outflow: Decimal {
+        transactions.reduce(Decimal.zero) { $0 + ($1.amount < 0 ? $1.amount : 0) }
+    }
+}
+
+/// 月份分组的显示标题。**不是**分组身份，见 `TransactionMonthGroup`。
+///
+/// 与 `dayGroupTitle(.relative)` 不同：这里**始终带年份** —— 账户明细拉的是全量历史，
+/// 只显示「10月」的话，2026 年 10 月和 2025 年 10 月两个分组头长得一模一样。
+/// 不传 locale，用 `Locale.autoupdatingCurrent` 自适应系统语言
+/// （实测 zh-Hans「2026年10月」/ en "October 2026"）。
+private func monthGroupTitle(for month: Date) -> String {
+    month.formatted(.dateTime.year().month(.wide))
+}
+
 extension Array where Element == TransactionDayGroup {
+    /// 把「按日分组」的输出再按月归并：月间倒序，月内**保留输入的日间顺序**。
+    ///
+    /// 保序是硬要求：`dailyClosingBalances` 靠日组的全局倒序做逐日回推，
+    /// 这里只做「按月份入桶 + 保序」，不打乱桶内顺序。
+    func groupedByMonth() -> [TransactionMonthGroup] {
+        let cal = Calendar.current
+        var order: [Date] = []
+        var buckets: [Date: [TransactionDayGroup]] = [:]
+        for group in self {
+            let comps = cal.dateComponents([.year, .month], from: group.day)
+            guard let month = cal.date(from: comps) else { continue }
+            if buckets[month] == nil { order.append(month) }
+            buckets[month, default: []].append(group)
+        }
+        return order.sorted(by: >).compactMap { month in
+            guard let days = buckets[month] else { return nil }
+            return TransactionMonthGroup(month: month, title: monthGroupTitle(for: month), dayGroups: days)
+        }
+    }
+
     /// 每个日期组的期末余额：从当前余额出发，按组由新到旧逐步回推。
     ///
     /// 前提是「一组 = 一个自然日」且已按 `day` 倒序（`groupedByDay` 的输出即是）；
@@ -112,6 +183,61 @@ extension Array where Element == TransactionDayGroup {
             running -= group.transactions.reduce(Decimal.zero) { $0 + $1.amount }
         }
         return result
+    }
+}
+
+/// 账户/账户明细页「按年月折叠」的展开状态。
+///
+/// 把状态和收敛规则从两个平台的 View 里抽出来，一是消除 iOS/Mac 的重复实现，
+/// 二是让「最新月份被删空」「跨月后录的第一笔」这类转移能被单测覆盖 ——
+/// 它们原先只存在于 `@State` 里，靠读代码推理，测不了。
+///
+/// **身份必须与月份列表同源**：这里的 `Date` 是月首（取自 `TransactionMonthGroup.month`，
+/// 归零到月首 00:00）。`reconcile` 用的是精确相等比较，若某处传进来的键带了时分秒，
+/// 集合交集会静默把键全删掉。与 `TransactionDayGroup` 同一个纪律：
+/// 分组身份用 `Date`，不用显示字符串。
+/// - Note: 故意**不**声明 `Equatable`。本文件同时编进 iOS 和 Mac 两个 target，而 Mac
+///   target 开了 `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` —— 同一个源文件在 Mac 模块里
+///   会变成 MainActor 隔离，合成的 `==` 也跟着带上隔离；一旦有非隔离上下文用到它
+///   （例如将来把这组测试搬去 `QianeymacTests`），Swift 5 是警告、Swift 6 直接报
+///   `#IsolatedConformances` 错误。这里没有任何地方比较两个 state，所以不要它。
+struct MonthExpansionState {
+    /// 当前展开的月份（月首 `Date`）。
+    private(set) var expanded: Set<Date> = []
+    /// 上次收敛时「最新月份」是谁，用来判断最新月份有没有变。
+    private(set) var knownNewest: Date?
+
+    func isExpanded(_ month: Date) -> Bool { expanded.contains(month) }
+
+    /// 用户点月份头：展开 <-> 收起。
+    mutating func toggle(_ month: Date) {
+        if expanded.contains(month) {
+            expanded.remove(month)
+        } else {
+            expanded.insert(month)
+        }
+    }
+
+    /// 用当前月份列表收敛一次。**`load()` 每次重跑都要调用**（不是只在首次）。
+    ///
+    /// 规则：
+    /// ① 已不存在的月份不再占位 —— 否则用户删空最新月份后，展开集合里只剩一个悬空的
+    ///    月首键，整页一个展开的月份都不剩，只剩月份头、一行交易都看不到；
+    /// ② 最新月份变了（新出现了更新的月份，或原最新月份被删空/改期到更早）就展开新的
+    ///    最新月份，**保留其余手动展开**的结果 —— 跨月后录的第一笔因此自动可见；
+    /// ③ 最新月份没变时完全不动 —— 每次刷新都重置的话，用户刚展开的月份会被刷回去。
+    ///
+    /// - Parameter months: 月首 `Date`，**最新在前**（即 `groupedByMonth().map(\.month)`）。
+    mutating func reconcile(months: [Date]) {
+        expanded.formIntersection(Set(months))
+        guard let newest = months.first else {
+            knownNewest = nil   // 数据为空：下次有数据时按「首次」处理
+            return
+        }
+        if newest != knownNewest {
+            expanded.insert(newest)
+            knownNewest = newest
+        }
     }
 }
 
