@@ -1,20 +1,27 @@
 import SwiftUI
 
-/// Mac 上可搜索的层级选择器：字段按钮 + 弹出的搜索列表。
+/// Mac 记账表单统一的选择器：原生 `NSPopUpButton` 外壳 + 弹出的搜索列表。
 ///
-/// **为什么不用 `NSPopUpButton`（`MacPopupPicker`）**：原生菜单结构上放不下输入框，
-/// 分类一多只能靠滚动翻找。这里换成 SwiftUI `Button` + `.popover`，
-/// 列表用 `depth` 缩进保留层级，搜索命中 中文子串 / 本地化名（英文）子串 / 全拼 / 首字母。
+/// **为什么不让原生菜单直接展开**：原生菜单结构上放不下输入框，条目一多只能靠滚动翻找。
+/// 这里保留弹出按钮的外壳（边框、箭头、按下反馈、深浅色全由 AppKit 画），
+/// 点击被拦下改为呈现 `.popover`：列表用 `depth` 缩进保留层级，
+/// 搜索命中 中文子串 / 本地化名（英文）子串 / 全拼 / 首字母。
 ///
-/// 与 `MacPopupPicker` 的接口差异：`depth` 与 `parentId` 不可选——本组件只服务于
-/// 层级字段（分类），缩进和「最近使用」按家族归并因此是默认行为，不是可选装饰。
+/// 层级字段（分类）传 `depth` + `parentId`，得到缩进与「最近使用」按家族归并；
+/// 扁平字段（账户/成员/商家/项目）不传，即 depth 恒 0、无父子关系。
 /// 已选值只喂 `selection`，与「无」行（清除）互斥。
 struct MacSearchablePicker<T: Identifiable & Hashable>: View {
     @Binding var selection: T?
     let items: [T]
-    /// 原始名。组件内统一走 `NSLocalizedString` 查表后再显示——内置分类名同时是
-    /// String Catalog 的 key，用户自建分类名查不到会原样返回，两种情况都正确。
+    /// 原始名。显示时是否查表由 `localizesName` 决定；拼音搜索键始终由它生成
+    /// （查表会把中文名换成英文，拼音就无从谈起了）。
     let name: (T) -> String
+    /// 是否把 `name` 当 String Catalog 的 key 查表后再显示。**默认 false。**
+    ///
+    /// 只有内置分类名同时是 catalog 的 key（`餐饮` → "Dining"）。账户/成员/商家/项目的
+    /// 名字全是用户数据，一旦查表就会撞上同名 UI 标签——账户取名「现金」在英文环境下
+    /// 会显示成 "Cash"，商家取名「红包」会显示成 "Red Envelope"，都是用户没打过的名字。
+    let localizesName: Bool
     let icon: (T) -> String
     let color: (T) -> Color
     let depth: (T) -> Int
@@ -34,6 +41,7 @@ struct MacSearchablePicker<T: Identifiable & Hashable>: View {
         selection: Binding<T?>,
         items: [T],
         name: @escaping (T) -> String,
+        localizesName: Bool = false,
         icon: @escaping (T) -> String,
         color: @escaping (T) -> Color = { _ in .secondary },
         depth: @escaping (T) -> Int = { _ in 0 },
@@ -44,6 +52,7 @@ struct MacSearchablePicker<T: Identifiable & Hashable>: View {
         self._selection = selection
         self.items = items
         self.name = name
+        self.localizesName = localizesName
         self.icon = icon
         self.color = color
         self.depth = depth
@@ -330,6 +339,6 @@ struct MacSearchablePicker<T: Identifiable & Hashable>: View {
     }
 
     private func displayName(_ item: T) -> String {
-        NSLocalizedString(name(item), comment: "")
+        localizesName ? NSLocalizedString(name(item), comment: "") : name(item)
     }
 }

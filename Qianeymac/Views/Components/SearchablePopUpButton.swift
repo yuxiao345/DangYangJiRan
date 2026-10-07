@@ -17,6 +17,14 @@ final class SearchablePopUpButton: NSPopUpButton {
     override func mouseDown(with event: NSEvent) {
         onActivate?()
     }
+
+    /// 键盘激活（全键盘控制下按空格/回车）走 `performClick(_:)`，不经过 `mouseDown`。
+    /// 不覆写的话键盘用户只能看到那个只有一项的退化菜单、开不出搜索列表——
+    /// 换成原生控件前的旧实现设了 target/action，键盘是可用的，这里得对齐。
+    /// 不会与 `mouseDown` 重复触发：鼠标路径没有调 `super`，AppKit 的跟踪循环不会启动。
+    override func performClick(_ sender: Any?) {
+        onActivate?()
+    }
 }
 
 /// `SearchablePopUpButton` 的 SwiftUI 包装。

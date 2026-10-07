@@ -595,6 +595,7 @@ struct MacAddTransactionSheet: View {
                            color: { Color(hex: $0.colorHex) },
                            indent: { var d = 0; var p = $0.parent; while p != nil { d += 1; p = p?.parent }; return d },
                            parentId: { $0.parent?.id },
+                           localizesName: true,
                            recentKey: "recent_category")
                 if let cat = selectedCategory, (cat.children?.count ?? 0) > 0 {
                     // 分类名要查 catalog：内置分类名就是 String Catalog 的 key，
@@ -663,62 +664,38 @@ struct MacAddTransactionSheet: View {
         .padding(.horizontal, 24).padding(.vertical, 12)
     }
 
-    // MARK: - Form Picker (Mac-native Menu style, with optional recent-item tracking)
+    // MARK: - Form Picker (可搜索 popover，字段按钮是原生 NSPopUpButton 外壳)
 
     private func formPicker<T: Identifiable & Hashable>(
         label: String, selection: Binding<T?>, items: [T],
         icon: @escaping (T) -> String, name: @escaping (T) -> String,
         color: @escaping (T) -> Color = { _ in .secondary }, indent: ((T) -> Int)? = nil,
-        parentId: ((T) -> T.ID?)? = nil, recentKey: String? = nil
+        parentId: ((T) -> T.ID?)? = nil, localizesName: Bool = false, recentKey: String? = nil
     ) -> some View {
         return HStack(spacing: 12) {
             Text(label)
                 .font(.designBodyMedium)
                 .foregroundStyle(.secondary)
                 .frame(width: 60, alignment: .trailing)
-            // 层级字段（分类）改走可搜索 popover：分类一多，原生菜单只能滚动翻找，
-            // 且 `NSMenuItem.indentationLevel` 首次展开时有缩进不生效的现象。
-            // 判别依据现成：只有分类调用点传了 indent + parentId。
-            if let indent, let parentId {
-                MacSearchablePicker(
-                    selection: selection,
-                    items: items,
-                    name: name,
-                    icon: icon,
-                    color: color,
-                    depth: indent,
-                    parentId: parentId,
-                    recentKey: recentKey
-                )
-                .frame(width: 250)
-            } else {
-                MacPopupPicker(
-                    selection: selection,
-                    items: items,
-                    icon: icon,
-                    name: name,
-                    color: color,
-                    indent: indent,
-                    parentId: parentId,
-                    recentKey: recentKey,
-                    onSelect: { item in
-                        if let key = recentKey {
-                            recordRecent(item, key: key)
-                        }
-                    }
-                )
-                .frame(width: 250)
-            }
+            // 全表单统一走可搜索 popover。层级字段（分类）额外传 indent + parentId +
+            // localizesName，换到缩进、按家族归并的「最近使用」、以及分类名的 catalog 查表；
+            // 扁平字段（账户/成员/商家/项目）一律不传——它们的名字是用户数据，
+            // 查表会撞上同名 UI 标签（账户叫「现金」显示成 "Cash"）。
+            // 所有字段的按钮外壳都是原生 NSPopUpButton，不存在跨组件的渲染管线差异。
+            MacSearchablePicker(
+                selection: selection,
+                items: items,
+                name: name,
+                localizesName: localizesName,
+                icon: icon,
+                color: color,
+                depth: indent ?? { _ in 0 },
+                parentId: parentId ?? { _ in nil },
+                recentKey: recentKey
+            )
+            .frame(width: 250)
         }
         .padding(.horizontal, 24).padding(.vertical, 8)
-    }
-
-    private func recordRecent<T: Identifiable>(_ item: T, key: String) {
-        var ids = UserDefaults.standard.stringArray(forKey: key) ?? []
-        let idStr = String(describing: item.id)
-        ids.removeAll { $0 == idStr }
-        ids.insert(idStr, at: 0)
-        UserDefaults.standard.set(Array(ids.prefix(4)), forKey: key)
     }
 
     // MARK: - Template Section
@@ -883,6 +860,7 @@ struct MacAddTransactionSheet: View {
                 selection: Binding(get: { item.category }, set: { splitItems[i].category = $0 }),
                 items: categories,
                 name: { $0.name },
+                localizesName: true,
                 icon: { $0.iconName },
                 color: { Color(hex: $0.colorHex) },
                 depth: { cat in var d = 0; var p = cat.parent; while p != nil { d += 1; p = p?.parent }; return d },
@@ -899,16 +877,13 @@ struct MacAddTransactionSheet: View {
         HStack(spacing: 12) {
             Text("成员").font(.designBodyMedium).foregroundStyle(.secondary)
                 .frame(width: 60, alignment: .trailing)
-            MacPopupPicker(
+            MacSearchablePicker(
                 selection: Binding(get: { item.member }, set: { splitItems[i].member = $0 }),
                 items: members,
-                icon: { $0.avatar },
                 name: { $0.name },
+                icon: { $0.avatar },
                 color: { _ in .secondary },
-                indent: nil,
-                parentId: nil,
-                recentKey: "recent_member",
-                onSelect: { recordRecent($0, key: "recent_member") }
+                recentKey: "recent_member"
             )
             .frame(width: 220)
             Spacer()
@@ -920,16 +895,13 @@ struct MacAddTransactionSheet: View {
         HStack(spacing: 12) {
             Text("商家").font(.designBodyMedium).foregroundStyle(.secondary)
                 .frame(width: 60, alignment: .trailing)
-            MacPopupPicker(
+            MacSearchablePicker(
                 selection: Binding(get: { item.merchant }, set: { splitItems[i].merchant = $0 }),
                 items: merchants,
-                icon: { _ in "bag" },
                 name: { $0.name },
+                icon: { _ in "bag" },
                 color: { _ in .secondary },
-                indent: nil,
-                parentId: nil,
-                recentKey: "recent_merchant",
-                onSelect: { recordRecent($0, key: "recent_merchant") }
+                recentKey: "recent_merchant"
             )
             .frame(width: 220)
             Spacer()
@@ -941,16 +913,13 @@ struct MacAddTransactionSheet: View {
         HStack(spacing: 12) {
             Text("项目").font(.designBodyMedium).foregroundStyle(.secondary)
                 .frame(width: 60, alignment: .trailing)
-            MacPopupPicker(
+            MacSearchablePicker(
                 selection: Binding(get: { item.project }, set: { splitItems[i].project = $0 }),
                 items: projects,
-                icon: { _ in "folder" },
                 name: { $0.name },
+                icon: { _ in "folder" },
                 color: { _ in .secondary },
-                indent: nil,
-                parentId: nil,
-                recentKey: "recent_project",
-                onSelect: { recordRecent($0, key: "recent_project") }
+                recentKey: "recent_project"
             )
             .frame(width: 220)
             Spacer()
