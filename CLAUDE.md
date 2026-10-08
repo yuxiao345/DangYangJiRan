@@ -23,6 +23,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Swift 6 迁移的结论与清单见 `.claude/research/swift6-migration-coredata-model.md`。** 那一刻到来时先读它，别自己重新推。三条要点：① `CoreDataModel.shared` 这行全局状态在 Swift 6 下 iOS 模块报 `#MutableGlobalVariable`(error)、Mac 因 `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` 改为消费侧报 actor 隔离警告——Mac 测试现在 0 警告是**真合法**（唯一那处访问在 `@MainActor` Suite 里），**不是** `@testable import` 漏查（该解释已于 2026-09-24 更正）；② 正解是 `nonisolated(unsafe) static let`，但**必须同一 commit 给 Mac Suite 的 `@MainActor` 加锚定注释**，否则将来被当冗余删掉会重新引入随机崩；③ 这行治不了迁移，全项目实测另有 **6 个** Swift 6 阻断项（Mac 5 + iOS 1，清单见该文档 §3.5）。**数警告要用主行去重，别用「含某句话的日志行数」——续行和总结重复会让计数虚高。**
 - 上一条里的「重复 model → 134020」是**本项目实测**的现象链，**不是 Apple 文档说法**（SDK 头里 134020 的注释是"store 返回 save 错误，如缺表/无权限"）。Apple 工程师只确认过「重复 model 就是歧义的来源」（论坛 thread 682136），定性是「这是 bug，去提 feedback」，**从未建议把 model 做成单例**。详见上面那份文档。
 
+## 开发 / 生产环境隔离（2026-10-08 落地）
+
+**别共库**：Debug 构建跑 CloudKit **Development**，生产版（TestFlight / App Store）跑 **Production**；两者共用同一个本地库会让切换环境作废 change token → 全量重取/重推 → 分叉数据被整体覆盖。2026-10-07 事故就是这条机制（**不是**"某台设备数据旧"）。实测与决策全在 `.claude/research/coredata-cloudkit-sync-conflict.md` §8，改这块前先读它。
+
+**两条必须守住的不变量**：
+
+1. **本地库分文件**：`CoreDataStack.swift` 的 `#if DEBUG` 里，Debug 用 `FirstCC.debug.sqlite` / `FirstCC.shared.debug.sqlite`，`#else` 保持原来的 `FirstCC.sqlite` / `FirstCC.shared.sqlite`。**`#else` 是线上唯一路径，字面量一个字都不能动。**
+2. **`loadStores()` 判「哪个 store 是 Private」用 `storeDescription.configuration == "Private"`**（建 description 时写的同一个字面量），**不要**换成对文件名做 `contains`（调试库名 `FirstCC.debug.sqlite` 不含 `FirstCC.sqlite`），也**不要**改成 url 比较（in-memory store 的 url 恒为 `file:///dev/null`）。判错任一 store，continuation 就不 resume —— 磁盘库下**启动挂死**，测试宿主里则永远停在「正在准备数据...」。配置名在回调里原样保留是**实测**过的（磁盘 + in-memory 两种情况）。这是改库名/改判定时最容易漏的一处。
+
+**另外两层**：
+
+- **测试宿主走内存库**：`isUITestMode` 现在含 `XCTestConfigurationFilePath` 与 `NSClassFromString("XCTestCase")`。单元测试经 `TEST_HOST` 启动的是**真实 App**，不挡就等于拿真实 store 真启一次。⚠️ 那个环境变量在测试宿主里可能是**空字符串**，必须判 `!= nil` 而非真值。两个条件实测冗余，**保留是刻意的冗余防御，别当死代码删**。App 本体不链接 XCTest ⇒ 正常启动恒为假。**因此 Mac 单元测试可以放心跑了**（此前是红线）。
+- **Debug 环境显式钉死**（`FirstCC/FirstCC-Debug.entitlements` / `Qianeymac/Qianeymac-Debug.entitlements`，pbxproj 里只有**两个 Debug 配置**指向它们）：**防御性、非必需** —— 缺 key 默认已是 Development；但 Apple 原文承认开发版可连生产，钉住才算结构保证。**Release 的 entitlements 不得含此键**（由分发流程注入 `Production`；钉成 Development 会被拒审，属 fail-closed）。⚠️ 代价：这俩文件与生产 entitlements 只差这一个键，**往生产那份加键时别忘了同步 Debug 两份**，否则 Debug 会静默丢能力。
+
+**搬迁工具**：`.claude/tools/qianey-migrate.sh` —— 生产库 → 调试库的单向手动搬迁；只读源库、写入目标名必须含 `.debug.sqlite`（硬闸）、搬迁前后比对业务指纹。要看真实数据得先跑它，否则 Debug 版是空库。
+
+**未做的备选**（独立开发容器 `com.apple.developer.icloud-container-development-container-identifiers`）与全部实测证据见研究文档 §8.4。
+
 ## Build & Run
 
 ```bash
@@ -359,6 +377,8 @@ Mac 报表位于 `Qianeymac/Views/Reports/`，使用独立组件拼装（非复�
 | Swift Charts API 与 macOS 图表崩溃 | `.claude/research/apple-chart-knowledge-base.md` |
 | Mac 报表的设计规划与实施状态 | `.claude/research/mac-reporting-plan.md` |
 | SwiftData → Core Data 迁移的历史研究 | `.claude/plans/swiftdata-to-coredata-migration-research.md` |
+| **CloudKit 同步覆盖事故（2026-10-07）/ 恢复记录** | `.claude/plans/data-recovery-2026-10.md` |
+| **CloudKit 冲突机制 / 开发-生产隔离（改动依据、实测证据）** | `.claude/research/coredata-cloudkit-sync-conflict.md` |
 
 **外部（纯本地，不 Git）**
 
