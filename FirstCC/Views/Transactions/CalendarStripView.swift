@@ -69,6 +69,21 @@ struct CalendarStripView: View {
             RoundedRectangle(cornerRadius: 24)
                 .stroke(Color.designGlassBorderHighlight, lineWidth: 1)
         )
+        // 整张卡片左右滑动翻月。翻月按钮实测只有 7×12pt（HIG 是 44×44），
+        // 手指几乎不可能每次都命中；滑动把热区变成整张卡（约 370×150pt）。
+        //
+        // 用 simultaneousGesture 而不是 gesture：卡片在纵向 ScrollView 里，
+        // 普通手势会先把触摸吃掉、列表就滚不动了。同时用手势，纵向让给滚动，
+        // 这里只在「横向位移明显大于纵向」时才翻月（方向仲裁）。
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 24)
+                .onEnded { value in
+                    let dx = value.translation.width
+                    let dy = value.translation.height
+                    guard abs(dx) > 44, abs(dx) > abs(dy) * 1.6 else { return }
+                    moveMonth(by: dx < 0 ? 1 : -1)   // 左滑 → 下个月
+                }
+        )
     }
 
     // MARK: - Summary Bar
@@ -76,9 +91,7 @@ struct CalendarStripView: View {
     private var summaryBar: some View {
         HStack(spacing: 0) {
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    selectedMonth = Calendar.current.date(byAdding: .month, value: -1, to: selectedMonth)?.startOfMonth ?? selectedMonth
-                }
+                moveMonth(by: -1)
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.designBodySmall.weight(.medium))
@@ -101,9 +114,7 @@ struct CalendarStripView: View {
             .buttonStyle(.plain)
 
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    selectedMonth = Calendar.current.date(byAdding: .month, value: 1, to: selectedMonth)?.startOfMonth ?? selectedMonth
-                }
+                moveMonth(by: 1)
             } label: {
                 Image(systemName: "chevron.right")
                     .font(.designBodySmall.weight(.medium))
@@ -298,6 +309,15 @@ struct CalendarStripView: View {
     }
 
     // MARK: - Helpers
+
+    /// 翻月唯一入口：上/下月按钮与卡片滑动手势共用。
+    /// 刻意不动 selectedDay —— 按钮原本就保留选中日，加上滑动后两处必须一致。
+    private func moveMonth(by value: Int) {
+        guard let target = Calendar.current.date(byAdding: .month, value: value, to: selectedMonth)?.startOfMonth else { return }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            selectedMonth = target
+        }
+    }
 
     /// Shared tap handler for both weekStrip and monthGrid.
     private func handleDayTap(day: Int, isCurrentMonth: Bool, targetMonth: Date) {

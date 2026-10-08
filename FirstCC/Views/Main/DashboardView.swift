@@ -9,7 +9,8 @@ struct DashboardView: View {
     @State private var showAddSheet = false
     @State private var editingTransaction: Transaction?
     @State private var showBreakdown = false
-    @State private var showNetWorth = false
+    /// 净资产金额行的实测宽度，明细行以它对齐右缘（金额位数不同宽度就不同）。
+    @State private var netWorthAmountWidth: CGFloat = 0
     @State private var dotsPhase: DotsRevealPhase = .showingDots
     @State private var currentEffect: AmountHideEffect = .gentle
     @State private var amountIsVisible: Bool = true  // 默认 true（显示），init 后归零
@@ -116,62 +117,42 @@ struct DashboardView: View {
 
     private var heroBalanceCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 4) {
-                        Text("净资产")
-                            .font(.designLabel)
-                            .foregroundStyle(Color.designOnSurfaceVariant)
-                            .tracking(1.2)
+            HStack(spacing: 4) {
+                Text("净资产")
+                    .font(.designLabel)
+                    .foregroundStyle(Color.designOnSurfaceVariant)
+                    .tracking(1.2)
 
-                        Button {
-                            toggleNetWorth()
-                        } label: {
-                            Image(systemName: showNetWorth ? "eye" : "eye.slash")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Color.designOnSurfaceVariant)
-                        }
-                        .buttonStyle(.plain)
-                    }
-
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text(CurrencyFormatter.currencySymbol(for: ledgerCurrency))
-                            .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
-                            .foregroundStyle(Color.designPrimaryFixedDim)
-                        blurredAmountView
-                    }
+                Button {
+                    toggleNetWorth()
+                } label: {
+                    // 图标跟随金额状态：金额已揭开 = 睁眼，圆点态 = 闭眼。
+                    Image(systemName: isAmountRevealed ? "eye" : "eye.slash")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.designOnSurfaceVariant)
                 }
+                .buttonStyle(.plain)
+            }
 
-                Spacer()
-
-                if showBreakdown {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 4) {
-                            Text("总资产")
-                                .font(.designBodyCaption)
-                                .foregroundStyle(Color.designOnSurfaceVariant)
-                                .frame(width: 36, alignment: .leading)
-                            CurrencyText(amount: totalAssets, currencyCode: ledgerCurrency, size: 11, foregroundColor: Color.designPrimaryFixedDim)
-                                .frame(width: 78, alignment: .trailing)
-                        }
-                        HStack(spacing: 4) {
-                            Text("总负债")
-                                .font(.designBodyCaption)
-                                .foregroundStyle(Color.designOnSurfaceVariant)
-                                .frame(width: 36, alignment: .leading)
-                            CurrencyText(amount: totalLiabilities, currencyCode: ledgerCurrency, size: 11, foregroundColor: Color.designAccentRed)
-                                .frame(width: 78, alignment: .trailing)
-                        }
-                    }
-                    .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .trailing)))
-                }
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(CurrencyFormatter.currencySymbol(for: ledgerCurrency))
+                    .font(.custom("JetBrainsMono-Medium", fixedSize: 24))
+                    .foregroundStyle(Color.designPrimaryFixedDim)
+                blurredAmountView
+            }
+            // 量金额行宽度给明细行对齐右缘用。圆点态下金额文本以 opacity(0) 占位（见 amountView），
+            // 宽度与相位无关，所以不必先揭开金额——否则没点过眼睛时这里恒为 0，明细会退回整行宽。
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
+                netWorthAmountWidth = width
             }
 
             if let change = viewModel.balanceChange {
                 HStack(spacing: 4) {
                     Image(systemName: change >= 0 ? "arrow.up.right" : "arrow.down.right")
                         .font(.system(size: 10).weight(.bold))
-                    CurrencyText(amount: change, currencyCode: ledgerCurrency, showSign: true, size: 13, foregroundColor: change >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed)
+                    // autoSize: false 才认 size —— iOS 默认 autoSize=true 时 CurrencyText 走
+                    // @ScaledMetric 的 17pt，这里的 13 会被忽略。
+                    CurrencyText(amount: change, currencyCode: ledgerCurrency, showSign: true, size: 13, foregroundColor: change >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed, autoSize: false)
                     if let pct = viewModel.balanceChangePercent {
                         Text(String(format: "(%@%.1f%%)", pct >= 0 ? "+" : "", Double(truncating: pct as NSNumber)))
                             .font(.designBodyCaption)
@@ -188,15 +169,36 @@ struct DashboardView: View {
                         .fill((change >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed).opacity(0.12))
                 }
             }
+
+            // 明细右缘对齐净资产数字的右缘，中间不再留大片空白。
+            if showBreakdown {
+                VStack(spacing: 6) {
+                    breakdownRow(label: "总资产", amount: totalAssets, color: Color.designPrimaryFixedDim)
+                    breakdownRow(label: "总负债", amount: totalLiabilities, color: Color.designAccentRed)
+                }
+                // 宽度 = 金额行实测宽度；首帧还没量到时退回整行宽。
+                //
+                // 必须是定值 width，别改成 minWidth —— 明细行自带 maxWidth: .infinity（可伸缩），
+                // minWidth 只是下界，整块会一路撑满父容器给的宽度（实测撑到卡片内容右缘 366pt，
+                // 而净资产数字右缘在 254pt），右缘对齐即失效。
+                // 已知代价：净资产字符数很少（≲7，如净资产 0）而明细金额远宽于它时，金额被挤成省略号。
+                // 想同时保住对齐与不截断，只能先量出明细内容固有宽度再取两者较大值（两段式测量）。
+                .frame(width: netWorthAmountWidth > 0 ? netWorthAmountWidth : nil, alignment: .leading)
+                // 明细在金额下方，故自上方滑入展开。
+                .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .top)))
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
         .glassCard(cornerRadius: 24)
         .contentShape(RoundedRectangle(cornerRadius: 24))
-        .accessibilityLabel(Text(showBreakdown ? "收起明细" : "展开明细"))
-        .accessibilityAddTraits(.isButton)
+        .accessibilityLabel(Text(breakdownAccessibilityLabel))
+        // 圆点态按不动，就不给 button trait，免得 VoiceOver 读出一个无响应的按钮。
+        .accessibilityAddTraits(isAmountRevealed ? .isButton : [])
         .onTapGesture {
-            withAnimation(reduceMotion ? .none : .easeInOut(duration: 0.25)) { showBreakdown.toggle() }
+            // 明细只在金额揭开时可展开：圆点态收起时没有可对照的基准，展开只会看到两行金额。
+            guard isAmountRevealed else { return }
+            setBreakdown(expanded: !showBreakdown)
         }
         .overlay(alignment: .topTrailing) {
             Circle()
@@ -205,6 +207,36 @@ struct DashboardView: View {
                 .blur(radius: 30)
                 .offset(x: 20, y: -20)
         }
+    }
+
+    /// 金额是否已揭开（圆点收完、数字完全显示）。眼睛图标与明细可否展开都取这个条件。
+    private var isAmountRevealed: Bool { dotsPhase == .showingAmount }
+
+    /// 卡片展开/收起明细统一走这条动画：卡片点击与「隐藏金额时顺带收起」两处必须同步。
+    private func setBreakdown(expanded: Bool) {
+        withAnimation(reduceMotion ? .none : .easeInOut(duration: 0.25)) { showBreakdown = expanded }
+    }
+
+    /// 圆点态按不动，标签就不提「展开」——否则 VoiceOver 报出「展开明细」却双击无反应。
+    /// 必须用 LocalizedStringKey 而非 String 三元：String 会命中 Text(String) 重载、不进 String Catalog。
+    private var breakdownAccessibilityLabel: LocalizedStringKey {
+        guard isAmountRevealed else { return "净资产" }
+        return showBreakdown ? "收起明细" : "展开明细"
+    }
+
+    /// 净资产明细的单行：标签靠左、金额靠右撑满整行。
+    /// 宽度由卡片决定（不设固定宽度），数字多长都不会换行。
+    private func breakdownRow(label: LocalizedStringKey, amount: Decimal, color: Color) -> some View {
+        HStack(spacing: 8) {
+            Text(label)
+                .font(.designBodyCaption)
+                .foregroundStyle(Color.designOnSurfaceVariant)
+            Spacer(minLength: 8)
+            // 同上：不传 autoSize: false 的话这里会渲染成 17pt，比标签（12pt）还大。
+            CurrencyText(amount: amount, currencyCode: ledgerCurrency, size: 11, foregroundColor: color, autoSize: false)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Blurred Amount View
@@ -229,8 +261,12 @@ struct DashboardView: View {
                 .font(.designDisplayMobile)
                 .modifier(AmountEffectModifier(effect: currentEffect, isVisible: amountIsVisible))
         default:
-            Text("")
+            // 不可见也占位：金额行的宽度是明细行的对齐基准，靠圆点量会窄 100pt 左右。
+            // opacity(0) 不渲染像素，accessibilityHidden 让 VoiceOver 读不到。
+            Text(formattedBalance)
                 .font(.designDisplayMobile)
+                .opacity(0)
+                .accessibilityHidden(true)
         }
     }
 
@@ -410,6 +446,10 @@ struct DashboardView: View {
         } else if dotsPhase == .showingAmount {
             // --- 关眼睛：金额消失 → 圆点出现 ---
             startAmountDisappearing()
+            // 金额藏起来后明细失去对照基准，一并收起：不变量是「明细展开 ⇒ 金额可见」。
+            if showBreakdown {
+                setBreakdown(expanded: false)
+            }
         }
     }
 

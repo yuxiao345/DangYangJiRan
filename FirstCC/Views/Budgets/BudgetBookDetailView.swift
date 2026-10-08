@@ -159,6 +159,11 @@ struct BudgetBookDetailView: View {
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.designBodyMedium)
+                    // 实测可点区只有 9.7×17.3pt（HIG 下限 44×44），手指几乎命中不了。
+                    // 横向只敢各扩 6pt：与中间月份标题的间隙只有约 8pt，再宽就压到标题按钮上、被它抢走触摸。
+                    .padding(.horizontal, 6)
+                    .frame(minHeight: 44)       // 导航栏这一行本来就是 44pt 高，故外层布局不变
+                    .contentShape(Rectangle())  // 没有它，padding 撑出来的空白区不可点
             }
             .accessibilityLabel(Text("上个月"))
             .buttonStyle(.plain)
@@ -182,6 +187,10 @@ struct BudgetBookDetailView: View {
             } label: {
                 Image(systemName: "chevron.right")
                     .font(.designBodyMedium)
+                    // 同上：撑到 21.7×44pt。
+                    .padding(.horizontal, 6)
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .disabled(isCurrentMonth)
