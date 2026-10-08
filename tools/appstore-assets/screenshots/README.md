@@ -263,11 +263,16 @@ xcrun simctl io <UUID> screenshot tools/appstore-assets/screenshots/14-addtx-dar
 ### 怎么改
 
 48 个商户靠 UI 手点不现实。**直接改 sqlite**：先把
-`<容器>/Library/Application Support/FirstCC.sqlite{,-wal,-shm}` 三件套整目录备份，改完
+`<容器>/Library/Application Support/FirstCC.debug.sqlite{,-wal,-shm}` 三件套整目录备份，改完
 **原样拷回**还原（比逐条改回去可靠）。改之前必须
 `xcrun simctl terminate <UUID> com.qianey.app`（CoreData 开着会覆盖你的写入），
 改完 `PRAGMA wal_checkpoint(TRUNCATE);` 再 launch。
 装过一次 app 后**容器 UUID 会变**，路径每次重新 `get_app_container` 取，别缓存。
+
+> ⚠️ **文件名按构建类型分**（2026-10-08 起的开发/生产隔离，见根 `CLAUDE.md`）：
+> **Debug 包读写 `FirstCC.debug.sqlite`**，Release / 生产版才是 `FirstCC.sqlite`。
+> 本流程装的是 Debug 包，所以要改的是 `.debug.sqlite` 那份；
+> 容器里若同时有 `FirstCC.sqlite`，那是**生产库**，**不要动**。
 
 中文界面用的是 app 级语言（`AppleLanguages`），**与这些数据名无关**，
 所以中文那套截图不受影响，不必重拍；改完名直接回改回中文即可。
