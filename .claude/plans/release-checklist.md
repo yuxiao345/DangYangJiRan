@@ -267,6 +267,16 @@
   确认共享 store 确实投递；确认不了就按官方 sample 把 `NSPersistentHistoryTrackingKey` 也补上
   （注意 history tracking 一旦开启据说不可关闭，属**论坛级**证据，未独立验证）。
   若不生效，症状是「别人共享给你的账本，导入后列表不刷新」——`transactionDidChange` 那一整套已经补齐，缺的只是这一跳。
+- **私有库加载失败被静默吞掉（2026-10-08 记，**既存行为**，非当日隔离改动引入）**：`loadStores()`
+  抛错时两个入口都是 `catch` 后照置 `storesLoaded = true` 放行进主界面 —— iOS 只写 `DiagnosticLog`
+  （`FirstCCApp.swift` 的 ProgressView `.task`），**Mac 连日志都没有**（`QianeymacApp.swift` 是空 `catch`）。
+  库损坏 / 磁盘满 / schema 冲突（`NSPersistentStoreIncompatibleSchemaError` 134020）时会表现为
+  「界面照常、数据层不可用」。用户 2026-10-08 决定**先记录、本次不动**：正解应是报错 + 阻止进主界面，
+  值得单独设计而不是顺手改。注意这**不是**「挂死」——`loadStores()` 的 continuation 已于 2026-10-08
+  修好会正常 resume，所以现在的症状是静默放行，不是卡在「正在准备数据...」。
+- **`CoreDataStack.privateStore` 是死代码（2026-10-08 记）**：全仓 **0 引用**；同名的 `sharedStore`
+  有 16 处真实使用，**两者别混**。用户 2026-10-08 决定**留着**，作为与 `sharedStore` 对称的 API。
+  下次别再当「待清理」提。
 
 ### 6. 两个被 `XCTSkipIf(true)` 挡住的断言 + 同类 `Decimal → Int64` 转换 —— ✅ **已全部修复（2026-09-24）**
 
@@ -599,6 +609,18 @@ xcodebuild -project FirstCC.xcodeproj -scheme Qianeymac -destination "platform=m
 ---
 
 ## 八、修订记录
+
+- **2026-10-08 十二次修订（开发/生产环境隔离落地 + 记两条待办）**：2026-10-07 的 CloudKit
+  覆盖事故定性为「Debug 构建（Development 环境）与生产版（Production）**共用同一个本地库**」
+  （**不是**"某台设备数据旧"）。三层隔离已落地并提交（`bda76e4`）：① `CoreDataStack` 的
+  `#if DEBUG` 分库；② 测试宿主（`-UITEST_MODE` / `XCTestConfigurationFilePath` /
+  `NSClassFromString("XCTestCase")`）走 in-memory store 并跳过 CloudKit；③ 新增
+  `*-Debug.entitlements` 钉 `icloud-container-environment = Development`。
+  规范写在根 `CLAUDE.md`「开发 / 生产环境隔离」一节，实测证据在
+  `.claude/research/coredata-cloudkit-sync-conflict.md` §8，搬迁工具
+  `.claude/tools/qianey-migrate.sh`。同轮修掉 `loadStores()` 在测试宿主的挂死
+  （判据改为 `storeDescription.configuration == "Private"`）。**新增两条已决策待办见 §六-5**：
+  加载失败静默吞掉（先记录）、`privateStore` 死代码（留）。
 
 - **2026-09-28 十一次修订（清偿两笔审查债：pbxproj 死引用 + 去重范围）**：用户裁定「4、6 处理掉」，
   第 6 项选「先收窄 + 明写约束」。
