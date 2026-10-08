@@ -43,10 +43,11 @@ final class CoreDataStack {
         container.persistentStoreCoordinator.persistentStores.first { $0.url == sharedURL }
     }
 
+    /// Debug 与生产版指向**不同的**库文件，见 `init()` 里的注释。
     private let privateURL: URL
     private let sharedURL: URL
 
-    /// Whether the stack was launched in UI test mode (`-UITEST_MODE`).
+    /// Whether the stack was launched in a test host — UI test (`-UITEST_MODE`) 或单元测试宿主。
     /// In this mode: use in-memory store, skip CloudKit entirely.
     /// Detection happens in `init()` so all downstream branches see a consistent state.
     let isUITestMode: Bool
@@ -64,23 +65,37 @@ final class CoreDataStack {
     let cloudKitAvailable: Bool
 
     init() {
-        isUITestMode = ProcessInfo.processInfo.arguments.contains("-UITEST_MODE")
+        // 语义是「测试宿主」而非仅 UI 测试：单元测试经 TEST_HOST 启动的是**真实 App**，
+        // 不一起挡掉就等于拿真实 store 真启一次。App 本体不链接 XCTest（`otool -L` 实测），
+        // 所以 NSClassFromString 在正常启动时恒为 nil、不会误判。
+        let isUnderTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+            || NSClassFromString("XCTestCase") != nil
+        isUITestMode = isUnderTests || ProcessInfo.processInfo.arguments.contains("-UITEST_MODE")
         if isUITestMode {
-            DiagnosticLog.log("CoreDataStack: UITEST_MODE detected, using in-memory store + skipping CloudKit")
+            DiagnosticLog.log("CoreDataStack: test host detected, using in-memory store + skipping CloudKit")
         }
 
         // 复用进程内唯一的那份模型（见 CoreDataModel 的说明），不要在这里再建一份。
 
-        // In UITEST_MODE: force cloudKitAvailable=false so all CloudKit branches are skipped.
-        // Real production behavior unchanged when -UITEST_MODE is not passed.
+        // In a test host (`-UITEST_MODE` **或**单元测试宿主，见上面的判定): force
+        // cloudKitAvailable=false so all CloudKit branches are skipped.
+        // Real production behavior unchanged when `isUITestMode` is false.
         cloudKitAvailable = !isUITestMode && FileManager.default.ubiquityIdentityToken != nil
         DiagnosticLog.log("CoreDataStack: cloudKitAvailable=\(cloudKitAvailable)")
 
         container = NSPersistentCloudKitContainer(name: "FirstCC", managedObjectModel: CoreDataModel.shared)
 
         let appSupport = URL.applicationSupportDirectory
+        #if DEBUG
+        // Debug 必须与生产版用**不同的库文件**：两者跑在不同 CloudKit 环境（Development /
+        // Production），共用 store 会让切换环境作废 change token、触发全量重取重推，
+        // 把另一份分叉数据整体覆盖回去（2026-10-07 事故）。论证见 CLAUDE.md 同名一节。
+        privateURL = appSupport.appending(path: "FirstCC.debug.sqlite")
+        sharedURL = appSupport.appending(path: "FirstCC.shared.debug.sqlite")
+        #else
         privateURL = appSupport.appending(path: "FirstCC.sqlite")
         sharedURL = appSupport.appending(path: "FirstCC.shared.sqlite")
+        #endif
 
         if isUITestMode {
             // In-memory store: fresh state per test run, no SQLite pollution,
@@ -213,11 +228,17 @@ final class CoreDataStack {
             var resumed = false
             // Shared store callback may never fire if no iCloud shares accepted.
             // Proceed as soon as the Private store is loaded; Shared store loads async.
-            let requiredCount = 1 // only wait for Private store
             container.loadPersistentStores { storeDescription, error in
                 loadedCount += 1
                 let fileName = storeDescription.url?.lastPathComponent ?? "unknown"
-                let isPrivate = fileName.contains("FirstCC.sqlite") && !fileName.contains("shared")
+                // 判据用 store 的 **configuration 名**（建 description 时写的字面量）：它对磁盘库 /
+                // in-memory / Debug / Release 一律成立 —— 实测 `configuration` 在回调里原样保留，
+                // in-memory 也是（尽管它的 url 恒为 `file:///dev/null`）。
+                // ⚠️ 不要换成对文件名做 `contains`，也不要用 url 比较：调试库名
+                // `FirstCC.debug.sqlite` 不含 `FirstCC.sqlite`；in-memory 的 url 又恒等于 /dev/null。
+                // 判错任一 store，continuation 就不 resume —— 启动挂死（测试宿主里则永远停在
+                // 「正在准备数据...」）。详见 CLAUDE.md「开发 / 生产环境隔离」。
+                let isPrivate = storeDescription.configuration == "Private"
                 DiagnosticLog.log("CoreDataStack: store callback \(fileName) loaded=\(loadedCount)/\(expectedCount) private=\(isPrivate)")
                 if let error {
                     let ns = error as NSError
