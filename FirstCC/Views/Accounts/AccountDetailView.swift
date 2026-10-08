@@ -119,6 +119,9 @@ struct AccountDetailView: View {
                     }
                 }
 
+                // 对账功能测试覆盖不足，暂不上架：入口只留在 Debug 包，Release 里整段不编译。
+                // 与下方 OCRTestView 同款门控。对账视图与 service 都保留着，随时可进来继续测。
+                #if DEBUG
                 NavigationLink {
                     CreditCardReconciliationView(account: account)
                 } label: {
@@ -135,6 +138,7 @@ struct AccountDetailView: View {
                     .glassCard(cornerRadius: 12)
                 }
                 .buttonStyle(.plain)
+                #endif
 
                 #if DEBUG
                 NavigationLink {
@@ -217,7 +221,10 @@ struct AccountDetailView: View {
                     .rotationEffect(.degrees(isExpanded ? 90 : 0))
 
                 Text(month.title)
-                    .font(.designLabel)
+                    // 14pt = 与明细行副标题（designBodySmall）同档；原先是 designLabel 的 12pt，偏小。
+                    // 家族/字重仍沿用 designLabel 的 JetBrainsMono-Bold，relativeTo 用 .caption 好与
+                    // 那档正文同步缩放；日头与月合计各保持原样（12pt / 13pt）。
+                    .font(.custom("JetBrainsMono-Bold", size: 14, relativeTo: .caption))
                     .foregroundStyle(Color.designOnSurfaceVariant)
 
                 Spacer()
