@@ -49,3 +49,6 @@ ghostty-*.txt
 
 # Claude Code local settings (contains personal permissions/API keys)
 .claude/settings.local.json
+
+# Local MCP server config (contains bearer tokens)
+config/
