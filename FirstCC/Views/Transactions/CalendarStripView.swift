@@ -1,4 +1,5 @@
 import SwiftUI
+@preconcurrency import CoreData
 
 struct CalendarStripView: View {
     @Environment(\.managedObjectContext) private var modelContext

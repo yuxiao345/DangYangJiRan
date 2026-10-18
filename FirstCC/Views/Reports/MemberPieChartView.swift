@@ -10,14 +10,14 @@ struct MemberPieChartView: View {
     @State private var selectedAngle: Double?
 
     private let memberColors: [Color] = [
-        Color(hex: "#FF6B6B") ?? .red,
-        Color(hex: "#4ECDC4") ?? .teal,
-        Color(hex: "#FFD93D") ?? .yellow,
-        Color(hex: "#6C5CE7") ?? .purple,
-        Color(hex: "#A8E6CF") ?? .mint,
-        Color(hex: "#74B9FF") ?? .blue,
-        Color(hex: "#FF8A80") ?? .pink,
-        Color(hex: "#B388FF") ?? .indigo,
+        Color(hex: "#FF6B6B"),
+        Color(hex: "#4ECDC4"),
+        Color(hex: "#FFD93D"),
+        Color(hex: "#6C5CE7"),
+        Color(hex: "#A8E6CF"),
+        Color(hex: "#74B9FF"),
+        Color(hex: "#FF8A80"),
+        Color(hex: "#B388FF"),
     ]
 
     var body: some View {

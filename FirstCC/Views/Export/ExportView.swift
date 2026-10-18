@@ -1,4 +1,5 @@
 import SwiftUI
+@preconcurrency import CoreData
 
 struct ExportView: View {
     @Environment(AppContainer.self) private var appContainer
