@@ -316,6 +316,60 @@ xcrun simctl io <UUID> screenshot tools/appstore-assets/screenshots/14-addtx-dar
 | Mac「资产变化」报表的 x 轴标签 | `ReportViewModel.swift:904` 硬编码 `String(format: "%02d年%d月", …)`，违反 CLAUDE.md 的日期格式规范（应用 `Date.FormatStyle` 随 locale 自适应） | Mac 英文界面 |
 | 账户新增/编辑表单里出现英文 `Logo` | `Section("Logo")`（`AccountsManagementView.swift:207`、`AddEditAccountView.swift:98`）——key 本身是英文，中文侧没有值 | 中文界面 |
 
+## 用 MCP 驱动点击，拍要钻好几层的页面
+
+有些页面（分类管理、联系人管理、搜索页）点击路径有 4–5 层，手点很烦。可以用 Xcode MCP 的
+设备交互工具代点，截图仍走 `simctl io screenshot`。
+
+**2026-10-13 实测记录（第一次用，踩了不少）**
+
+命令语法不在本地技能目录里，从 MCP 桥导出：
+
+```bash
+xcrun agent skills export --output-dir /tmp/xcode-skills
+# → /tmp/xcode-skills/device-interaction/SKILL.md
+```
+
+关键几条：
+
+| 用途 | 写法 |
+|---|---|
+| 点击 | `t <x> <y> [按住秒数]` |
+| 滑动 / 长按拖动 | `t x1 y1 f x2 y2 [秒]` / `drag x1 y1 x2 y2 [hold] [move]` |
+| 等待 | `w <秒>` |
+| **输入文字** | `sender keyboard kbd <文本>` —— **必须是链表最后一条**，`kbd ` 之后原样进，可直接写中文 |
+
+**坐标一律取 hierarchy dump 里的 `hitPoint:`，不要拿截图像素去换算。**
+iPhone 17 截图是 1206×2622，但点空间与它**不是**整齐的 1/2 或 1/3 关系——按 ÷3 估出来的
+「流水」tab 坐标是 (231, 940)，真值却是 **(201, 822)**。
+
+### ⚠️ 会话极脆，一次只干一件事
+
+- 某个 tap 一旦返回 `The task timed out`，下一次调用必然是
+  `Session not found`——**整个会话就废了**，之后所有调用都失败。
+- 表象是整个模拟器的触摸事件卡死：截图能出、但画面**完全不变**（时钟在走，UI 冻住），
+  App 自身 CPU 是 0%（不是 App 忙）。
+- **触发过一次**：对空文本框做长按选词（`drag x y x y 1500`）之后事件系统就卡住了。
+  想粘贴中文别走长按 → 「粘贴」这条路，直接用 `sender keyboard kbd`。
+- **恢复只能重启整机**：`xcrun simctl shutdown <UUID>` 再 `boot`。
+  只重启 App 不够（试过，触摸依旧是死的）。
+- **对策**：开局第一条命令**就是点击**，别先 dump；把多步串成一条链
+  （`t 201 822 w 1 t 363 84 w 1 t 215 145 w 0.6 sender keyboard kbd 上月 餐饮`）；
+  拍完一张就另起会话。
+
+### 演示专用模拟器
+
+现有 iOS 27.0 的那台 iPhone 17 模拟器里是**用户真实的家庭数据（74 个账户）**，
+**不许截图、不许覆盖**。新拍的这批用的是另建的 `QianeyDemo`（iOS 27.0，深色）。
+开拍前先 `xcrun simctl list devices` 确认 UDID，别认错机器——两台都会同时处于 Booted。
+
+### 搜索页的已知限制
+
+`SearchView` 没有 `.scrollDismissesKeyboard`，键盘不会自动收起，
+结果列表下半截被键盘盖住。想让列表占满屏只能改代码或接受现状。
+
+---
+
 ## 隐私提醒
 
 演示数据会写进模拟器的本地 store。模拟器一般没有登录 iCloud 账号，
