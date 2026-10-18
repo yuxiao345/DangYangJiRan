@@ -5,6 +5,12 @@ struct DashboardView: View {
     @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    /// 内容区的实测尺寸，用于决定单栏还是双栏。不能在尺寸未知时默认双栏：
+    /// 首帧按单栏排，拿到尺寸后立即切换。
+    @State private var containerSize: CGSize = .zero
     @State private var viewModel: DashboardViewModel
     @State private var showAddSheet = false
     @State private var editingTransaction: Transaction?
@@ -34,57 +40,20 @@ struct DashboardView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 0) {
-                    VStack(spacing: 16) {
-                        heroBalanceCard
-                            .accessibilityIdentifier("dashboard-hero-balance-card")
-                        incomeExpenseGrid
-                            .accessibilityIdentifier("dashboard-income-expense-grid")
-                        budgetCard
-                            .accessibilityIdentifier("dashboard-budget-card")
-                    }
-                    .padding(16)
-
-                    HStack {
-                        Text("最近交易")
-                            .font(.designBodyMedium.weight(.bold))
-                            .foregroundStyle(Color.designOnSurface)
-                        Spacer()
-                        NavigationLink("全部") {
-                            TransactionListView()
-                        }
-                        .font(.designBodyCaption)
-                        .foregroundStyle(Color.designAccentGreen)
-                        .accessibilityIdentifier("dashboard-recent-tx-all-link")
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 16)
-                    .padding(.bottom, 12)
-
-                    if viewModel.recentTransactions.isEmpty {
-                        ContentUnavailableView(
-                            "本月暂无交易记录",
-                            systemImage: "tray",
-                            description: Text("点击下方 + 开始记一笔")
-                        )
-                        .padding(.top, 40)
-                    } else {
-                        LazyVStack(spacing: 12) {
-                            ForEach(viewModel.recentTransactions, id: \.objectID) { transaction in
-                                NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
-                                    TransactionRowView(transaction: transaction)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .id(recentRefreshVersion)
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 16)
-                    }
+            // 用容器尺寸 + size class 判断，不读界面方向/机型 —— 跟随 Apple 对 resizable iPhone 的要求。
+            // 不能再用 GeometryReader 包住内容：iOS 26 要求 ScrollView 是导航容器的直接内容，
+            // 大标题折叠、内容从玻璃导航栏/标签栏下方滑过都依赖这一点（Apple DTS，论坛 thread 821675）。
+            // .onGeometryChange 只测量不包裹，ScrollView 仍是直接内容；
+            // 代价是尺寸刚变化的那一帧仍按旧布局排，通常不可见。
+            Group {
+                if usesTwoColumnLayout(width: containerSize.width, height: containerSize.height) {
+                    twoColumnLayout(availableWidth: containerSize.width)
+                } else {
+                    stackedLayout
                 }
             }
-            .scrollClipDisabled()
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .onGeometryChange(for: CGSize.self) { $0.size } action: { containerSize = $0 }
             .designScreen()
             .safeAreaInset(edge: .bottom) {
                 AddFloatingButton(title: "记一笔", identifier: "dashboard-add-tx-button") {
@@ -111,6 +80,148 @@ struct DashboardView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Layout
+
+    /// 双栏布局的最小容器宽度：左栏 380 + 栏距 20 + 右栏最小 400 + 左右页边距 32 = 832，向上取整。
+    /// 必须配「宽 > 高」一起用，不能只看绝对宽度：
+    /// iPhone Duo 内屏实测可用区域只有 867×469pt，却报告 regular/regular；
+    /// 而 iPad 13 寸竖屏宽 1024pt，单看宽度会把竖屏也误判成双栏。
+    private static let twoColumnMinWidth: CGFloat = 840
+
+    /// 第一步只对「regular 宽 + regular 高 + 横向」的窗口启用双栏
+    /// （iPad 横屏、iPhone Duo 内屏）。iPhone 横屏是 compact 高度，等实测截图后再按
+    /// Apple 自家 Mail/Notes 的规则（仅 Plus/Max/Air 这类 regular 宽度机型）放开。
+    ///
+    /// 辅助功能字号下固定宽度的左栏会被大号金额、指标卡撑到换行，此时退回整屏单栏。
+    private func usesTwoColumnLayout(width: CGFloat, height: CGFloat) -> Bool {
+        horizontalSizeClass == .regular
+            && verticalSizeClass == .regular
+            && !dynamicTypeSize.isAccessibilitySize
+            && width > height
+            && width >= Self.twoColumnMinWidth
+    }
+
+    /// iPhone 竖屏 / iPad 竖屏 / 窄窗口：保持原有上下结构。
+    private var stackedLayout: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                overviewColumn
+                    .padding(16)
+
+                recentTransactionsHeader
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                    .padding(.bottom, 12)
+
+                if viewModel.recentTransactions.isEmpty {
+                    emptyRecentTransactions
+                        .padding(.top, 40)
+                } else {
+                    recentTransactionsRows
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 16)
+                }
+            }
+        }
+        .scrollClipDisabled()
+    }
+
+    /// 宽屏：左侧财务概览（整体变窄、内部结构不变），右侧最近交易独立滚动、标题固定。
+    private func twoColumnLayout(availableWidth: CGFloat) -> some View {
+        // 左栏随可用宽度缩放，13 寸上不会过宽，mini 上也不会过窄。
+        let leftWidth = min(max(availableWidth * 0.36, 380), 460)
+
+        return HStack(alignment: .top, spacing: 20) {
+            ScrollView {
+                overviewColumn
+                    .padding(.vertical, 16)
+            }
+            .scrollClipDisabled()
+            .frame(width: leftWidth)
+
+            Group {
+                if viewModel.recentTransactions.isEmpty {
+                    VStack(spacing: 0) {
+                        recentTransactionsTopContent
+                        emptyRecentTransactions
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
+                } else {
+                    // 阴影必须能溢出列表边界（Apple 文档：scrollClipDisabled 正是为
+                    // 「ScrollView 内视图的阴影超出边界」准备的），否则右栏左右两侧的
+                    // 卡片圆角和阴影会被裁成直边。
+                    // 标题不能再用 VStack 压在列表上方：关掉裁剪后滚动行会盖住它。
+                    // 改由 RecentTransactionsTopBar 承载——iOS 26 的 safeAreaBar 会把
+                    // 滚动边缘效果延伸到标题下方，滚过时内容自动模糊、标题仍清晰。
+                    ScrollView {
+                        recentTransactionsRows
+                            .padding(.bottom, 16)
+                    }
+                    .scrollClipDisabled()
+                    .modifier(RecentTransactionsTopBar {
+                        recentTransactionsTopContent
+                    })
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        }
+        .padding(.horizontal, 16)
+    }
+
+    /// 净资产 + 收入/支出 + 预算。两种布局共用，顺序与内部结构完全一致。
+    private var overviewColumn: some View {
+        VStack(spacing: 16) {
+            heroBalanceCard
+                .accessibilityIdentifier("dashboard-hero-balance-card")
+            incomeExpenseGrid
+                .accessibilityIdentifier("dashboard-income-expense-grid")
+            budgetCard
+                .accessibilityIdentifier("dashboard-budget-card")
+        }
+    }
+
+    /// 两栏模式右栏的固定标题（含上下留白）。单栏布局的标题另带水平内边距。
+    private var recentTransactionsTopContent: some View {
+        recentTransactionsHeader
+            .padding(.top, 16)
+            .padding(.bottom, 12)
+    }
+
+    private var recentTransactionsHeader: some View {
+        HStack {
+            Text("最近交易")
+                .font(.designBodyMedium.weight(.bold))
+                .foregroundStyle(Color.designOnSurface)
+            Spacer()
+            NavigationLink("全部") {
+                TransactionListView()
+            }
+            .font(.designBodyCaption)
+            .foregroundStyle(Color.designAccentGreen)
+            .accessibilityIdentifier("dashboard-recent-tx-all-link")
+        }
+    }
+
+    private var recentTransactionsRows: some View {
+        LazyVStack(spacing: 12) {
+            ForEach(viewModel.recentTransactions, id: \.objectID) { transaction in
+                NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
+                    TransactionRowView(transaction: transaction)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .id(recentRefreshVersion)
+    }
+
+    private var emptyRecentTransactions: some View {
+        ContentUnavailableView(
+            "本月暂无交易记录",
+            systemImage: "tray",
+            description: Text("点击下方 + 开始记一笔")
+        )
     }
 
     // MARK: - Hero Balance Card
@@ -640,6 +751,34 @@ extension AmountHideEffect {
         switch self {
         case .spotlight: return 0.8
         default:         return 0
+        }
+    }
+}
+
+/// 两栏模式右栏的固定标题容器。
+///
+/// iOS 26 用 `safeAreaBar`：它在给列表让出安全区的同时，把滚动边缘效果延伸到 bar 下面，
+/// 内容从标题下方滑过时由系统自动模糊隔离（HIG：scroll edge effect 正是为 toolbars、
+/// pinned table headers 这类固定界面元素与滚动内容之间提供视觉分隔）。
+/// iOS 18–25 没有 `safeAreaBar`，退回 `safeAreaInset` 并给标题铺 `.bar` 材质；
+/// 否则列表关掉裁剪后，滚动的行会直接压在标题文字上。
+private struct RecentTransactionsTopBar<Header: View>: ViewModifier {
+    let header: Header
+
+    init(@ViewBuilder header: () -> Header) {
+        self.header = header()
+    }
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content.safeAreaBar(edge: .top, alignment: .leading) {
+                header
+            }
+        } else {
+            content.safeAreaInset(edge: .top, spacing: 0) {
+                header
+                    .background(.bar)
+            }
         }
     }
 }
