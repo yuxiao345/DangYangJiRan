@@ -343,6 +343,24 @@ extension View {
     }
 }
 
+// MARK: - Amount Pristine Highlight
+
+extension View {
+    /// 金额是程序预填、用户还没输过时的浅底提示：暗示下一次按键会整串替换。
+    ///
+    /// 与页面里的选中态（`typeSelector` 的 0.2 填充）同族，但透明度压到一半左右，
+    /// 大号数字下不至于抢眼。padding 恒定、只动填充透明度，所以切换时数字不会位移。
+    func amountPristineHighlight(_ isActive: Bool) -> some View {
+        padding(.horizontal, 10)
+            .padding(.vertical, 2)
+            .background(
+                Color.designPrimaryContainer.opacity(isActive ? 0.08 : 0),
+                in: RoundedRectangle(cornerRadius: 10)
+            )
+            .animation(.easeInOut(duration: 0.15), value: isActive)
+    }
+}
+
 // MARK: - Grain Texture Modifier
 
 /// Subtle noise grain that enhances the "Liquid Glass" material feel.

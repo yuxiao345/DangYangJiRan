@@ -37,10 +37,10 @@ struct AddEditTransactionView: View {
     @State private var isEditing: Bool = false
     @State private var type: TransactionType = .expense
     @State private var amount: Decimal = 0
-    @State private var amountString: String = ""
+    @State private var amountInput = AmountInputState()
     @State private var showNumpad: Bool = false
     @State private var destAmount: Decimal = 0
-    @State private var destAmountString: String = ""
+    @State private var destInput = AmountInputState()
     @State private var editingDestAmount: Bool = false
     @State private var showTemplates: Bool = false
     @State private var note: String = ""
@@ -87,7 +87,7 @@ struct AddEditTransactionView: View {
     @State private var showDatePicker = false
     @State private var splitItems: [SplitItemDraft] = []
     @State private var selectedSplitItemID: UUID?
-    @State private var splitAmountString: String = ""
+    @State private var splitInput = AmountInputState()
     @State private var activeSplitPicker: ActiveSplitPicker?
 
     private struct ActiveSplitPicker: Identifiable {
@@ -175,13 +175,13 @@ struct AddEditTransactionView: View {
                     prefillRecentSelections()
                     showNumpad = true
                 }
-                syncAmountString()
+                seedAmountString()
                 loadDisplayData()
             }
             .onChange(of: pickerSheet) { _, newValue in
                 if newValue != nil { loadData() }
             }
-            .onChange(of: type) { _, _ in loadCategories(); loadPendingExpenses(); loadPendingLendingTransactions(); destAmount = 0; destAmountString = "" }
+            .onChange(of: type) { _, _ in loadCategories(); loadPendingExpenses(); loadPendingLendingTransactions(); destAmount = 0; destInput.seed("") }
             .onChange(of: selectedAccount) { _, _ in
                 selectedLendingIDs = []
                 loadPendingLendingTransactions()
@@ -194,13 +194,13 @@ struct AddEditTransactionView: View {
             .onChange(of: selectedToAccount) { _, _ in
                 selectedLendingIDs = []
                 loadPendingLendingTransactions()
-                destAmount = 0; destAmountString = ""
+                destAmount = 0; destInput.seed("")
                 if needsExchangeRate { fetchExchangeRate() }
             }
             .onChange(of: selectedExpenseIDs) { _, _ in
                 guard !selectedExpenseIDs.isEmpty, editing == nil else { return }
                 amount = selectedReimbursementTotal
-                syncAmountString()
+                seedAmountString()
             }
             .onChange(of: focusedNoteField) { _, newValue in
                 // 点进备注框 = 去操作别处了。不收起的话系统键盘和数字键盘会同时挂在屏幕上
@@ -400,9 +400,10 @@ struct AddEditTransactionView: View {
                                     .font(.designLabel)
                                     .foregroundStyle(Color.designOnSurfaceVariant)
                                 Spacer()
-                                Text("\(CurrencyFormatter.currencySymbol(for: selectedCurrencyCode))\(splitAmountString.isEmpty ? "0.00" : splitAmountString)")
+                                Text("\(CurrencyFormatter.currencySymbol(for: selectedCurrencyCode))\(splitInput.text.isEmpty ? "0.00" : splitInput.text)")
                                     .font(.custom("JetBrainsMono-Medium", fixedSize: 18))
                                     .foregroundStyle(Color.designPrimary)
+                                    .amountPristineHighlight(splitInput.isPristine && splitAmountIsActive)
                             }
                             .padding(.horizontal, 4)
                         }
@@ -895,10 +896,11 @@ struct AddEditTransactionView: View {
                     Text(CurrencyFormatter.currencySymbol(for: selectedCurrencyCode))
                         .font(.custom("SpaceGrotesk-SemiBold", fixedSize: 24))
                         .foregroundStyle(Color.designPrimary)
-                    Text(amountString.isEmpty ? "0.00" : amountString)
+                    Text(amountInput.text.isEmpty ? "0.00" : amountInput.text)
                         .font(.custom("JetBrainsMono-Medium", fixedSize: 32))
                         .foregroundStyle(Color.designPrimary)
                         .tracking(-0.02)
+                        .amountPristineHighlight(amountInput.isPristine && mainAmountIsActive)
                     Image(systemName: showNumpad ? "keyboard.arrow.down" : "keyboard.arrow.up")
                         .font(.system(size: 14))
                         .foregroundStyle(Color.designPrimaryContainer.opacity(0.5))
@@ -974,9 +976,9 @@ struct AddEditTransactionView: View {
                     focusedNoteField = nil
                     withAnimation {
                         editingDestAmount = true
-                        if destAmount != 0 {
-                            destAmountString = CurrencyFormatter.decimalFormatter.string(from: destAmount as NSDecimalNumber) ?? "\(destAmount)"
-                        } else { destAmountString = "" }
+                        destInput.seed(destAmount != 0
+                            ? CurrencyFormatter.decimalFormatter.string(from: destAmount as NSDecimalNumber) ?? "\(destAmount)"
+                            : "")
                         showNumpad = true
                     }
                 }
@@ -985,10 +987,11 @@ struct AddEditTransactionView: View {
                     Text(CurrencyFormatter.currencySymbol(for: destCurrency))
                         .font(.custom("SpaceGrotesk-SemiBold", fixedSize: 24))
                         .foregroundStyle(Color.designPrimary)
-                    Text(destAmountString.isEmpty ? "0.00" : destAmountString)
+                    Text(destInput.text.isEmpty ? "0.00" : destInput.text)
                         .font(.custom("JetBrainsMono-Medium", fixedSize: 32))
                         .foregroundStyle(Color.designPrimary)
                         .tracking(-0.02)
+                        .amountPristineHighlight(destInput.isPristine && destAmountIsActive)
                     Image(systemName: showNumpad && editingDestAmount ? "keyboard.arrow.down" : "keyboard.arrow.up")
                         .font(.system(size: 14))
                         .foregroundStyle(Color.designPrimaryContainer.opacity(0.5))
@@ -1284,7 +1287,7 @@ struct AddEditTransactionView: View {
                             collapseNumpad()
                             if selectedSplitItemID == item.id {
                                 selectedSplitItemID = nil
-                                splitAmountString = ""
+                                splitInput.seed("")
                             }
                             splitItems.removeAll { $0.id == item.id }
                         } label: {
@@ -1805,88 +1808,69 @@ struct AddEditTransactionView: View {
         )
     }
 
+    /// 当前数字键盘在编辑哪个金额 —— 三个 `AmountInputState` 只有一个是活的。
+    private var mainAmountIsActive: Bool { showNumpad && !editingDestAmount && selectedSplitItemID == nil }
+    private var destAmountIsActive: Bool { showNumpad && editingDestAmount }
+    private var splitAmountIsActive: Bool { showNumpad && selectedSplitItemID != nil }
+
     private func appendDigit(_ digit: Int) {
         if editingDestAmount {
-            if let dotIndex = destAmountString.firstIndex(of: ".") {
-                let decimals = destAmountString[dotIndex...].dropFirst()
-                if decimals.count >= 2 { return }
-            }
-            if destAmountString == "0" || destAmountString == "0.00" { destAmountString = "\(digit)" }
-            else { destAmountString += "\(digit)" }
+            destInput.appendDigit(digit)
         } else if selectedSplitItemID != nil {
-            if let dotIndex = splitAmountString.firstIndex(of: ".") {
-                let decimals = splitAmountString[dotIndex...].dropFirst()
-                if decimals.count >= 2 { return }
-            }
-            if splitAmountString == "0" || splitAmountString == "0.00" { splitAmountString = "\(digit)" }
-            else { splitAmountString += "\(digit)" }
+            splitInput.appendDigit(digit)
             syncSplitAmountToItem()
         } else {
-            if let dotIndex = amountString.firstIndex(of: ".") {
-                let decimals = amountString[dotIndex...].dropFirst()
-                if decimals.count >= 2 { return }
-            }
-            if amountString == "0" || amountString == "0.00" { amountString = "\(digit)" }
-            else { amountString += "\(digit)" }
+            amountInput.appendDigit(digit)
             syncAmountFromString()
         }
     }
 
     private func appendDot() {
         if editingDestAmount {
-            if destAmountString.contains(".") { return }
-            if destAmountString.isEmpty { destAmountString = "0." }
-            else { destAmountString += "." }
+            destInput.appendDot()
         } else if selectedSplitItemID != nil {
-            if splitAmountString.contains(".") { return }
-            if splitAmountString.isEmpty { splitAmountString = "0." }
-            else { splitAmountString += "." }
+            splitInput.appendDot()
             syncSplitAmountToItem()
         } else {
-            if amountString.contains(".") { return }
-            if amountString.isEmpty { amountString = "0." }
-            else { amountString += "." }
+            amountInput.appendDot()
             syncAmountFromString()
         }
     }
 
     private func backspace() {
         if editingDestAmount {
-            if destAmountString.count <= 1 { destAmountString = "0" }
-            else { destAmountString.removeLast() }
+            destInput.backspace()
         } else if selectedSplitItemID != nil {
-            if splitAmountString.count <= 1 { splitAmountString = "0" }
-            else { splitAmountString.removeLast() }
+            splitInput.backspace()
             syncSplitAmountToItem()
         } else {
-            if amountString.count <= 1 { amountString = "0" }
-            else { amountString.removeLast() }
+            amountInput.backspace()
             syncAmountFromString()
         }
     }
 
     private func clearAmount() {
         if editingDestAmount {
-            destAmountString = "0"
+            destInput.clear()
         } else if selectedSplitItemID != nil {
-            splitAmountString = "0"
+            splitInput.clear()
             syncSplitAmountToItem()
         } else {
-            amountString = "0"
+            amountInput.clear()
             syncAmountFromString()
         }
     }
 
     private func dismissNumpad() {
         if editingDestAmount {
-            destAmount = Decimal(string: destAmountString.replacing(",", with: "")) ?? 0
+            destAmount = Decimal(string: destInput.text.replacing(",", with: "")) ?? 0
             editingDestAmount = false
-            destAmountString = destAmount != 0 ? CurrencyFormatter.decimalFormatter.string(from: destAmount as NSDecimalNumber) ?? "\(destAmount)" : ""
+            destInput.text = destAmount != 0 ? CurrencyFormatter.decimalFormatter.string(from: destAmount as NSDecimalNumber) ?? "\(destAmount)" : ""
         }
         showNumpad = false
         syncSplitAmountToItem()
         selectedSplitItemID = nil
-        splitAmountString = ""
+        splitInput.seed("")
     }
 
     /// 收起数字键盘 —— 与「确认」按钮完全同一条路径。
@@ -1895,33 +1879,33 @@ struct AddEditTransactionView: View {
     private func collapseNumpad() {
         guard showNumpad else { return }
         withAnimation { dismissNumpad() }
-        // dismissNumpad 不回写显示串，输入 "12." 后直接收起会留个尾点
-        syncAmountString()
+        // dismissNumpad 不回写显示串，输入 "12." 后直接收起会留个尾点。
+        // 这里只刷新显示、不能走 seed —— 否则会把用户已输入的值重新标成预填态。
+        amountInput.text = formattedAmountString
     }
 
     private func syncAmountFromString() {
-        amount = Decimal(string: amountString.replacing(",", with: "")) ?? 0
+        amount = Decimal(string: amountInput.text.replacing(",", with: "")) ?? 0
     }
 
     private func syncSplitAmountToItem() {
         guard let id = selectedSplitItemID, let idx = splitItems.firstIndex(where: { $0.id == id }) else { return }
-        splitItems[idx].amount = Decimal(string: splitAmountString.replacing(",", with: "")) ?? 0
+        splitItems[idx].amount = Decimal(string: splitInput.text.replacing(",", with: "")) ?? 0
     }
 
     private func selectSplitItem(_ item: SplitItemDraft) {
         if selectedSplitItemID == item.id {
             syncSplitAmountToItem()
             selectedSplitItemID = nil
-            splitAmountString = ""
+            splitInput.seed("")
             return
         }
         syncSplitAmountToItem()
         selectedSplitItemID = item.id
         let amt = item.amount
-        if amt == 0 { splitAmountString = "" }
-        else {
-            splitAmountString = CurrencyFormatter.decimalFormatter.string(from: amt as NSDecimalNumber) ?? "\(amt)"
-        }
+        splitInput.seed(amt == 0
+            ? ""
+            : CurrencyFormatter.decimalFormatter.string(from: amt as NSDecimalNumber) ?? "\(amt)")
         // 切到子项金额前清掉备注框焦点，否则系统键盘会和数字键盘同屏
         focusedNoteField = nil
         if !showNumpad { withAnimation { showNumpad = true } }
@@ -1932,11 +1916,14 @@ struct AddEditTransactionView: View {
         return splitAmountFormatter.string(from: item.amount as NSDecimalNumber) ?? "0.00"
     }
 
-    private func syncAmountString() {
-        if amount == 0 { amountString = "" }
-        else {
-            amountString = CurrencyFormatter.decimalFormatter.string(from: amount as NSDecimalNumber) ?? "\(amount)"
-        }
+    private var formattedAmountString: String {
+        amount == 0 ? "" : CurrencyFormatter.decimalFormatter.string(from: amount as NSDecimalNumber) ?? "\(amount)"
+    }
+
+    /// 程序写入金额（载入已有交易、套用模版、回填报销合计）后调用：
+    /// 重新进入预填态，用户下一个数字键会整串替换。
+    private func seedAmountString() {
+        amountInput.seed(formattedAmountString)
     }
 
     private func templateChip(_ template: TransactionTemplate) -> some View {
@@ -2170,7 +2157,7 @@ struct AddEditTransactionView: View {
         if let paths = t.photoURLs, !paths.isEmpty {
             photoDataList = PhotoStorage.load(paths: paths)
         }
-        syncAmountString()
+        seedAmountString()
     }
 
     /// 新增记账时，自动填充最近一次选择的账户、分类、成员
@@ -2203,7 +2190,7 @@ struct AddEditTransactionView: View {
         selectedMember = template.member
         selectedMerchant = template.merchant
         selectedProject = template.project
-        syncAmountString()
+        seedAmountString()
     }
 
     /// 校验借贷交易的两个账户中是否有且仅有一个借贷账户

@@ -7,7 +7,7 @@ struct NumpadAmountField: View {
     let allowSignToggle: Bool
 
     @State private var showNumpad = false
-    @State private var text: String = ""
+    @State private var input = AmountInputState()
 
     init(amount: Binding<Decimal>, currencySymbol: String = "¥", allowSignToggle: Bool = false) {
         self._amount = amount
@@ -27,7 +27,7 @@ struct NumpadAmountField: View {
                     if showNumpad { syncToBinding() }
                     showNumpad.toggle()
                 }
-                if !showNumpad { text = formatDecimal(amount) }
+                if !showNumpad { input.text = formatDecimal(amount) }
             } label: {
                 HStack {
                     Text(currencySymbol)
@@ -36,6 +36,7 @@ struct NumpadAmountField: View {
                     Text(displayText)
                         .font(.custom("JetBrainsMono-Medium", fixedSize: 15))
                         .foregroundStyle(showNumpad ? Color.designPrimary : .primary)
+                        .amountPristineHighlight(input.isPristine && showNumpad)
                 }
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .contentShape(Rectangle())
@@ -44,15 +45,15 @@ struct NumpadAmountField: View {
 
             if showNumpad {
                 NumpadGrid(
-                    onDigit: { appendDigit($0) },
-                    onDot: appendDot,
-                    onDelete: backspace
+                    onDigit: { input.appendDigit($0) },
+                    onDot: { input.appendDot() },
+                    onDelete: { input.backspace() }
                 )
                 .transition(.move(edge: .bottom).combined(with: .opacity))
 
                 HStack(spacing: 12) {
                     Button {
-                        text = ""
+                        input.clear()
                     } label: {
                         Text("清空")
                             .font(.designLabel)
@@ -68,11 +69,7 @@ struct NumpadAmountField: View {
 
                     if allowSignToggle {
                         Button {
-                            if text.hasPrefix("-") {
-                                text.removeFirst()
-                            } else {
-                                text = "-" + text
-                            }
+                            input.toggleSign()
                         } label: {
                             Text("+/-")
                                 .font(.custom("JetBrainsMono-Medium", fixedSize: 16))
@@ -112,15 +109,15 @@ struct NumpadAmountField: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .onAppear { text = formatDecimal(amount) }
+        .onAppear { input.seed(formatDecimal(amount)) }
     }
 
     /// 编辑中显示当前输入（空则显示0）；非编辑中显示 binding 值
     private var displayText: String {
         if showNumpad {
-            return text.isEmpty ? "0" : text
+            return input.text.isEmpty ? "0" : input.text
         }
-        return text.isEmpty ? formatDecimal(amount) : text
+        return input.text.isEmpty ? formatDecimal(amount) : input.text
     }
 
     private func formatDecimal(_ d: Decimal) -> String {
@@ -129,30 +126,10 @@ struct NumpadAmountField: View {
     }
 
     private func parseText() -> Decimal {
-        Decimal(string: text.filter { $0.isNumber || $0 == "." || $0 == "-" }) ?? 0
+        Decimal(string: input.text.filter { $0.isNumber || $0 == "." || $0 == "-" }) ?? 0
     }
 
     private func syncToBinding() {
         amount = parseText()
-    }
-
-    private func appendDigit(_ digit: Int) {
-        if let dotIndex = text.firstIndex(of: ".") {
-            let decimals = text[dotIndex...].dropFirst()
-            if decimals.count >= 2 { return }
-        }
-        if text == "0" { text = "\(digit)" }
-        else { text += "\(digit)" }
-    }
-
-    private func appendDot() {
-        if text.contains(".") { return }
-        if text.isEmpty { text = "0." }
-        else { text += "." }
-    }
-
-    private func backspace() {
-        if text.count <= 1 { text = "" }
-        else { text.removeLast() }
     }
 }

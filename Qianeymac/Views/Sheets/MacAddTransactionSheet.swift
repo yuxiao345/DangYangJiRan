@@ -140,12 +140,12 @@ struct MacAddTransactionSheet: View {
     @State private var photoDataList: [Data]
     @State private var showRefundSheet: Bool
     @State private var showNumpad: Bool = false
-    @State private var numpadText: String = ""
+    @State private var numpadInput = AmountInputState()
     @State private var destAmount: Decimal = 0
     @State private var destAmountString: String = "0.00"
     @State private var showDestNumpad: Bool = false
-    @State private var destNumpadText: String = ""
-    @State private var splitNumpadText: String = ""
+    @State private var destNumpadInput = AmountInputState()
+    @State private var splitNumpadInput = AmountInputState()
     init(editing: Transaction? = nil, displayMode: Bool = false, refunding: Transaction? = nil, prefillDate: Date? = nil) {
         let initEditing: Transaction?
         let initDisplayMode: Bool
@@ -452,7 +452,7 @@ struct MacAddTransactionSheet: View {
         return VStack(spacing: 4) {
             // Amount display
             Button {
-                numpadText = amount != 0 ? amountString : ""
+                numpadInput.seed(amount != 0 ? amountString : "")
                 withAnimation(.easeInOut(duration: 0.2)) { showNumpad.toggle() }
             } label: {
                 HStack(spacing: 4) {
@@ -460,9 +460,10 @@ struct MacAddTransactionSheet: View {
                         .font(.custom("JetBrainsMono-Medium", fixedSize: 28))
                         .foregroundStyle(Color.designPrimaryFixedDim)
                     if showNumpad {
-                        Text(numpadText.isEmpty ? "0.00" : numpadText)
+                        Text(numpadInput.text.isEmpty ? "0.00" : numpadInput.text)
                             .font(.custom("JetBrainsMono-Medium", fixedSize: 36))
                             .foregroundStyle(.secondary)
+                            .amountPristineHighlight(numpadInput.isPristine)
                     } else {
                         Text(amount == 0 ? "0.00" : CurrencyFormatter.formatDecimal(amount: amount, fractionDigits: 2))
                             .font(.custom("JetBrainsMono-Medium", fixedSize: 36))
@@ -489,7 +490,7 @@ struct MacAddTransactionSheet: View {
 
             // Numpad
             if showNumpad {
-                macNumpadPopover(text: $numpadText, amount: $amount, amountString: $amountString, show: $showNumpad)
+                macNumpadPopover(input: $numpadInput, amount: $amount, amountString: $amountString, show: $showNumpad)
             }
 
             if let rate = exchangeRate, activeCurrency != ledgerCurrencyCode {
@@ -523,7 +524,7 @@ struct MacAddTransactionSheet: View {
                     }
 
                     Button {
-                        destNumpadText = destAmount != 0 ? destAmountString : ""
+                        destNumpadInput.seed(destAmount != 0 ? destAmountString : "")
                         withAnimation(.easeInOut(duration: 0.2)) { showDestNumpad.toggle() }
                     } label: {
                         HStack(spacing: 4) {
@@ -531,9 +532,10 @@ struct MacAddTransactionSheet: View {
                                 .font(.custom("JetBrainsMono-Medium", fixedSize: 28))
                                 .foregroundStyle(Color.designPrimaryFixedDim)
                             if showDestNumpad {
-                                Text(destNumpadText.isEmpty ? "0.00" : destNumpadText)
+                                Text(destNumpadInput.text.isEmpty ? "0.00" : destNumpadInput.text)
                                     .font(.custom("JetBrainsMono-Medium", fixedSize: 36))
                                     .foregroundStyle(.secondary)
+                                    .amountPristineHighlight(destNumpadInput.isPristine)
                             } else {
                                 Text(destAmount == 0 ? "0.00" : CurrencyFormatter.formatDecimal(amount: destAmount, fractionDigits: 2))
                                     .font(.custom("JetBrainsMono-Medium", fixedSize: 36))
@@ -546,7 +548,7 @@ struct MacAddTransactionSheet: View {
                     .buttonStyle(.plain)
 
                     if showDestNumpad {
-                        macNumpadPopover(text: $destNumpadText, amount: $destAmount, amountString: $destAmountString, show: $showDestNumpad)
+                        macNumpadPopover(input: $destNumpadInput, amount: $destAmount, amountString: $destAmountString, show: $showDestNumpad)
                     }
                 }
             }
@@ -805,7 +807,7 @@ struct MacAddTransactionSheet: View {
         HStack(spacing: 12) {
             Button {
                 splitItems.remove(at: i)
-                if editingSplitIndex == i { editingSplitIndex = nil; splitNumpadText = "" }
+                if editingSplitIndex == i { editingSplitIndex = nil; splitNumpadInput.seed("") }
                 else if let idx = editingSplitIndex, idx > i { editingSplitIndex = idx - 1 }
             } label: {
                 Image(systemName: "minus.circle.fill").foregroundStyle(.red)
@@ -814,10 +816,10 @@ struct MacAddTransactionSheet: View {
             Button {
                 if editingSplitIndex == i {
                     editingSplitIndex = nil
-                    splitNumpadText = ""
+                    splitNumpadInput.seed("")
                 } else {
                     editingSplitIndex = i
-                    splitNumpadText = item.amount == 0 ? "" : String(describing: item.amount)
+                    splitNumpadInput.seed(item.amount == 0 ? "" : String(describing: item.amount))
                 }
             } label: {
                 splitAmountLabel(i: i, item: item)
@@ -834,7 +836,7 @@ struct MacAddTransactionSheet: View {
         let isActive = editingSplitIndex == i
         let displayText: String = {
             if isActive {
-                return splitNumpadText.isEmpty ? "0.00" : splitNumpadText
+                return splitNumpadInput.text.isEmpty ? "0.00" : splitNumpadInput.text
             }
             if item.amount == 0 { return "0.00" }
             return CurrencyFormatter.formatDecimal(amount: item.amount, fractionDigits: 2)
@@ -844,6 +846,7 @@ struct MacAddTransactionSheet: View {
             Text(displayText)
                 .font(.custom("JetBrainsMono-Medium", fixedSize: 15))
                 .foregroundStyle(isActive ? Color.designPrimary : Color.designOnSurface)
+                .amountPristineHighlight(isActive && splitNumpadInput.isPristine)
         }
         .padding(.horizontal, 8).padding(.vertical, 4)
         .background(RoundedRectangle(cornerRadius: 6).fill(isActive ? Color.designPrimary.opacity(0.08) : Color.clear))
@@ -940,7 +943,7 @@ struct MacAddTransactionSheet: View {
     @ViewBuilder
     private func splitItemNumpad(i: Int, item: SplitItemDraft) -> some View {
         macNumpadPopover(
-            text: $splitNumpadText,
+            input: $splitNumpadInput,
             amount: Binding(get: { item.amount }, set: { splitItems[i].amount = $0 }),
             amountString: Binding(
                 get: { item.amount == 0 ? "" : CurrencyFormatter.formatDecimal(amount: item.amount, fractionDigits: 2) },
@@ -948,7 +951,7 @@ struct MacAddTransactionSheet: View {
             ),
             show: Binding(
                 get: { editingSplitIndex == i },
-                set: { if !$0 { editingSplitIndex = nil; splitNumpadText = "" } }
+                set: { if !$0 { editingSplitIndex = nil; splitNumpadInput.seed("") } }
             )
         )
     }
@@ -1187,38 +1190,30 @@ struct MacAddTransactionSheet: View {
 
     /// Reusable Mac numpad popover. Use this for all amount inputs on Mac sheets.
     /// - Parameters:
-    ///   - text: raw editing buffer
+    ///   - input: 键盘的输入状态；预填态下第一次按键整串替换
     ///   - amount: parsed Decimal, written on confirm
     ///   - amountString: formatted display string, written on confirm
     ///   - show: binding controlling popover visibility
     @ViewBuilder
     private func macNumpadPopover(
-        text: Binding<String>,
+        input: Binding<AmountInputState>,
         amount: Binding<Decimal>,
         amountString: Binding<String>,
         show: Binding<Bool>
     ) -> some View {
         VStack(spacing: 8) {
             NumpadGrid(
-                onDigit: { d in
-                    if let dotIdx = text.wrappedValue.firstIndex(of: ".") {
-                        let decimals = text.wrappedValue[dotIdx...].dropFirst()
-                        guard decimals.count < 2 else { return }
-                    }
-                    text.wrappedValue += "\(d)"
-                },
-                onDot: {
-                    if !text.wrappedValue.contains(".") { text.wrappedValue += text.wrappedValue.isEmpty ? "0." : "." }
-                },
-                onDelete: {
-                    if !text.wrappedValue.isEmpty { text.wrappedValue.removeLast() }
-                },
-                onClear: { text.wrappedValue = "" }
+                onDigit: { input.wrappedValue.appendDigit($0) },
+                onDot: { input.wrappedValue.appendDot() },
+                onDelete: { input.wrappedValue.backspace() },
+                onClear: { input.wrappedValue.clear() }
             )
             .frame(width: 220)
 
             NumpadConfirmButton {
-                if let d = Decimal(string: text.wrappedValue), d != 0 {
+                // 显示串带千分位（"1,234.50"）：不剥掉逗号，Decimal(string:) 会在逗号处
+                // 截断成 1 —— 预填后直接确认就会把金额悄悄改小。
+                if let d = Decimal(string: input.wrappedValue.text.replacing(",", with: "")), d != 0 {
                     amount.wrappedValue = d
                     amountString.wrappedValue = CurrencyFormatter.formatDecimal(amount: d, fractionDigits: 2)
                 }
