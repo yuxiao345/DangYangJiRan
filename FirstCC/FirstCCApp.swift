@@ -14,6 +14,31 @@ private struct SceneDelegateAdaptor: UIViewControllerRepresentable {
 final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(
         _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+    ) -> Bool {
+        registerHomeScreenQuickActions()
+        return true
+    }
+
+    /// 注册长按 App 图标弹出的快捷动作。
+    ///
+    /// 用动态注册（`shortcutItems`）而不是 Info.plist 的 `UIApplicationShortcutItems`：
+    /// 标题直接走 `Localizable.xcstrings`，无需额外的 `InfoPlist.xcstrings`，
+    /// 改文案也只需改一处。代价是新装用户首次启动前菜单里看不到该项。
+    private func registerHomeScreenQuickActions() {
+        let item = UIApplicationShortcutItem(
+            type: QuickAction.addTransaction.typeIdentifier,
+            localizedTitle: String(localized: "记一笔"),
+            localizedSubtitle: nil,
+            icon: UIApplicationShortcutIcon(type: .compose),
+            userInfo: nil
+        )
+        UIApplication.shared.shortcutItems = [item]
+        DiagnosticLog.log("AppDelegate: registered \(UIApplication.shared.shortcutItems?.count ?? 0) quick action(s)")
+    }
+
+    func application(
+        _ application: UIApplication,
         configurationForConnecting connectingSceneSession: UISceneSession,
         options: UIScene.ConnectionOptions
     ) -> UISceneConfiguration {

@@ -16,6 +16,24 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         } else {
             DiagnosticLog.log("SceneDelegate: willConnect #\(count) — no CKShare metadata")
         }
+
+        // 冷启动时动作只能先登记（此刻 loadStores() 未完成），由 RootView 消费。
+        if let shortcutItem = connectionOptions.shortcutItem {
+            DiagnosticLog.log("SceneDelegate: willConnect has shortcut \(shortcutItem.type)")
+            deliver(shortcutItem)
+        }
+    }
+
+    // MARK: - Home Screen quick actions (warm start)
+
+    func windowScene(
+        _ windowScene: UIWindowScene,
+        performActionFor shortcutItem: UIApplicationShortcutItem,
+        completionHandler: @escaping (Bool) -> Void
+    ) {
+        DiagnosticLog.log("SceneDelegate: performActionFor shortcut \(shortcutItem.type)")
+        deliver(shortcutItem)
+        completionHandler(true)
     }
 
     // MARK: - CKShare (warm start or system-delivered)
@@ -70,6 +88,23 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             }
             DiagnosticLog.log("SceneDelegate: FAILED after 10 retries")
             UserDefaults.standard.set(true, forKey: "diag_sceneDelegateFailed")
+        }
+    }
+
+    private func deliver(_ shortcutItem: UIApplicationShortcutItem) {
+        if let appContainer = AppContainer.shared {
+            appContainer.enqueueQuickAction(for: shortcutItem)
+            return
+        }
+        Task {
+            for _ in 1...10 {
+                try? await Task.sleep(for: .seconds(1))
+                if let appContainer = AppContainer.shared {
+                    appContainer.enqueueQuickAction(for: shortcutItem)
+                    return
+                }
+            }
+            DiagnosticLog.log("SceneDelegate: shortcut dropped, AppContainer never appeared")
         }
     }
 

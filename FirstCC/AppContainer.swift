@@ -2,6 +2,22 @@ import SwiftUI
 @preconcurrency import CoreData
 import CloudKit
 
+#if os(iOS)
+import UIKit
+
+/// 长按 Home Screen 图标弹出的快捷菜单动作。
+///
+/// 只有 UIKit 的 `UIApplicationShortcutItem` 会进这个菜单；App Intents
+/// （见 `QianeyShortcuts`）只出现在 Siri / 快捷指令 App / Spotlight，两者是独立系统。
+enum QuickAction: Equatable {
+    /// 记一笔
+    case addTransaction
+
+    /// 系统回调里识别本动作的 type。反向 DNS 形式（Apple 建议）。
+    var typeIdentifier: String { "com.qianey.app.addTransaction" }
+}
+#endif
+
 @Observable
 @MainActor
 final class AppContainer {
@@ -45,6 +61,21 @@ final class AppContainer {
     var currentUserRecordID: String?
     var shareErrorMessage: String?
     private var recentShareURLHashes: [String: Date] = [:]
+
+    #if os(iOS)
+    /// 待处理的长按快捷动作。
+    ///
+    /// 冷启动时 `scene(_:willConnectTo:options:)` 早于 `loadStores()` 完成，
+    /// 那时 `currentLedger` 还是 nil（RootView 显示的是 OnboardingView），
+    /// 无法立即弹「记一笔」。所以这里只登记动作，由 RootView 在账本就绪后消费。
+    var pendingQuickAction: QuickAction?
+
+    /// 把系统传来的快捷项转成待处理动作。
+    func enqueueQuickAction(for shortcutItem: UIApplicationShortcutItem) {
+        guard shortcutItem.type == QuickAction.addTransaction.typeIdentifier else { return }
+        pendingQuickAction = .addTransaction
+    }
+    #endif
 
     /// Whether the current user is the owner of the given ledger
     func isOwner(of ledger: Ledger) -> Bool {
