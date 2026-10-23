@@ -1715,13 +1715,23 @@ struct AddEditTransactionView: View {
 
             VStack(spacing: 12) {
                 // Note
-                TextField("备注", text: $note)
+                TextField("备注", text: $note, axis: .vertical)
                     .font(.designBodyMedium)
                     .foregroundStyle(Color.designOnSurface)
+                    .lineLimit(1...5)
                     .padding(12)
                     .background(Color.designSurfaceContainer)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .focused($focusedNoteField, equals: .main)
+                    .onChange(of: note) { _, newValue in
+                        // 纵向 TextField 的回车是插入换行，而备注在待报销/模板/拆分详情等页面都按单行显示，
+                        // 这里统一去掉换行符（isNewline 覆盖 \n、\r、U+2028、U+2029）
+                        if newValue.contains(where: \.isNewline) {
+                            note = String(newValue.filter { !$0.isNewline })
+                            // 回车原本是收键盘；换行被过滤后若不主动收，用户按回车会毫无反馈
+                            focusedNoteField = nil
+                        }
+                    }
 
                 // Date + Photo
                 HStack(spacing: 12) {
