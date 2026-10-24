@@ -45,19 +45,8 @@ struct AccountListView: View {
     /// iPhone 竖屏 / iPad 竖屏 / 窄窗口：保持原有的整页列表 + push 详情。
     private var stackedLayout: some View {
         ScrollView {
-            LazyVStack(spacing: 24) {
-                totalAssetsCard
-                    .accessibilityIdentifier("account-list-total-assets-card")
-                accountGroupsView { account in
-                    NavigationLink {
-                        AccountDetailView(account: account)
-                    } label: {
-                        accountRow(account)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(16)
+            accountListContent(selectable: false)
+                .padding(16)
         }
         .accessibilityIdentifier("account-list")
         .scrollClipDisabled()
@@ -71,20 +60,8 @@ struct AccountListView: View {
 
         return HStack(alignment: .top, spacing: 20) {
             ScrollView {
-                LazyVStack(spacing: 24) {
-                    totalAssetsCard
-                        .accessibilityIdentifier("account-list-total-assets-card")
-                    accountGroupsView { account in
-                        Button {
-                            selectedAccountID = account.id
-                        } label: {
-                            accountRow(account, isSelected: account.id == selectedAccountID)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityAddTraits(account.id == selectedAccountID ? .isSelected : [])
-                    }
-                }
-                .padding(.vertical, 16)
+                accountListContent(selectable: true)
+                    .padding(.vertical, 16)
             }
             .accessibilityIdentifier("account-list")
             .scrollClipDisabled()
@@ -160,16 +137,36 @@ struct AccountListView: View {
 
     // MARK: - Account Groups
 
-    private func accountGroupsView<Row: View>(
-        @ViewBuilder row: @escaping (Account) -> Row
-    ) -> some View {
+    /// 列表内容：单栏和双栏共用同一份骨架，唯一差异是「点一行会怎样」——
+    /// 单栏 push 进详情页，双栏只切换右栏选中项（并在行上画选中描边）。
+    private func accountListContent(selectable: Bool) -> some View {
         let groups = accountGroups
-        return ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
-            VStack(alignment: .leading, spacing: 12) {
-                groupHeader(type: group.type, count: group.accounts.count, customName: group.customName)
+        return LazyVStack(spacing: 24) {
+            totalAssetsCard
+                .accessibilityIdentifier("account-list-total-assets-card")
 
-                ForEach(group.accounts) { account in
-                    row(account)
+            ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
+                VStack(alignment: .leading, spacing: 12) {
+                    groupHeader(type: group.type, count: group.accounts.count, customName: group.customName)
+
+                    ForEach(group.accounts) { account in
+                        if selectable {
+                            Button {
+                                selectedAccountID = account.id
+                            } label: {
+                                accountRow(account, isSelected: account.id == selectedAccountID)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityAddTraits(account.id == selectedAccountID ? .isSelected : [])
+                        } else {
+                            NavigationLink {
+                                AccountDetailView(account: account)
+                            } label: {
+                                accountRow(account)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
                 }
             }
         }
