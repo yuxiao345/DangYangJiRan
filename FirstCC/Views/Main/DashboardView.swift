@@ -95,7 +95,7 @@ struct DashboardView: View {
         .scrollClipDisabled()
     }
 
-    /// 宽屏：左侧财务概览（整体变窄、内部结构不变），右侧最近交易独立滚动、标题固定。
+    /// 宽屏：左侧财务概览（整体变窄、内部结构不变），右侧最近交易独立滚动、标题随列表一起滚。
     private func twoColumnLayout(availableWidth: CGFloat) -> some View {
         let leftWidth = TwoColumnLayout.leftWidth(
             for: availableWidth, fraction: 0.36, min: 380, max: 460
@@ -120,17 +120,16 @@ struct DashboardView: View {
                     // 阴影必须能溢出列表边界（Apple 文档：scrollClipDisabled 正是为
                     // 「ScrollView 内视图的阴影超出边界」准备的），否则右栏左右两侧的
                     // 卡片圆角和阴影会被裁成直边。
-                    // 标题不能再用 VStack 压在列表上方：关掉裁剪后滚动行会盖住它。
-                    // 改由 RecentTransactionsTopBar 承载——iOS 26 的 safeAreaBar 会把
-                    // 滚动边缘效果延伸到标题下方，滚过时内容自动模糊、标题仍清晰。
+                    // 标题内嵌在内容里跟着滚；不要改回 safeAreaBar——那样它会常驻在右栏顶部、
+                    // 内容只从它下面滑过，与单栏的手感不一致。
                     ScrollView {
-                        recentTransactionsRows
-                            .padding(.bottom, 16)
+                        VStack(spacing: 0) {
+                            recentTransactionsTopContent
+                            recentTransactionsRows
+                                .padding(.bottom, 16)
+                        }
                     }
                     .scrollClipDisabled()
-                    .modifier(RecentTransactionsTopBar {
-                        recentTransactionsTopContent
-                    })
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -150,7 +149,8 @@ struct DashboardView: View {
         }
     }
 
-    /// 两栏模式右栏的固定标题（含上下留白）。单栏布局的标题另带水平内边距。
+    /// 右栏标题（含上下留白），随列表一起滚动——别再挂回 safeAreaBar 固定住。
+    /// 单栏布局的标题另带水平内边距（见 `stackedLayout`）。
     private var recentTransactionsTopContent: some View {
         recentTransactionsHeader
             .padding(.top, 16)
@@ -719,41 +719,6 @@ extension AmountHideEffect {
         switch self {
         case .spotlight: return 0.8
         default:         return 0
-        }
-    }
-}
-
-/// 两栏模式右栏的固定标题容器。
-///
-/// iOS 26 用 `safeAreaBar`：它在给列表让出安全区的同时，把滚动边缘效果延伸到 bar 下面，
-/// 内容从标题下方滑过时由系统自动模糊隔离（HIG：scroll edge effect 正是为 toolbars、
-/// pinned table headers 这类固定界面元素与滚动内容之间提供视觉分隔）。
-/// iOS 18–25 没有 `safeAreaBar`，退回 `safeAreaInset` 并给标题铺 `.bar` 材质；
-/// 否则列表关掉裁剪后，滚动的行会直接压在标题文字上。
-private struct RecentTransactionsTopBar<Header: View>: ViewModifier {
-    let header: Header
-
-    init(@ViewBuilder header: () -> Header) {
-        self.header = header()
-    }
-
-    func body(content: Content) -> some View {
-        if #available(iOS 26.0, *) {
-            content
-                // 必须显式钉 `.soft`，不能依赖 `.automatic`：iOS 26 上 automatic 解析为 soft，
-                // 但用 iOS 27 SDK 构建后 safeAreaBar 的 automatic 改成了等价 `.hard`
-                // （Apple 文档：nearly opaque boundary，变更未写进 release notes）。
-                // 本栏的 bar 只有一栏宽、不是整屏宽，hard 那层近不透明的填充会露出左右两条硬边，
-                // 看起来就是一个框把卡片阴影割断。钉住 soft 后 26/27 表现一致。
-                .scrollEdgeEffectStyle(.soft, for: .top)
-                .safeAreaBar(edge: .top, alignment: .leading) {
-                    header
-                }
-        } else {
-            content.safeAreaInset(edge: .top, spacing: 0) {
-                header
-                    .background(.bar)
-            }
         }
     }
 }
