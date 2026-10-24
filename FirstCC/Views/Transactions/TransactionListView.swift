@@ -26,6 +26,8 @@ struct TransactionListView: View {
     @State private var selectedMonth: Date = Date.now.startOfMonth
     @State private var selectedDay: Int?
     @State private var isCalendarExpanded = false
+    /// 上一次上报的布局模式，用来区分「布局真的切了」和「页面重新出现又补报了一次」。
+    @State private var lastLayoutMode: Bool?
     @State private var dailyExpense: [Int: Decimal] = [:]
     @State private var dailyIncome: [Int: Decimal] = [:]
     @State private var maxDailyExpense: Decimal = 0
@@ -52,52 +54,25 @@ struct TransactionListView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                if !calendarHidden {
-                    CalendarStripView(
-                        selectedMonth: $selectedMonth,
-                        selectedDay: $selectedDay,
-                        isExpanded: $isCalendarExpanded,
-                        dailyExpense: $dailyExpense,
-                        dailyIncome: $dailyIncome,
-                        maxDailyExpense: $maxDailyExpense,
-                        maxDailyIncome: $maxDailyIncome,
-                        monthlyIncome: $monthlyIncome,
-                        monthlyExpense: $monthlyExpense
-                    )
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
+        Group {
+            if supportsTwoColumn {
+                AdaptiveTwoColumnLayout(onModeChange: { isTwoColumn in
+                    // 双栏左栏够宽，日历进横屏直接展开整月；退回单栏时恢复周条默认。
+                    // 回调既会在模式变化时来，也会在页面重新出现时按当前模式补报一次
+                    // （没有补报的话 iPad 横屏冷启动会漏掉初始值），所以要用 lastLayoutMode
+                    // 去重：只有模式真的变了才重设——用户手动收起后切 tab 回来不会被顶开。
+                    guard lastLayoutMode != isTwoColumn else { return }
+                    lastLayoutMode = isTwoColumn
+                    isCalendarExpanded = isTwoColumn
+                }) { availableWidth in
+                    twoColumnLayout(availableWidth: availableWidth)
+                } compact: {
+                    stackedLayout
                 }
-
-                LazyVStack(spacing: 12) {
-                    if transactions.isEmpty {
-                        ContentUnavailableView(
-                            selectedDay != nil ? "当天没有交易记录" : "暂无交易记录",
-                            systemImage: "tray",
-                            description: Text("点击下方 + 开始记一笔")
-                        )
-                        .padding(.top, 40)
-                    } else {
-                        let fullSettlementIDs = Set(transactions.compactMap(\.reimbursedById))
-                        ForEach(groupedByDate) { group in
-                            dateSectionHeader(title: group.title, transactions: group.transactions, fullMonthSettlementIDs: fullSettlementIDs)
-                            ForEach(group.transactions, id: \.objectID) { transaction in
-                                NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
-                                    TransactionRowView(transaction: transaction)
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityIdentifier("tx-list-cell")
-                            }
-                        }
-                    }
-                }
-                .padding(16)
-                .accessibilityIdentifier("tx-list")
+            } else {
+                stackedLayout
             }
         }
-        .id(refreshVersion)
-        .modifier(ScrollCollapseModifier(isCalendarExpanded: $isCalendarExpanded))
         .if(!options.contains(.hideScreenBackground)) { $0.designScreen() }
         .safeAreaInset(edge: .bottom) {
             if !options.contains(.hideAddButton) {
@@ -157,6 +132,102 @@ struct TransactionListView: View {
             applyFilters()
             refreshVersion &+= 1
         }
+    }
+
+    // MARK: - Layout
+
+    /// 只有主流水入口（默认参数）启用双栏。预算明细（`presetTransactions` / `.hideCalendar`）、
+    /// 分类明细页都保持原来的单栏结构。
+    ///
+    /// 注意 `options.isEmpty` 是双栏左栏无条件渲染日历的**前提**：任何带选项的调用都进不了双栏，
+    /// 所以不存在「日历该藏但左栏还在画」的组合。放宽这里时要一并处理 `calendarHidden`。
+    private var supportsTwoColumn: Bool {
+        options.isEmpty && filterCategory == nil && presetTransactions == nil
+    }
+
+    /// iPhone 竖屏 / iPad 竖屏 / 窄窗口：日历和列表在同一个 ScrollView 里，保持滚动收起日历的行为。
+    private var stackedLayout: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                if !calendarHidden {
+                    calendarCard
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                }
+                transactionRows
+                    .padding(16)
+            }
+        }
+        .id(refreshVersion)
+        .modifier(ScrollCollapseModifier(isCalendarExpanded: $isCalendarExpanded))
+    }
+
+    /// 宽屏：左栏日历固定，右栏流水独立滚动。日历不跟随列表滚动，
+    /// 所以不套 `ScrollCollapseModifier`——左右两栏各自独立才符合双栏的直觉。
+    private func twoColumnLayout(availableWidth: CGFloat) -> some View {
+        let leftWidth = TwoColumnLayout.leftWidth(
+            for: availableWidth, fraction: 0.38, min: 360, max: 440
+        )
+
+        return HStack(alignment: .top, spacing: 20) {
+            ScrollView {
+                calendarCard
+                    .padding(.vertical, 16)
+            }
+            .scrollClipDisabled()
+            .frame(width: leftWidth)
+
+            ScrollView {
+                // 只留纵向内边距：水平页边距由外层 HStack 统一给，栏内内容贴齐列边，
+                // 与总览一致（左 16 / 栏距 20 / 右 16）。这里再加 16 会让右边距翻倍。
+                transactionRows
+                    .padding(.vertical, 16)
+            }
+            .id(refreshVersion)
+            .scrollClipDisabled()
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        }
+        .padding(.horizontal, 16)
+    }
+
+    private var calendarCard: some View {
+        CalendarStripView(
+            selectedMonth: $selectedMonth,
+            selectedDay: $selectedDay,
+            isExpanded: $isCalendarExpanded,
+            dailyExpense: $dailyExpense,
+            dailyIncome: $dailyIncome,
+            maxDailyExpense: $maxDailyExpense,
+            maxDailyIncome: $maxDailyIncome,
+            monthlyIncome: $monthlyIncome,
+            monthlyExpense: $monthlyExpense
+        )
+    }
+
+    private var transactionRows: some View {
+        LazyVStack(spacing: 12) {
+            if transactions.isEmpty {
+                ContentUnavailableView(
+                    selectedDay != nil ? "当天没有交易记录" : "暂无交易记录",
+                    systemImage: "tray",
+                    description: Text("点击下方 + 开始记一笔")
+                )
+                .padding(.top, 40)
+            } else {
+                let fullSettlementIDs = Set(transactions.compactMap(\.reimbursedById))
+                ForEach(groupedByDate) { group in
+                    dateSectionHeader(title: group.title, transactions: group.transactions, fullMonthSettlementIDs: fullSettlementIDs)
+                    ForEach(group.transactions, id: \.objectID) { transaction in
+                        NavigationLink(destination: TransactionDetailView(transaction: transaction)) {
+                            TransactionRowView(transaction: transaction)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("tx-list-cell")
+                    }
+                }
+            }
+        }
+        .accessibilityIdentifier("tx-list")
     }
 
     // MARK: - Date Section Header

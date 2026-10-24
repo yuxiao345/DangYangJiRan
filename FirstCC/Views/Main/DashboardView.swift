@@ -5,12 +5,6 @@ struct DashboardView: View {
     @Environment(AppContainer.self) private var appContainer
     @Environment(\.managedObjectContext) private var modelContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    /// 内容区的实测尺寸，用于决定单栏还是双栏。不能在尺寸未知时默认双栏：
-    /// 首帧按单栏排，拿到尺寸后立即切换。
-    @State private var containerSize: CGSize = .zero
     @State private var viewModel: DashboardViewModel
     @State private var showAddSheet = false
     @State private var editingTransaction: Transaction?
@@ -40,20 +34,12 @@ struct DashboardView: View {
 
     var body: some View {
         NavigationStack {
-            // 用容器尺寸 + size class 判断，不读界面方向/机型 —— 跟随 Apple 对 resizable iPhone 的要求。
-            // 不能再用 GeometryReader 包住内容：iOS 26 要求 ScrollView 是导航容器的直接内容，
-            // 大标题折叠、内容从玻璃导航栏/标签栏下方滑过都依赖这一点（Apple DTS，论坛 thread 821675）。
-            // .onGeometryChange 只测量不包裹，ScrollView 仍是直接内容；
-            // 代价是尺寸刚变化的那一帧仍按旧布局排，通常不可见。
-            Group {
-                if usesTwoColumnLayout(width: containerSize.width, height: containerSize.height) {
-                    twoColumnLayout(availableWidth: containerSize.width)
-                } else {
-                    stackedLayout
-                }
+            // 断点与测量统一放在 AdaptiveTwoColumnLayout 里，账户、流水页共用同一套规则。
+            AdaptiveTwoColumnLayout { availableWidth in
+                twoColumnLayout(availableWidth: availableWidth)
+            } compact: {
+                stackedLayout
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .onGeometryChange(for: CGSize.self) { $0.size } action: { containerSize = $0 }
             .designScreen()
             .safeAreaInset(edge: .bottom) {
                 AddFloatingButton(title: "记一笔", identifier: "dashboard-add-tx-button") {
@@ -84,25 +70,6 @@ struct DashboardView: View {
 
     // MARK: - Layout
 
-    /// 双栏布局的最小容器宽度：左栏 380 + 栏距 20 + 右栏最小 400 + 左右页边距 32 = 832，向上取整。
-    /// 必须配「宽 > 高」一起用，不能只看绝对宽度：
-    /// iPhone Duo 内屏实测可用区域只有 867×469pt，却报告 regular/regular；
-    /// 而 iPad 13 寸竖屏宽 1024pt，单看宽度会把竖屏也误判成双栏。
-    private static let twoColumnMinWidth: CGFloat = 840
-
-    /// 第一步只对「regular 宽 + regular 高 + 横向」的窗口启用双栏
-    /// （iPad 横屏、iPhone Duo 内屏）。iPhone 横屏是 compact 高度，等实测截图后再按
-    /// Apple 自家 Mail/Notes 的规则（仅 Plus/Max/Air 这类 regular 宽度机型）放开。
-    ///
-    /// 辅助功能字号下固定宽度的左栏会被大号金额、指标卡撑到换行，此时退回整屏单栏。
-    private func usesTwoColumnLayout(width: CGFloat, height: CGFloat) -> Bool {
-        horizontalSizeClass == .regular
-            && verticalSizeClass == .regular
-            && !dynamicTypeSize.isAccessibilitySize
-            && width > height
-            && width >= Self.twoColumnMinWidth
-    }
-
     /// iPhone 竖屏 / iPad 竖屏 / 窄窗口：保持原有上下结构。
     private var stackedLayout: some View {
         ScrollView {
@@ -130,8 +97,9 @@ struct DashboardView: View {
 
     /// 宽屏：左侧财务概览（整体变窄、内部结构不变），右侧最近交易独立滚动、标题固定。
     private func twoColumnLayout(availableWidth: CGFloat) -> some View {
-        // 左栏随可用宽度缩放，13 寸上不会过宽，mini 上也不会过窄。
-        let leftWidth = min(max(availableWidth * 0.36, 380), 460)
+        let leftWidth = TwoColumnLayout.leftWidth(
+            for: availableWidth, fraction: 0.36, min: 380, max: 460
+        )
 
         return HStack(alignment: .top, spacing: 20) {
             ScrollView {
@@ -771,9 +739,16 @@ private struct RecentTransactionsTopBar<Header: View>: ViewModifier {
 
     func body(content: Content) -> some View {
         if #available(iOS 26.0, *) {
-            content.safeAreaBar(edge: .top, alignment: .leading) {
-                header
-            }
+            content
+                // 必须显式钉 `.soft`，不能依赖 `.automatic`：iOS 26 上 automatic 解析为 soft，
+                // 但用 iOS 27 SDK 构建后 safeAreaBar 的 automatic 改成了等价 `.hard`
+                // （Apple 文档：nearly opaque boundary，变更未写进 release notes）。
+                // 本栏的 bar 只有一栏宽、不是整屏宽，hard 那层近不透明的填充会露出左右两条硬边，
+                // 看起来就是一个框把卡片阴影割断。钉住 soft 后 26/27 表现一致。
+                .scrollEdgeEffectStyle(.soft, for: .top)
+                .safeAreaBar(edge: .top, alignment: .leading) {
+                    header
+                }
         } else {
             content.safeAreaInset(edge: .top, spacing: 0) {
                 header

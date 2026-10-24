@@ -269,6 +269,7 @@
 		C2FB5D6D038756A445E6BC68 /* RefundSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3D3CD96BEEFA305CD0CB6E4 /* RefundSheetView.swift */; };
 		C38E3E4DEA4F4398ADFA40A1 /* NumpadGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 458691A145A84013AA5641B6 /* NumpadGrid.swift */; };
 		C3A7F19E5B2D4E8A9F013D77 /* AddFloatingButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4B8A20F6C3E5F9BA1024E88 /* AddFloatingButton.swift */; };
+		A7C1E4B92D3F4A6C8B0D1E2F /* AdaptiveTwoColumnLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8D2F5C03E4A5B7D9C1E2F3A /* AdaptiveTwoColumnLayout.swift */; };
 		C6253E631CFE8A4A4D0230DD /* BankLogoPresets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25BD8B7423ECB057766F757C /* BankLogoPresets.swift */; };
 		C64599CA223F4F38A14CB3FA /* LedgerEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E2DCACB16BA4534A2BD913F /* LedgerEntity.swift */; };
 		C67A66089AB07D1C1D06860F /* icon_dark.png in Resources */ = {isa = PBXBuildFile; fileRef = 97FCEDFC1A08B135CB216CDC /* icon_dark.png */; };
@@ -523,6 +524,7 @@
 		D301E304595F4FE79A15BF68 /* Set+Toggle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Set+Toggle.swift"; sourceTree = "<group>"; };
 		D3D3CD96BEEFA305CD0CB6E4 /* RefundSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefundSheetView.swift; sourceTree = "<group>"; };
 		D4B8A20F6C3E5F9BA1024E88 /* AddFloatingButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddFloatingButton.swift; sourceTree = "<group>"; };
+		B8D2F5C03E4A5B7D9C1E2F3A /* AdaptiveTwoColumnLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveTwoColumnLayout.swift; sourceTree = "<group>"; };
 		D630BB06AF584365B63460B4 /* SplitServiceImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitServiceImpl.swift; sourceTree = "<group>"; };
 		D8AD404B99214C1B879EF145 /* MerchantEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MerchantEntity.swift; sourceTree = "<group>"; };
 		D8E979140E64CD5A924B3FB5 /* CSVStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVStorage.swift; sourceTree = "<group>"; };
@@ -633,6 +635,7 @@
 				47717F8E4ED84F5B8853794A /* MultiSelectChipRow.swift */,
 				4A5CCFB4EBF3467B8F45A096 /* MultiSelectPickerView.swift */,
 				D4B8A20F6C3E5F9BA1024E88 /* AddFloatingButton.swift */,
+				B8D2F5C03E4A5B7D9C1E2F3A /* AdaptiveTwoColumnLayout.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -1502,6 +1505,7 @@
 				780D8A99731A415BBE2EAA59 /* MemberCategoryCrossView.swift in Sources */,
 				96FEB08C2A4F41A287F0B3B1 /* MemberSplitDonutContent.swift in Sources */,
 				C3A7F19E5B2D4E8A9F013D77 /* AddFloatingButton.swift in Sources */,
+				A7C1E4B92D3F4A6C8B0D1E2F /* AdaptiveTwoColumnLayout.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

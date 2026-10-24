@@ -5,6 +5,12 @@ struct AccountDetailView: View {
     // NSManagedObject refreshes via NotificationCenter.transactionDidChange —
     // not through ObservableObject. Don't add @ObservedObject here.
     let account: Account
+    /// 双栏右栏内嵌模式：整页背景与导航标题由 AccountListView 统一提供。
+    /// 不能在这里再画 `.designScreen()`——那层背景会 `.ignoresSafeArea()` 撑满整屏并压住左栏。
+    var embedded: Bool = false
+    /// 账户被编辑并保存后回调。双栏下左栏常驻、不会像单栏那样靠 pop 回列表重跑 `onAppear`，
+    /// 所以必须由这里主动通知列表重新加载，否则同屏会出现新旧两份数据。
+    var onAccountChanged: (() -> Void)?
     @Environment(\.managedObjectContext) private var modelContext
     @Environment(AppContainer.self) private var appContainer
     @State private var balance: Decimal = 0
@@ -29,11 +35,13 @@ struct AccountDetailView: View {
                 creditCardSection
                 transactionList
             }
-            .padding(16)
+            // 内嵌时水平内边距交给 AccountListView 的 HStack（与总览同一套：栏内内容贴齐列边，
+            // 页边距 16、栏距 20）。这里再补 16 会让右边距变成 32、栏间沟变 36。
+            .padding(.horizontal, embedded ? 0 : 16)
+            .padding(.vertical, 16)
         }
         .scrollClipDisabled()
-        .designScreen()
-        .navigationTitle(LocalizedStringKey(account.name))
+        .if(!embedded) { $0.designScreen().navigationTitle(LocalizedStringKey(account.name)) }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { showEditSheet = true } label: {
@@ -43,7 +51,10 @@ struct AccountDetailView: View {
                 .accessibilityIdentifier("account-edit-button")
             }
         }
-        .sheet(isPresented: $showEditSheet, onDismiss: { load() }) {
+        .sheet(isPresented: $showEditSheet, onDismiss: {
+            load()
+            onAccountChanged?()
+        }) {
             AddEditAccountView(editing: account)
         }
         .onAppear(perform: load)

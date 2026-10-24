@@ -8,19 +8,21 @@ struct AccountListView: View {
     @State private var accounts: [Account] = []
     @State private var balances: [UUID: Decimal] = [:]
     @State private var lendingInfos: [UUID: AccountRowView.LendingAccountInfo] = [:]
+    /// 双栏时右栏显示的账户。存 id 而不是对象：reload 后旧对象可能已经失效。
+    @State private var selectedAccountID: UUID?
+
+    private var selectedAccount: Account? {
+        guard let selectedAccountID else { return nil }
+        return accounts.first { $0.id == selectedAccountID }
+    }
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                LazyVStack(spacing: 24) {
-                    totalAssetsCard
-                        .accessibilityIdentifier("account-list-total-assets-card")
-                    accountGroupsView
-                }
-                .padding(16)
+            AdaptiveTwoColumnLayout { availableWidth in
+                twoColumnLayout(availableWidth: availableWidth)
+            } compact: {
+                stackedLayout
             }
-            .accessibilityIdentifier("account-list")
-            .scrollClipDisabled()
             .designScreen()
             .safeAreaInset(edge: .bottom) {
                 AddFloatingButton(title: "添加账户", identifier: "account-add-button") {
@@ -36,6 +38,80 @@ struct AccountListView: View {
                 loadAccounts()
             }
         }
+    }
+
+    // MARK: - Layout
+
+    /// iPhone 竖屏 / iPad 竖屏 / 窄窗口：保持原有的整页列表 + push 详情。
+    private var stackedLayout: some View {
+        ScrollView {
+            LazyVStack(spacing: 24) {
+                totalAssetsCard
+                    .accessibilityIdentifier("account-list-total-assets-card")
+                accountGroupsView { account in
+                    NavigationLink {
+                        AccountDetailView(account: account)
+                    } label: {
+                        accountRow(account)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(16)
+        }
+        .accessibilityIdentifier("account-list")
+        .scrollClipDisabled()
+    }
+
+    /// 宽屏：左栏账户列表独立滚动，右栏是选中账户的明细，同样独立滚动。
+    private func twoColumnLayout(availableWidth: CGFloat) -> some View {
+        let leftWidth = TwoColumnLayout.leftWidth(
+            for: availableWidth, fraction: 0.34, min: 340, max: 420
+        )
+
+        return HStack(alignment: .top, spacing: 20) {
+            ScrollView {
+                LazyVStack(spacing: 24) {
+                    totalAssetsCard
+                        .accessibilityIdentifier("account-list-total-assets-card")
+                    accountGroupsView { account in
+                        Button {
+                            selectedAccountID = account.id
+                        } label: {
+                            accountRow(account, isSelected: account.id == selectedAccountID)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(account.id == selectedAccountID ? .isSelected : [])
+                    }
+                }
+                .padding(.vertical, 16)
+            }
+            .accessibilityIdentifier("account-list")
+            .scrollClipDisabled()
+            .frame(width: leftWidth)
+
+            Group {
+                if let selectedAccount {
+                    // 换账户时重建整棵子树：AccountDetailView 的展开状态和已加载数据都按账户持有，
+                    // 只改 account 属性不会重跑 onAppear，会残留上一个账户的月份折叠状态。
+                    AccountDetailView(
+                        account: selectedAccount,
+                        embedded: true,
+                        onAccountChanged: { loadAccounts() }
+                    )
+                    .id(selectedAccount.id)
+                } else {
+                    ContentUnavailableView(
+                        "还没有账户",
+                        systemImage: "creditcard",
+                        description: Text("点击下方 + 添加账户")
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        }
+        .padding(.horizontal, 16)
     }
 
     // MARK: - Total Assets Hero Card
@@ -84,24 +160,32 @@ struct AccountListView: View {
 
     // MARK: - Account Groups
 
-    private var accountGroupsView: some View {
+    private func accountGroupsView<Row: View>(
+        @ViewBuilder row: @escaping (Account) -> Row
+    ) -> some View {
         let groups = accountGroups
         return ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
             VStack(alignment: .leading, spacing: 12) {
                 groupHeader(type: group.type, count: group.accounts.count, customName: group.customName)
 
                 ForEach(group.accounts) { account in
-                    NavigationLink {
-                        AccountDetailView(account: account)
-                    } label: {
-                        AccountRowView(
-                            account: account,
-                            balance: balances[account.id] ?? 0,
-                            lendingInfo: lendingInfos[account.id]
-                        )
-                    }
-                    .buttonStyle(.plain)
+                    row(account)
                 }
+            }
+        }
+    }
+
+    /// 账户行的统一渲染。双栏下额外画一圈选中描边。
+    private func accountRow(_ account: Account, isSelected: Bool = false) -> some View {
+        AccountRowView(
+            account: account,
+            balance: balances[account.id] ?? 0,
+            lendingInfo: lendingInfos[account.id]
+        )
+        .overlay {
+            if isSelected {
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(Color.designPrimaryContainer, lineWidth: 1.5)
             }
         }
     }
@@ -149,6 +233,16 @@ struct AccountListView: View {
                 lendingInfos[account.id] = computeLendingInfo(account: account, ledger: ledger)
             }
         }
+        reconcileSelection()
+    }
+
+    /// 双栏选中态收敛：首次进入自动选第一个可见账户；选中账户被删除/归档后回退。
+    private func reconcileSelection() {
+        let displayed = accountGroups.flatMap(\.accounts)
+        if let selectedAccountID, displayed.contains(where: { $0.id == selectedAccountID }) {
+            return
+        }
+        selectedAccountID = displayed.first?.id
     }
 
     private func computeLendingInfo(account: Account, ledger: Ledger) -> AccountRowView.LendingAccountInfo {

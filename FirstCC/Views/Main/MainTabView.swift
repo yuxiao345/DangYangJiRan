@@ -18,9 +18,8 @@ struct MainTabView: View {
                 .tag(AppTab.dashboard)
                 .accessibilityIdentifier("tab-dashboard")
 
-            NavigationStack {
-                AccountListView()
-            }
+            // AccountListView 自带 NavigationStack；外面再套一层会变成嵌套导航栈。
+            AccountListView()
                 .tabItem {
                     Label("账户", systemImage: "creditcard")
                 }

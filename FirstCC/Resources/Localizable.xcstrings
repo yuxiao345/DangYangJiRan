@@ -11560,6 +11560,22 @@
         }
       }
     },
+    "点击下方 + 添加账户" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap + below to add an account"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点击下方 + 添加账户"
+          }
+        }
+      }
+    },
     "点击下方 + 开始记一笔" : {
       "localizations" : {
         "en" : {
@@ -14804,6 +14820,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "返回资产配置概览"
+          }
+        }
+      }
+    },
+    "还没有账户" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No accounts yet"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "还没有账户"
           }
         }
       }
