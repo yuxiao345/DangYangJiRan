@@ -150,7 +150,7 @@ struct TransactionListView: View {
         ScrollView {
             VStack(spacing: 0) {
                 if !calendarHidden {
-                    calendarCard
+                    calendarCard(collapsesOnDayTap: true)
                         .padding(.horizontal, 16)
                         .padding(.top, 8)
                 }
@@ -171,7 +171,8 @@ struct TransactionListView: View {
 
         return HStack(alignment: .top, spacing: 20) {
             ScrollView {
-                calendarCard
+                // 双栏左栏够宽，点选某天不收起成周条——否则用户每换一天都要再点开一次。
+                calendarCard(collapsesOnDayTap: false)
                     .padding(.vertical, 16)
             }
             .scrollClipDisabled()
@@ -190,7 +191,7 @@ struct TransactionListView: View {
         .padding(.horizontal, 16)
     }
 
-    private var calendarCard: some View {
+    private func calendarCard(collapsesOnDayTap: Bool) -> some View {
         CalendarStripView(
             selectedMonth: $selectedMonth,
             selectedDay: $selectedDay,
@@ -200,7 +201,8 @@ struct TransactionListView: View {
             maxDailyExpense: $maxDailyExpense,
             maxDailyIncome: $maxDailyIncome,
             monthlyIncome: $monthlyIncome,
-            monthlyExpense: $monthlyExpense
+            monthlyExpense: $monthlyExpense,
+            collapsesOnDayTap: collapsesOnDayTap
         )
     }
 

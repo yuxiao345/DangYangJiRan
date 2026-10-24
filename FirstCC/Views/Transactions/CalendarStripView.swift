@@ -12,6 +12,9 @@ struct CalendarStripView: View {
     @Binding var maxDailyIncome: Decimal
     @Binding var monthlyIncome: Decimal
     @Binding var monthlyExpense: Decimal
+    /// 选中新的当月某天之后是否自动收起成周条（重复点已选中的那天是取消选中，不收）。单栏下这是既有行为（点完就回到一行，给列表让位置）；
+    /// 横屏双栏时日历卡独占左栏、空间够，收起反而让用户每选一天都要再点开一次，所以传 false。
+    var collapsesOnDayTap: Bool = true
 
     /// weekdayOffset: how many empty cells before day 1, with column 0 = firstWeekday.
     /// Calendar.weekday: 1=Sun 2=Mon … 7=Sat.
@@ -291,7 +294,8 @@ struct CalendarStripView: View {
                         if cell.isCurrentMonth {
                             let wasSelected = (selectedDay == cell.day)
                             handleDayTap(day: cell.day, isCurrentMonth: true, targetMonth: selectedMonth)
-                            if !wasSelected {
+                            // 单栏下点完就收起（给列表让位置）；双栏横屏空间够，保持整月展开。
+                            if !wasSelected && collapsesOnDayTap {
                                 withAnimation(.easeInOut(duration: 0.25)) {
                                     isExpanded = false
                                 }
@@ -299,7 +303,8 @@ struct CalendarStripView: View {
                         } else {
                             // Adjacent-month tap: navigate to that month.
                             // Grid stays expanded so the user can continue browsing the new month.
-                            // (Current-month taps collapse to weekStrip — that asymmetry is intentional.)
+                            // (Current-month taps collapse to weekStrip — that asymmetry is intentional,
+                            //  and only applies when `collapsesOnDayTap` is true.)
                             let target = selectedMonth.adding(.month, value: cell.monthOffset).startOfMonth
                             handleDayTap(day: cell.day, isCurrentMonth: false, targetMonth: target)
                         }
