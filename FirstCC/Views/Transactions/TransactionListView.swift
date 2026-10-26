@@ -20,6 +20,8 @@ struct TransactionListView: View {
     /// 预过滤明细：非 nil 时直接渲染这批交易，跳过自身查询。
     /// 由调用方保证这批交易就是目标集合（预算项明细需要与金额统计共用同一套过滤规则）。
     var presetTransactions: [Transaction]? = nil
+    /// 页面标题。nil 时沿用原行为：分类明细用分类名，其余用「流水」。
+    var title: LocalizedStringKey? = nil
     @State private var transactions: [Transaction] = []
     @State private var showAddSheet = false
     @State private var filterType: TransactionType?
@@ -40,11 +42,13 @@ struct TransactionListView: View {
     init(
         filterCategory: Category? = nil,
         options: TransactionListOptions = [],
-        presetTransactions: [Transaction]? = nil
+        presetTransactions: [Transaction]? = nil,
+        title: LocalizedStringKey? = nil
     ) {
         self.filterCategory = filterCategory
         self.options = options
         self.presetTransactions = presetTransactions
+        self.title = title
     }
 
     /// 是否隐藏日历。预过滤模式下 `loadCalendarData` 直接 early-return，
@@ -81,7 +85,7 @@ struct TransactionListView: View {
                 }
             }
         }
-        .navigationTitle(filterCategory.map { LocalizedStringKey($0.name) } ?? "流水")
+        .navigationTitle(title ?? filterCategory.map { LocalizedStringKey($0.name) } ?? "流水")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 if let ledger = appContainer.currentLedger {

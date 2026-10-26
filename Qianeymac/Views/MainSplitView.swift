@@ -39,6 +39,9 @@ struct MainSplitView: View {
                     .navigationDestination(for: ReportType.self) { reportType in
                         ReportDetailContent(reportType: reportType)
                     }
+                    .navigationDestination(for: DashboardAmountNavEntry.self) { entry in
+                        DashboardAmountDetailMacView(entry: entry)
+                    }
                     .onChange(of: selection) { _, _ in
                         // 切换侧边栏时清空导航路径，防止残留的 pushed view（如账户明细）
                         // 在新 root view 中找不到匹配的 .navigationDestination 而产生运行时警告

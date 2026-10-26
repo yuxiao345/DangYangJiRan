@@ -39,6 +39,10 @@ protocol BudgetServiceProtocol {
     /// 通用本月支出（不依赖预算书），和各项内部计算使用完全一致的筛选逻辑
     func totalExpense(in range: ClosedRange<Date>, ledger: Ledger, context: NSManagedObjectContext) -> Decimal
 
+    /// `totalExpense` 的明细集合：两者共用同一条查询（日期范围 + 排除拆分父交易 + 排除可报销支出），
+    /// 明细页直接渲染它，保证列出的交易与卡片金额完全对应。
+    func expenseTransactions(in range: ClosedRange<Date>, ledger: Ledger, context: NSManagedObjectContext) -> [Transaction]
+
     /// 每日支出趋势（按分类可选，excludeCategoryIDs 用于排除特定子分类——其自身及后代均不参与聚合）
     func dailySpending(in range: ClosedRange<Date>, categoryID: UUID?, excludeCategoryIDs: Set<UUID>, ledgerID: UUID, context: NSManagedObjectContext) -> [DailySpendingPoint]
 }

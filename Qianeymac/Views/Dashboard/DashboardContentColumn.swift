@@ -17,6 +17,8 @@ struct DashboardContentColumn: View {
     @State private var animExpenseFrac: Double = 0
     @State private var animBalanceFrac: Double = 0
     @State private var animBudgetPercent: Double = 0
+    /// 收入/支出卡片当前悬停的是哪一张（仅用于 chevron 提示，与预算卡一致）
+    @State private var hoveredMetricKind: DashboardAmountNavEntry.Kind?
 
     // MARK: - Category Card State
     @State private var categoryPieProgress: Double = 0
@@ -222,25 +224,83 @@ struct DashboardContentColumn: View {
 
     private var incomeExpenseRow: some View {
         let balance = viewModel.monthlyIncome + viewModel.monthlyExpense
+        // 没有当前账本就没有可点开的明细集合（数据也为空），此时退化为不可点卡片
+        let ledgerID = appContainer.currentLedger?.id
         return HStack(spacing: 12) {
-            metricCell(label: "本月收入", amount: viewModel.monthlyIncome, frac: animIncomeFrac, color: Color.designPrimaryFixedDim)
-            metricCell(label: "本月支出", amount: abs(viewModel.monthlyExpense), frac: animExpenseFrac, color: Color.designAccentRed)
+            metricCell(
+                label: "本月收入",
+                amount: viewModel.monthlyIncome,
+                frac: animIncomeFrac,
+                color: Color.designPrimaryFixedDim,
+                entry: ledgerID.map {
+                    DashboardAmountNavEntry(kind: .income, monthStart: viewModel.currentMonthStart, ledgerID: $0)
+                }
+            )
+            metricCell(
+                label: "本月支出",
+                amount: abs(viewModel.monthlyExpense),
+                frac: animExpenseFrac,
+                color: Color.designAccentRed,
+                entry: ledgerID.map {
+                    DashboardAmountNavEntry(kind: .expense, monthStart: viewModel.currentMonthStart, ledgerID: $0)
+                }
+            )
+            // 结余是派生值，没有单一明细集合，保持不可点
             metricCell(label: "本月结余", amount: balance, frac: animBalanceFrac, color: balance >= 0 ? Color.designPrimaryFixedDim : Color.designAccentRed)
         }
     }
 
-    private func metricCell(label: String, amount: Decimal, frac: Double, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(label)
-                .font(.designBodyMedium.weight(.semibold))
-                .foregroundStyle(Color.designOnSurfaceVariant)
-                .tracking(0.4)
+    private func metricCell(
+        label: String,
+        amount: Decimal,
+        frac: Double,
+        color: Color,
+        entry: DashboardAmountNavEntry? = nil
+    ) -> some View {
+        let isHovered = entry.map { hoveredMetricKind == $0.kind } ?? false
+        let content = VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 4) {
+                Text(LocalizedStringKey(label))
+                    .font(.designBodyMedium.weight(.semibold))
+                    .foregroundStyle(Color.designOnSurfaceVariant)
+                    .tracking(0.4)
+
+                Spacer(minLength: 0)
+
+                // 与「本月预算」卡一致的可点提示
+                if entry != nil {
+                    Image(systemName: "chevron.right")
+                        .font(.designBodyCaption)
+                        .foregroundStyle(isHovered ? Color.designAccentGreen : Color.secondary)
+                        .offset(x: isHovered ? 2 : 0)
+                }
+            }
             CurrencyText(amount: amount, currencyCode: currencyCode, showSign: false, size: 22, foregroundColor: color, fractionDigits: 0)
             PixelProgressBar(progress: frac, tint: color.opacity(0.6), totalBlocks: 20)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .glassCard(cornerRadius: 16)
+
+        return Group {
+            if let entry {
+                // 用 NavigationLink 而不是 onTapGesture：键盘激活与无障碍语义都由系统给
+                NavigationLink(value: entry) {
+                    content
+                        .contentShape(RoundedRectangle(cornerRadius: 16))
+                        .onHover { inside in
+                            withAnimation(reduceMotion ? .none : .easeOut(duration: 0.15)) {
+                                hoveredMetricKind = inside ? entry.kind : nil
+                            }
+                            if inside { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+                        }
+                        .accessibilityElement(children: .combine)
+                }
+                .buttonStyle(.plain)
+            } else {
+                content
+            }
+        }
     }
 
     // MARK: - 预算

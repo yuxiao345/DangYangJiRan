@@ -34,6 +34,8 @@ struct TransactionListContent: View {
     /// 预过滤明细：非 nil 时直接渲染这批交易，跳过自身查询。
     /// 由调用方保证这批交易就是目标集合（预算项明细需要与金额统计共用同一套过滤规则）。
     var presetTransactions: [Transaction]? = nil
+    /// 页面标题。nil 时沿用原行为（不显示标题）。
+    var title: LocalizedStringKey? = nil
 
     private let cal = Calendar.current
     private let weekdaySymbols = ["一", "二", "三", "四", "五", "六", "日"]
@@ -41,11 +43,13 @@ struct TransactionListContent: View {
     init(
         selectedDate: Binding<Date?>,
         options: TransactionListOptions = [],
-        presetTransactions: [Transaction]? = nil
+        presetTransactions: [Transaction]? = nil,
+        title: LocalizedStringKey? = nil
     ) {
         self._selectedDate = selectedDate
         self.options = options
         self.presetTransactions = presetTransactions
+        self.title = title
     }
 
     /// 是否隐藏日历。预过滤模式下 `load` 直接 early-return，
@@ -135,7 +139,7 @@ struct TransactionListContent: View {
         .sheet(item: $selectedTransaction) { t in
             MacAddTransactionSheet(editing: t, displayMode: true)
         }
-        .navigationTitle("")
+        .navigationTitle(title ?? "")
         .onAppear(perform: load)
         .onChange(of: filterType) { _, _ in load() }
         .onChange(of: selectedMonth) { _, _ in

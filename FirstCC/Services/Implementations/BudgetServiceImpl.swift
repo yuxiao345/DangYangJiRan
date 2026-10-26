@@ -239,9 +239,13 @@ final class BudgetServiceImpl: BudgetServiceProtocol {
     }
 
     func totalExpense(in range: ClosedRange<Date>, ledger: Ledger, context: NSManagedObjectContext) -> Decimal {
-        let txs = fetchExpenseTransactions(in: range, ledgerID: ledger.id, context: context)
-        let net = txs.reduce(Decimal(0)) { $0 + $1.netExpenseAmount }
+        let net = expenseTransactions(in: range, ledger: ledger, context: context)
+            .reduce(Decimal(0)) { $0 + $1.netExpenseAmount }
         return max(0, net)
+    }
+
+    func expenseTransactions(in range: ClosedRange<Date>, ledger: Ledger, context: NSManagedObjectContext) -> [Transaction] {
+        fetchExpenseTransactions(in: range, ledgerID: ledger.id, context: context)
     }
 
     func categorySpending(in range: ClosedRange<Date>, for book: BudgetBook, context: NSManagedObjectContext) -> [UUID: Decimal] {

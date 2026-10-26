@@ -385,29 +385,83 @@ struct DashboardView: View {
 
     private var incomeExpenseGrid: some View {
         HStack(spacing: 12) {
-            metricCard(
+            metricLink(
+                kind: .income,
                 label: "本月收入",
                 amount: viewModel.monthlyIncome,
                 progress: displayIncomeFrac,
                 color: Color.designPrimaryFixedDim
             )
-            metricCard(
+            metricLink(
+                kind: .expense,
                 label: "本月支出",
-                amount: viewModel.monthlyExpense,
+                amount: abs(viewModel.monthlyExpense),
                 progress: displayExpenseFrac,
                 color: Color.designAccentRed
             )
         }
     }
 
-    private func metricCard(label: LocalizedStringKey, amount: Decimal, progress: Double, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(label)
-                .font(.designLabelSmall)
-                .foregroundStyle(Color.designOnSurfaceVariant)
-                .tracking(1.0)
+    private func metricLink(
+        kind: DashboardAmountNavEntry.Kind,
+        label: LocalizedStringKey,
+        amount: Decimal,
+        progress: Double,
+        color: Color
+    ) -> some View {
+        let ledgerID = appContainer.currentLedger?.id
+        let card = metricCard(
+            label: label,
+            amount: amount,
+            progress: progress,
+            color: color,
+            showsChevron: ledgerID != nil
+        )
+        return Group {
+            if let ledgerID {
+                NavigationLink {
+                    DashboardAmountDetailView(entry: DashboardAmountNavEntry(
+                        kind: kind,
+                        monthStart: viewModel.currentMonthStart,
+                        ledgerID: ledgerID
+                    ))
+                } label: {
+                    card
+                }
+                .buttonStyle(.plain)
+            } else {
+                card
+            }
+        }
+    }
 
-            CurrencyText(amount: abs(amount), currencyCode: ledgerCurrency, showSign: false, size: 22, foregroundColor: color, fractionDigits: 0)
+    private func metricCard(
+        label: LocalizedStringKey,
+        amount: Decimal,
+        progress: Double,
+        color: Color,
+        showsChevron: Bool
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 4) {
+                Text(label)
+                    .font(.designLabelSmall)
+                    .foregroundStyle(Color.designOnSurfaceVariant)
+                    .tracking(1.0)
+
+                Spacer(minLength: 0)
+
+                // 与「本月预算」卡一致的可点提示
+                if showsChevron {
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(Color.designOnSurfaceVariant)
+                }
+            }
+
+            // 金额带符号显示：收入退款本月只有退款时，卡片要显示 -¥ 而不是被 abs 抹平，
+            // 否则与明细页（以及 Mac 卡片）对不上
+            CurrencyText(amount: amount, currencyCode: ledgerCurrency, showSign: false, size: 22, foregroundColor: color, fractionDigits: 0)
 
             PixelProgressBar(progress: progress, tint: color, totalBlocks: 20)
         }

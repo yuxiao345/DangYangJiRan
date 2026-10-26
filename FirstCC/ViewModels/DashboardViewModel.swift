@@ -6,6 +6,9 @@ import Foundation
 final class DashboardViewModel {
     var monthlyIncome: Decimal = 0
     var monthlyExpense: Decimal = 0
+    /// 当前金额所对应的自然月（月首 00:00）。卡片跳明细时用它推导区间，
+    /// 避免跨月零点前后点开时明细页取到新月份、与卡片数字对不上。
+    private(set) var currentMonthStart: Date = Date.now.startOfMonth
     var recentTransactions: [Transaction] = []
     var accounts: [Account] = []
     var accountBalances: [UUID: Decimal] = [:]
@@ -38,6 +41,7 @@ final class DashboardViewModel {
     func copyFrom(_ other: DashboardViewModel) {
         monthlyIncome = other.monthlyIncome
         monthlyExpense = other.monthlyExpense
+        currentMonthStart = other.currentMonthStart
         recentTransactions = other.recentTransactions
         accounts = other.accounts
         accountBalances = other.accountBalances
@@ -67,8 +71,8 @@ final class DashboardViewModel {
         guard let ledger else { return }
         let calendar = Calendar.current
         let now = Date.now
-        guard let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now)),
-              let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart) else { return }
+        guard let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) else { return }
+        currentMonthStart = monthStart
 
         accounts = (try? accountService.fetchAccounts(for: ledger, includeArchived: true, context: context)) ?? []
         totalBalance = 0
@@ -99,17 +103,17 @@ final class DashboardViewModel {
             }
 
         var filters = TransactionFilters()
-        filters.dateRange = monthStart..<monthEnd
+        filters.dateRange = DashboardAmountNavEntry.rangeForIncome(monthStart: monthStart)
         let allTransactions = (try? transactionService.fetchTransactions(for: ledger, context: context, filters: filters)) ?? []
 
-        let normalTransactions = allTransactions.excludingReimbursementTransactions()
-
-        monthlyIncome = normalTransactions.filter { $0.type == .income }.reduce(0) { $0 + $1.ledgerAmount }
-        let cal = Calendar.current
-        let rangeStart = cal.startOfDay(for: monthStart)
-        let rangeEnd = cal.endOfDay(for: cal.date(byAdding: DateComponents(month: 1, day: -1), to: monthStart) ?? monthStart)
-        let monthRange = rangeStart...rangeEnd
-        monthlyExpense = -(budgetService.totalExpense(in: monthRange, ledger: ledger, context: context))
+        // 卡片金额与明细列表共用同一套口径（收入用 summaryIncomeTransactions，
+        // 支出用 BudgetService 的同一查询入口），否则点进去的合计会对不上卡片数字。
+        monthlyIncome = allTransactions.summaryIncomeTransactions().reduce(0) { $0 + $1.ledgerAmount }
+        monthlyExpense = -(budgetService.totalExpense(
+            in: DashboardAmountNavEntry.rangeForExpense(monthStart: monthStart),
+            ledger: ledger,
+            context: context
+        ))
 
         let oneMonthAgo = calendar.date(byAdding: .month, value: -1, to: now) ?? now
         recentTransactions = Array(allTransactions

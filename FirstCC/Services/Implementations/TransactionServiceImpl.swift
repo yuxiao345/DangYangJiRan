@@ -216,6 +216,17 @@ struct TransactionServiceImpl: TransactionServiceProtocol {
         return false
     }
 
+    func incomeTransactions(
+        in range: Range<Date>,
+        for ledger: Ledger,
+        context: NSManagedObjectContext
+    ) -> [Transaction] {
+        var filters = TransactionFilters()
+        filters.dateRange = range
+        let all = (try? fetchTransactions(for: ledger, context: context, filters: filters)) ?? []
+        return all.summaryIncomeTransactions()
+    }
+
     func updateTransaction(_ transaction: Transaction, context: NSManagedObjectContext) throws {
         transaction.modifiedAt = Date.now
         try context.save()

@@ -28,6 +28,13 @@ protocol TransactionServiceProtocol {
         context: NSManagedObjectContext,
         filters: TransactionFilters?
     ) throws -> [Transaction]
+    /// 收入明细：与总览「本月收入」共用 `summaryIncomeTransactions()` 的过滤规则，
+    /// 明细页直接渲染它，保证列出的交易与卡片金额完全对应。
+    func incomeTransactions(
+        in range: Range<Date>,
+        for ledger: Ledger,
+        context: NSManagedObjectContext
+    ) -> [Transaction]
     func updateTransaction(_ transaction: Transaction, context: NSManagedObjectContext) throws
     func deleteTransaction(_ transaction: Transaction, context: NSManagedObjectContext) throws
     /// 将交易的币种、汇率和折算金额应用到 model，统一处理跨币种转换（含 Swift 6.3 beta workaround）

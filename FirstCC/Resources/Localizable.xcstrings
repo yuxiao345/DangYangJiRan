@@ -10262,6 +10262,40 @@
         }
       }
     },
+    "与总览口径一致：不含报销结算收入" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Matches the dashboard total: excludes reimbursement settlements"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "与总览口径一致：不含报销结算收入"
+          }
+        }
+      }
+    },
+    "与总览口径一致：不含可报销支出" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Matches the dashboard total: excludes reimbursable expenses"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "与总览口径一致：不含可报销支出"
+          }
+        }
+      }
+    },
     "本月收支" : {
       "extractionState" : "manual",
       "localizations" : {

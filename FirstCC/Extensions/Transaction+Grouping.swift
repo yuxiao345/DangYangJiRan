@@ -75,6 +75,14 @@ extension Array where Element == Transaction {
         }
     }
 
+    /// 总览「本月收入」的统计口径：排除可报销支出及其报销结算收入后，只保留收入交易。
+    ///
+    /// 金额按 `ledgerAmount` 累加。**总览卡片和点进去的明细列表都必须走这一个入口**，
+    /// 否则会出现「卡片 3000、明细 3500」这类口径漂移。
+    func summaryIncomeTransactions() -> [Transaction] {
+        excludingReimbursementTransactions().filter { $0.type == .income }
+    }
+
     /// Keep only one side of each transfer (outflow, amount < 0). Other types pass through unchanged.
     func deduplicatingTransfers() -> [Transaction] {
         var seen = Set<UUID>()

@@ -3,17 +3,6 @@ import Testing
 @preconcurrency import CoreData
 @testable import Qianeymac
 
-// MARK: - Helpers
-
-extension NSManagedObjectContext {
-    /// 尝试 save，失败返回 Error，成功返回 nil（代替 try!）
-    func saveAsError() -> Error? {
-        guard hasChanges else { return nil }
-        do { try save(); return nil }
-        catch { return error }
-    }
-}
-
 /// 必须 `@MainActor`：Swift Testing 默认把测试跑在协作线程池上，而 fixture 用的是
 /// `.mainQueueConcurrencyType` context —— 在非主线程直接访问它违反 Core Data 的多线程
 /// 编程模式，Apple DTS 对此的定性是 "Violating the programming pattern can trigger
@@ -30,30 +19,8 @@ struct BudgetServiceTests {
     let service: BudgetServiceImpl
 
     init() {
-        context = Self.makeContext()
+        context = InMemoryCoreDataStack.makeContext()
         service = BudgetServiceImpl()
-    }
-
-    // MARK: - Infrastructure
-
-    /// 每次调用创建独立的 in-memory CoreData stack（每个 test 拥有隔离的数据空间）。
-    ///
-    /// model 复用进程内唯一的那份 `CoreDataModel.shared`，**数据隔离靠 store、不靠 model**：
-    /// 每次新建 coordinator + 新建 in-memory store。绝不能在这里自建 model 或 `model.copy()`
-    /// ——宿主 `Qianey.app` 启动时（`QianeymacApp.swift` 的 `AppContainer()`）已经建了一份，
-    /// 进程里出现第二份会让 `+[NSManagedObject entity]` 因同一子类被两个模型声称而解析失败，
-    /// `Entity(context:)` 的兜底不稳定，`save()` 报 NSPersistentStoreIncompatibleSchemaError
-    /// (134020) 而崩。完整机制见 `CoreDataModel` 的文档注释。
-    static func makeContext() -> NSManagedObjectContext {
-        let coordinator = NSPersistentStoreCoordinator(managedObjectModel: CoreDataModel.shared)
-        do {
-            try coordinator.addPersistentStore(ofType: NSInMemoryStoreType, configurationName: nil, at: nil)
-        } catch {
-            fatalError("Failed to add in-memory store: \(error)")
-        }
-        let ctx = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
-        ctx.persistentStoreCoordinator = coordinator
-        return ctx
     }
 
     // MARK: Helpers
@@ -62,20 +29,16 @@ struct BudgetServiceTests {
         Calendar.current.date(from: DateComponents(year: y, month: m, day: d, hour: hr))!
     }
 
+    // 这两个转调共用实现（`TestSupport/InMemoryCoreDataStack.swift`），只为保留本套件
+    // 现有的无前缀调用写法，避免几十处 `context.` 机械改写。
     @discardableResult
     private func makeLedger(_ name: String = "测试账本") -> Ledger {
-        let l = Ledger(name: name, context: context)
-        l.defaultCurrencyCode = "CNY"
-        if let err = context.saveAsError() { fatalError("makeLedger save failed: \(err)") }
-        return l
+        context.makeLedger(name)
     }
 
     @discardableResult
     private func makeAccount(_ name: String = "测试账户", _ ledger: Ledger) -> Account {
-        let a = Account(name: name, context: context)
-        a.ledger = ledger
-        if let err = context.saveAsError() { fatalError("makeAccount save failed: \(err)") }
-        return a
+        context.makeAccount(name, ledger)
     }
 
     @discardableResult
