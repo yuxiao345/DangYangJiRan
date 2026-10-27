@@ -162,4 +162,34 @@ final class DashboardSummaryTests: CoreDataTestCase {
         ).map(\.id))
         XCTAssertEqual(expenseIDs, Set([firstSecondExpense.id, lastSecondExpense.id]))
     }
+
+    // MARK: - 较上月（净资产变化）
+
+    /// 借贷交易只记现金侧金额，另一侧应收/应付由 `calculateBalance` 补上。
+    /// 「较上月」必须按余额差算，不能拿当月交易金额求和——否则借出月会显示假下跌。
+    func testBalanceChangeTreatsLendingAsNeutral() {
+        let ledger = context.makeLedger()
+        let cash = context.makeAccount("现金", ledger: ledger, initialBalance: 10_000)
+        let lending = context.makeAccount("借给朋友", ledger: ledger, type: .lending)
+        let monthStart = Date.now.startOfMonth
+
+        context.makeTransaction(
+            amount: 5_000, date: date(2, in: monthStart), account: cash, ledger: ledger, type: .income
+        )
+        // 借出 2,000：现金 -2,000，借贷账户 +2,000 应收，净资产不变
+        context.makeTransaction(
+            amount: -2_000, date: date(3, in: monthStart), account: cash, toAccount: lending,
+            ledger: ledger, type: .lending, lendingDirection: .lendOut, lendingStatus: .pending
+        )
+
+        let viewModel = DashboardViewModel(
+            accountService: AccountServiceImpl(),
+            transactionService: TransactionServiceImpl(),
+            ledger: ledger
+        )
+        viewModel.load(context: context, budgetService: BudgetServiceImpl())
+
+        XCTAssertEqual(viewModel.totalBalance, 15_000)
+        XCTAssertEqual(viewModel.balanceChange, 5_000, "借出不应让净资产变化变负")
+    }
 }

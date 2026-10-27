@@ -37,6 +37,22 @@ struct AccountServiceImpl: AccountServiceProtocol {
     }
 
     func calculateBalance(for account: Account, context: NSManagedObjectContext) -> Decimal {
+        balance(for: account, before: .distantFuture, context: context)
+    }
+
+    /// 截至 `cutoff`（不含）的余额，只统计 `date < cutoff` 的交易，其余规则与当前余额完全一致。
+    ///
+    /// 总览用它反推月初净资产。**不要**改成「当前余额 − 当月交易金额之和」：借贷交易只有现金侧
+    /// 一条 `amount`，另一侧应收/应付是在这里按 `toAccount` 补的，直接求和会把借出/借入误算成
+    /// 净资产减少（2026-10 实测「较上月」把 +16,274 显示成 −13,970）。
+    ///
+    /// 已知边界：`lendingStatus` / `settledAmount` 是可变状态、没有历史日期，所以「本月刚结清
+    /// 上月借出」时，上月那条应收在回溯视角里会凭空消失。这是既有口径，未在本次修复范围内。
+    func calculateBalance(for account: Account, before cutoff: Date, context: NSManagedObjectContext) -> Decimal {
+        balance(for: account, before: cutoff, context: context)
+    }
+
+    private func balance(for account: Account, before cutoff: Date, context: NSManagedObjectContext) -> Decimal {
         let accountID = account.id
         var balance = account.initialBalance
 
@@ -45,8 +61,17 @@ struct AccountServiceImpl: AccountServiceProtocol {
         let ledgerCurrency = account.ledger?.defaultCurrencyCode ?? "CNY"
         let useLedgerAmount = acctCurrency == ledgerCurrency
 
+        // 当前余额即「截止到无限远」，两轮查询共用同一条日期上界。
+        // `date == nil` 必须显式放行：模型里 date 是 optional，`NULL < X` 恒为假，
+        // 只写字面比较会让无日期记录从所有账户余额里静默消失（旧实现无日期条件）。
+        // 这类记录在「当前」和「月初」两侧都会被计入，做差时自然抵消。
+        let cutoffPredicate = NSPredicate(format: "date == nil OR date < %@", cutoff as NSDate)
+
         let request = NSFetchRequest<Transaction>(entityName: "Transaction")
-        request.predicate = NSPredicate(format: "account.id == %@ AND isReconciled == NO AND parentTransaction == nil", accountID as CVarArg)
+        request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            NSPredicate(format: "account.id == %@ AND isReconciled == NO AND parentTransaction == nil", accountID as CVarArg),
+            cutoffPredicate,
+        ])
         let transactions = (try? context.fetch(request)) ?? []
 
         for t in transactions {
@@ -68,8 +93,11 @@ struct AccountServiceImpl: AccountServiceProtocol {
         // - 借贷账户：借出待结算=应收（反转符号，扣除已结算部分）
         // - 非借贷账户：收款/借入=钱到账
         let toRequest = NSFetchRequest<Transaction>(entityName: "Transaction")
-        toRequest.predicate = NSPredicate(format: "toAccount.id == %@ AND typeRaw == %@ AND isReconciled == NO AND parentTransaction == nil",
-                                          accountID as CVarArg, TransactionType.lending.rawValue)
+        toRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            NSPredicate(format: "toAccount.id == %@ AND typeRaw == %@ AND isReconciled == NO AND parentTransaction == nil",
+                        accountID as CVarArg, TransactionType.lending.rawValue),
+            cutoffPredicate,
+        ])
         let toTransactions = (try? context.fetch(toRequest)) ?? []
         for t in toTransactions {
             let amt = useLedgerAmount ? t.ledgerAmount : t.amount

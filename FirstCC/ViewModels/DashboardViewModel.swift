@@ -121,9 +121,12 @@ final class DashboardViewModel {
             .filter { $0.date >= oneMonthAgo }
             .sorted(by: { $0.date > $1.date }))
 
-        // Previous month balance = current balance - this month's net (all types, unfiltered)
-        let net = allTransactions.reduce(0) { $0 + $1.ledgerAmount }
-        previousMonthBalance = totalBalance - net
+        // 月初余额用与卡片同一套 `calculateBalance` 倒推。
+        // 不能改成「当前余额 − 当月交易金额之和」：借贷交易只有现金侧一条金额，另一侧应收/应付
+        // 是 calculateBalance 按 `toAccount` 补的，直接求和会把借出/借入误算成净资产减少。
+        previousMonthBalance = accounts.reduce(Decimal.zero) {
+            $0 + accountService.calculateBalance(for: $1, before: monthStart, context: context)
+        }
         if previousMonthBalance != 0 {
             let change = totalBalance - previousMonthBalance
             balanceChange = change

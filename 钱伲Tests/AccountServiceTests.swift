@@ -364,4 +364,38 @@ final class AccountServiceTests: CoreDataTestCase {
     func testH8_nilAndNonLending_invalid() {
         XCTAssertFalse(AddEditTransactionView.validateLendingAccounts(nil, .cash))
     }
+
+    // MARK: - I: 截至日期的余额（总览反推月初净资产）
+
+    /// I1: 只统计 cutoff 之前的交易；cutoff 当天及之后归入本月
+    func testI1_calculateBalanceAsOf_excludesCutoffAndLater() {
+        let ledger = makeLedger()
+        let cash = makeAccount("现金", ledger, initialBalance: 1000)
+        let cutoff = Calendar.current.date(from: DateComponents(year: 2026, month: 10, day: 1))!
+
+        makeTx(amount: -200, date: cutoff.addingTimeInterval(-3600), account: cash, ledger: ledger, type: .expense)
+        makeTx(amount: -300, date: cutoff, account: cash, ledger: ledger, type: .expense)
+        makeTx(amount: 500, date: cutoff.addingTimeInterval(3600), account: cash, ledger: ledger, type: .income)
+
+        XCTAssertEqual(service.calculateBalance(for: cash, context: context), 1000)
+        XCTAssertEqual(service.calculateBalance(for: cash, before: cutoff, context: context), 800)
+    }
+
+    /// I2: 借贷第二轮（应收/应付）同样受 cutoff 约束
+    func testI2_calculateBalanceAsOf_lendingUsesCutoffToo() {
+        let ledger = makeLedger()
+        let sanGe = makeAccount("三哥", ledger, type: .lending)
+        let cash = makeAccount("现金", ledger, initialBalance: 1000)
+        let cutoff = Calendar.current.date(from: DateComponents(year: 2026, month: 10, day: 1))!
+
+        // 月初之前借出 800：现金 -800，三哥 +800 应收
+        makeTx(amount: -800, date: cutoff.addingTimeInterval(-3600), account: cash, toAccount: sanGe,
+               ledger: ledger, lendingDirection: .lendOut, lendingStatus: .pending)
+        // 本月又借出 200：只影响当前余额
+        makeTx(amount: -200, date: cutoff.addingTimeInterval(3600), account: cash, toAccount: sanGe,
+               ledger: ledger, lendingDirection: .lendOut, lendingStatus: .pending)
+
+        XCTAssertEqual(service.calculateBalance(for: sanGe, before: cutoff, context: context), 800)
+        XCTAssertEqual(service.calculateBalance(for: cash, before: cutoff, context: context), 200)
+    }
 }

@@ -32,6 +32,9 @@ struct DashboardSummaryTests {
         type: TransactionType,
         ledger: Ledger,
         account: Account,
+        toAccount: Account? = nil,
+        lendingDirection: LendingDirection? = nil,
+        lendingStatus: LendingStatus = .none,
         reimbursement: ReimbursementStatus = .none,
         refundGroupId: UUID? = nil,
         isSplitParent: Bool = false,
@@ -43,7 +46,10 @@ struct DashboardSummaryTests {
             date: date,
             refundGroupId: refundGroupId,
             reimbursementStatus: reimbursement,
+            lendingDirection: lendingDirection,
+            lendingStatus: lendingStatus,
             account: account,
+            toAccount: toAccount,
             isSplitParent: isSplitParent,
             parentTransaction: parent,
             context: context
@@ -193,5 +199,25 @@ struct DashboardSummaryTests {
             in: entry.expenseRange, ledger: ledger, context: context
         ).map(\.id))
         #expect(expenseIDs == Set([firstSecondExpense.id, lastSecondExpense.id]))
+    }
+
+    // MARK: - 较上月（净资产变化）
+
+    /// 借贷交易只记现金侧金额，另一侧应收/应付由 `calculateBalance` 补上。
+    /// 「较上月」必须按余额差算，不能拿当月交易金额求和——否则借出月会显示假下跌。
+    @Test func balanceChangeTreatsLendingAsNeutral() {
+        let ledger = context.makeLedger()
+        let cash = context.makeAccount("现金", ledger, initialBalance: 10_000)
+        let lending = context.makeAccount("借给朋友", ledger, type: .lending)
+        let monthStart = Date.now.startOfMonth
+
+        makeTx(5_000, date: date(2, in: monthStart), type: .income, ledger: ledger, account: cash)
+        // 借出 2,000：现金 -2,000，借贷账户 +2,000 应收，净资产不变
+        makeTx(-2_000, date: date(3, in: monthStart), type: .lending, ledger: ledger, account: cash,
+               toAccount: lending, lendingDirection: .lendOut, lendingStatus: .pending)
+
+        let viewModel = loadViewModel(ledger: ledger)
+        #expect(viewModel.totalBalance == 15_000)
+        #expect(viewModel.balanceChange == 5_000)
     }
 }

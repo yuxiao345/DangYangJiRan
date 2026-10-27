@@ -50,8 +50,20 @@ extension NSManagedObjectContext {
     }
 
     @discardableResult
-    func makeAccount(_ name: String = "测试账户", _ ledger: Ledger) -> Account {
-        let a = Account(name: name, context: self)
+    func makeAccount(
+        _ name: String = "测试账户",
+        _ ledger: Ledger,
+        type: AccountType = .cash,
+        currencyCode: String = "CNY",
+        initialBalance: Decimal = 0
+    ) -> Account {
+        let a = Account(
+            name: name,
+            currencyCode: currencyCode,
+            type: type,
+            initialBalance: initialBalance,
+            context: self
+        )
         a.ledger = ledger
         if let err = saveAsError() { fatalError("makeAccount save failed: \(err)") }
         return a
