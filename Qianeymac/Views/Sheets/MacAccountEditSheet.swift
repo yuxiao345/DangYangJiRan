@@ -17,7 +17,6 @@ struct MacAccountEditSheet: View {
     @State private var currencyCode: String
     @State private var initialBalance: Decimal
     @State private var balanceString: String
-    @State private var hasCreditLimit: Bool
     @State private var creditLimit: Decimal
     @State private var creditLimitString: String
     @State private var billingDay: Int
@@ -29,6 +28,9 @@ struct MacAccountEditSheet: View {
     @State private var existingCustomTypes: [String] = []
     @State private var errorMessage: String?
     @State private var showErrorAlert: Bool = false
+    @FocusState private var focusedAmountField: AmountField?
+
+    private enum AmountField: Hashable { case balance, creditLimit }
 
     private var effectiveLedger: Ledger { ledger }
 
@@ -46,6 +48,13 @@ struct MacAccountEditSheet: View {
 
     private var isEditing: Bool { editing != nil }
 
+    /// 信用卡额度：只有信用卡类型且字段填了值才算「已设置」。
+    /// 旧实现用 `account?.creditLimit != nil` 初始化一个从不变化的 Bool，
+    /// 新增信用卡时输入的额度会在保存时被静默丢掉。
+    private var effectiveCreditLimit: Decimal? {
+        accountType == .creditCard && !creditLimitString.isEmpty ? creditLimit : nil
+    }
+
     init(editing: Account? = nil, ledger: Ledger) {
         self.editing = editing
         self.ledger = ledger
@@ -54,10 +63,9 @@ struct MacAccountEditSheet: View {
         _accountType = State(initialValue: account?.type ?? .cash)
         _currencyCode = State(initialValue: account?.currencyCode ?? "CNY")
         _initialBalance = State(initialValue: account?.initialBalance ?? 0)
-        _balanceString = State(initialValue: account != nil ? String(describing: account!.initialBalance) : "")
-        _hasCreditLimit = State(initialValue: (account?.creditLimit) != nil)
+        _balanceString = State(initialValue: account.map { Self.amountDisplayString($0.initialBalance) } ?? "")
         _creditLimit = State(initialValue: account?.creditLimit ?? 0)
-        _creditLimitString = State(initialValue: account?.creditLimit != nil ? String(describing: account!.creditLimit!) : "")
+        _creditLimitString = State(initialValue: account?.creditLimit.map(Self.amountDisplayString) ?? "")
         _billingDay = State(initialValue: Int(account?.billingDay ?? 1))
         _dueDay = State(initialValue: Int(account?.dueDay ?? 5))
         _colorHex = State(initialValue: account?.colorHex ?? "#007AFF")
@@ -89,6 +97,14 @@ struct MacAccountEditSheet: View {
         }
         .onAppear { loadExistingCustomTypes() }
         .onChange(of: accountType) { _, _ in loadExistingCustomTypes() }
+        // 失焦时才补千分位：编辑中保持用户敲进去的原始串，避免光标跳动。
+        .onChange(of: focusedAmountField) { old, _ in
+            switch old {
+            case .balance: balanceString = reformattedAmount(balanceString)
+            case .creditLimit: creditLimitString = reformattedAmount(creditLimitString)
+            case nil: break
+            }
+        }
         .alert("保存失败", isPresented: $showErrorAlert) {
         } message: { Text(errorMessage ?? "") }
     }
@@ -179,9 +195,11 @@ struct MacAccountEditSheet: View {
                 TextField("0.00", text: $balanceString)
                     .textFieldStyle(.roundedBorder)
                     .multilineTextAlignment(.trailing)
+                    .focused($focusedAmountField, equals: .balance)
                     .onChange(of: balanceString) { _, v in
-                        balanceString = sanitizeAmount(v, allowNegative: true)
-                        initialBalance = Decimal(string: balanceString) ?? 0
+                        let sanitized = sanitizeAmount(v, allowNegative: true)
+                        if sanitized != v { balanceString = sanitized }
+                        initialBalance = decimalValue(sanitized)
                     }
             }
             if isEditing {
@@ -197,9 +215,11 @@ struct MacAccountEditSheet: View {
                     TextField("0.00", text: $creditLimitString)
                         .textFieldStyle(.roundedBorder)
                         .multilineTextAlignment(.trailing)
+                        .focused($focusedAmountField, equals: .creditLimit)
                         .onChange(of: creditLimitString) { _, v in
-                            creditLimitString = sanitizeAmount(v, allowNegative: false)
-                            creditLimit = Decimal(string: creditLimitString) ?? 0
+                            let sanitized = sanitizeAmount(v, allowNegative: false)
+                            if sanitized != v { creditLimitString = sanitized }
+                            creditLimit = decimalValue(sanitized)
                         }
                 }
                 GridRow {
@@ -236,13 +256,45 @@ struct MacAccountEditSheet: View {
         }
     }
 
-    /// 规范化金额输入：只保留数字、小数点，以及（可选）开头的负号。
+    /// 格式化后的金额串（带千分位）。固定 `,` 分组、`.` 小数，
+    /// 与 `decimalValue` 的解析规则成对，避免跟随区域后分隔符对不上。
+    private static func amountDisplayString(_ value: Decimal) -> String {
+        let number = value as NSDecimalNumber
+        return CurrencyFormatter.editableFormatter.string(from: number) ?? number.stringValue
+    }
+
+    /// 失焦时把原始输入重写成带千分位的显示串；空串保持为空，让 placeholder 可见。
+    private func reformattedAmount(_ text: String) -> String {
+        text.isEmpty ? "" : Self.amountDisplayString(decimalValue(text))
+    }
+
+    /// 输入中允许逗号：失焦格式化会写回带千分位的串，剥掉逗号会让格式化结果立刻消失。
+    /// 只保留第一个小数点，小数最多 2 位 —— 与 iOS 数字键盘的上限一致。
     private func sanitizeAmount(_ input: String, allowNegative: Bool) -> String {
-        var s = input.filter { $0.isNumber || $0 == "." }
+        var s = ""
+        var hasDot = false
+        for ch in input {
+            if ch.isNumber || ch == "," {
+                s.append(ch)
+            } else if ch == ".", !hasDot {
+                s.append(ch)
+                hasDot = true
+            }
+        }
+        if let dot = s.firstIndex(of: ".") {
+            let integerPart = s[..<dot]
+            let fraction = String(s[s.index(after: dot)...].filter { $0.isNumber }.prefix(2))
+            s = String(integerPart) + "." + fraction
+        }
         if allowNegative, input.hasPrefix("-") {
             s = "-" + s
         }
         return s
+    }
+
+    /// 解析时剥掉千分位逗号。
+    private func decimalValue(_ string: String) -> Decimal {
+        Decimal(string: string.replacingOccurrences(of: ",", with: "")) ?? 0
     }
 
     private func save() {
@@ -255,7 +307,7 @@ struct MacAccountEditSheet: View {
                 account.typeRaw = accountType.rawValue
                 account.currencyCode = currencyCode
                 account.initialBalance = initialBalance
-                account.creditLimit = hasCreditLimit ? creditLimit : nil
+                account.creditLimit = effectiveCreditLimit
                 account.billingDay = Int64(billingDay)
                 account.dueDay = Int64(dueDay)
                 account.colorHex = colorHex
@@ -267,7 +319,7 @@ struct MacAccountEditSheet: View {
                 let account = Account(name: name, currencyCode: currencyCode,
                     type: accountType, iconName: iconName, colorHex: colorHex,
                     initialBalance: initialBalance,
-                    creditLimit: hasCreditLimit ? creditLimit : nil,
+                    creditLimit: effectiveCreditLimit,
                     billingDay: billingDay, dueDay: dueDay,
                     context: modelContext)
                 if accountType == .other, !customTypeName.isEmpty { account.customTypeName = customTypeName }

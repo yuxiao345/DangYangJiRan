@@ -10,6 +10,20 @@ struct CurrencyFormatter {
         return f
     }()
 
+    /// 金额输入框的显示格式：固定 `,` 分组、`.` 小数，不跟随设备区域。
+    /// 数字键盘输入的小数点恒为 `.`，若显示串跟随 `Locale.current`（de_DE 为 `1.234,56`），
+    /// 回读时会按 `.` 解析成 1000 倍偏差；固定 POSIX 约定可让显示与解析共用同一套分隔符。
+    static let editableFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.numberStyle = .decimal
+        f.usesGroupingSeparator = true
+        f.groupingSize = 3
+        f.minimumFractionDigits = 0
+        f.maximumFractionDigits = 2
+        return f
+    }()
+
     private static let currencyFormatter: NumberFormatter = {
         let f = NumberFormatter()
         f.numberStyle = .currency

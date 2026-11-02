@@ -27,7 +27,7 @@ struct NumpadAmountField: View {
                     if showNumpad { syncToBinding() }
                     showNumpad.toggle()
                 }
-                if !showNumpad { input.text = formatDecimal(amount) }
+                if !showNumpad { input.text = plainString(amount) }
             } label: {
                 HStack {
                     Text(currencySymbol)
@@ -109,19 +109,28 @@ struct NumpadAmountField: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .onAppear { input.seed(formatDecimal(amount)) }
+        .onAppear { input.seed(plainString(amount)) }
     }
 
-    /// 编辑中显示当前输入（空则显示0）；非编辑中显示 binding 值
+    /// 编辑中显示当前输入（空则显示0）；非编辑中显示带千分位的 binding 值。
     private var displayText: String {
         if showNumpad {
             return input.text.isEmpty ? "0" : input.text
         }
-        return input.text.isEmpty ? formatDecimal(amount) : input.text
+        return formatDecimal(amount)
     }
 
+    /// 编辑缓冲区里的原始值。**不要**写入带千分位的串：退格会删到分组符，
+    /// 且 2 位小数的显示格式回读时会把高精度值截断。
+    private func plainString(_ d: Decimal) -> String {
+        let s = (d as NSDecimalNumber).stringValue
+        return s == "0" ? "" : s
+    }
+
+    /// 非编辑态的显示串，固定 `,` 分组（见 `CurrencyFormatter.editableFormatter`）。
     private func formatDecimal(_ d: Decimal) -> String {
-        let s = NSDecimalNumber(decimal: d).stringValue
+        let number = d as NSDecimalNumber
+        let s = CurrencyFormatter.editableFormatter.string(from: number) ?? number.stringValue
         return s == "0" ? "" : s
     }
 
