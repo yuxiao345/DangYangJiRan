@@ -77,10 +77,9 @@ struct DashboardView: View {
                 overviewColumn
                     .padding(16)
 
-                recentTransactionsHeader
+                // 复用同一份「标题 + 上下留白」，避免单栏/双栏的标题间距各写一份、改一处漏一处。
+                recentTransactionsTopContent
                     .padding(.horizontal, 16)
-                    .padding(.top, 16)
-                    .padding(.bottom, 12)
 
                 if viewModel.recentTransactions.isEmpty {
                     emptyRecentTransactions
@@ -92,6 +91,8 @@ struct DashboardView: View {
                 }
             }
         }
+        // 同双栏：内容不足一屏时不回弹，避免顶部磨砂带在回弹瞬间闪一下。
+        .scrollBounceBehavior(.basedOnSize, axes: .vertical)
         .scrollClipDisabled()
     }
 
@@ -103,8 +104,17 @@ struct DashboardView: View {
 
         return HStack(alignment: .top, spacing: 20) {
             ScrollView {
-                overviewColumn
-                    .padding(.vertical, 16)
+                VStack(spacing: 0) {
+                    // 左栏没有标题，但净资产卡片的顶边要和右栏第一条交易的顶边对齐。
+                    // 直接复用右栏标题那一块（含上下留白）并隐藏：高度随字体/动态字号自动一致，
+                    // 不用测量、也不写死数值。hidden 视图按 Apple 文档已不参与交互；
+                    // accessibilityHidden 是防止占位里的「全部」链接被 VoiceOver 读出，别当冗余删掉。
+                    recentTransactionsTopContent
+                        .hidden()
+                        .accessibilityHidden(true)
+                    overviewColumn
+                }
+                .padding(.bottom, 16)
             }
             .scrollClipDisabled()
             .frame(width: leftWidth)
@@ -135,6 +145,10 @@ struct DashboardView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .padding(.horizontal, 16)
+        // 内容不足一屏时不回弹。系统顶部的磨砂边缘（scroll edge effect）只在
+        // contentOffset 不为 0 时出现；内容放得下时，回弹是唯一能让它短暂非零的动作。
+        // 这个 modifier 通过 Environment 作用于整个子树，写一次就覆盖左右两栏。
+        .scrollBounceBehavior(.basedOnSize, axes: .vertical)
     }
 
     /// 净资产 + 收入/支出 + 预算。两种布局共用，顺序与内部结构完全一致。
@@ -149,7 +163,9 @@ struct DashboardView: View {
         }
     }
 
-    /// 右栏标题（含上下留白），随列表一起滚动——别再挂回 safeAreaBar 固定住。
+    /// 最近交易标题（含上下留白），随列表一起滚动——别再挂回 safeAreaBar 固定住。
+    /// 它同时是两栏顶部对齐的单一真相：双栏布局里左栏复用同一块（隐藏）占位，
+    /// 净资产卡片的顶边才和右栏第一条交易对齐；改这里的留白会连带移动左栏卡片。
     /// 单栏布局的标题另带水平内边距（见 `stackedLayout`）。
     private var recentTransactionsTopContent: some View {
         recentTransactionsHeader
